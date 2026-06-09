@@ -1,47 +1,154 @@
 {% comment %}
-  This section is used in the collection template to render collection page
-  listing all products within a collection.
-
-  https://shopify.dev/docs/storefronts/themes/architecture/templates/collection
+  Collection Products Section
+  Renders a responsive product grid for the current collection.
 {% endcomment %}
 
-<h1>{{ collection.title }}</h1>
+{%- liquid
+  assign show_title = section.settings.show_title
+  assign per_page = section.settings.products_per_page | default: 20
+-%}
 
-<div class="collection-products">
-  {% paginate collection.products by 20 %}
-    {% for product in collection.products %}
-      <div class="collection-product">
-        {% if product.featured_image %}
-          {% render 'image',
-            class: 'collection-product__image',
-            image: product.featured_image,
-            url: product.url,
-            width: 400,
-            height: 400,
-            crop: 'center'
-          %}
-        {% endif %}
-        <div class="collection-product__content">
-          <p>{{ product.title | escape | link_to: product.url }}</p>
-          <p>{{ product.price | money }}</p>
+<div class="collection-products-section">
+  {%- if show_title -%}
+    <h1 class="collection-products__title">{{ collection.title }}</h1>
+  {%- endif -%}
+
+  <div class="collection-products">
+    {% paginate collection.products by per_page %}
+      {% for product in collection.products %}
+        <div class="collection-product">
+          {%- if product.featured_image -%}
+            <a href="{{ product.url }}" class="collection-product__image-link">
+              {{
+                product.featured_image
+                | image_url: width: 600
+                | image_tag:
+                  class: 'collection-product__image',
+                  alt: product.title | escape,
+                  loading: 'lazy'
+              }}
+            </a>
+          {%- endif -%}
+
+          <div class="collection-product__content">
+            <a href="{{ product.url }}" class="collection-product__title">
+              {{ product.title | escape }}
+            </a>
+
+            <div class="collection-product__price">
+              {{ product.price | money }}
+            </div>
+          </div>
         </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
 
-    {{ paginate | default_pagination }}
-  {% endpaginate %}
+      {{ paginate | default_pagination }}
+    {% endpaginate %}
+  </div>
 </div>
 
 {% stylesheet %}
+  .collection-products-section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .collection-products__title {
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    text-align: center;
+  }
+
   .collection-products {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 2rem;
+  }
+
+  .collection-product {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .collection-product:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .collection-product__image-link {
+    display: block;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: #f8f8f8;
+  }
+
+  .collection-product__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .collection-product:hover .collection-product__image {
+    transform: scale(1.05);
+  }
+
+  .collection-product__content {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .collection-product__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111;
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .collection-product__title:hover {
+    text-decoration: underline;
+  }
+
+  .collection-product__price {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111;
   }
 {% endstylesheet %}
 
 {% schema %}
 {
-  "name": "t:general.collection",
-  "settings": []
+  "name": "Collection Products",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "Show collection title",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 20,
+      "label": "Products per page"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Products"
+    }
+  ]
 }
 {% endschema %}
