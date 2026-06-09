@@ -11,7 +11,7 @@
   --hdr-height-desktop : 68px;
   --hdr-height-tablet  : 64px;
   --hdr-height-mobile  : 56px;
-  --hdr-search-row-h   : 56px;    /* extra row on tablet + mobile */
+  --hdr-search-row-h   : 56px;
 
   --hdr-bg             : #ffffff;
   --hdr-border         : #e5e5e5;
@@ -42,7 +42,6 @@
   font-family: var(--hdr-font);
 }
 
-/* ── Top bar ── */
 .ecombio-header__bar {
   width: 100%;
 }
@@ -62,7 +61,7 @@
    ============================================================================= */
 
 .ecombio-header__hamburger {
-  display: none;            /* shown via responsive block below */
+  display: none;
   flex-direction: column;
   justify-content: center;
   gap: 5px;
@@ -90,7 +89,6 @@
   transition: transform 0.25s, opacity 0.25s;
 }
 
-/* Animated X state */
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
@@ -147,7 +145,6 @@
   width: 100%;
 }
 
-/* Category pill */
 .ecombio-search__category {
   position: relative;
   flex-shrink: 0;
@@ -187,7 +184,6 @@
   transform: rotate(180deg);
 }
 
-/* Dropdown list */
 .ecombio-search__cat-list {
   position: absolute;
   top: calc(100% + 8px);
@@ -220,7 +216,6 @@
   background: var(--hdr-search-bg);
 }
 
-/* Vertical divider */
 .ecombio-search__divider {
   display: block;
   width: 1px;
@@ -230,7 +225,6 @@
   margin: 0 2px 0 0;
 }
 
-/* Input */
 .ecombio-search__input {
   flex: 1 1 auto;
   border: none;
@@ -251,7 +245,6 @@
   display: none;
 }
 
-/* Submit button */
 .ecombio-search__submit {
   flex-shrink: 0;
   display: flex;
@@ -281,11 +274,11 @@
 }
 
 /* =============================================================================
-   SEARCH ROW  (tablet + mobile — full-width strip below bar)
+   SEARCH ROW  (tablet + mobile)
    ============================================================================= */
 
 .ecombio-header__search-row {
-  display: none;          /* hidden by default; shown at ≤1023px */
+  display: none;
   border-top: 1px solid var(--hdr-border);
   background: var(--hdr-bg);
 }
@@ -297,7 +290,7 @@
 }
 
 /* =============================================================================
-   ICON LINKS (right side)
+   ICON LINKS  (right side)
    ============================================================================= */
 
 .ecombio-header__icons {
@@ -324,6 +317,7 @@
   white-space: nowrap;
   padding: 6px 8px;
   border-radius: 8px;
+  background: transparent;
   transition: background 0.15s, opacity 0.15s;
 }
 
@@ -331,14 +325,29 @@
   background: var(--hdr-search-bg);
 }
 
-.ecombio-header__icon-label {
-  /* hidden on narrow viewports; toggled below */
+/* =============================================================================
+   CART
+   ============================================================================= */
+
+.ecombio-header__cart {
+  display: flex;          /* was missing — fixes icon alignment */
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
 }
 
-/* Cart badge */
+.ecombio-header__cart:hover {
+  background: var(--hdr-search-bg);
+}
+
 .ecombio-header__cart-wrap {
-  position: relative;
   display: flex;
+  align-items: center;
+  position: relative;
 }
 
 .ecombio-header__cart-badge {
@@ -375,7 +384,6 @@
   visibility: visible;
 }
 
-/* Overlay */
 .ecombio-mobile-nav__overlay {
   position: absolute;
   inset: 0;
@@ -388,7 +396,6 @@
   opacity: 1;
 }
 
-/* Panel */
 .ecombio-mobile-nav__panel {
   position: absolute;
   top: 0;
@@ -396,7 +403,6 @@
   bottom: 0;
   width: min(320px, 88vw);
   background: #fff;
-  padding: 0;
   overflow-y: auto;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -407,7 +413,6 @@
   transform: translateX(0);
 }
 
-/* Close button */
 .ecombio-mobile-nav__close {
   display: flex;
   align-items: center;
@@ -421,7 +426,6 @@
   border-bottom: 1px solid var(--hdr-border);
 }
 
-/* Nav list */
 .ecombio-mobile-nav__list {
   list-style: none;
   margin: 0;
@@ -476,27 +480,22 @@
     gap: 10px;
   }
 
-  /* Show hamburger */
   .ecombio-header__hamburger {
     display: flex;
   }
 
-  /* Hide inline search bar — replaced by search-row */
   .ecombio-header__search--inline {
     display: none;
   }
 
-  /* Show search-row strip */
   .ecombio-header__search-row {
     display: block;
   }
 
-  /* Show icon labels on tablet */
   .ecombio-header__icon-label {
     display: inline;
   }
 
-  /* Tighten icon gap a bit */
   .ecombio-header__icons {
     gap: 4px;
   }
@@ -515,22 +514,19 @@
     gap: 8px;
   }
 
-  /* Hide text labels next to icons */
   .ecombio-header__icon-label {
     display: none;
   }
 
-  /* Icon touch targets */
   .ecombio-header__icon-link {
     padding: 6px;
   }
 
-  /* Hide "Find a store" icon on tiny screens to save space */
+  /* Hide "Find a store" on small screens */
   .ecombio-header__icon-link:first-child {
     display: none;
   }
 
-  /* Slightly smaller search row */
   .ecombio-header__search-row-inner {
     padding: 6px 12px;
   }
@@ -539,44 +535,4 @@
     height: 42px;
   }
 
-}
-/* === ICON LINKS === */
-.ecombio-header__icon-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  color: var(--hdr-text);
-  font-size: 0.875rem;
-  font-weight: 400;
-  white-space: nowrap;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: background 0.15s, opacity 0.15s;
-  background: transparent; /* helps buttons + links match */
-}
-
-.ecombio-header__icon-link:hover {
-  background: var(--hdr-search-bg);
-}
-
-/* === CART BUTTON === */
-.ecombio-header__cart {
-  background: transparent;
-  border: none;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: background 0.15s, opacity 0.15s;
-  cursor: pointer;
-  align-items: center;
-}
-
-.ecombio-header__cart:hover {
-  background: var(--hdr-search-bg);
-}
-
-.ecombio-header__cart-wrap {
-  display: flex;
-  align-items: center;
-  position: relative;
 }
