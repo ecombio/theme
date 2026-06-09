@@ -3,8 +3,11 @@
   File: snippets/ecombio-mobile-nav.liquid
 
   Rendered outside <header> so it overlays everything.
-  No parameters required.
+  Parameters:
+    - menu: linklist handle (passed from header section settings)
 {% endcomment %}
+
+{%- assign nav_menu = linklists[menu] | default: linklists['main-menu'] -%}
 
 <div class="ecombio-mobile-nav" id="ecombio-mobile-nav" aria-hidden="true">
   <div class="ecombio-mobile-nav__overlay" id="ecombio-nav-overlay"></div>
@@ -12,17 +15,19 @@
     <button class="ecombio-mobile-nav__close" id="ecombio-nav-close" aria-label="Close navigation">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
     </button>
     <ul class="ecombio-mobile-nav__list">
-      <li><a href="/collections/all">Shop by Categories</a></li>
-      <li><a href="/collections/by-room">Shop by Room</a></li>
-      <li><a href="/collections/tables-desks">Tables &amp; Desks</a></li>
-      <li><a href="/collections/chairs-stools">Chairs &amp; Stools</a></li>
-      <li><a href="/pages">Pages</a></li>
-      <li><a href="/pages/theme-features">Theme Features</a></li>
-      <li class="ecombio-mobile-nav__sale"><a href="/collections/sale">On Sale</a></li>
+      {%- for link in nav_menu.links -%}
+        <li{% if link.active %} class="is-active"{% endif %}>
+          <a href="{{ link.url }}"
+             {% if link.current %}aria-current="page"{% endif %}>
+            {{ link.title }}
+          </a>
+        </li>
+      {%- endfor -%}
     </ul>
   </nav>
 </div>
