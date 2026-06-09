@@ -1,6 +1,5 @@
 {% comment %}
   Collection Products Section
-  Uses external collection.css and collection.js
 {% endcomment %}
 
 {{ 'collection.css' | asset_url | stylesheet_tag }}
@@ -19,31 +18,13 @@
   <div class="collection-products">
     {% paginate collection.products by per_page %}
       {% for product in collection.products %}
-        <div class="collection-product">
-          {%- if product.featured_image -%}
-            <a href="{{ product.url }}" class="collection-product__image-link">
-              {{
-                product.featured_image
-                | image_url: width: 700
-                | image_tag:
-                  class: 'collection-product__image',
-                  alt: product.title | escape,
-                  loading: 'lazy',
-                  width: 700,
-                  height: 700
-              }}
-            </a>
-          {%- endif -%}
-
-          <div class="collection-product__content">
-            <a href="{{ product.url }}" class="collection-product__title">
-              {{ product.title | escape }}
-            </a>
-
-            <div class="collection-product__price">
-              {{ product.price | money }}
-            </div>
-          </div>
+        <div class="collection-product-wrapper">
+          {% render 'card-product',
+            product: product,
+            show_vendor: true,
+            show_compare_at_price: true,
+            media_aspect_ratio: 'square'
+          %}
         </div>
       {% endfor %}
 
@@ -70,11 +51,6 @@
       "step": 4,
       "default": 20,
       "label": "Products per page"
-    }
-  ],
-  "presets": [
-    {
-      "name": "Collection Products"
     }
   ]
 }

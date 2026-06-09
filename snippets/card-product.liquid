@@ -1,0 +1,51 @@
+{% comment %}
+  card-product.liquid
+  Self-contained product card with proper image fitting
+{% endcomment %}
+
+{%- liquid
+  assign product = product | default: card_product
+  assign show_vendor = show_vendor | default: false
+  assign show_compare_at_price = show_compare_at_price | default: true
+  assign media_aspect_ratio = media_aspect_ratio | default: 'square'
+-%}
+
+<div class="card-product">
+  {%- if product.featured_image -%}
+    <a href="{{ product.url }}" class="card-product__image-wrapper">
+      {{
+        product.featured_image
+        | image_url: width: 700
+        | image_tag:
+          class: 'card-product__image',
+          alt: product.title | escape,
+          loading: 'lazy',
+          width: 700,
+          height: 700
+      }}
+    </a>
+  {%- else -%}
+    <div class="card-product__image-wrapper card-product__image-wrapper--placeholder">
+      <div class="card-product__image-placeholder"></div>
+    </div>
+  {%- endif -%}
+
+  <div class="card-product__content">
+    {%- if show_vendor and product.vendor != blank -%}
+      <div class="card-product__vendor">{{ product.vendor | escape }}</div>
+    {%- endif -%}
+
+    <a href="{{ product.url }}" class="card-product__title">
+      {{ product.title | escape }}
+    </a>
+
+    <div class="card-product__price">
+      {%- if product.compare_at_price > product.price and show_compare_at_price -%}
+        <span class="card-product__price--sale">{{ product.price | money }}</span>
+        <span class="card-product__compare-price">{{ product.compare_at_price | money }}</span>
+      {%- else -%}
+        {{ product.price | money }}
+      {%- endif -%}
+    </div>
+  </div>
+</div>
