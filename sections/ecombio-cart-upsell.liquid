@@ -1,0 +1,550 @@
+{%- comment -%}
+  ecombio-cart-upsell.liquid
+  ECOMBIO Cart Upsell Page — Stage 2 of checkout funnel.
+  Owner: markup, cart summary, upsell layout, offer blocks, CTA rendering, theme settings.
+{%- endcomment -%}
+
+{%- assign cart = cart -%}
+{%- assign free_shipping_threshold = section.settings.free_shipping_threshold | default: 75 -%}
+{%- assign subtotal_dollars = cart.total_price | divided_by: 100.0 -%}
+{%- assign shipping_remaining = free_shipping_threshold | minus: subtotal_dollars -%}
+{%- assign shipping_progress = subtotal_dollars | divided_by: free_shipping_threshold | times: 100 | at_most: 100 -%}
+
+<div
+  class="ecombio-upsell"
+  data-ecombio-cart-upsell
+  data-free-shipping-threshold="{{ free_shipping_threshold | times: 100 }}"
+>
+
+  {%- comment -%} ── CART SUMMARY ── {%- endcomment -%}
+  <section class="ecombio-upsell__summary" aria-labelledby="ecombio-summary-heading">
+    <h2 class="ecombio-upsell__summary-heading" id="ecombio-summary-heading">
+      {{ section.settings.summary_heading | default: 'Your Order' }}
+    </h2>
+
+    <ul class="ecombio-upsell__items" data-ecombio-cart-items>
+      {%- for item in cart.items -%}
+        <li class="ecombio-upsell__item" data-line="{{ forloop.index }}">
+          <div class="ecombio-upsell__item-image">
+            {%- if item.image -%}
+              <img
+                src="{{ item.image | image_url: width: 80 }}"
+                alt="{{ item.title | escape }}"
+                width="80"
+                height="80"
+                loading="lazy"
+              >
+            {%- endif -%}
+          </div>
+          <div class="ecombio-upsell__item-details">
+            <p class="ecombio-upsell__item-title">{{ item.product.title }}</p>
+            {%- unless item.variant.title == 'Default Title' -%}
+              <p class="ecombio-upsell__item-variant">{{ item.variant.title }}</p>
+            {%- endunless -%}
+            <p class="ecombio-upsell__item-qty">Qty: {{ item.quantity }}</p>
+          </div>
+          <div class="ecombio-upsell__item-price">
+            <span class="ecombio-upsell__item-unit">{{ item.final_line_price | money }}</span>
+            {%- if item.original_line_price != item.final_line_price -%}
+              <s class="ecombio-upsell__item-original">{{ item.original_line_price | money }}</s>
+            {%- endif -%}
+          </div>
+        </li>
+      {%- endfor -%}
+    </ul>
+
+    <div class="ecombio-upsell__totals" data-ecombio-totals>
+      <div class="ecombio-upsell__totals-row">
+        <span>{{ 'cart.subtotal' | t | default: 'Subtotal' }}</span>
+        <span data-ecombio-subtotal>{{ cart.original_total_price | money }}</span>
+      </div>
+      {%- if cart.total_discount > 0 -%}
+        <div class="ecombio-upsell__totals-row ecombio-upsell__totals-row--savings">
+          <span>{{ 'cart.savings' | t | default: 'Savings' }}</span>
+          <span data-ecombio-savings>-{{ cart.total_discount | money }}</span>
+        </div>
+      {%- endif -%}
+      <div class="ecombio-upsell__totals-row ecombio-upsell__totals-row--total">
+        <span>{{ 'cart.estimated_total' | t | default: 'Estimated Total' }}</span>
+        <span data-ecombio-total>{{ cart.total_price | money }}</span>
+      </div>
+      <p class="ecombio-upsell__shipping-note">
+        {{ section.settings.shipping_note | default: 'Shipping & taxes calculated at checkout' }}
+      </p>
+    </div>
+  </section>
+
+  {%- comment -%} ── FREE SHIPPING BAR ── {%- endcomment -%}
+  {%- if section.settings.enable_free_shipping_bar -%}
+    <section class="ecombio-upsell__shipping-bar" data-ecombio-shipping-bar aria-label="Free shipping progress">
+      {%- if shipping_remaining > 0 -%}
+        <p class="ecombio-upsell__shipping-bar-message" data-ecombio-shipping-message>
+          You are <strong data-ecombio-shipping-remaining>{{ shipping_remaining | money }}</strong> away from free shipping
+        </p>
+      {%- else -%}
+        <p class="ecombio-upsell__shipping-bar-message ecombio-upsell__shipping-bar-message--achieved" data-ecombio-shipping-message>
+          🎉 {{ section.settings.free_shipping_achieved_text | default: "You've unlocked free shipping!" }}
+        </p>
+      {%- endif -%}
+      <div class="ecombio-upsell__shipping-bar-track" role="progressbar" aria-valuenow="{{ shipping_progress | round }}" aria-valuemin="0" aria-valuemax="100">
+        <div
+          class="ecombio-upsell__shipping-bar-fill"
+          data-ecombio-shipping-fill
+          style="width: {{ shipping_progress }}%"
+        ></div>
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- comment -%} ── UPSELL OFFERS ── {%- endcomment -%}
+  {%- if section.settings.enable_upsells and section.blocks.size > 0 -%}
+    <section class="ecombio-upsell__offers" aria-labelledby="ecombio-offers-heading">
+      <h2 class="ecombio-upsell__offers-heading" id="ecombio-offers-heading">
+        {{ section.settings.offers_heading | default: 'Frequently Bought Together' }}
+      </h2>
+      <div class="ecombio-upsell__offers-grid">
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+
+          {%- when 'product_offer' -%}
+            {%- if section.settings.enable_upsells -%}
+              {%- assign offer_product = block.settings.offer_product -%}
+              {%- if offer_product != blank -%}
+                <div
+                  class="ecombio-upsell__offer-card ecombio-upsell__offer-card--product"
+                  data-ecombio-offer
+                  data-offer-type="product"
+                  data-variant-id="{{ offer_product.selected_or_first_available_variant.id }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {%- if offer_product.featured_image -%}
+                    <div class="ecombio-upsell__offer-image">
+                      <img
+                        src="{{ offer_product.featured_image | image_url: width: 200 }}"
+                        alt="{{ offer_product.title | escape }}"
+                        width="200"
+                        height="200"
+                        loading="lazy"
+                      >
+                    </div>
+                  {%- endif -%}
+                  <div class="ecombio-upsell__offer-body">
+                    <p class="ecombio-upsell__offer-title">{{ offer_product.title }}</p>
+                    {%- if block.settings.offer_description != blank -%}
+                      <p class="ecombio-upsell__offer-description">{{ block.settings.offer_description }}</p>
+                    {%- elsif offer_product.description != blank -%}
+                      <p class="ecombio-upsell__offer-description">{{ offer_product.description | strip_html | truncate: 100 }}</p>
+                    {%- endif -%}
+                    <div class="ecombio-upsell__offer-pricing">
+                      <span class="ecombio-upsell__offer-price">{{ offer_product.selected_or_first_available_variant.price | money }}</span>
+                      {%- if offer_product.selected_or_first_available_variant.compare_at_price > offer_product.selected_or_first_available_variant.price -%}
+                        <s class="ecombio-upsell__offer-compare">{{ offer_product.selected_or_first_available_variant.compare_at_price | money }}</s>
+                        {%- assign savings = offer_product.selected_or_first_available_variant.compare_at_price | minus: offer_product.selected_or_first_available_variant.price -%}
+                        <span class="ecombio-upsell__offer-savings">Save {{ savings | money }}</span>
+                      {%- endif -%}
+                    </div>
+                  </div>
+                  <button
+                    class="ecombio-upsell__offer-btn"
+                    data-ecombio-add-offer
+                    data-variant-id="{{ offer_product.selected_or_first_available_variant.id }}"
+                    data-offer-label="{{ offer_product.title | escape }}"
+                    aria-label="Add {{ offer_product.title | escape }} to order"
+                  >
+                    <span class="ecombio-upsell__offer-btn-text--default">{{ block.settings.add_button_text | default: 'Add To Order' }}</span>
+                    <span class="ecombio-upsell__offer-btn-text--added" hidden>{{ block.settings.added_button_text | default: '✓ Added' }}</span>
+                    <span class="ecombio-upsell__offer-btn-text--loading" hidden>Adding…</span>
+                  </button>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+
+          {%- when 'bundle_offer' -%}
+            {%- if section.settings.enable_bundles -%}
+              <div
+                class="ecombio-upsell__offer-card ecombio-upsell__offer-card--bundle"
+                data-ecombio-offer
+                data-offer-type="bundle"
+                {{ block.shopify_attributes }}
+              >
+                <div class="ecombio-upsell__offer-badge">Bundle</div>
+                <div class="ecombio-upsell__offer-body">
+                  <p class="ecombio-upsell__offer-title">{{ block.settings.bundle_title | default: 'Complete Bundle' }}</p>
+                  {%- if block.settings.bundle_description != blank -%}
+                    <p class="ecombio-upsell__offer-description">{{ block.settings.bundle_description }}</p>
+                  {%- endif -%}
+                  {%- if block.settings.bundle_savings_percent > 0 -%}
+                    <p class="ecombio-upsell__offer-savings">Save {{ block.settings.bundle_savings_percent }}%</p>
+                  {%- endif -%}
+                </div>
+                {%- assign bundle_variant_1 = block.settings.bundle_product_1 -%}
+                {%- assign bundle_variant_2 = block.settings.bundle_product_2 -%}
+                {%- assign bundle_variant_3 = block.settings.bundle_product_3 -%}
+                <button
+                  class="ecombio-upsell__offer-btn ecombio-upsell__offer-btn--bundle"
+                  data-ecombio-add-bundle
+                  data-variant-ids="[
+                    {%- if bundle_variant_1 != blank -%}{{ bundle_variant_1.selected_or_first_available_variant.id }}{%- endif -%}
+                    {%- if bundle_variant_2 != blank -%},{{ bundle_variant_2.selected_or_first_available_variant.id }}{%- endif -%}
+                    {%- if bundle_variant_3 != blank -%},{{ bundle_variant_3.selected_or_first_available_variant.id }}{%- endif -%}
+                  ]"
+                  aria-label="Add bundle to order"
+                >
+                  <span class="ecombio-upsell__offer-btn-text--default">{{ block.settings.add_button_text | default: 'Add Bundle' }}</span>
+                  <span class="ecombio-upsell__offer-btn-text--added" hidden>✓ Bundle Added</span>
+                  <span class="ecombio-upsell__offer-btn-text--loading" hidden>Adding…</span>
+                </button>
+              </div>
+            {%- endif -%}
+
+          {%- when 'warranty_offer' -%}
+            {%- if section.settings.enable_warranty_offers -%}
+              {%- assign warranty_product = block.settings.warranty_product -%}
+              {%- if warranty_product != blank -%}
+                <div
+                  class="ecombio-upsell__offer-card ecombio-upsell__offer-card--warranty"
+                  data-ecombio-offer
+                  data-offer-type="warranty"
+                  data-variant-id="{{ warranty_product.selected_or_first_available_variant.id }}"
+                  {{ block.shopify_attributes }}
+                >
+                  <div class="ecombio-upsell__offer-badge ecombio-upsell__offer-badge--warranty">Protection</div>
+                  <div class="ecombio-upsell__offer-body">
+                    <p class="ecombio-upsell__offer-title">{{ block.settings.warranty_title | default: warranty_product.title }}</p>
+                    {%- if block.settings.warranty_description != blank -%}
+                      <p class="ecombio-upsell__offer-description">{{ block.settings.warranty_description }}</p>
+                    {%- endif -%}
+                    <span class="ecombio-upsell__offer-price">{{ warranty_product.selected_or_first_available_variant.price | money }}</span>
+                  </div>
+                  <button
+                    class="ecombio-upsell__offer-btn ecombio-upsell__offer-btn--warranty"
+                    data-ecombio-add-offer
+                    data-variant-id="{{ warranty_product.selected_or_first_available_variant.id }}"
+                    data-offer-label="{{ block.settings.warranty_title | default: warranty_product.title | escape }}"
+                    aria-label="Add protection plan to order"
+                  >
+                    <span class="ecombio-upsell__offer-btn-text--default">{{ block.settings.add_button_text | default: 'Add Protection' }}</span>
+                    <span class="ecombio-upsell__offer-btn-text--added" hidden>✓ Added</span>
+                    <span class="ecombio-upsell__offer-btn-text--loading" hidden>Adding…</span>
+                  </button>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+
+          {%- when 'subscription_offer' -%}
+            {%- if section.settings.enable_subscription_offers -%}
+              {%- assign sub_product = block.settings.subscription_product -%}
+              {%- if sub_product != blank -%}
+                <div
+                  class="ecombio-upsell__offer-card ecombio-upsell__offer-card--subscription"
+                  data-ecombio-offer
+                  data-offer-type="subscription"
+                  data-variant-id="{{ sub_product.selected_or_first_available_variant.id }}"
+                  data-selling-plan-id="{{ block.settings.selling_plan_id }}"
+                  {{ block.shopify_attributes }}
+                >
+                  <div class="ecombio-upsell__offer-badge ecombio-upsell__offer-badge--subscription">Subscribe & Save</div>
+                  <div class="ecombio-upsell__offer-body">
+                    <p class="ecombio-upsell__offer-title">{{ block.settings.subscription_title | default: sub_product.title }}</p>
+                    {%- if block.settings.subscription_description != blank -%}
+                      <p class="ecombio-upsell__offer-description">{{ block.settings.subscription_description }}</p>
+                    {%- endif -%}
+                    {%- if block.settings.subscription_savings_percent > 0 -%}
+                      <p class="ecombio-upsell__offer-savings">Save {{ block.settings.subscription_savings_percent }}% every order</p>
+                    {%- endif -%}
+                    <span class="ecombio-upsell__offer-price">{{ sub_product.selected_or_first_available_variant.price | money }}/mo</span>
+                  </div>
+                  <button
+                    class="ecombio-upsell__offer-btn ecombio-upsell__offer-btn--subscription"
+                    data-ecombio-add-offer
+                    data-variant-id="{{ sub_product.selected_or_first_available_variant.id }}"
+                    data-selling-plan-id="{{ block.settings.selling_plan_id }}"
+                    data-offer-label="{{ block.settings.subscription_title | default: sub_product.title | escape }}"
+                    aria-label="Subscribe to {{ sub_product.title | escape }}"
+                  >
+                    <span class="ecombio-upsell__offer-btn-text--default">{{ block.settings.add_button_text | default: 'Subscribe & Save' }}</span>
+                    <span class="ecombio-upsell__offer-btn-text--added" hidden>✓ Subscribed</span>
+                    <span class="ecombio-upsell__offer-btn-text--loading" hidden>Adding…</span>
+                  </button>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+
+          {%- endcase -%}
+        {%- endfor -%}
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- comment -%} ── CHECKOUT ACTIONS ── {%- endcomment -%}
+  <div class="ecombio-upsell__actions" data-ecombio-actions>
+    <button
+      class="ecombio-upsell__btn-primary"
+      data-ecombio-checkout-accept
+      aria-label="{{ section.settings.primary_cta | default: 'Accept Offers & Continue' }}"
+    >
+      {{ section.settings.primary_cta | default: 'Accept Offers & Continue' }}
+    </button>
+    <button
+      class="ecombio-upsell__btn-secondary"
+      data-ecombio-checkout-skip
+      aria-label="{{ section.settings.secondary_cta | default: 'Skip & Continue To Checkout' }}"
+    >
+      {{ section.settings.secondary_cta | default: 'Skip & Continue To Checkout' }}
+    </button>
+  </div>
+
+</div><!-- /ecombio-upsell -->
+
+{{ 'ecombio-cart-upsell.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ecombio-cart-upsell.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "ECOMBIO Cart Upsell",
+  "tag": "section",
+  "class": "ecombio-section-cart-upsell",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Cart Summary"
+    },
+    {
+      "type": "text",
+      "id": "summary_heading",
+      "label": "Summary Heading",
+      "default": "Your Order"
+    },
+    {
+      "type": "text",
+      "id": "shipping_note",
+      "label": "Shipping Note",
+      "default": "Shipping & taxes calculated at checkout"
+    },
+    {
+      "type": "header",
+      "content": "Free Shipping Bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_free_shipping_bar",
+      "label": "Enable Free Shipping Bar",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free Shipping Threshold ($)",
+      "default": 75
+    },
+    {
+      "type": "text",
+      "id": "free_shipping_achieved_text",
+      "label": "Free Shipping Achieved Message",
+      "default": "You've unlocked free shipping!"
+    },
+    {
+      "type": "header",
+      "content": "Upsell Offers"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_upsells",
+      "label": "Enable Upsells",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "offers_heading",
+      "label": "Offers Heading",
+      "default": "Frequently Bought Together"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_bundles",
+      "label": "Enable Bundle Offers",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_warranty_offers",
+      "label": "Enable Warranty Offers",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_subscription_offers",
+      "label": "Enable Subscription Offers",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Checkout Actions"
+    },
+    {
+      "type": "text",
+      "id": "primary_cta",
+      "label": "Primary CTA Text",
+      "default": "Accept Offers & Continue"
+    },
+    {
+      "type": "text",
+      "id": "secondary_cta",
+      "label": "Secondary CTA Text",
+      "default": "Skip & Continue To Checkout"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_offer",
+      "name": "Product Offer",
+      "settings": [
+        {
+          "type": "product",
+          "id": "offer_product",
+          "label": "Product"
+        },
+        {
+          "type": "textarea",
+          "id": "offer_description",
+          "label": "Custom Description (optional)"
+        },
+        {
+          "type": "text",
+          "id": "add_button_text",
+          "label": "Add Button Text",
+          "default": "Add To Order"
+        },
+        {
+          "type": "text",
+          "id": "added_button_text",
+          "label": "Added State Text",
+          "default": "✓ Added"
+        }
+      ]
+    },
+    {
+      "type": "bundle_offer",
+      "name": "Bundle Offer",
+      "settings": [
+        {
+          "type": "text",
+          "id": "bundle_title",
+          "label": "Bundle Title",
+          "default": "Complete Bundle"
+        },
+        {
+          "type": "textarea",
+          "id": "bundle_description",
+          "label": "Bundle Description"
+        },
+        {
+          "type": "range",
+          "id": "bundle_savings_percent",
+          "label": "Savings Percentage",
+          "min": 0,
+          "max": 50,
+          "step": 1,
+          "default": 15
+        },
+        {
+          "type": "product",
+          "id": "bundle_product_1",
+          "label": "Bundle Product 1"
+        },
+        {
+          "type": "product",
+          "id": "bundle_product_2",
+          "label": "Bundle Product 2"
+        },
+        {
+          "type": "product",
+          "id": "bundle_product_3",
+          "label": "Bundle Product 3 (optional)"
+        },
+        {
+          "type": "text",
+          "id": "add_button_text",
+          "label": "Add Button Text",
+          "default": "Add Bundle"
+        }
+      ]
+    },
+    {
+      "type": "warranty_offer",
+      "name": "Warranty Offer",
+      "settings": [
+        {
+          "type": "product",
+          "id": "warranty_product",
+          "label": "Warranty Product"
+        },
+        {
+          "type": "text",
+          "id": "warranty_title",
+          "label": "Warranty Title",
+          "default": "2-Year Protection Plan"
+        },
+        {
+          "type": "textarea",
+          "id": "warranty_description",
+          "label": "Warranty Description"
+        },
+        {
+          "type": "text",
+          "id": "add_button_text",
+          "label": "Add Button Text",
+          "default": "Add Protection"
+        }
+      ]
+    },
+    {
+      "type": "subscription_offer",
+      "name": "Subscription Offer",
+      "settings": [
+        {
+          "type": "product",
+          "id": "subscription_product",
+          "label": "Subscription Product"
+        },
+        {
+          "type": "text",
+          "id": "selling_plan_id",
+          "label": "Selling Plan ID",
+          "info": "Find this in your Shopify subscription app settings."
+        },
+        {
+          "type": "text",
+          "id": "subscription_title",
+          "label": "Subscription Title"
+        },
+        {
+          "type": "textarea",
+          "id": "subscription_description",
+          "label": "Subscription Description"
+        },
+        {
+          "type": "range",
+          "id": "subscription_savings_percent",
+          "label": "Savings Percentage",
+          "min": 0,
+          "max": 40,
+          "step": 1,
+          "default": 10
+        },
+        {
+          "type": "text",
+          "id": "add_button_text",
+          "label": "Add Button Text",
+          "default": "Subscribe & Save"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "ECOMBIO Cart Upsell"
+    }
+  ]
+}
+{% endschema %}

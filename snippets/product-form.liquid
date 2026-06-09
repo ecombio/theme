@@ -1,0 +1,24 @@
+<div class="product-form">
+  {% form 'product', product %}
+    {% assign current_variant = product.selected_or_first_available_variant %}
+
+    <div class="form-group">
+      <label for="variant">Variant</label>
+      <select name="id" id="variant" class="variant-select">
+        {% for variant in product.variants %}
+          <option value="{{ variant.id }}" {% if variant == current_variant %}selected{% endif %}>
+            {{ variant.title }} — {{ variant.price | money }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="quantity">Quantity</label>
+      <input type="number" name="quantity" id="quantity" min="1" value="1" class="quantity-input">
+    </div>
+
+    <button type="submit" class="add-to-cart-btn">Add to cart</button>
+    {{ form | payment_button }}
+  {% endform %}
+</div>

@@ -1,0 +1,694 @@
+/* =============================================================================
+   ECOMBIO Cart Drawer Styles  |  assets/ecombio-cart-drawer.css
+   Mobile-first. Drawer slides in from the right.
+   Breakpoints match header.css:
+     Mobile  : < 600px
+     Tablet  : 600px – 1023px
+     Desktop : ≥ 1024px
+   ============================================================================= */
+
+/* ── Variables (mirrors header.css tokens) ── */
+:root {
+  --cart-drawer-width    : 420px;
+  --cart-z               : 500;        /* above header z:200, mobile-nav z:400 */
+  --cart-radius          : 16px;
+  --cart-header-h        : 60px;
+  --cart-footer-h        : auto;
+  --cart-bg              : #ffffff;
+  --cart-overlay-bg      : rgba(0, 0, 0, 0.50);
+  --cart-border          : #e5e5e5;
+  --cart-text            : #111111;
+  --cart-muted           : #6b6b6b;
+  --cart-accent          : #e11d27;
+  --cart-accent-hover    : #c4171f;
+  --cart-success         : #16a34a;
+  --cart-search-bg       : #f2f2f2;
+  --cart-shadow          : -4px 0 32px rgba(0, 0, 0, 0.12);
+  --cart-progress-bg     : #e5e5e5;
+  --cart-progress-fill   : #e11d27;
+  --cart-btn-h           : 48px;
+  --cart-transition      : 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  --cart-font            : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* =============================================================================
+   DRAWER SHELL
+   ============================================================================= */
+
+.ecombio-cart-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--cart-z);
+  pointer-events: none;
+  visibility: hidden;
+  font-family: var(--cart-font);
+}
+
+.ecombio-cart-drawer.is-open {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* ── Overlay ── */
+.ecombio-cart-drawer__overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cart-overlay-bg);
+  opacity: 0;
+  transition: opacity var(--cart-transition);
+  cursor: pointer;
+}
+
+.ecombio-cart-drawer.is-open .ecombio-cart-drawer__overlay {
+  opacity: 1;
+}
+
+/* ── Panel ── */
+.ecombio-cart-drawer__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(var(--cart-drawer-width), 100vw);
+  background: var(--cart-bg);
+  box-shadow: var(--cart-shadow);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--cart-transition);
+  overflow: hidden;
+}
+
+.ecombio-cart-drawer.is-open .ecombio-cart-drawer__panel {
+  transform: translateX(0);
+}
+
+/* =============================================================================
+   DRAWER HEADER
+   ============================================================================= */
+
+.ecombio-cart-drawer__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--cart-header-h);
+  padding: 0 20px;
+  border-bottom: 1px solid var(--cart-border);
+}
+
+.ecombio-cart-drawer__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--cart-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ecombio-cart-drawer__header-count {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--cart-muted);
+}
+
+.ecombio-cart-drawer__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--cart-text);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ecombio-cart-drawer__close:hover {
+  background: var(--cart-search-bg);
+}
+
+/* =============================================================================
+   FREE SHIPPING PROGRESS BAR
+   ============================================================================= */
+
+.ecombio-cart-progress {
+  flex-shrink: 0;
+  padding: 12px 20px 14px;
+  border-bottom: 1px solid var(--cart-border);
+  background: #fafafa;
+}
+
+.ecombio-cart-progress__message {
+  font-size: 0.8125rem;
+  color: var(--cart-muted);
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.ecombio-cart-progress__message strong {
+  color: var(--cart-text);
+  font-weight: 600;
+}
+
+.ecombio-cart-progress__message--achieved {
+  color: var(--cart-success);
+  font-weight: 600;
+}
+
+.ecombio-cart-progress__track {
+  height: 6px;
+  background: var(--cart-progress-bg);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.ecombio-cart-progress__fill {
+  height: 100%;
+  background: var(--cart-progress-fill);
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+/* =============================================================================
+   SCROLLABLE BODY
+   ============================================================================= */
+
+.ecombio-cart-drawer__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+}
+
+/* =============================================================================
+   CART ITEMS
+   ============================================================================= */
+
+.ecombio-cart-items {
+  padding: 0;
+}
+
+/* ── Individual item ── */
+.ecombio-cart-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cart-border);
+  position: relative;
+}
+
+.ecombio-cart-item:last-child {
+  border-bottom: none;
+}
+
+/* Image */
+.ecombio-cart-item__img-wrap {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--cart-search-bg);
+  display: block;
+}
+
+.ecombio-cart-item__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ecombio-cart-item__img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+}
+
+.ecombio-cart-item__img-placeholder svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* Details */
+.ecombio-cart-item__details {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ecombio-cart-item__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--cart-text);
+  text-decoration: none;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ecombio-cart-item__title:hover {
+  text-decoration: underline;
+}
+
+.ecombio-cart-item__variant,
+.ecombio-cart-item__selling-plan {
+  font-size: 0.8125rem;
+  color: var(--cart-muted);
+  margin: 0;
+}
+
+/* Price row */
+.ecombio-cart-item__price-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ecombio-cart-item__price {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--cart-text);
+}
+
+.ecombio-cart-item__price--compare {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--cart-muted);
+  text-decoration: line-through;
+  margin-right: 2px;
+}
+
+.ecombio-cart-item__discount-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cart-accent);
+  background: #fef2f2;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* Controls row */
+.ecombio-cart-item__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+/* Qty stepper */
+.ecombio-cart-qty {
+  display: flex;
+  align-items: center;
+  background: var(--cart-search-bg);
+  border-radius: 9999px;
+  overflow: hidden;
+  height: 32px;
+}
+
+.ecombio-cart-qty__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--cart-text);
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+
+.ecombio-cart-qty__btn:hover {
+  background: var(--cart-border);
+}
+
+.ecombio-cart-qty__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ecombio-cart-qty__input {
+  width: 36px;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--cart-text);
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.ecombio-cart-qty__input::-webkit-inner-spin-button,
+.ecombio-cart-qty__input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Remove button */
+.ecombio-cart-item__remove {
+  background: transparent;
+  border: none;
+  font-size: 0.8125rem;
+  color: var(--cart-muted);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+
+.ecombio-cart-item__remove:hover {
+  color: var(--cart-accent);
+}
+
+/* Loading state */
+.ecombio-cart-item--loading {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* =============================================================================
+   EMPTY STATE
+   ============================================================================= */
+
+.ecombio-cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 24px;
+  color: var(--cart-muted);
+  text-align: center;
+}
+
+.ecombio-cart-empty svg {
+  opacity: 0.35;
+}
+
+.ecombio-cart-empty p {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* =============================================================================
+   UPSELL AREA
+   ============================================================================= */
+
+.ecombio-cart-upsell {
+  padding: 20px;
+  border-top: 1px solid var(--cart-border);
+  background: #fafafa;
+}
+
+.ecombio-cart-upsell__heading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--cart-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 14px;
+}
+
+.ecombio-cart-upsell__track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 4px;
+}
+
+.ecombio-cart-upsell__track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Skeleton loaders */
+.ecombio-cart-upsell__skeleton {
+  flex-shrink: 0;
+  width: 140px;
+  height: 180px;
+  background: linear-gradient(90deg, #ececec 25%, #f8f8f8 50%, #ececec 75%);
+  background-size: 200% 100%;
+  border-radius: 12px;
+  animation: ecombio-skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes ecombio-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Upsell product card (rendered by JS) */
+.ecombio-cart-upsell__card {
+  flex-shrink: 0;
+  width: 140px;
+  background: #fff;
+  border: 1px solid var(--cart-border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.ecombio-cart-upsell__card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.ecombio-cart-upsell__card-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--cart-search-bg);
+}
+
+.ecombio-cart-upsell__card-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.ecombio-cart-upsell__card-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cart-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ecombio-cart-upsell__card-price {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--cart-text);
+}
+
+.ecombio-cart-upsell__card-add {
+  display: block;
+  width: 100%;
+  padding: 7px 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  background: var(--cart-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: auto;
+}
+
+.ecombio-cart-upsell__card-add:hover {
+  background: var(--cart-accent-hover);
+}
+
+.ecombio-cart-upsell__card-add[aria-busy="true"] {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* =============================================================================
+   CART SUMMARY
+   ============================================================================= */
+
+.ecombio-cart-drawer__footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--cart-border);
+  background: var(--cart-bg);
+}
+
+.ecombio-cart-summary {
+  padding: 16px 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ecombio-cart-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9375rem;
+  color: var(--cart-text);
+}
+
+.ecombio-cart-summary__row--subtotal {
+  font-size: 1rem;
+  font-weight: 700;
+  padding-top: 6px;
+  border-top: 1px solid var(--cart-border);
+  margin-top: 2px;
+}
+
+.ecombio-cart-summary__row--discount {
+  color: var(--cart-accent);
+  font-weight: 600;
+}
+
+.ecombio-cart-summary__savings {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cart-success);
+}
+
+.ecombio-cart-summary__shipping-note {
+  font-size: 0.8125rem;
+  color: var(--cart-muted);
+  text-align: center;
+  margin: 8px 0 0;
+}
+
+/* =============================================================================
+   FOOTER CTA BUTTONS
+   ============================================================================= */
+
+.ecombio-cart-drawer__cta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 20px 20px;
+}
+
+.ecombio-cart-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--cart-btn-h);
+  width: 100%;
+  border-radius: 9999px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--cart-font);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  border: 2px solid transparent;
+  letter-spacing: 0.01em;
+}
+
+.ecombio-cart-btn:active {
+  transform: scale(0.98);
+}
+
+.ecombio-cart-btn--primary {
+  background: var(--cart-accent);
+  color: #fff;
+}
+
+.ecombio-cart-btn--primary:hover {
+  background: var(--cart-accent-hover);
+  color: #fff;
+}
+
+.ecombio-cart-btn--primary[aria-busy="true"] {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.ecombio-cart-btn--secondary {
+  background: transparent;
+  color: var(--cart-text);
+  border-color: var(--cart-border);
+}
+
+.ecombio-cart-btn--secondary:hover {
+  background: var(--cart-search-bg);
+}
+
+/* =============================================================================
+   BADGE VISIBILITY HELPER
+   ============================================================================= */
+
+.ecombio-header__cart-badge--hidden {
+  display: none;
+}
+
+/* =============================================================================
+   ACCESSIBILITY — REDUCED MOTION
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .ecombio-cart-drawer__panel,
+  .ecombio-cart-drawer__overlay,
+  .ecombio-cart-progress__fill {
+    transition: none;
+  }
+
+  .ecombio-cart-upsell__skeleton {
+    animation: none;
+    background: #ececec;
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE — MOBILE (< 600px)
+   ============================================================================= */
+
+@media (max-width: 599px) {
+  :root {
+    --cart-drawer-width: 100vw;
+  }
+
+  .ecombio-cart-drawer__panel {
+    border-radius: 0;
+  }
+
+  .ecombio-cart-item {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .ecombio-cart-item__img-wrap {
+    width: 68px;
+    height: 68px;
+  }
+
+  .ecombio-cart-drawer__cta {
+    padding: 12px 16px 16px;
+  }
+
+  .ecombio-cart-summary {
+    padding: 14px 16px 0;
+  }
+}

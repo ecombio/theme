@@ -1,0 +1,329 @@
+{{ 'component-countdown-timer.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'countdown-timer.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'copy-to-clipboard.js' | asset_url }}" defer="defer"></script>
+
+<div
+  class="section section--padding page-width page-width--fixed"
+  data-section="{{ section.id }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="promotion-banner color-scheme-{{ section.settings.color_scheme }} blocks-radius relative">
+    <div class="promotion-banner__inner promotion-banner__inner--{{ section.settings.layout }} rich-text rich-text--tight flex flex-col lg:flex-row lg:justify-between lg:text-left lg:items-center text-center items-center">
+
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+
+          {%- when 'subheading' -%}
+            <div class="block rich-text__subheading" {{ block.shopify_attributes }}>
+              <motion-element data-motion="fade-up" data-motion-delay="0" class="flex items-center gap-2">
+                <span class="text-subheading">
+                  {{ block.settings.subheading | escape }}
+                </span>
+              </motion-element>
+            </div>
+
+          {%- when 'countdown' -%}
+            <motion-element class="block promotion-banner__timer" data-motion-delay="50" data-motion="fade-up" {{ block.shopify_attributes }}>
+              {%- render 'countdown-timer',
+                timer_id: block.id,
+                type: block.settings.countdown_type,
+                duration: block.settings.evergreen_duration,
+                due_date: block.settings.end_date
+              -%}
+            </motion-element>
+
+          {%- when 'text' -%}
+            <motion-element class="block rte rich-text__text text-base-text" data-motion="fade-up" data-motion-delay="100" {{ block.shopify_attributes }}>
+              {{ block.settings.text }}
+            </motion-element>
+
+          {%- when 'button' -%}
+            <motion-element class="block promotion-banner__button" data-motion="fade-up" data-motion-delay="150" {{ block.shopify_attributes }}>
+              {%- if block.settings.button_label != blank -%}
+                <a
+                  href="{{ block.settings.button_link }}"
+                  class="btn btn--{{ block.settings.button_style }}"
+                  {%- if block.settings.button_link == blank %} aria-disabled="true"{% endif %}
+                >
+                  <span class="btn__text">{{ block.settings.button_label | escape }}</span>
+                </a>
+              {%- endif -%}
+            </motion-element>
+
+          {%- when 'discount_code' -%}
+            <motion-element class="block promotion-banner__code" data-motion="fade-up" data-motion-delay="150" {{ block.shopify_attributes }}>
+              <div class="tooltip--manual" data-tooltip="" is="copy-to-clipboard" data-copy-value="{{ block.settings.discount_code | escape }}">
+                <span class="tooltip pointer-events-none">Copied</span>
+                <button class="btn btn--{{ block.settings.button_style }}">
+                  <span class="btn__text">{{ block.settings.button_label | escape }}</span>
+                </button>
+              </div>
+            </motion-element>
+
+          {%- when 'group_heading' -%}
+            <motion-element class="block promotion-banner__group-heading" data-motion="fade-up" data-motion-delay="0" {{ block.shopify_attributes }}>
+              <div class="promotion-banner__group-heading-inner flex {% if block.settings.layout == 'horizontal' %}flex-row items-center gap-4{% else %}flex-col{% endif %}">
+                {%- if block.settings.subheading != blank -%}
+                  <p class="text-subheading">{{ block.settings.subheading | escape }}</p>
+                {%- endif -%}
+                {%- if block.settings.heading != blank -%}
+                  <h2 class="promotion-banner__heading {{ block.settings.heading_size }}">
+                    {{ block.settings.heading }}
+                  </h2>
+                {%- endif -%}
+              </div>
+            </motion-element>
+
+        {%- endcase -%}
+      {%- endfor -%}
+
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Promotion banner",
+  "tag": "section",
+  "class": "section-promotion-banner",
+  "settings": [
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "horizontal", "label": "Horizontal" },
+        { "value": "vertical", "label": "Vertical" }
+      ],
+      "default": "horizontal"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "options": [
+        { "value": "1", "label": "Scheme 1" },
+        { "value": "2", "label": "Scheme 2" },
+        { "value": "3", "label": "Scheme 3" },
+        { "value": "4", "label": "Scheme 4" }
+      ],
+      "default": "3"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "blocks": [
+    {
+      "type": "subheading",
+      "name": "Subheading",
+      "settings": [
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading",
+          "default": "Flash Sale now on!"
+        }
+      ]
+    },
+    {
+      "type": "countdown",
+      "name": "Countdown timer",
+      "settings": [
+        {
+          "type": "select",
+          "id": "countdown_type",
+          "label": "Countdown type",
+          "options": [
+            { "value": "evergreen", "label": "Evergreen" },
+            { "value": "fixed", "label": "Fixed time" }
+          ],
+          "default": "evergreen"
+        },
+        {
+          "type": "select",
+          "id": "evergreen_duration",
+          "label": "Evergreen duration",
+          "info": "Only applies when countdown type is Evergreen.",
+          "options": [
+            { "value": "every_day", "label": "Every day" },
+            { "value": "every_week", "label": "Every week" },
+            { "value": "every_month", "label": "Every month" }
+          ],
+          "default": "every_month"
+        },
+        {
+          "type": "text",
+          "id": "end_date",
+          "label": "Ends time",
+          "info": "Fixed time only. Format: YYYY/MM/DD HH:MM or YYYY/MM/DD HH:MM AM/PM",
+          "placeholder": "2025/12/31 11:59 PM"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Save on modern table office, <br>best sellers + more</p>"
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "name": "Button",
+      "settings": [
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Shop now"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            { "value": "primary", "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" },
+            { "value": "outline", "label": "Outline" }
+          ],
+          "default": "primary"
+        }
+      ]
+    },
+    {
+      "type": "discount_code",
+      "name": "Discount code",
+      "settings": [
+        {
+          "type": "text",
+          "id": "discount_code",
+          "label": "Discount code",
+          "default": "FLASH30"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Use Code: FLASH30"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            { "value": "primary", "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" },
+            { "value": "outline", "label": "Outline" }
+          ],
+          "default": "primary"
+        }
+      ]
+    },
+    {
+      "type": "group_heading",
+      "name": "Group heading",
+      "settings": [
+        {
+          "type": "select",
+          "id": "layout",
+          "label": "Layout",
+          "options": [
+            { "value": "horizontal", "label": "Horizontal" },
+            { "value": "vertical", "label": "Vertical" }
+          ],
+          "default": "vertical"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Big Sale"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" }
+          ],
+          "default": "h2"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Promotion banner",
+      "blocks": [
+        {
+          "type": "subheading",
+          "settings": {
+            "subheading": "Flash Sale now on!"
+          }
+        },
+        {
+          "type": "countdown",
+          "settings": {
+            "countdown_type": "evergreen",
+            "evergreen_duration": "every_month"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Save on modern table office, <br>best sellers + more</p>"
+          }
+        },
+        {
+          "type": "discount_code",
+          "settings": {
+            "discount_code": "FLASH30",
+            "button_label": "Use Code: FLASH30",
+            "button_style": "primary"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

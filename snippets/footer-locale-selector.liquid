@@ -1,0 +1,35 @@
+{%- if shop.published_locales.size > 1 -%}
+  <div class="fbb__locale" data-fbb-locale>
+
+    <button
+      class="fbb__locale-trigger"
+      aria-haspopup="listbox"
+      aria-expanded="false"
+      aria-label="{{ 'footer.locale.select_language' | t | default: 'Select language' }}"
+      data-fbb-locale-trigger
+    >
+      {%- comment -%} Globe icon {%- endcomment -%}
+      <svg class="fbb__locale-globe" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm-2.4-9.6a2.4 2.4 0 0 1 4.8 0v.8c0 .618-.073 1.22-.212 1.797A6.42 6.42 0 0 1 10 12a6.42 6.42 0 0 1-2.188-.003A8.025 8.025 0 0 1 7.6 10.2v-.8zm4.8 3.68A9.98 9.98 0 0 1 10 12.4c-.837 0-1.641-.107-2.4-.32v.32a2.4 2.4 0 0 0 4.8 0v-.32zM5.69 7.8A4.4 4.4 0 0 1 10 5.6a4.4 4.4 0 0 1 4.31 2.2H5.69z" clip-rule="evenodd"/>
+      </svg>
+      <span class="fbb__locale-label">{{ localization.language.endonym_name }}</span>
+      <svg class="fbb__locale-chevron" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false">
+        <path d="M6 8L1 3h10z"/>
+      </svg>
+    </button>
+
+    <ul class="fbb__locale-list" role="listbox" aria-label="{{ 'footer.locale.language_list' | t | default: 'Languages' }}" data-fbb-locale-list hidden>
+      {%- for locale in shop.published_locales -%}
+        <li class="fbb__locale-option" role="option" aria-selected="{{ locale.iso_code == localization.language.iso_code }}">
+          {%- form 'localization', id: 'fbb-locale-form-{{ locale.iso_code }}' -%}
+            <input type="hidden" name="locale_code" value="{{ locale.iso_code }}">
+            <button type="submit" class="fbb__locale-btn {% if locale.iso_code == localization.language.iso_code %}fbb__locale-btn--active{% endif %}">
+              {{ locale.endonym_name }}
+            </button>
+          {%- endform -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+
+  </div>
+{%- endif -%}

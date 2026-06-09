@@ -1,0 +1,248 @@
+{{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
+
+{%- if section.blocks.size > 0 -%}
+  <div
+    class="announcement-bar"
+    role="region"
+    aria-label="Announcements"
+    data-announcement-bar
+    data-autorotate="{{ section.settings.autorotate }}"
+    data-interval="{{ section.settings.autorotate_speed | times: 1000 }}"
+  >
+    <div class="announcement-bar__track" data-track>
+      {%- for block in section.blocks -%}
+
+        {%- case block.type -%}
+
+        {%- when 'announcement' -%}
+          <div
+            class="announcement-bar__slide{% if forloop.first %} is-active{% endif %}"
+            role="status"
+            aria-live="polite"
+            {{ block.shopify_attributes }}
+          >
+            {%- if block.settings.link != blank -%}
+              <a href="{{ block.settings.link }}" class="announcement-bar__message announcement-bar__message--link">
+                {{ block.settings.text }}
+              </a>
+            {%- else -%}
+              <p class="announcement-bar__message">{{ block.settings.text }}</p>
+            {%- endif -%}
+          </div>
+
+        {%- when 'countdown' -%}
+          <div
+            class="announcement-bar__slide announcement-bar__slide--countdown{% if forloop.first %} is-active{% endif %}"
+            {{ block.shopify_attributes }}
+          >
+            {%- if block.settings.text != blank -%}
+              <span class="announcement-bar__countdown-label">{{ block.settings.text }}</span>
+            {%- endif -%}
+            <span
+              class="announcement-bar__countdown"
+              data-countdown
+              data-type="{{ block.settings.countdown_type }}"
+              data-end="{{ block.settings.end_date }}"
+              data-duration="{{ block.settings.evergreen_minutes }}"
+            >
+              <span class="countdown__unit"><span data-days>0</span><em>d</em></span>
+              <span class="countdown__sep">:</span>
+              <span class="countdown__unit"><span data-hours>0</span><em>h</em></span>
+              <span class="countdown__sep">:</span>
+              <span class="countdown__unit"><span data-minutes>0</span><em>m</em></span>
+              <span class="countdown__sep">:</span>
+              <span class="countdown__unit"><span data-seconds>0</span><em>s</em></span>
+            </span>
+            {%- if block.settings.button_label != blank -%}
+              <a href="{{ block.settings.button_link }}" class="announcement-bar__btn">
+                {{ block.settings.button_label }}
+              </a>
+            {%- endif -%}
+          </div>
+
+        {%- endcase -%}
+      {%- endfor -%}
+    </div>
+
+    {%- if section.blocks.size > 1 -%}
+      <button class="announcement-bar__arrow announcement-bar__arrow--prev" aria-label="Previous announcement">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button class="announcement-bar__arrow announcement-bar__arrow--next" aria-label="Next announcement">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    {%- endif -%}
+  </div>
+
+  <script>
+    (function () {
+      var bar = document.querySelector('[data-announcement-bar]');
+      if (!bar) return;
+
+      var slides     = bar.querySelectorAll('.announcement-bar__slide');
+      var autorotate = bar.dataset.autorotate === 'true';
+      var interval   = parseInt(bar.dataset.interval, 10) || 5000;
+      var current    = 0;
+      var timer;
+
+      function show(index) {
+        slides[current].classList.remove('is-active');
+        current = (index + slides.length) % slides.length;
+        slides[current].classList.add('is-active');
+      }
+
+      function next() { show(current + 1); }
+      function prev() { show(current - 1); }
+
+      function startAuto() {
+        if (autorotate && slides.length > 1) timer = setInterval(next, interval);
+      }
+      function stopAuto() { clearInterval(timer); }
+
+      var btnNext = bar.querySelector('.announcement-bar__arrow--next');
+      var btnPrev = bar.querySelector('.announcement-bar__arrow--prev');
+      if (btnNext) btnNext.addEventListener('click', function () { stopAuto(); next(); startAuto(); });
+      if (btnPrev) btnPrev.addEventListener('click', function () { stopAuto(); prev(); startAuto(); });
+
+      /* ── Countdown timers ── */
+      bar.querySelectorAll('[data-countdown]').forEach(function (el) {
+        var type     = el.dataset.type;
+        var endMs;
+
+        if (type === 'fixed') {
+          endMs = new Date(el.dataset.end.replace(/\//g, '-')).getTime();
+        } else {
+          var storageKey = 'ann_countdown_' + el.dataset.duration;
+          var saved = sessionStorage.getItem(storageKey);
+          endMs = saved ? parseInt(saved, 10) : Date.now() + parseInt(el.dataset.duration, 10) * 60000;
+          sessionStorage.setItem(storageKey, endMs);
+        }
+
+        function tick() {
+          var diff = endMs - Date.now();
+          if (diff <= 0) { el.closest('.announcement-bar__slide').style.display = 'none'; return; }
+          var d = Math.floor(diff / 86400000);
+          var h = Math.floor((diff % 86400000) / 3600000);
+          var m = Math.floor((diff % 3600000) / 60000);
+          var s = Math.floor((diff % 60000) / 1000);
+          el.querySelector('[data-days]').textContent    = String(d).padStart(2,'0');
+          el.querySelector('[data-hours]').textContent   = String(h).padStart(2,'0');
+          el.querySelector('[data-minutes]').textContent = String(m).padStart(2,'0');
+          el.querySelector('[data-seconds]').textContent = String(s).padStart(2,'0');
+        }
+        tick();
+        setInterval(tick, 1000);
+      });
+
+      startAuto();
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Announcement Bar",
+  "tag": "section",
+  "class": "section-announcement-bar",
+  "max_blocks": 5,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "autorotate",
+      "label": "Auto-rotate announcements",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "autorotate_speed",
+      "label": "Rotation interval (seconds)",
+      "min": 3,
+      "max": 15,
+      "step": 1,
+      "default": 5
+    }
+  ],
+  "blocks": [
+    {
+      "type": "announcement",
+      "name": "Announcement",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "✌️ Free Express Shipping on orders $500!"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link (optional)"
+        }
+      ]
+    },
+    {
+      "type": "countdown",
+      "name": "Countdown Timer",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Message before timer",
+          "default": "⏰ Hurry! Sale ends in…"
+        },
+        {
+          "type": "select",
+          "id": "countdown_type",
+          "label": "Countdown type",
+          "options": [
+            { "value": "fixed",    "label": "Fixed date" },
+            { "value": "evergreen","label": "Evergreen (repeating)" }
+          ],
+          "default": "evergreen"
+        },
+        {
+          "type": "text",
+          "id": "end_date",
+          "label": "End date (fixed) — format: YYYY/MM/DD HH:MM",
+          "placeholder": "2025/12/31 23:59"
+        },
+        {
+          "type": "number",
+          "id": "evergreen_minutes",
+          "label": "Evergreen duration (minutes)",
+          "default": 720
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Announcement Bar",
+      "blocks": [
+        {
+          "type": "announcement",
+          "settings": {
+            "text": "✌️ Free Express Shipping on orders $500!"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,359 @@
+{% comment %}
+  Section: hero-canvas-slideshow
+  Description: Full-bleed hero slideshow with fade transitions, animated text
+               reveal (fade-up), autoplay, dot pagination, prev/next arrows,
+               and a progress bar. Zero Swiper dependency — pure vanilla JS.
+  Files needed:
+    /sections/hero-canvas-slideshow.liquid  ← this file
+    /assets/hero-canvas-slideshow.css
+    /assets/hero-canvas-slideshow.js
+{% endcomment %}
+
+{{ 'hero-canvas-slideshow.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign autoplay_delay = section.settings.autoplay_delay | times: 1000
+  assign enable_autoplay = section.settings.enable_autoplay
+  assign border_radius   = section.settings.border_radius
+  assign overlay_opacity = section.settings.overlay_opacity
+-%}
+
+<section
+  class="hcs"
+  id="hcs-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  data-autoplay="{{ enable_autoplay }}"
+  data-autoplay-delay="{{ autoplay_delay }}"
+  aria-roledescription="Carousel"
+  aria-label="{{ section.settings.aria_label | default: 'Hero slideshow' | escape }}"
+  style="
+    --hcs-radius: {{ border_radius }}px;
+    --hcs-height-desktop: {{ section.settings.height_desktop }}vh;
+    --hcs-height-mobile: {{ section.settings.height_mobile }}vh;
+  "
+>
+  <div class="hcs__inner">
+
+    {%- comment -%}────── Slides ──────{%- endcomment -%}
+    <div class="hcs__track" aria-live="polite" aria-atomic="true">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign content_x = block.settings.content_position | split: '-' | first
+          assign content_y = block.settings.content_position | split: '-' | last
+          assign text_align = 'center'
+          if content_x == 'left'
+            assign text_align = 'left'
+          elsif content_x == 'right'
+            assign text_align = 'right'
+          endif
+        -%}
+        <div
+          class="hcs__slide{% if forloop.first %} is-active{% endif %}"
+          data-index="{{ forloop.index0 }}"
+          role="group"
+          aria-roledescription="Slide"
+          aria-label="{{ forloop.index }} / {{ section.blocks.size }}"
+          {{ block.shopify_attributes }}
+        >
+          {%- comment -%} Background image {%- endcomment -%}
+          <div class="hcs__bg">
+            {%- if block.settings.image_mobile != blank -%}
+              <picture class="hcs__picture">
+                <source
+                  media="(max-width: 767px)"
+                  srcset="
+                    {{ block.settings.image_mobile | image_url: width: 400 }} 400w,
+                    {{ block.settings.image_mobile | image_url: width: 600 }} 600w,
+                    {{ block.settings.image_mobile | image_url: width: 800 }} 800w,
+                    {{ block.settings.image_mobile | image_url: width: 1000 }} 1000w
+                  "
+                >
+                {%- if block.settings.image != blank -%}
+                  {{ block.settings.image
+                    | image_url: width: 2400
+                    | image_tag:
+                      class: 'hcs__img',
+                      loading: forloop.first | ternary: 'eager', 'lazy',
+                      fetchpriority: forloop.first | ternary: 'high', 'auto',
+                      widths: '600,800,1000,1200,1400,1600,1800,2000,2200,2400',
+                      sizes: 'min(1700px, 100vw)',
+                      alt: block.settings.heading
+                  }}
+                {%- else -%}
+                  {{ 'lifestyle-1' | placeholder_svg_tag: 'hcs__img hcs__img--placeholder' }}
+                {%- endif -%}
+              </picture>
+            {%- elsif block.settings.image != blank -%}
+              {{ block.settings.image
+                | image_url: width: 2400
+                | image_tag:
+                  class: 'hcs__img',
+                  loading: forloop.first | ternary: 'eager', 'lazy',
+                  fetchpriority: forloop.first | ternary: 'high', 'auto',
+                  widths: '600,800,1000,1200,1400,1600,1800,2000,2200,2400',
+                  sizes: 'min(1700px, 100vw)',
+                  alt: block.settings.heading
+              }}
+            {%- else -%}
+              {{ 'lifestyle-1' | placeholder_svg_tag: 'hcs__img hcs__img--placeholder' }}
+            {%- endif -%}
+
+            {%- comment -%} Overlay {%- endcomment -%}
+            <div
+              class="hcs__overlay"
+              style="--hcs-overlay-alpha: {{ overlay_opacity | divided_by: 100.0 }}"
+            ></div>
+          </div>
+
+          {%- comment -%} Text content {%- endcomment -%}
+          <div
+            class="hcs__content hcs__content--x-{{ content_x }} hcs__content--y-{{ content_y }}"
+            style="text-align: {{ text_align }};"
+          >
+            {%- if block.settings.subheading != blank -%}
+              <p class="hcs__subheading" data-motion="fade-up" data-delay="0">
+                {{ block.settings.subheading | escape }}
+              </p>
+            {%- endif -%}
+
+            {%- if block.settings.heading != blank -%}
+              <h2 class="hcs__heading" data-motion="fade-up" data-delay="80">
+                {{ block.settings.heading }}
+              </h2>
+            {%- endif -%}
+
+            {%- if block.settings.button_label != blank -%}
+              <div class="hcs__btn-wrap" data-motion="fade-up" data-delay="160">
+                <a
+                  class="hcs__btn{% if block.settings.button_style == 'secondary' %} hcs__btn--secondary{% endif %}"
+                  href="{{ block.settings.button_url }}"
+                  {% if block.settings.button_new_tab %}target="_blank" rel="noopener"{% endif %}
+                >
+                  <span>{{ block.settings.button_label | escape }}</span>
+                </a>
+              </div>
+            {%- endif -%}
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+
+    {%- comment -%}────── Controls (dots + arrows) ──────{%- endcomment -%}
+    {%- if section.blocks.size > 1 -%}
+      <div class="hcs__controls" aria-label="Slideshow controls">
+
+        {%- comment -%} Prev arrow {%- endcomment -%}
+        <button class="hcs__arrow hcs__arrow--prev" aria-label="Previous slide">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M12.5 16.25L6.25 10L12.5 3.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        {%- comment -%} Dot pagination {%- endcomment -%}
+        <div class="hcs__dots" role="tablist" aria-label="Slides">
+          {%- for block in section.blocks -%}
+            <button
+              class="hcs__dot{% if forloop.first %} is-active{% endif %}"
+              role="tab"
+              aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+              aria-label="Go to slide {{ forloop.index }}"
+              data-index="{{ forloop.index0 }}"
+            >
+              <span class="hcs__dot-progress"></span>
+            </button>
+          {%- endfor -%}
+        </div>
+
+        {%- comment -%} Next arrow {%- endcomment -%}
+        <button class="hcs__arrow hcs__arrow--next" aria-label="Next slide">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+      </div>
+    {%- endif -%}
+
+  </div>{%- comment -%} /.hcs__inner {%- endcomment -%}
+</section>
+
+<script src="{{ 'hero-canvas-slideshow.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Hero Canvas Slideshow",
+  "tag": "section",
+  "class": "section-hero-canvas-slideshow",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "label": "Desktop height (vh)",
+      "min": 30,
+      "max": 100,
+      "step": 5,
+      "default": 75
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "label": "Mobile height (vh)",
+      "min": 40,
+      "max": 100,
+      "step": 5,
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Corner radius (px)",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Image overlay opacity (%)",
+      "min": 0,
+      "max": 80,
+      "step": 5,
+      "default": 30
+    },
+    {
+      "type": "header",
+      "content": "Autoplay"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_autoplay",
+      "label": "Enable autoplay",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "autoplay_delay",
+      "label": "Autoplay delay (seconds)",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Accessibility"
+    },
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Slideshow aria-label",
+      "default": "Slideshow about our brand"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Slide",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Desktop image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image_mobile",
+          "label": "Mobile image (optional)"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading",
+          "default": "Modern Elegance"
+        },
+        {
+          "type": "richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "<p>Spoke Sofa</p>"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Shop collection"
+        },
+        {
+          "type": "url",
+          "id": "button_url",
+          "label": "Button URL"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            { "value": "primary",   "label": "Primary (filled)" },
+            { "value": "secondary", "label": "Secondary (outline)" }
+          ],
+          "default": "primary"
+        },
+        {
+          "type": "checkbox",
+          "id": "button_new_tab",
+          "label": "Open link in new tab",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Content position",
+          "options": [
+            { "value": "left-top",      "label": "Top left" },
+            { "value": "center-top",    "label": "Top centre" },
+            { "value": "right-top",     "label": "Top right" },
+            { "value": "left-middle",   "label": "Middle left" },
+            { "value": "center-middle", "label": "Middle centre" },
+            { "value": "right-middle",  "label": "Middle right" },
+            { "value": "left-bottom",   "label": "Bottom left" },
+            { "value": "center-bottom", "label": "Bottom centre" },
+            { "value": "right-bottom",  "label": "Bottom right" }
+          ],
+          "default": "center-middle"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Canvas Slideshow",
+      "blocks": [
+        {
+          "type": "slide",
+          "settings": {
+            "subheading": "Modern Elegance",
+            "heading": "<p>Spoke Sofa</p>",
+            "button_label": "Shop collection",
+            "content_position": "center-middle"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "subheading": "Contemporary Grace",
+            "heading": "<p>Dining &amp; Kitchen</p>",
+            "button_label": "Shop collection",
+            "content_position": "center-middle"
+          }
+        }
+      ]
+    }
+  ],
+  "max_blocks": 8
+}
+{% endschema %}

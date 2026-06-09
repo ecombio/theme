@@ -1,0 +1,116 @@
+{% comment %}
+  Renders a single product card for the collection grid.
+  Usage: {% render 'product-card', product: product, show_swatches: true %}
+{% endcomment %}
+
+{%- liquid
+  assign ratio        = 1
+  assign show_badge   = true
+  assign selling_fast = product.metafields.foxtheme.selling_fast
+-%}
+
+<div class="product-card" data-product-id="{{ product.id }}">
+
+  <a href="{{ product.url | within: collection }}" class="product-card__image-link" tabindex="-1" aria-hidden="true">
+    <div class="product-card__image-wrap" style="padding-top: {{ 1 | divided_by: ratio | times: 100 }}%">
+
+      {%- if product.featured_media -%}
+        {{
+          product.featured_media
+          | image_url: width: 600
+          | image_tag:
+            loading: 'lazy',
+            widths: '300, 400, 500, 600',
+            class: 'product-card__img',
+            alt: product.featured_media.alt | escape
+        }}
+        {%- if product.media.size > 1 -%}
+          {{
+            product.media[1]
+            | image_url: width: 600
+            | image_tag:
+              loading: 'lazy',
+              widths: '300, 400, 500, 600',
+              class: 'product-card__img product-card__img--hover',
+              alt: product.media[1].alt | escape
+          }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'product-card__img product-card__img--placeholder' }}
+      {%- endif -%}
+
+      {% if show_badge %}
+        {%- if product.tags contains 'badge:new' -%}
+          <span class="product-card__badge product-card__badge--new">{{ 'products.product.badges.new' | t }}</span>
+        {%- elsif product.compare_at_price > product.price -%}
+          <span class="product-card__badge product-card__badge--sale">{{ 'products.product.on_sale' | t }}</span>
+        {%- elsif product.tags contains 'badge:best-choice' -%}
+          <span class="product-card__badge product-card__badge--best">{{ 'products.product.badges.best_choice' | t }}</span>
+        {%- elsif product.tags contains 'badge:coming-soon' -%}
+          <span class="product-card__badge product-card__badge--coming">{{ 'products.product.badges.coming_soon' | t }}</span>
+        {%- endif -%}
+      {% endif %}
+
+      {%- if selling_fast -%}
+        <div class="product-card__selling-fast">
+          {%- for i in (1..3) -%}
+            <span>⚡ {{ 'products.product.selling_fast' | t }}</span>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+    </div>
+  </a>
+
+  <div class="product-card__body">
+    {%- if product.type != blank -%}
+      <p class="product-card__type">{{ product.type }}</p>
+    {%- endif -%}
+
+    <h3 class="product-card__title">
+      <a href="{{ product.url | within: collection }}">{{ product.title }}</a>
+    </h3>
+
+    <div class="product-card__price">
+      {%- if product.compare_at_price > product.price -%}
+        <span class="product-card__price--sale">{{ product.price | money }}</span>
+        <s class="product-card__price--compare">{{ product.compare_at_price | money }}</s>
+      {%- else -%}
+        <span>{{ product.price | money }}</span>
+      {%- endif -%}
+    </div>
+
+    {%- if show_swatches -%}
+      {%- assign color_option = product.options_by_name['Color'] | default: product.options_by_name['Colour'] -%}
+      {%- if color_option -%}
+        <div class="product-card__swatches">
+          {%- for value in color_option.values limit: 6 -%}
+            <span
+              class="product-card__swatch"
+              style="background-color: {{ value | downcase | replace: ' ', '' }};"
+              title="{{ value }}"
+            ></span>
+          {%- endfor -%}
+          {%- if color_option.values.size > 6 -%}
+            <span class="product-card__swatch-more">+{{ color_option.values.size | minus: 6 }}</span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    {%- endif -%}
+  </div>
+
+  {%- if enable_compare -%}
+    <div class="product-card__compare">
+      <label class="product-card__compare-label">
+        <input
+          type="checkbox"
+          class="product-card__compare-input"
+          value="{{ product.id }}"
+          data-compare
+        >
+        {{ 'products.compare.add' | t }}
+      </label>
+    </div>
+  {%- endif -%}
+
+</div>

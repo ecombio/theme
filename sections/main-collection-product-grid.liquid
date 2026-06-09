@@ -1,0 +1,328 @@
+{% comment %}
+  Section: main-collection-product-grid
+  Drop this into sections/ as main-collection-product-grid.liquid
+{% endcomment %}
+
+{{ 'section-collection-product-grid.css' | asset_url | stylesheet_tag }}
+{{ 'facets.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="section-collection-product-grid"
+  id="product-grid"
+  data-section-id="{{ section.id }}"
+>
+
+  {% render 'sort-filter-bar', results: collection %}
+
+  <div class="collection-layout collection-layout--{{ section.settings.desktop_filter_layout }}">
+
+    {%- if section.settings.enable_filtering -%}
+      <aside class="collection-layout__sidebar">
+        {% render 'filter-sidebar', results: collection %}
+      </aside>
+    {%- endif -%}
+
+    <div class="collection-layout__main">
+
+      {%- paginate collection.products by section.settings.products_per_page -%}
+
+        <ul
+  class="product-grid product-grid--{{ section.settings.columns_desktop }}-cols product-grid--{{ section.settings.columns_mobile }}-cols-mobile"
+  id="ProductGrid"
+  role="list"
+>
+
+          {%- for product in collection.products -%}
+
+            {%- comment -%} Image card block at configured position {%- endcomment -%}
+            {% for block in section.blocks %}
+              {%- if block.type == 'image_card' and block.settings.image_position == forloop.index -%}
+                <li class="product-grid__item product-grid__item--image-card" {{ block.shopify_attributes }}>
+                  {% render 'image-card', block: block %}
+                </li>
+              {%- endif -%}
+            {% endfor %}
+
+            <li class="product-grid__item">
+              {% render 'product-card',
+                product: product,
+                show_swatches: section.settings.enable_color_swatches,
+                enable_compare: section.settings.enable_compare
+              %}
+            </li>
+
+          {%- else -%}
+            <li class="product-grid__item product-grid__item--empty">
+              <div class="collection-empty">
+                <p>{{ 'sections.collection_template.empty' | t }}</p>
+                <a href="{{ routes.root_url }}" class="btn">{{ 'general.continue_shopping' | t }}</a>
+              </div>
+            </li>
+          {%- endfor -%}
+
+        </ul>
+
+        {%- if paginate.pages > 1 -%}
+          <div class="pagination-wrap">
+            {% case section.settings.pagination_style %}
+              {% when 'pagination_number' %}
+                {% render 'pagination', paginate: paginate %}
+              {% when 'load_more' %}
+                <button class="btn btn--load-more" id="LoadMore" data-url="{{ paginate.next.url }}">
+                  {{ 'general.pagination.load_more' | t }}
+                </button>
+              {% when 'infinite' %}
+                <div id="InfiniteScroll" data-url="{{ paginate.next.url }}"></div>
+            {% endcase %}
+          </div>
+        {%- endif -%}
+
+      {%- endpaginate -%}
+
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Product grid",
+  "tag": "section",
+  "class": "section-main-collection",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 8,
+      "max": 36,
+      "step": 4,
+      "label": "Products per page",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "label": "Number of columns on desktop",
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Number of columns on mobile",
+      "options": [
+        { "value": "1", "label": "1 column" },
+        { "value": "2", "label": "2 columns" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "select",
+      "id": "pagination_style",
+      "label": "Pagination",
+      "options": [
+        { "value": "pagination_number", "label": "Pagination by number" },
+        { "value": "load_more",         "label": "Load more button" },
+        { "value": "infinite",          "label": "Infinite scroll" }
+      ],
+      "default": "pagination_number"
+    },
+    {
+      "type": "header",
+      "content": "Filtering and sorting"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "label": "Enable filtering",
+      "info": "Customize filters with the Search & Discovery app.",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_color_swatches",
+      "label": "Enable color swatches",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "desktop_filter_layout",
+      "label": "Desktop filter layout",
+      "options": [
+        { "value": "vertical", "label": "Vertical" },
+        { "value": "drawer",   "label": "Drawer" }
+      ],
+      "default": "vertical"
+    },
+    {
+      "type": "text",
+      "id": "expand_filter_groups",
+      "label": "Expand filter groups",
+      "info": "Comma-separated filter group names to expand by default. E.g. Price, Color, Size",
+      "default": "Availability, Price, Color"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "label": "Enable sorting",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_layout_switching",
+      "label": "Enable layout switching",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_compare",
+      "label": "Enable compare",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 60
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_divider",
+      "label": "Show divider",
+      "default": false
+    }
+  ],
+  "blocks": [
+    {
+      "type": "image_card",
+      "name": "Image card",
+      "settings": [
+        {
+          "type": "range",
+          "id": "image_position",
+          "label": "Image position",
+          "min": 1,
+          "max": 36,
+          "step": 1,
+          "default": 1,
+          "info": "Position must be less than or equal to products per page."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "options": [
+            { "value": "adapt",   "label": "Adapt to image" },
+            { "value": "square",  "label": "Square (1:1)" },
+            { "value": "portrait","label": "Portrait (2:3)" }
+          ],
+          "default": "adapt"
+        },
+        {
+          "type": "range",
+          "id": "overlay_opacity",
+          "label": "Image overlay opacity",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "unit": "%",
+          "default": 0
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Content position",
+          "options": [
+            { "value": "top_left",      "label": "Top left" },
+            { "value": "top_center",    "label": "Top center" },
+            { "value": "top_right",     "label": "Top right" },
+            { "value": "bottom_left",   "label": "Bottom left" },
+            { "value": "bottom_center", "label": "Bottom center" },
+            { "value": "bottom_right",  "label": "Bottom right (default)" }
+          ],
+          "default": "bottom_right"
+        },
+        {
+          "type": "select",
+          "id": "content_alignment",
+          "label": "Content alignment",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right" }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "url",
+          "id": "card_link",
+          "label": "Card link"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Shop Now"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection product grid"
+    }
+  ]
+}
+{% endschema %}

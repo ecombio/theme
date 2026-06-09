@@ -1,0 +1,149 @@
+/* ==========================================================================
+   announcement-bar.css
+   Dark-blue announcement bar with optional slide rotation + countdown.
+   ========================================================================== */
+
+.announcement-bar {
+  position: relative;
+  background: var(--h-brand, #1e2a6e);
+  color: #ffffff;
+  text-align: center;
+  overflow: hidden;
+  font-family: var(--h-font, system-ui, sans-serif);
+}
+
+/* ── Slides ──────────────────────────────────────────────────────────── */
+.announcement-bar__track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 40px; /* space for arrows */
+}
+
+.announcement-bar__slide {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  animation: ab-fade 0.35s ease;
+}
+
+.announcement-bar__slide.is-active {
+  display: flex;
+}
+
+@keyframes ab-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* Message */
+.announcement-bar__message {
+  margin: 0;
+  color: inherit;
+}
+
+.announcement-bar__message--link {
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid rgba(255,255,255,0.4);
+  transition: border-color 0.15s;
+}
+.announcement-bar__message--link:hover {
+  border-color: #fff;
+}
+
+/* ── Countdown ───────────────────────────────────────────────────────── */
+.announcement-bar__countdown-label {
+  /* inherits slide styles */
+}
+
+.announcement-bar__countdown {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.countdown__unit {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.countdown__unit em {
+  font-style: normal;
+  font-size: 0.625rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.countdown__sep {
+  opacity: 0.6;
+  margin-inline: 2px;
+  font-weight: 700;
+}
+
+/* CTA button inside countdown */
+.announcement-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 20px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.announcement-bar__btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: #fff;
+}
+
+/* ── Prev / Next arrows ──────────────────────────────────────────────── */
+.announcement-bar__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+  z-index: 2;
+}
+.announcement-bar__arrow:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+.announcement-bar__arrow--prev { left: 8px;  }
+.announcement-bar__arrow--next { right: 8px; }
+
+/* ── Mobile ──────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .announcement-bar__track {
+    padding-inline: 36px;
+    min-height: 34px;
+  }
+
+  .announcement-bar__slide {
+    font-size: 0.75rem;
+  }
+}

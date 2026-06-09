@@ -1,0 +1,91 @@
+{% comment %}
+  Header Mega Menu - Flexible with Products
+  Left: Text columns | Right: Product grid (optional)
+{% endcomment %}
+
+{% assign mega_menu = menu %}
+{% assign show_products = show_products | default: false %}
+
+{% if mega_menu and mega_menu.links.size > 0 %}
+  <div class="mega-menu-items {% if show_products %}mega-menu-items--with-products{% endif %}">
+
+    <!-- Left Side: Text Columns -->
+<div class="mega-menu__text-columns" style="--mega-col-count: {{ mega_menu.links.size }};">
+  
+      {%- for column in mega_menu.links -%}
+        <div class="mega-menu-column">
+
+          <a href="{{ column.url }}" class="mega-menu-heading mega-menu__link--top">
+            {{ column.title }}
+          </a>
+
+          {%- for item in column.links -%}
+
+            {%- if item.links.size > 0 -%}
+              <div class="mega-menu-subheading">{{ item.title }}</div>
+              <ul class="mega-menu-list">
+                {%- for link in item.links -%}
+                  <li>
+                    <a href="{{ link.url }}" class="mega-menu-link">{{ link.title }}</a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            {%- else -%}
+              <a href="{{ item.url }}" class="mega-menu-link">{{ item.title }}</a>
+            {%- endif -%}
+
+          {%- endfor -%}
+
+        </div>
+      {%- endfor -%}
+
+    </div>
+
+    <!-- Right Side: Products (when enabled) -->
+    {%- if show_products -%}
+      <div class="mega-menu__products">
+
+        <div class="mega-menu__product-header">
+          <h2 class="mega-menu-heading">Trending Products</h2>
+        </div>
+
+        <div class="mega-menu__product-grid">
+          {%- comment %} 
+            Replace this loop with a collection or featured products as needed
+          {% endcomment -%}
+
+          {%- for product in collections.all.products limit: 6 -%}
+            <a href="{{ product.url }}" class="mega-menu__product-card">
+
+              <div class="mega-menu__product-image">
+                <img src="{{ product.featured_image | image_url: width: 400 }}" 
+                     alt="{{ product.title }}" loading="lazy">
+
+                {%- if product.compare_at_price > product.price -%}
+                  <span class="mega-menu__badge">Sale</span>
+                {%- endif -%}
+              </div>
+
+              <div class="mega-menu__product-info">
+                <h3 class="mega-menu__product-title">{{ product.title }}</h3>
+
+                <div class="mega-menu__product-price">
+                  {%- if product.compare_at_price > product.price -%}
+                    <span class="price--sale">{{ product.price | money }}</span>
+                    <s class="price--compare">{{ product.compare_at_price | money }}</s>
+                  {%- else -%}
+                    {{ product.price | money }}
+                  {%- endif -%}
+                </div>
+              </div>
+
+            </a>
+          {%- endfor -%}
+
+        </div>
+
+      </div>
+    {%- endif -%}
+
+  </div>
+{% endif %}

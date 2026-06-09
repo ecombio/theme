@@ -1,0 +1,26 @@
+{% comment %}
+  Snippet: header-logo.liquid
+  Renders the site logo (image or text fallback).
+
+  Usage:
+    render 'header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width
+{% endcomment %}
+
+<div class="ecombio-header__logo">
+  <a href="{{ routes.root_url }}" class="ecombio-header__logo-link" aria-label="{{ shop.name }}">
+    {%- if logo != blank -%}
+      {{
+        logo
+        | image_url: width: logo_width
+        | image_tag:
+          loading: 'eager',
+          fetchpriority: 'high',
+          width: logo_width,
+          alt: shop.name,
+          class: 'ecombio-header__logo-img'
+      }}
+    {%- else -%}
+      <span class="ecombio-header__logo-text">{{ shop.name }}</span>
+    {%- endif -%}
+  </a>
+</div>

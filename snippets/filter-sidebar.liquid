@@ -1,0 +1,110 @@
+{% comment %}
+  Renders the vertical sidebar filter panel.
+  Usage: {% render 'filter-sidebar', results: collection, filter_type: 'vertical' %}
+{% endcomment %}
+
+<div class="facets-sidebar" id="FilterSidebar">
+  {% for filter in results.filters %}
+    <details class="facets__item" id="Details-{{ forloop.index }}" open>
+      <summary class="facets__summary">
+        <span class="facets__summary-label">{{ filter.label }}</span>
+        <span class="facets__summary-icon">
+          {% render 'icon-minus' %}
+          {% render 'icon-plus' %}
+        </span>
+      </summary>
+
+      <div class="facets__body">
+
+        {% case filter.type %}
+
+        {% when 'boolean', 'list' %}
+          <ul class="facets__list">
+            {% for value in filter.values %}
+              <li class="facets__item-value">
+                <label class="facets__label {% if value.count == 0 and value.active == false %}facets__label--disabled{% endif %}">
+                  <input
+                    type="checkbox"
+                    name="{{ value.param_name }}"
+                    value="{{ value.value }}"
+                    {% if value.active %}checked{% endif %}
+                    {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                    class="facets__checkbox"
+                  >
+                  {% if filter.label == 'Color' or filter.label == 'Colour' %}
+                    <span
+                      class="facets__color-swatch"
+                      style="background-color: {{ value.value | downcase | replace: ' ', '' }};"
+                      aria-hidden="true"
+                    ></span>
+                  {% endif %}
+                  <span class="facets__value-label">{{ value.label }}</span>
+                  <span class="facets__count">{{ value.count }}</span>
+                </label>
+              </li>
+            {% endfor %}
+          </ul>
+
+        {% when 'price_range' %}
+          <div class="facets__price-range">
+            <p class="facets__price-hint">
+              {{- 'products.facets.max_price' | t: price: filter.range_max | money -}}
+            </p>
+            <div class="facets__price-slider">
+              <input
+                class="facets__range-input"
+                type="range"
+                name="{{ filter.min_value.param_name }}"
+                id="Filter-{{ filter.label | escape }}-GTE"
+                min="0"
+                max="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                value="{{ filter.min_value.value | money_without_currency | replace: ',', '' | default: 0 }}"
+                step="1"
+              >
+              <input
+                class="facets__range-input"
+                type="range"
+                name="{{ filter.max_value.param_name }}"
+                id="Filter-{{ filter.label | escape }}-LTE"
+                min="0"
+                max="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                value="{{ filter.max_value.value | money_without_currency | replace: ',', '' | default: filter.range_max | money_without_currency | replace: ',', '' }}"
+                step="1"
+              >
+            </div>
+            <div class="facets__price-inputs">
+              <div class="facets__price-input-wrap">
+                <span class="facets__currency">{{ cart.currency.symbol }}</span>
+                <input
+                  class="facets__price-input"
+                  type="number"
+                  name="{{ filter.min_value.param_name }}"
+                  id="Filter-{{ filter.label | escape }}-GTE-input"
+                  min="0"
+                  max="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                  placeholder="0"
+                  value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"
+                >
+              </div>
+              <div class="facets__price-input-wrap">
+                <span class="facets__currency">{{ cart.currency.symbol }}</span>
+                <input
+                  class="facets__price-input"
+                  type="number"
+                  name="{{ filter.max_value.param_name }}"
+                  id="Filter-{{ filter.label | escape }}-LTE-input"
+                  min="0"
+                  max="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                  placeholder="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                  value="{{ filter.max_value.value | money_without_currency | replace: ',', '' }}"
+                >
+              </div>
+            </div>
+          </div>
+
+        {% endcase %}
+
+      </div>
+    </details>
+  {% endfor %}
+</div>

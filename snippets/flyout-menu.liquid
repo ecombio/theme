@@ -1,0 +1,71 @@
+{% comment %}
+  Flyout Menu Snippet
+  Usage: {% render 'flyout-menu', menu: linklists['flyout-menu'] %}
+  Save as: snippets/flyout-menu.liquid
+
+  Structure:
+  - Left sidebar: top-level links (e.g. Living Room, Dining & Kitchen)
+  - Hover a sidebar item → reveals its child links in the right panel
+  - Each child can have sub-links rendered as a labelled group
+{% endcomment %}
+
+{%- assign flyout_menu = menu | default: linklists['flyout-menu'] -%}
+
+{%- if flyout_menu and flyout_menu.links.size > 0 -%}
+  <div class="flyout-menu">
+
+    {%- comment %} Left sidebar: top-level category titles {% endcomment -%}
+    <div class="flyout-menu__sidebar">
+      {%- for column in flyout_menu.links -%}
+        <div
+          class="flyout-menu__sidebar-item{% if forloop.first %} is-active{% endif %}"
+          data-flyout-index="{{ forloop.index0 }}"
+        >
+          <a href="{{ column.url }}" class="flyout-menu__sidebar-link">
+            {{ column.title }}
+          </a>
+          <svg class="flyout-menu__sidebar-caret" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      {%- endfor -%}
+    </div>
+
+    {%- comment %} Right panels: child links revealed on hover {% endcomment -%}
+    <div class="flyout-menu__panels">
+      {%- for column in flyout_menu.links -%}
+        <div
+          class="flyout-menu__panel{% if forloop.first %} is-active{% endif %}"
+          data-flyout-panel="{{ forloop.index0 }}"
+        >
+          {%- if column.links.size > 0 -%}
+            <ul class="flyout-menu__panel-list">
+              {%- for item in column.links -%}
+                <li class="flyout-menu__panel-item">
+
+                  {%- if item.links.size > 0 -%}
+                    {%- comment %} Group with sub-links {% endcomment -%}
+                    <span class="flyout-menu__group-title">{{ item.title }}</span>
+                    <ul class="flyout-menu__group-list">
+                      {%- for child in item.links -%}
+                        <li>
+                          <a href="{{ child.url }}" class="flyout-menu__link">{{ child.title }}</a>
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  {%- else -%}
+                    <a href="{{ item.url }}" class="flyout-menu__link flyout-menu__link--direct">{{ item.title }}</a>
+                  {%- endif -%}
+
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- else -%}
+            <a href="{{ column.url }}" class="flyout-menu__link flyout-menu__link--solo">{{ column.title }}</a>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </div>
+
+  </div>
+{%- endif -%}

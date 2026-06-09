@@ -1,0 +1,22 @@
+{% comment %}
+  Breadcrumbs Snippet
+  Usage: {% render 'breadcrumbs' %}
+{% endcomment %}
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="{{ routes.root_url }}">Home</a>
+
+  {% if collection %}
+    <span class="separator">/</span>
+    <a href="{{ collection.url }}">{{ collection.title }}</a>
+  {% elsif product and product.collections.size > 0 %}
+    <span class="separator">/</span>
+    {% assign col = product.collections.first %}
+    <a href="{{ col.url }}">{{ col.title }}</a>
+  {% endif %}
+
+  {% if product %}
+    <span class="separator">/</span>
+    <span class="current">{{ product.title }}</span>
+  {% endif %}
+</nav>

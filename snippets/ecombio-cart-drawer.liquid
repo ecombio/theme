@@ -1,0 +1,296 @@
+{% comment %}
+  ECOMBIO Cart Drawer
+  File: snippets/ecombio-cart-drawer.liquid
+
+  Parameters (passed from sections/header.liquid):
+    enable_upsells            {Boolean}  Show upsell products block
+    enable_free_shipping_bar  {Boolean}  Show shipping progress bar
+    free_shipping_threshold   {Number}   Threshold in dollars (e.g. 75)
+    enable_upsell_page        {Boolean}  Route checkout through /pages/cart-upsell
+
+  Rendered once at the Header Section level. Do not render from:
+    • ecombio-header-icons.liquid
+    • ecombio-header-icon-cart.liquid
+{% endcomment %}
+
+{%- liquid
+  assign free_threshold_cents = free_shipping_threshold | times: 100
+  assign remaining_cents      = free_threshold_cents | minus: cart.total_price
+  assign remaining_dollars    = remaining_cents | money
+  assign progress_pct         = cart.total_price | times: 100 | divided_by: free_threshold_cents
+  if progress_pct > 100
+    assign progress_pct = 100
+  endif
+  assign checkout_url = '/pages/cart-upsell'
+  unless enable_upsell_page
+    assign checkout_url = routes.checkout_url
+  endunless
+-%}
+
+{%- comment -%}
+  ── DRAWER SHELL ──
+  role="dialog" + aria-modal="true" enables focus-trap behaviour in JS.
+  aria-hidden toggled by ecombio-cart.js.
+{%- endcomment -%}
+<div
+  id="ecombio-cart-drawer"
+  class="ecombio-cart-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Shopping cart"
+  aria-hidden="true"
+  data-ecombio-cart-drawer
+  data-free-shipping-threshold="{{ free_threshold_cents }}"
+  data-checkout-url="{{ checkout_url }}"
+  data-enable-upsells="{{ enable_upsells }}"
+>
+
+  {%- comment -%} ── OVERLAY ── {%- endcomment -%}
+  <div class="ecombio-cart-drawer__overlay" data-ecombio-cart-overlay aria-hidden="true"></div>
+
+  {%- comment -%} ── PANEL ── {%- endcomment -%}
+  <div class="ecombio-cart-drawer__panel" tabindex="-1">
+
+    {%- comment -%} ── HEADER ── {%- endcomment -%}
+    <div class="ecombio-cart-drawer__header">
+      <h2 class="ecombio-cart-drawer__title">
+        Your Cart
+        <span class="ecombio-cart-drawer__header-count" data-ecombio-cart-count-label>
+          ({{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }})
+        </span>
+      </h2>
+      <button
+        type="button"
+        class="ecombio-cart-drawer__close"
+        aria-label="Close cart"
+        data-ecombio-cart-close
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    {%- comment -%} ── FREE SHIPPING BAR ── {%- endcomment -%}
+    {%- if enable_free_shipping_bar -%}
+      <div class="ecombio-cart-progress" data-ecombio-cart-progress>
+        {%- if cart.total_price >= free_threshold_cents -%}
+          <p class="ecombio-cart-progress__message ecombio-cart-progress__message--achieved">
+            🎉 You've unlocked free shipping!
+          </p>
+        {%- else -%}
+          <p class="ecombio-cart-progress__message" data-ecombio-progress-message>
+            You're <strong>{{ remaining_dollars }}</strong> away from free shipping
+          </p>
+        {%- endif -%}
+        <div class="ecombio-cart-progress__track" role="progressbar"
+             aria-valuenow="{{ progress_pct }}" aria-valuemin="0" aria-valuemax="100"
+             aria-label="Free shipping progress">
+          <div class="ecombio-cart-progress__fill" data-ecombio-progress-fill
+               style="width: {{ progress_pct }}%"></div>
+        </div>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} ── SCROLLABLE BODY ── {%- endcomment -%}
+    <div class="ecombio-cart-drawer__body" data-ecombio-cart-body>
+
+      {%- comment -%} ── CART ITEMS ── {%- endcomment -%}
+      <div class="ecombio-cart-items" data-ecombio-cart-items>
+        {%- if cart.item_count > 0 -%}
+          {%- for item in cart.items -%}
+            <div class="ecombio-cart-item" data-ecombio-cart-item data-line="{{ forloop.index }}" data-variant-id="{{ item.variant_id }}">
+
+              {%- comment -%} Product image {%- endcomment -%}
+              <a href="{{ item.url }}" class="ecombio-cart-item__img-wrap" tabindex="-1" aria-hidden="true">
+                {%- if item.image -%}
+                  <img
+                    class="ecombio-cart-item__img"
+                    src="{{ item.image | image_url: width: 160 }}"
+                    alt="{{ item.image.alt | escape }}"
+                    width="80"
+                    height="80"
+                    loading="lazy"
+                  >
+                {%- else -%}
+                  <div class="ecombio-cart-item__img-placeholder">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                    </svg>
+                  </div>
+                {%- endif -%}
+              </a>
+
+              {%- comment -%} Item details {%- endcomment -%}
+              <div class="ecombio-cart-item__details">
+                <a href="{{ item.url }}" class="ecombio-cart-item__title">{{ item.product.title }}</a>
+
+                {%- unless item.variant.title == 'Default Title' -%}
+                  <p class="ecombio-cart-item__variant">{{ item.variant.title }}</p>
+                {%- endunless -%}
+
+                {%- if item.selling_plan_allocation -%}
+                  <p class="ecombio-cart-item__selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
+                {%- endif -%}
+
+                <div class="ecombio-cart-item__price-row">
+                  <span class="ecombio-cart-item__price">
+                    {%- if item.original_line_price != item.final_line_price -%}
+                      <span class="ecombio-cart-item__price--compare">{{ item.original_line_price | money }}</span>
+                    {%- endif -%}
+                    {{ item.final_line_price | money }}
+                  </span>
+
+                  {%- for discount in item.line_level_discount_allocations -%}
+                    <span class="ecombio-cart-item__discount-badge">
+                      {{- discount.discount_application.title -}}
+                    </span>
+                  {%- endfor -%}
+                </div>
+
+                {%- comment -%} Quantity controls + remove {%- endcomment -%}
+                <div class="ecombio-cart-item__controls">
+                  <div class="ecombio-cart-qty" role="group" aria-label="Quantity for {{ item.product.title | escape }}">
+                    <button type="button"
+                            class="ecombio-cart-qty__btn"
+                            aria-label="Decrease quantity"
+                            data-ecombio-qty-dec
+                            data-line="{{ forloop.index }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <input
+                      type="number"
+                      class="ecombio-cart-qty__input"
+                      value="{{ item.quantity }}"
+                      min="0"
+                      aria-label="Quantity"
+                      data-ecombio-qty-input
+                      data-line="{{ forloop.index }}"
+                    >
+                    <button type="button"
+                            class="ecombio-cart-qty__btn"
+                            aria-label="Increase quantity"
+                            data-ecombio-qty-inc
+                            data-line="{{ forloop.index }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                  </div>
+
+                  <button type="button"
+                          class="ecombio-cart-item__remove"
+                          aria-label="Remove {{ item.product.title | escape }}"
+                          data-ecombio-remove
+                          data-line="{{ forloop.index }}">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          {%- endfor -%}
+        {%- else -%}
+          <div class="ecombio-cart-empty" data-ecombio-cart-empty>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <p>Your cart is empty.</p>
+            <button type="button" class="ecombio-cart-btn ecombio-cart-btn--secondary" data-ecombio-cart-close>
+              Continue Shopping
+            </button>
+          </div>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%} ── UPSELL AREA ── {%- endcomment -%}
+      {%- if enable_upsells and cart.item_count > 0 -%}
+        <div class="ecombio-cart-upsell" data-ecombio-cart-upsell>
+          <h3 class="ecombio-cart-upsell__heading">Frequently Bought Together</h3>
+          <div class="ecombio-cart-upsell__track" data-ecombio-upsell-track>
+            {%- comment -%}
+              Populated dynamically via ecombio-cart-upsells.js
+              using Shopify product recommendations API.
+              Placeholder maintains layout during load.
+            {%- endcomment -%}
+            <div class="ecombio-cart-upsell__loading" aria-live="polite" aria-label="Loading recommendations">
+              <span class="ecombio-cart-upsell__skeleton"></span>
+              <span class="ecombio-cart-upsell__skeleton"></span>
+              <span class="ecombio-cart-upsell__skeleton"></span>
+            </div>
+          </div>
+          {%- comment -%} AI placeholder — wired up when feature ships {%- endcomment -%}
+          <div class="ecombio-cart-upsell__ai-placeholder" data-ecombio-ai-upsell aria-hidden="true" hidden></div>
+        </div>
+      {%- endif -%}
+
+    </div>{%- comment -%}/.ecombio-cart-drawer__body{%- endcomment -%}
+
+    {%- comment -%} ── SUMMARY + FOOTER ── {%- endcomment -%}
+    {%- if cart.item_count > 0 -%}
+      <div class="ecombio-cart-drawer__footer" data-ecombio-cart-footer>
+
+        <div class="ecombio-cart-summary">
+          {%- comment -%} Discount savings line {%- endcomment -%}
+          {%- if cart.cart_level_discount_applications.size > 0 -%}
+            {%- for discount in cart.cart_level_discount_applications -%}
+              <div class="ecombio-cart-summary__row ecombio-cart-summary__row--discount">
+                <span>{{ discount.title }}</span>
+                <span>-{{ discount.total_allocated_amount | money }}</span>
+              </div>
+            {%- endfor -%}
+          {%- endif -%}
+
+          {%- comment -%} Savings callout {%- endcomment -%}
+          {%- assign total_savings = 0 -%}
+          {%- for item in cart.items -%}
+            {%- assign item_savings = item.original_line_price | minus: item.final_line_price -%}
+            {%- assign total_savings = total_savings | plus: item_savings -%}
+          {%- endfor -%}
+          {%- if total_savings > 0 -%}
+            <div class="ecombio-cart-summary__row ecombio-cart-summary__savings" data-ecombio-savings>
+              <span>You save</span>
+              <span>{{ total_savings | money }}</span>
+            </div>
+          {%- endif -%}
+
+          <div class="ecombio-cart-summary__row ecombio-cart-summary__row--subtotal" data-ecombio-subtotal-row>
+            <span>Subtotal</span>
+            <span data-ecombio-subtotal>{{ cart.total_price | money }}</span>
+          </div>
+
+          <p class="ecombio-cart-summary__shipping-note">
+            {%- if cart.total_price >= free_threshold_cents -%}
+              ✓ Free shipping applied
+            {%- else -%}
+              Shipping &amp; taxes calculated at checkout
+            {%- endif -%}
+          </p>
+        </div>
+
+        <div class="ecombio-cart-drawer__cta">
+          <a
+            href="{{ checkout_url }}"
+            class="ecombio-cart-btn ecombio-cart-btn--primary ecombio-cart-checkout"
+            data-ecombio-checkout
+          >
+            {%- if enable_upsell_page -%}
+              Continue to Checkout →
+            {%- else -%}
+              Checkout
+            {%- endif -%}
+          </a>
+          <button type="button"
+                  class="ecombio-cart-btn ecombio-cart-btn--secondary"
+                  data-ecombio-cart-close>
+            Continue Shopping
+          </button>
+        </div>
+
+      </div>
+    {%- endif -%}
+
+  </div>{%- comment -%}/.ecombio-cart-drawer__panel{%- endcomment -%}
+</div>{%- comment -%}/#ecombio-cart-drawer{%- endcomment -%}

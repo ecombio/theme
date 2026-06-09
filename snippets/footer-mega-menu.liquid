@@ -1,0 +1,138 @@
+{% comment %}
+  FOOTER MEGA MENU
+  - Accepts menu from section settings (via render parameter)
+  - Supports both 2-level and 3-level navigation
+  - Uses auto-fit columns (no hard-coded column count)
+  - Long links (e.g. policy names) are allowed to wrap
+{% endcomment %}
+
+{% assign footer_menu = menu %}
+
+{% if footer_menu and footer_menu.links.size > 0 %}
+  <div class="footer-mega-menu">
+    <div class="footer-mega-menu__inner">
+      <div class="footer-mega-menu__columns">
+
+        {% for column in footer_menu.links %}
+          {% if column.links.size > 0 %}
+            <div class="footer-mega-menu__column">
+              <!-- Level 1: Column Title -->
+              <h3 class="footer-mega-menu__heading">{{ column.title }}</h3>
+
+              {% for section in column.links %}
+                {% if section.links.size > 0 %}
+                  <!-- Level 2: Section Title + Level 3 Links -->
+                  <div class="footer-mega-menu__section-title">{{ section.title }}</div>
+
+                  {% for link in section.links %}
+                    <a href="{{ link.url }}" class="footer-mega-menu__link">{{ link.title }}</a>
+                  {% endfor %}
+
+                {% else %}
+                  <!-- Fallback for 2-level menus -->
+                  <a href="{{ section.url }}" class="footer-mega-menu__link">{{ section.title }}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<style>
+  /* ============================================
+     FOOTER MEGA MENU
+     ============================================ */
+
+  .footer-mega-menu {
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .footer-mega-menu__inner {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .footer-mega-menu__columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem 2.5rem;
+  }
+
+  /* Column heading */
+  .footer-mega-menu__heading {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #111827;
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  /* Section title (Level 2) */
+  .footer-mega-menu__section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    margin: 14px 0 6px;
+  }
+
+  /* Links */
+  .footer-mega-menu__link {
+    display: inline-block;
+    padding: 4px 0;
+    color: #374151;
+    font-size: 13.5px;
+    line-height: 1.4;
+    text-decoration: none;
+    position: relative;
+    transition: color 0.12s ease;
+  }
+
+  .footer-mega-menu__link::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: #c4301c;
+    transition: width 0.18s ease;
+  }
+
+  .footer-mega-menu__link:hover {
+    color: #c4301c;
+  }
+
+  .footer-mega-menu__link:hover::after {
+    width: 100%;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .footer-mega-menu__inner {
+      padding: 0 20px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .footer-mega-menu__columns {
+      gap: 1.5rem 2rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .footer-mega-menu__link,
+    .footer-mega-menu__link::after {
+      transition: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,56 @@
+{%- liquid
+  assign has_links = false
+  if section.settings.show_privacy and section.settings.url_privacy != blank
+    assign has_links = true
+  endif
+  if section.settings.show_terms and section.settings.url_terms != blank
+    assign has_links = true
+  endif
+  if section.settings.show_cookies and section.settings.url_cookies != blank
+    assign has_links = true
+  endif
+  if section.settings.show_accessibility and section.settings.url_accessibility != blank
+    assign has_links = true
+  endif
+-%}
+
+{%- if has_links -%}
+  <ul class="fbb__legal-list" role="list">
+
+    {%- if section.settings.show_privacy and section.settings.url_privacy != blank -%}
+      <li class="fbb__legal-item">
+        <a class="fbb__legal-link" href="{{ section.settings.url_privacy }}">
+          {{- 'footer.legal.privacy' | t | default: 'Privacy Policy' -}}
+        </a>
+      </li>
+    {%- endif -%}
+
+    {%- if section.settings.show_terms and section.settings.url_terms != blank -%}
+      <li class="fbb__legal-item fbb__legal-item--sep" aria-hidden="true"></li>
+      <li class="fbb__legal-item">
+        <a class="fbb__legal-link" href="{{ section.settings.url_terms }}">
+          {{- 'footer.legal.terms' | t | default: 'Terms of Service' -}}
+        </a>
+      </li>
+    {%- endif -%}
+
+    {%- if section.settings.show_cookies and section.settings.url_cookies != blank -%}
+      <li class="fbb__legal-item fbb__legal-item--sep" aria-hidden="true"></li>
+      <li class="fbb__legal-item">
+        <a class="fbb__legal-link" href="{{ section.settings.url_cookies }}">
+          {{- 'footer.legal.cookies' | t | default: 'Cookie Policy' -}}
+        </a>
+      </li>
+    {%- endif -%}
+
+    {%- if section.settings.show_accessibility and section.settings.url_accessibility != blank -%}
+      <li class="fbb__legal-item fbb__legal-item--sep" aria-hidden="true"></li>
+      <li class="fbb__legal-item">
+        <a class="fbb__legal-link" href="{{ section.settings.url_accessibility }}">
+          {{- 'footer.legal.accessibility' | t | default: 'Accessibility' -}}
+        </a>
+      </li>
+    {%- endif -%}
+
+  </ul>
+{%- endif -%}

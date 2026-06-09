@@ -1,0 +1,45 @@
+{% comment %}
+  Single Menu - Supports normal links + special highlighted links (e.g. On Sale with stars)
+{% endcomment %}
+
+{% assign single_menu = menu %}
+
+{% if single_menu and single_menu.links.size > 0 %}
+  <ul class="single-menu-items">
+
+    {%- for link in single_menu.links -%}
+
+      {%- comment %} Check if this link should be highlighted (you can customize this condition) {% endcomment -%}
+      {%- assign is_highlight = false -%}
+      {%- if link.title contains 'Sale' or link.title contains 'On Sale' -%}
+        {%- assign is_highlight = true -%}
+      {%- endif -%}
+
+      <li class="single-menu-item {% if is_highlight %}single-menu-item--highlight{% endif %}"
+          {% if is_highlight %}style="--hl-link-color: #c4301c;"{% endif %}>
+
+        <a href="{{ link.url }}" 
+           class="single-menu-link {% if is_highlight %}highlight-link highlight-link--star-twinkle{% endif %}">
+
+          <span class="reversed-link">{{ link.title }}</span>
+
+          {%- if is_highlight -%}
+            <!-- Floating Twinkling Stars -->
+            <svg class="star star-1" width="12" height="12" viewBox="0 0 12 12">
+              <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"></path>
+            </svg>
+            <svg class="star star-2" width="12" height="12" viewBox="0 0 12 12">
+              <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"></path>
+            </svg>
+            <svg class="star star-3" width="12" height="12" viewBox="0 0 12 12">
+              <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"></path>
+            </svg>
+          {%- endif -%}
+
+        </a>
+      </li>
+
+    {%- endfor -%}
+
+  </ul>
+{% endif %}

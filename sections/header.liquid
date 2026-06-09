@@ -1,76 +1,204 @@
-<header>
-  <h2 class="header__title">
-    {{ shop.name | link_to: routes.root_url }}
-  </h2>
+{% comment %}
+  ECOMBIO Header Section
+  File: sections/header.liquid
+  Responsive: mobile / tablet / desktop
 
-  <div class="header__menu">
-    {% for link in section.settings.menu.links %}
-      {{ link.title | link_to: link.url }}
-    {% endfor %}
+  Snippets used:
+    - snippets/ecombio-header-logo.liquid
+    - snippets/ecombio-header-icons.liquid
+        - snippets/ecombio-header-icon-store.liquid
+        - snippets/ecombio-header-icon-account.liquid
+        - snippets/ecombio-header-icon-cart.liquid
+    - snippets/ecombio-search-form.liquid
+    - snippets/ecombio-mobile-nav.liquid
+    - snippets/ecombio-cart-drawer.liquid  ← NEW: Cart Drawer owned by Header Section
+{% endcomment %}
+
+{%- assign show_category   = section.settings.show_category_filter -%}
+{%- assign header_style    = section.settings.header_style | default: 'hyper' -%}
+{%- assign enable_drawer   = section.settings.enable_cart_drawer | default: true -%}
+{%- assign enable_upsells  = section.settings.enable_upsells | default: true -%}
+{%- assign enable_bar      = section.settings.enable_free_shipping_bar | default: true -%}
+{%- assign free_ship_min   = section.settings.free_shipping_threshold | default: 75 -%}
+{%- assign upsell_page     = section.settings.enable_upsell_page | default: true -%}
+
+<header class="ecombio-header ecombio-header--{{ header_style }}" id="ecombio-header">
+
+  {%- comment -%} ── TOP ROW ── Logo · Search · Icons {%- endcomment -%}
+  <div class="ecombio-header__bar">
+    <div class="ecombio-header__inner">
+
+      {%- comment -%} Hamburger (mobile + tablet only) {%- endcomment -%}
+      <button class="ecombio-header__hamburger" id="ecombio-nav-toggle"
+              aria-label="Open navigation" aria-expanded="false" aria-controls="ecombio-mobile-nav">
+        <span></span><span></span><span></span>
+      </button>
+
+      {%- render 'ecombio-header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width -%}
+
+      {%- comment -%} ── SEARCH (inline on desktop) ── {%- endcomment -%}
+      <div class="ecombio-header__search ecombio-header__search--inline">
+        {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'desktop' -%}
+      </div>
+
+      {%- render 'ecombio-header-icons' -%}
+
+    </div>{%- comment -%}/.ecombio-header__inner{%- endcomment -%}
+  </div>{%- comment -%}/.ecombio-header__bar{%- endcomment -%}
+
+  {%- comment -%} ── SEARCH ROW (tablet + mobile — shown below bar) ── {%- endcomment -%}
+  <div class="ecombio-header__search-row">
+    <div class="ecombio-header__search-row-inner">
+      {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'mobile' -%}
+    </div>
   </div>
 
-  <div class="header__icons">
-    {% if shop.customer_accounts_enabled %}
-      <shopify-account menu="{{ section.settings.customer_account_menu }}">
-        {{ 'icon-account.svg' | inline_asset_content }}
-      </shopify-account>
-    {% endif %}
-
-    <a href="{{ routes.cart_url }}">
-      {% if cart.item_count > 0 %}
-        <sup>{{ cart.item_count }}</sup>
-      {% endif %}
-
-      {{ 'icon-cart.svg' | inline_asset_content }}
-    </a>
-  </div>
 </header>
 
-{% stylesheet %}
-  header {
-    height: 5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  header a {
-    position: relative;
-    text-decoration: none;
-    color: var(--color-foreground);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  header a sup {
-    position: absolute;
-    left: 100%;
-    overflow: hidden;
-    max-width: var(--page-margin);
-  }
-  header svg {
-    width: 2rem;
-  }
-  header .header__menu,
-  header .header__icons {
-    display: flex;
-    gap: 1rem;
-  }
-{% endstylesheet %}
+{%- render 'ecombio-mobile-nav' -%}
+
+{%- comment -%}
+  ── CART DRAWER ──
+  Owned by the Header Section. Rendered at the section level (not from
+  ecombio-header-icons.liquid or ecombio-header-icon-cart.liquid).
+  Passes all relevant settings down to the drawer snippet.
+{%- endcomment -%}
+{%- if enable_drawer -%}
+  {%- render 'ecombio-cart-drawer',
+    enable_upsells:          enable_upsells,
+    enable_free_shipping_bar: enable_bar,
+    free_shipping_threshold: free_ship_min,
+    enable_upsell_page:      upsell_page
+  -%}
+{%- endif -%}
 
 {% schema %}
 {
-  "name": "t:general.header",
+  "name": "Header",
+  "tag": "header",
+  "class": "section-header",
   "settings": [
     {
-      "type": "link_list",
-      "id": "menu",
-      "label": "t:labels.menu"
+      "type": "header",
+      "content": "Logo"
     },
     {
-      "type": "link_list",
-      "id": "customer_account_menu",
-      "label": "t:labels.customer_account_menu",
-      "default": "customer-account-main-menu"
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "default": 140,
+      "unit": "px",
+      "label": "Logo width"
+    },
+    {
+      "type": "header",
+      "content": "Search & Navigation"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_filter",
+      "label": "Show category dropdown in search",
+      "default": true,
+      "info": "Hyper usually keeps this on. Focus can turn it off for cleaner look."
+    },
+    {
+      "type": "select",
+      "id": "header_style",
+      "label": "Header Style Preset",
+      "options": [
+        { "value": "hyper", "label": "Hyper — Bold & Energetic (Default)" },
+        { "value": "focus", "label": "Focus — Clean & Minimal" }
+      ],
+      "default": "hyper",
+      "info": "Hyper is the current default vibe. Focus is the next clean version."
+    },
+    {
+      "type": "header",
+      "content": "Cart Drawer"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_cart_drawer",
+      "label": "Enable Cart Drawer",
+      "default": true,
+      "info": "Replaces default cart page link with a slide-in drawer."
+    },
+    {
+      "type": "header",
+      "content": "Free Shipping Bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_free_shipping_bar",
+      "label": "Enable Free Shipping Progress Bar",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free shipping minimum ($)",
+      "default": 75,
+      "info": "Cart subtotal threshold for free shipping. Displays as a progress bar in the drawer."
+    },
+    {
+      "type": "header",
+      "content": "Upsells & Recommendations"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_upsells",
+      "label": "Enable Cart Upsells",
+      "default": true,
+      "info": "Shows frequently-bought-together and cross-sell products inside the cart drawer."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_cart_recommendations",
+      "label": "Enable Cart Recommendations",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_ai_recommendations",
+      "label": "Enable AI Recommendations (future)",
+      "default": false,
+      "info": "Placeholder for future AI-powered product recommendations."
+    },
+    {
+      "type": "header",
+      "content": "Pre-Checkout Upsell Page"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_upsell_page",
+      "label": "Enable Pre-Checkout Upsell Page",
+      "default": true,
+      "info": "Routes checkout through /pages/cart-upsell before Shopify Checkout."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hyper Header",
+      "settings": {
+        "header_style": "hyper",
+        "show_category_filter": true,
+        "logo_width": 140
+      }
+    },
+    {
+      "name": "Focus Header",
+      "settings": {
+        "header_style": "focus",
+        "show_category_filter": false,
+        "logo_width": 180
+      }
     }
   ]
 }

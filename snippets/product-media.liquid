@@ -1,0 +1,48 @@
+{{ 'product-media.css' | asset_url | stylesheet_tag }}
+
+<div class="product-images">
+  
+  <!-- Main Image -->
+  <div class="main-image-wrapper">
+    {% assign featured = product.featured_image | default: product.images.first %}
+    <img 
+      src="{{ featured | image_url: width: 900 }}" 
+      alt="{{ featured.alt | escape }}"
+      class="main-product-image"
+      id="main-product-image"
+    >
+  </div>
+
+  <!-- Vertical Thumbnails -->
+  {% if product.images.size > 1 %}
+    <div class="vertical-thumbnails">
+      {% for image in product.images %}
+        <img 
+          src="{{ image | image_url: width: 120 }}" 
+          alt="{{ image.alt | escape }}"
+          class="thumbnail {% if forloop.first %}active{% endif %}"
+          data-full-image="{{ image | image_url: width: 900 }}"
+          data-alt="{{ image.alt | escape }}"
+        >
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const mainImage = document.getElementById('main-product-image');
+    const thumbnails = document.querySelectorAll('.vertical-thumbnails .thumbnail');
+
+    thumbnails.forEach(thumb => {
+      thumb.addEventListener('click', function() {
+        mainImage.src = this.dataset.fullImage;
+        mainImage.alt = this.dataset.alt;
+
+        thumbnails.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  });
+</script>
