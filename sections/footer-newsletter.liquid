@@ -1,20 +1,20 @@
 {{ 'footer-newsletter.css' | asset_url | stylesheet_tag }}
 
-<div class="footer-newsletter footer-newsletter--stacked footer-newsletter--{{ section.settings.style }}"
+<div class="footer-newsletter footer-newsletter--{{ section.settings.layout }} footer-newsletter--{{ section.settings.style }}"
      style="--padding-top: {{ section.settings.padding_top }}px; 
             --padding-bottom: {{ section.settings.padding_bottom }}px;">
   
-  <div class="footer-newsletter__content">
-    <div class="footer-newsletter__text">
-      {%- if section.settings.heading != blank -%}
-        <p class="footer-newsletter__heading">{{ section.settings.heading | escape }}</p>
-      {%- endif -%}
-      
-      {%- if section.settings.subtext != blank -%}
-        <p class="footer-newsletter__subtext">{{ section.settings.subtext | escape }}</p>
-      {%- endif -%}
-    </div>
+  <div class="footer-newsletter__text">
+    {%- if section.settings.heading != blank -%}
+      <p class="footer-newsletter__heading">{{ section.settings.heading | escape }}</p>
+    {%- endif -%}
+    
+    {%- if section.settings.subtext != blank -%}
+      <p class="footer-newsletter__subtext">{{ section.settings.subtext | escape }}</p>
+    {%- endif -%}
+  </div>
 
+  <div class="footer-newsletter__form">
     {%- form 'customer', id: 'footer-newsletter-form' -%}
       <input type="hidden" name="contact[tags]" value="newsletter">
 
@@ -71,6 +71,16 @@
   "tag": "section",
   "class": "footer-newsletter-section",
   "settings": [
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "vertical", "label": "Vertical (Stacked)" },
+        { "value": "horizontal", "label": "Horizontal (Side by side)" }
+      ],
+      "default": "vertical"
+    },
     {
       "type": "select",
       "id": "style",
@@ -144,7 +154,7 @@
   ],
   "presets": [
     {
-      "name": "Footer newsletter (Stacked)"
+      "name": "Footer newsletter"
     }
   ]
 }
