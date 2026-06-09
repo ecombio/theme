@@ -1,6 +1,6 @@
 {% comment %}
   card-product.liquid
-  Self-contained product card with proper image fitting
+  Clean product card - Fixed image syntax
 {% endcomment %}
 
 {%- liquid
@@ -11,18 +11,15 @@
 
 <div class="card-product">
   {%- if product.featured_image -%}
-    {%- assign image_url = product.featured_image | image_url: width: 700 -%}
-
     <a href="{{ product.url }}" class="card-product__image-wrapper">
-      {{
-        image_url
-        | image_tag:
-          class: 'card-product__image',
-          alt: product.title | escape,
-          loading: 'lazy',
-          width: 700,
-          height: 700
-      }}
+      <img 
+        src="{{ product.featured_image | image_url: width: 700 }}"
+        class="card-product__image"
+        alt="{{ product.title | escape }}"
+        loading="lazy"
+        width="700"
+        height="700"
+      >
     </a>
   {%- else -%}
     <div class="card-product__image-wrapper card-product__image-wrapper--placeholder">
