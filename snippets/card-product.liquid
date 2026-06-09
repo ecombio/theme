@@ -7,15 +7,15 @@
   assign product = product | default: card_product
   assign show_vendor = show_vendor | default: false
   assign show_compare_at_price = show_compare_at_price | default: true
-  assign media_aspect_ratio = media_aspect_ratio | default: 'square'
 -%}
 
 <div class="card-product">
   {%- if product.featured_image -%}
+    {%- assign image_url = product.featured_image | image_url: width: 700 -%}
+
     <a href="{{ product.url }}" class="card-product__image-wrapper">
       {{
-        product.featured_image
-        | image_url: width: 700
+        image_url
         | image_tag:
           class: 'card-product__image',
           alt: product.title | escape,
