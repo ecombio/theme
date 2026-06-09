@@ -1,12 +1,15 @@
 {{ 'footer-newsletter.css' | asset_url | stylesheet_tag }}
 
-<div class="footer-newsletter" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+<div class="footer-newsletter" 
+     style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+  
   <div class="footer-newsletter__text">
     {%- if section.settings.heading != blank -%}
-      <p class="footer-newsletter__heading">{{ section.settings.heading }}</p>
+      <p class="footer-newsletter__heading">{{ section.settings.heading | escape }}</p>
     {%- endif -%}
+    
     {%- if section.settings.subtext != blank -%}
-      <p class="footer-newsletter__subtext">{{ section.settings.subtext }}</p>
+      <p class="footer-newsletter__subtext">{{ section.settings.subtext | escape }}</p>
     {%- endif -%}
   </div>
 
@@ -15,39 +18,46 @@
       <input type="hidden" name="contact[tags]" value="newsletter">
 
       {%- if form.posted_successfully? -%}
-        <p class="footer-newsletter__success">
-          {{- 'general.newsletter.confirmation' | t -}}
-        </p>
-      {%- elsif form.errors -%}
-        <p class="footer-newsletter__error">
-          {{- form.errors.translated_fields['email'] | capitalize }} {{ form.errors.messages['email'] -}}
-        </p>
-      {%- endif -%}
-
-      <div class="footer-newsletter__input-wrap">
-        <div class="footer-newsletter__input-inner">
-          <input
-            type="email"
-            name="contact[email]"
-            id="footer-newsletter-email"
-            placeholder="{{ 'general.newsletter.email_placeholder' | t }}"
-            value="{{ form.email }}"
-            autocorrect="off"
-            autocapitalize="off"
-            autocomplete="email"
-            aria-label="{{ 'general.newsletter.email_placeholder' | t }}"
-            {% if form.posted_successfully? %}disabled{% endif %}
-          >
-          <svg class="footer-newsletter__mail-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
-            <path d="m2 7 10 7 10-7"/>
-          </svg>
+        <div class="footer-newsletter__success-state">
+          <p class="footer-newsletter__success">
+            {{- 'general.newsletter.confirmation' | t -}}
+          </p>
+          <p class="footer-newsletter__success-sub">
+            {{- 'general.newsletter.success_subtext' | t | default: "You're all set. Check your inbox for confirmation." -}}
+          </p>
         </div>
+      {%- else -%}
+        {%- if form.errors -%}
+          <p class="footer-newsletter__error">
+            {{- form.errors.translated_fields['email'] | capitalize }} {{ form.errors.messages['email'] -}}
+          </p>
+        {%- endif -%}
 
-        <button type="submit" class="footer-newsletter__btn">
-          {{- section.settings.button_label | default: 'Sign up' -}}
-        </button>
-      </div>
+        <div class="footer-newsletter__input-wrap">
+          <div class="footer-newsletter__input-inner">
+            <input
+              type="email"
+              name="contact[email]"
+              id="footer-newsletter-email"
+              placeholder="{{ 'general.newsletter.email_placeholder' | t }}"
+              value="{{ form.email }}"
+              autocorrect="off"
+              autocapitalize="off"
+              autocomplete="email"
+              aria-label="{{ 'general.newsletter.email_placeholder' | t }}"
+              required
+            >
+            <svg class="footer-newsletter__mail-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <path d="m2 7 10 7 10-7"/>
+            </svg>
+          </div>
+
+          <button type="submit" class="footer-newsletter__btn">
+            {{- section.settings.button_label | default: 'Sign up' | escape -}}
+          </button>
+        </div>
+      {%- endif -%}
     {%- endform -%}
 
     {%- if section.settings.show_learn_more and section.settings.learn_more_url != blank -%}
@@ -55,7 +65,7 @@
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="m6 9 6 6 6-6"/>
         </svg>
-        {{- 'general.newsletter.learn_more' | t | default: 'Learn more' -}}
+        {{- 'general.newsletter.learn_more' | t | default: 'Learn more' | escape -}}
       </a>
     {%- endif -%}
   </div>
