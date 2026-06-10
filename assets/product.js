@@ -5,8 +5,6 @@
 (function () {
   'use strict';
 
-  /* ─── Variant Selection + Add to Cart ─────────────────── */
-
   function initProductForm() {
     const form = document.getElementById('ProductForm');
     if (!form) return;
@@ -25,7 +23,6 @@
       return;
     }
 
-    // Find matching variant from selected options
     function getCurrentVariant() {
       const selected = {};
       form.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
@@ -33,9 +30,9 @@
       });
 
       return variants.find(v => {
-        const match1 = !selected.Color     || v.option1 === selected.Color;
-        const match2 = !selected.Size      || v.option2 === selected.Size;
-        const match3 = !selected.Material  || v.option3 === selected.Material;
+        const match1 = !selected.Color    || v.option1 === selected.Color;
+        const match2 = !selected.Size     || v.option2 === selected.Size;
+        const match3 = !selected.Material || v.option3 === selected.Material;
         return match1 && match2 && match3;
       });
     }
@@ -91,7 +88,7 @@
       if (variant) updateUI(variant);
     });
 
-    // Real AJAX Add to Cart
+    // Real AJAX Add to Cart + Open Drawer
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -112,7 +109,6 @@
 
         if (!res.ok) throw new Error();
 
-        // Open your cart drawer
         document.dispatchEvent(new CustomEvent('cart:open'));
 
         addToCartBtn.textContent = 'Added!';
@@ -142,23 +138,13 @@
       quantityInput.value = (parseInt(quantityInput.value) || 1) + 1;
     });
 
-    // Initial load
+    // Initial state
     const initial = getCurrentVariant() || variants[0];
     if (initial) updateUI(initial);
   }
 
-  /* ─── Gallery (you can delete this block later) ───────── */
-
-  function initGallery() {
-    // Your existing gallery code can stay here if you still want it
-    // For now I'm leaving it out so it doesn't conflict
-  }
-
-  /* ─── Boot ─────────────────────────────────────────────── */
-
   function init() {
     initProductForm();
-    initGallery();
   }
 
   if (document.readyState === 'loading') {
