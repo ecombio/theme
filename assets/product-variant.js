@@ -12,6 +12,8 @@
   const qtyInput       = document.getElementById('quantity');
   const qtyDec         = document.getElementById('qty-dec');
   const qtyInc         = document.getElementById('qty-inc');
+  const mainImage      = document.getElementById('main-product-image');
+  const thumbContainer = document.getElementById('vertical-thumbnails');
 
   // -------------------------------------------------------
   // Format Shopify price integer (cents) → currency string
@@ -51,9 +53,9 @@
   // -------------------------------------------------------
   function updateButton(available) {
     if (!addToCartBtn) return;
-    addToCartBtn.disabled      = !available;
-    addToCartBtn.ariaDisabled  = String(!available);
-    addToCartBtn.textContent   = available ? 'Add to cart' : 'Sold out';
+    addToCartBtn.disabled     = !available;
+    addToCartBtn.ariaDisabled = String(!available);
+    addToCartBtn.textContent  = available ? 'Add to cart' : 'Sold out';
   }
 
   // -------------------------------------------------------
@@ -69,6 +71,30 @@
     } else {
       qtyInput.removeAttribute('max');
     }
+  }
+
+  // -------------------------------------------------------
+  // Switch gallery to the variant's featured image.
+  // Falls back gracefully if the variant has no image.
+  // -------------------------------------------------------
+  function switchMedia(mediaId) {
+    if (!mediaId || !thumbContainer || !mainImage) return;
+
+    const targetThumb = thumbContainer.querySelector(
+      `.thumbnail[data-media-id="${mediaId}"]`
+    );
+    if (!targetThumb) return;
+
+    // Update main image
+    mainImage.src = targetThumb.dataset.fullImage;
+    mainImage.alt = targetThumb.dataset.alt;
+
+    // Update active thumbnail
+    thumbContainer.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+    targetThumb.classList.add('active');
+
+    // Scroll thumbnail into view (vertical on desktop, horizontal on mobile)
+    targetThumb.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   }
 
   // -------------------------------------------------------
@@ -102,7 +128,24 @@
       updatePrice(variant);
       updateButton(variant.available);
       updateQuantity(variant);
+      switchMedia(pill.dataset.mediaId);
       syncUrl(variantId);
+    });
+  }
+
+  // -------------------------------------------------------
+  // Thumbnail manual click (still works independently)
+  // -------------------------------------------------------
+  if (thumbContainer) {
+    thumbContainer.addEventListener('click', (e) => {
+      const thumb = e.target.closest('.thumbnail');
+      if (!thumb) return;
+
+      mainImage.src = thumb.dataset.fullImage;
+      mainImage.alt = thumb.dataset.alt;
+
+      thumbContainer.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+      thumb.classList.add('active');
     });
   }
 

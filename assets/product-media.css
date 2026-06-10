@@ -3,7 +3,6 @@
    Scoped to: product-media.liquid
    ================================================ */
 
-/* Left Column: Image Container */
 .product-images {
   flex: 1;
   display: flex;
@@ -21,6 +20,7 @@
   height: auto;
   border-radius: 12px;
   object-fit: cover;
+  display: block;
 }
 
 /* Vertical Thumbnails */
@@ -28,10 +28,21 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 500px;
+  max-height: 520px;
   overflow-y: auto;
-  padding-right: 8px;
+  padding-right: 4px;
   flex-shrink: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+}
+
+.vertical-thumbnails::-webkit-scrollbar {
+  width: 4px;
+}
+
+.vertical-thumbnails::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
 }
 
 .vertical-thumbnails .thumbnail {
@@ -41,26 +52,38 @@
   border-radius: 8px;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border 0.2s ease;
+  transition: border-color 0.15s ease;
+  flex-shrink: 0;
+  display: block;
 }
 
-.vertical-thumbnails .thumbnail:hover,
+.vertical-thumbnails .thumbnail:hover {
+  border-color: #888;
+}
+
 .vertical-thumbnails .thumbnail.active {
   border-color: #000;
 }
 
-.vertical-thumbnails::-webkit-scrollbar {
-  width: 4px;
-}
-.vertical-thumbnails::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 4px;
+/* ------------------------------------------------
+   Tablet  600px – 1023px
+   Layout stays vertical, just tighter thumbnails
+   ------------------------------------------------ */
+@media (max-width: 1023px) {
+  .vertical-thumbnails .thumbnail {
+    width: 68px;
+    height: 68px;
+  }
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+/* ------------------------------------------------
+   Mobile  < 600px
+   Thumbnails move to a horizontal strip below main image
+   ------------------------------------------------ */
+@media (max-width: 599px) {
   .product-images {
     flex-direction: column;
+    gap: 12px;
   }
 
   .vertical-thumbnails {
@@ -69,6 +92,19 @@
     overflow-x: auto;
     overflow-y: hidden;
     padding-right: 0;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+  }
+
+  .vertical-thumbnails::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .vertical-thumbnails .thumbnail {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
   }
 }
