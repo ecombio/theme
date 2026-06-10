@@ -3,19 +3,35 @@
 
     <!-- Header / Title -->
     <div class="product-header">
-      <span class="product-badge">Save 6%</span>
-      <h1 class="product-title">Task Chair Luxe</h1>
-      <div class="product-vendor">
-        Vendor: <a href="/collections/vendors?q=Mason">Mason</a>
-      </div>
-      <div class="product-type">Type: <a href="/collections/chairs">Chairs</a></div>
+      {%- if current_variant.compare_at_price > current_variant.price -%}
+        {%- assign savings = current_variant.compare_at_price | minus: current_variant.price -%}
+        {%- assign savings_pct = savings | times: 100.0 | divided_by: current_variant.compare_at_price | round -%}
+        <span class="product-badge">Save {{ savings_pct }}%</span>
+      {%- endif -%}
+      <h1 class="product-title">{{ product.title }}</h1>
+      {%- if product.vendor != blank -%}
+        <div class="product-vendor">
+          Vendor: <a href="{{ routes.collections_url }}/vendors?q={{ product.vendor | url_encode }}">{{ product.vendor }}</a>
+        </div>
+      {%- endif -%}
+      {%- if product.type != blank -%}
+        <div class="product-type">
+          Type: <a href="{{ routes.collections_url }}/types?q={{ product.type | url_encode }}">{{ product.type }}</a>
+        </div>
+      {%- endif -%}
     </div>
 
     <!-- Pricing -->
     <div class="product-pricing">
       <div class="price-wrapper">
-        <span class="price sale-price" id="ProductPrice">$559.00</span>
-        <span class="compare-price" id="ProductComparePrice">$599.00</span>
+        <span class="price {% if current_variant.compare_at_price > current_variant.price %}sale-price{% endif %}" id="ProductPrice">
+          {{ current_variant.price | money }}
+        </span>
+        {%- if current_variant.compare_at_price > current_variant.price -%}
+          <span class="compare-price" id="ProductComparePrice">
+            {{ current_variant.compare_at_price | money }}
+          </span>
+        {%- endif -%}
       </div>
     </div>
 
@@ -41,69 +57,62 @@
       </div>
     </div>
 
-    <div class="stock-indicator available" id="StockIndicator">
+    <div class="stock-indicator {% if current_variant.available %}available{% else %}sold-out{% endif %}" id="StockIndicator">
       <span class="stock-dot"></span>
-      <span class="stock-text">Available in stock (12)</span>
+      <span class="stock-text">
+        {%- if current_variant.available -%}
+          {%- if current_variant.inventory_management == 'shopify' and current_variant.inventory_policy == 'deny' -%}
+            Available in stock ({{ current_variant.inventory_quantity }})
+          {%- else -%}
+            Available in stock
+          {%- endif -%}
+        {%- else -%}
+          Sold Out
+        {%- endif -%}
+      </span>
     </div>
 
     <!-- Description -->
+    {%- if product.description != blank -%}
     <div class="product-description">
-      This is a demonstration store by FoxEcom. All images, videos, and other content belong exclusively to FoxEcom and are not authorized for reuse on any other stores.
+      {{ product.description }}
     </div>
+    {%- endif -%}
 
     <!-- Color Variant -->
+    {%- assign color_option = product.options_with_values | where: 'name', 'Color' | first -%}
+    {%- if color_option -%}
     <div class="product-variants">
       <div class="variant-option">
         <label class="variant-label">
-          Color: <span class="selected-value" id="SelectedColor">Chocolate</span>
+          Color: <span class="selected-value" id="SelectedColor">{{ current_variant.options[color_option.position | minus: 1] }}</span>
         </label>
         <fieldset class="variant-fieldset">
           <legend class="visually-hidden">Color</legend>
           <div class="color-swatches">
-            <label class="color-swatch-label" title="Chocolate">
-              <input
-                type="radio"
-                name="Color"
-                value="Chocolate"
-                class="color-input"
-                checked
-                aria-label="Chocolate"
-              >
-              <span class="color-swatch" style="background-color: #7B4F2E;"></span>
-            </label>
-            <label class="color-swatch-label" title="Walnut">
-              <input
-                type="radio"
-                name="Color"
-                value="Walnut"
-                class="color-input"
-                aria-label="Walnut"
-              >
-              <span class="color-swatch" style="background-color: #4A3728;"></span>
-            </label>
-            <label class="color-swatch-label" title="Natural Oak">
-              <input
-                type="radio"
-                name="Color"
-                value="Natural Oak"
-                class="color-input"
-                aria-label="Natural Oak"
-              >
-              <span class="color-swatch" style="background-color: #C8A97A;"></span>
-            </label>
-            <label class="color-swatch-label" title="Slate">
-              <input
-                type="radio"
-                name="Color"
-                value="Slate"
-                class="color-input"
-                aria-label="Slate"
-              >
-              <span class="color-swatch" style="background-color: #6B7280;"></span>
-            </label>
+            {%- for value in color_option.values -%}
+              {%- assign swatch_color = value | handle -%}
+              <label class="color-swatch-label" title="{{ value | escape }}">
+                <input
+                  type="radio"
+                  name="Color"
+                  value="{{ value | escape }}"
+                  class="color-input"
+                  {% if current_variant.options[color_option.position | minus: 1] == value %}checked{% endif %}
+                  aria-label="{{ value | escape }}"
+                >
+                <span
+                  class="color-swatch"
+                  style="background-color: var(--swatch-{{ swatch_color }}, #ccc);"
+                  data-swatch="{{ swatch_color }}"
+                ></span>
+              </label>
+            {%- endfor -%}
           </div>
         </fieldset>
       </div>
+    </div>
+    {%- endif -%}
 
       <!-- Material Variant -->
       <div class="variant-option">
@@ -167,9 +176,10 @@
               name="quantity"
               value="1"
               min="1"
-              max="99"
+              max="{{ current_variant.inventory_quantity | default: 99 }}"
               class="quantity-input"
               aria-label="Quantity"
+              {% unless current_variant.available %}disabled{% endunless %}
             >
             <button class="quantity-button" type="button" name="plus" aria-label="Increase quantity">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -179,16 +189,36 @@
           </div>
         </div>
 
-        <!-- Add to Cart -->
-        <button type="button" class="button button-primary add-to-cart" id="AddToCart">
-          Add To Cart
+      <!-- Add to Cart -->
+        <button
+          type="submit"
+          name="add"
+          class="button button-primary add-to-cart"
+          id="AddToCart"
+          {% unless current_variant.available %}disabled{% endunless %}
+        >
+          {%- if current_variant.available -%}
+            Add To Cart
+          {%- else -%}
+            Sold Out
+          {%- endif -%}
         </button>
       </div>
 
       <!-- Buy It Now -->
-      <button type="button" class="button button-secondary buy-now" id="BuyNow">
-        Buy It Now
-      </button>
+      {%- form 'product', product, id: 'BuyNowForm', class: 'buy-now-form' -%}
+        <input type="hidden" name="id" value="{{ current_variant.id }}">
+        <input type="hidden" name="quantity" value="1">
+        <button
+          type="submit"
+          name="checkout"
+          class="button button-secondary buy-now"
+          id="BuyNow"
+          {% unless current_variant.available %}disabled{% endunless %}
+        >
+          Buy It Now
+        </button>
+      {%- endform -%}
     </div>
 
     <!-- Shipping Info -->
