@@ -90,9 +90,10 @@
         <!-- Color -->
         {%- assign color_option = product.options_with_values | where: 'name', 'Color' | first -%}
         {%- if color_option -%}
+          {%- assign color_index = color_option.position | minus: 1 -%}
           <div class="variant-option">
             <label class="variant-label">
-              Color: <span class="selected-value" id="SelectedColor">{{ current_variant.options[color_option.position | minus: 1] }}</span>
+              Color: <span class="selected-value" id="SelectedColor">{{ current_variant.options[color_index] }}</span>
             </label>
             <fieldset class="variant-fieldset">
               <legend class="visually-hidden">Color</legend>
@@ -105,7 +106,7 @@
                       name="Color"
                       value="{{ value | escape }}"
                       class="color-input"
-                      {% if current_variant.options[color_option.position | minus: 1] == value %}checked{% endif %}
+                      {% if current_variant.options[color_index] == value %}checked{% endif %}
                       aria-label="{{ value | escape }}"
                     >
                     <span
@@ -125,9 +126,10 @@
           {%- if option.name == 'Color' -%}
             {%- continue -%}
           {%- endif -%}
+          {%- assign option_index = option.position | minus: 1 -%}
           <div class="variant-option">
             <label class="variant-label">
-              {{ option.name }}: <span class="selected-value" id="Selected{{ option.name | handleize | capitalize }}">{{ current_variant.options[option.position | minus: 1] }}</span>
+              {{ option.name }}: <span class="selected-value" id="Selected{{ option.name | handleize | capitalize }}">{{ current_variant.options[option_index] }}</span>
             </label>
             <fieldset class="variant-fieldset">
               <legend class="visually-hidden">{{ option.name }}</legend>
@@ -139,7 +141,7 @@
                       name="{{ option.name }}"
                       value="{{ value | escape }}"
                       class="variant-radio"
-                      {% if current_variant.options[option.position | minus: 1] == value %}checked{% endif %}
+                      {% if current_variant.options[option_index] == value %}checked{% endif %}
                       aria-label="{{ value | escape }}"
                     >
                     <span class="variant-button">{{ value }}</span>
