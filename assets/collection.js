@@ -256,6 +256,12 @@ console.log('Collection JS loaded');
       openBtn.setAttribute('aria-expanded', String(isOpen));
     }
 
+    // Open sidebar by default on desktop
+    if (!isMobile()) {
+      sidebar.classList.add('sidebar-open');
+      openBtn.setAttribute('aria-expanded', 'true');
+    }
+
     openBtn.addEventListener('click', function () {
       isMobile() ? openDrawer() : toggleDesktop();
     });
