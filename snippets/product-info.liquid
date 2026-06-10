@@ -1,6 +1,8 @@
 <div class="product-info-container" id="ProductInfo">
   <div class="product-info-wrapper">
 
+    {%- assign current_variant = product.selected_or_first_available_variant -%}
+
     <!-- Header / Title -->
     <div class="product-header">
       {%- if current_variant.compare_at_price > current_variant.price -%}
@@ -74,152 +76,147 @@
 
     <!-- Description -->
     {%- if product.description != blank -%}
-    <div class="product-description">
-      {{ product.description }}
-    </div>
+      <div class="product-description">
+        {{ product.description }}
+      </div>
     {%- endif -%}
 
-    <!-- Color Variant -->
-    {%- assign color_option = product.options_with_values | where: 'name', 'Color' | first -%}
-    {%- if color_option -%}
-    <div class="product-variants">
-      <div class="variant-option">
-        <label class="variant-label">
-          Color: <span class="selected-value" id="SelectedColor">{{ current_variant.options[color_option.position | minus: 1] }}</span>
-        </label>
-        <fieldset class="variant-fieldset">
-          <legend class="visually-hidden">Color</legend>
-          <div class="color-swatches">
-            {%- for value in color_option.values -%}
-              {%- assign swatch_color = value | handle -%}
-              <label class="color-swatch-label" title="{{ value | escape }}">
-                <input
-                  type="radio"
-                  name="Color"
-                  value="{{ value | escape }}"
-                  class="color-input"
-                  {% if current_variant.options[color_option.position | minus: 1] == value %}checked{% endif %}
-                  aria-label="{{ value | escape }}"
-                >
-                <span
-                  class="color-swatch"
-                  style="background-color: var(--swatch-{{ swatch_color }}, #ccc);"
-                  data-swatch="{{ swatch_color }}"
-                ></span>
-              </label>
-            {%- endfor -%}
-          </div>
-        </fieldset>
-      </div>
-    </div>
-    {%- endif -%}
+    {%- form 'product', product, id: 'ProductForm', novalidate: 'novalidate' -%}
+      <input type="hidden" name="id" value="{{ current_variant.id }}" id="ProductVariantId">
 
-      <!-- Material Variant -->
-      <div class="variant-option">
-        <label class="variant-label">
-          Material: <span class="selected-value" id="SelectedMaterial">Oak</span>
-        </label>
-        <fieldset class="variant-fieldset">
-          <legend class="visually-hidden">Material</legend>
-          <div class="variant-buttons">
-            <label>
-              <input
-                type="radio"
-                name="Material"
-                value="Oak"
-                class="variant-radio"
-                checked
-                aria-label="Oak"
-              >
-              <span class="variant-button">Oak</span>
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="Material"
-                value="Wool"
-                class="variant-radio"
-                aria-label="Wool"
-              >
-              <span class="variant-button">Wool</span>
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="Material"
-                value="Velvet"
-                class="variant-radio"
-                aria-label="Velvet"
-              >
-              <span class="variant-button">Velvet</span>
-            </label>
-          </div>
-        </fieldset>
-      </div>
-    </div>
+      <!-- Variants -->
+      <div class="product-variants">
 
-    <!-- Quantity + Actions -->
-    <div class="quantity-and-actions">
-      <div class="quantity-actions-row">
-        <!-- Quantity Selector -->
-        <div class="quantity-selector-wrapper">
-          <label for="ProductQuantity" class="visually-hidden">Quantity</label>
-          <div class="quantity-selector">
-            <button class="quantity-button" type="button" name="minus" aria-label="Decrease quantity">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M3.125 10H16.875" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-            <input
-              type="number"
-              id="ProductQuantity"
-              name="quantity"
-              value="1"
-              min="1"
-              max="{{ current_variant.inventory_quantity | default: 99 }}"
-              class="quantity-input"
-              aria-label="Quantity"
-              {% unless current_variant.available %}disabled{% endunless %}
-            >
-            <button class="quantity-button" type="button" name="plus" aria-label="Increase quantity">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M3.125 10H16.875M10 3.125V16.875" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
+        <!-- Color -->
+        {%- assign color_option = product.options_with_values | where: 'name', 'Color' | first -%}
+        {%- if color_option -%}
+          <div class="variant-option">
+            <label class="variant-label">
+              Color: <span class="selected-value" id="SelectedColor">{{ current_variant.options[color_option.position | minus: 1] }}</span>
+            </label>
+            <fieldset class="variant-fieldset">
+              <legend class="visually-hidden">Color</legend>
+              <div class="color-swatches">
+                {%- for value in color_option.values -%}
+                  {%- assign swatch_color = value | handle -%}
+                  <label class="color-swatch-label" title="{{ value | escape }}">
+                    <input
+                      type="radio"
+                      name="Color"
+                      value="{{ value | escape }}"
+                      class="color-input"
+                      {% if current_variant.options[color_option.position | minus: 1] == value %}checked{% endif %}
+                      aria-label="{{ value | escape }}"
+                    >
+                    <span
+                      class="color-swatch"
+                      style="background-color: var(--swatch-{{ swatch_color }}, #ccc);"
+                      data-swatch="{{ swatch_color }}"
+                    ></span>
+                  </label>
+                {%- endfor -%}
+              </div>
+            </fieldset>
           </div>
-        </div>
+        {%- endif -%}
 
-      <!-- Add to Cart -->
-        <button
-          type="submit"
-          name="add"
-          class="button button-primary add-to-cart"
-          id="AddToCart"
-          {% unless current_variant.available %}disabled{% endunless %}
-        >
-          {%- if current_variant.available -%}
-            Add To Cart
-          {%- else -%}
-            Sold Out
+        <!-- All other options (Material, Size, etc.) -->
+        {%- for option in product.options_with_values -%}
+          {%- if option.name == 'Color' -%}
+            {%- continue -%}
           {%- endif -%}
-        </button>
+          <div class="variant-option">
+            <label class="variant-label">
+              {{ option.name }}: <span class="selected-value" id="Selected{{ option.name | handleize | capitalize }}">{{ current_variant.options[option.position | minus: 1] }}</span>
+            </label>
+            <fieldset class="variant-fieldset">
+              <legend class="visually-hidden">{{ option.name }}</legend>
+              <div class="variant-buttons">
+                {%- for value in option.values -%}
+                  <label>
+                    <input
+                      type="radio"
+                      name="{{ option.name }}"
+                      value="{{ value | escape }}"
+                      class="variant-radio"
+                      {% if current_variant.options[option.position | minus: 1] == value %}checked{% endif %}
+                      aria-label="{{ value | escape }}"
+                    >
+                    <span class="variant-button">{{ value }}</span>
+                  </label>
+                {%- endfor -%}
+              </div>
+            </fieldset>
+          </div>
+        {%- endfor -%}
+
       </div>
 
-      <!-- Buy It Now -->
-      {%- form 'product', product, id: 'BuyNowForm', class: 'buy-now-form' -%}
-        <input type="hidden" name="id" value="{{ current_variant.id }}">
-        <input type="hidden" name="quantity" value="1">
-        <button
-          type="submit"
-          name="checkout"
-          class="button button-secondary buy-now"
-          id="BuyNow"
-          {% unless current_variant.available %}disabled{% endunless %}
-        >
-          Buy It Now
-        </button>
-      {%- endform -%}
-    </div>
+      <!-- Quantity + Actions -->
+      <div class="quantity-and-actions">
+        <div class="quantity-actions-row">
+
+          <!-- Quantity Selector -->
+          <div class="quantity-selector-wrapper">
+            <label for="ProductQuantity" class="visually-hidden">Quantity</label>
+            <div class="quantity-selector">
+              <button class="quantity-button" type="button" name="minus" aria-label="Decrease quantity">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M3.125 10H16.875" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <input
+                type="number"
+                id="ProductQuantity"
+                name="quantity"
+                value="1"
+                min="1"
+                max="{{ current_variant.inventory_quantity | default: 99 }}"
+                class="quantity-input"
+                aria-label="Quantity"
+                {% unless current_variant.available %}disabled{% endunless %}
+              >
+              <button class="quantity-button" type="button" name="plus" aria-label="Increase quantity">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M3.125 10H16.875M10 3.125V16.875" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Add to Cart -->
+          <button
+            type="submit"
+            name="add"
+            class="button button-primary add-to-cart"
+            id="AddToCart"
+            {% unless current_variant.available %}disabled{% endunless %}
+          >
+            {%- if current_variant.available -%}
+              Add To Cart
+            {%- else -%}
+              Sold Out
+            {%- endif -%}
+          </button>
+        </div>
+      </div>
+
+    {%- endform -%}
+
+    <!-- Buy It Now -->
+    {%- form 'product', product, id: 'BuyNowForm', class: 'buy-now-form' -%}
+      <input type="hidden" name="id" value="{{ current_variant.id }}">
+      <input type="hidden" name="quantity" value="1">
+      <button
+        type="submit"
+        name="checkout"
+        class="button button-secondary buy-now"
+        id="BuyNow"
+        {% unless current_variant.available %}disabled{% endunless %}
+      >
+        Buy It Now
+      </button>
+    {%- endform -%}
 
     <!-- Shipping Info -->
     <div class="product-shipping-info">
@@ -276,3 +273,4 @@
     </div>
 
   </div>
+</div>
