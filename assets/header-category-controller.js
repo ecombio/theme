@@ -1,30 +1,25 @@
-// ECOMBIO Header - Categories Controller Toggle
 document.addEventListener('DOMContentLoaded', () => {
-  const trigger = document.querySelector('.ecombio-header__cat-trigger');
-  const dropdown = document.getElementById('ecombio-header-cat-dropdown');
+  const toggle = document.querySelector('.ecombio-header__cat-toggle');
+  const mobileNav = document.getElementById('ecombio-mobile-nav');
 
-  if (!trigger || !dropdown) return;
+  if (!toggle || !mobileNav) return;
 
-  trigger.addEventListener('click', () => {
-    const isOpen = dropdown.hidden === false;
-    dropdown.hidden = isOpen;
-    trigger.setAttribute('aria-expanded', String(!isOpen));
+  toggle.addEventListener('click', () => {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+
+    toggle.setAttribute('aria-expanded', !isOpen);
+    mobileNav.setAttribute('aria-hidden', isOpen);
+
+    // Optional: also toggle a class on body or nav for styling
+    document.body.classList.toggle('nav-open', !isOpen);
   });
 
   // Close when clicking outside
   document.addEventListener('click', (e) => {
-    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.hidden = true;
-      trigger.setAttribute('aria-expanded', 'false');
-    }
-  });
-
-  // Close on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !dropdown.hidden) {
-      dropdown.hidden = true;
-      trigger.setAttribute('aria-expanded', 'false');
-      trigger.focus();
+    if (!toggle.contains(e.target) && !mobileNav.contains(e.target)) {
+      toggle.setAttribute('aria-expanded', 'false');
+      mobileNav.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('nav-open');
     }
   });
 });
