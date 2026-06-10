@@ -1,0 +1,48 @@
+<div class="product-gallery" id="ProductGallery-{{ section.id }}">
+  <!-- Main Image -->
+  <div class="product-gallery-main">
+    <div class="gallery-viewer">
+      {%- if product.featured_media -%}
+        <div class="main-image-container" id="MainImage-{{ section.id }}">
+          <img
+            src="{{ product.featured_media | image_url: width: 787 }}"
+            alt="{{ product.featured_media.alt | escape }}"
+            width="787"
+            height="787"
+            loading="eager"
+            class="main-image active"
+            id="FeaturedImage-{{ section.id }}"
+          >
+        </div>
+      {%- else -%}
+        <div class="main-image-placeholder">
+          {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <!-- Thumbnail Navigation -->
+  {%- if product.media.size > 1 -%}
+    <div class="product-thumbnails">
+      <div class="thumbnail-container">
+        {%- for media in product.media limit: 3 -%}
+          <div class="thumbnail-item {% if forloop.first %}active{% endif %}" 
+               data-media-id="{{ media.id }}"
+               tabindex="0">
+            <div class="thumbnail-wrapper">
+              <img
+                src="{{ media | image_url: width: 84 }}"
+                alt="{{ media.alt | escape }}"
+                width="84"
+                height="84"
+                loading="lazy"
+                class="thumbnail-image"
+              >
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+</div>

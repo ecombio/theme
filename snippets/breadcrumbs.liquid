@@ -1,22 +1,48 @@
-{% comment %}
-  Breadcrumbs Snippet
-  Usage: {% render 'breadcrumbs' %}
-{% endcomment %}
+{%- unless template == 'index' or template == 'cart' or template == 'list-collections' or template == '404' -%}
+  {%- assign t = template | split: '.' | first -%}
 
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-  <a href="{{ routes.root_url }}">Home</a>
+  <nav class="breadcrumbs" role="navigation" aria-label="breadcrumbs">
+    <div class="breadcrumbs-container">
+      <a href="/" title="Home">Home</a>
+      
+      <span class="breadcrumb-divider">
+        <span class="divider-line"></span>
+      </span>
 
-  {% if collection %}
-    <span class="separator">/</span>
-    <a href="{{ collection.url }}">{{ collection.title }}</a>
-  {% elsif product and product.collections.size > 0 %}
-    <span class="separator">/</span>
-    {% assign col = product.collections.first %}
-    <a href="{{ col.url }}">{{ col.title }}</a>
-  {% endif %}
-
-  {% if product %}
-    <span class="separator">/</span>
-    <span class="current">{{ product.title }}</span>
-  {% endif %}
-</nav>
+      {%- case t -%}
+        {%- when 'product' -%}
+          {%- if collection.url -%}
+            <a href="{{ collection.url }}">{{ collection.title }}</a>
+            <span class="breadcrumb-divider">
+              <span class="divider-line"></span>
+            </span>
+          {%- endif -%}
+          <span class="breadcrumb-current">{{ product.title }}</span>
+        
+        {%- when 'collection' and collection.handle -%}
+          <span class="breadcrumb-current">{{ collection.title }}</span>
+        
+        {%- when 'blog' -%}
+          {%- if current_tags -%}
+            <a href="{{ blog.url }}">{{ blog.title }}</a>
+            <span class="breadcrumb-divider">
+              <span class="divider-line"></span>
+            </span>
+            <span class="breadcrumb-current">{{ current_tags | join: " + " }}</span>
+          {%- else -%}
+            <span class="breadcrumb-current">{{ blog.title }}</span>
+          {%- endif -%}
+        
+        {%- when 'article' -%}
+          <a href="{{ blog.url }}">{{ blog.title }}</a>
+          <span class="breadcrumb-divider">
+            <span class="divider-line"></span>
+          </span>
+          <span class="breadcrumb-current">{{ article.title }}</span>
+        
+        {%- else -%}
+          <span class="breadcrumb-current">{{ page_title }}</span>
+      {%- endcase -%}
+    </div>
+  </nav>
+{%- endunless -%}

@@ -1,37 +1,214 @@
-<div class="product-info">
+<div class="product-info-container" id="ProductInfo-{{ section.id }}">
+  <div class="product-info-wrapper">
+    {%- for block in block_settings -%}
+      {%- case block.type -%}
+        
+        {%- when 'title' -%}
+          <div class="product-header" {{ block.shopify_attributes }}>
+            {%- if product.metafields.custom.badge -%}
+              <span class="product-badge">{{ product.metafields.custom.badge }}</span>
+            {%- endif -%}
+            <h1 class="product-title">{{ product.title }}</h1>
+            {%- if product.vendor -%}
+              <div class="product-vendor">
+                Vendor: <a href="{{ product.vendor | url_for_vendor }}">{{ product.vendor }}</a>
+              </div>
+            {%- endif -%}
+            {%- if product.type -%}
+              <div class="product-type">Type: {{ product.type }}</div>
+            {%- endif -%}
+          </div>
 
-  {% if product.vendor %}
-    <p class="product-vendor">{{ product.vendor }}</p>
-  {% endif %}
+        {%- when 'price' -%}
+          <div class="product-pricing" {{ block.shopify_attributes }}>
+            <div class="price-wrapper">
+              <span class="price {% if product.compare_at_price > product.price %}sale-price{% endif %}">
+                {{ product.price | money }}
+              </span>
+              {%- if product.compare_at_price > product.price -%}
+                <span class="compare-price">{{ product.compare_at_price | money }}</span>
+              {%- endif -%}
+            </div>
+          </div>
 
-  <h1 class="product-title">{{ product.title }}</h1>
+        {%- when 'features' -%}
+          <div class="product-features" {{ block.shopify_attributes }}>
+            <div class="feature-item">
+              <svg class="feature-icon" width="14" height="14" viewBox="0 0 20 20" fill="none">
+                <path d="M16.875 5.625L8.125 14.375L3.75 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Modern</span>
+            </div>
+            <div class="feature-item">
+              <svg class="feature-icon" width="14" height="14" viewBox="0 0 20 20" fill="none">
+                <path d="M16.875 5.625L8.125 14.375L3.75 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Eco-certified</span>
+            </div>
+            <div class="feature-item">
+              <svg class="feature-icon" width="14" height="14" viewBox="0 0 20 20" fill="none">
+                <path d="M16.875 5.625L8.125 14.375L3.75 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Warranty</span>
+            </div>
+          </div>
 
-  {% assign current_variant = product.selected_or_first_available_variant %}
+          {%- if product.available -%}
+            <div class="stock-indicator available">
+              <span class="stock-dot"></span>
+              <span class="stock-text">Available in stock ({{ product.selected_or_first_available_variant.inventory_quantity }})</span>
+            </div>
+          {%- else -%}
+            <div class="stock-indicator unavailable">
+              <span class="stock-dot"></span>
+              <span class="stock-text">Out of stock</span>
+            </div>
+          {%- endif -%}
 
-  <div class="product-price" id="product-price">
-    {% if current_variant.compare_at_price > current_variant.price %}
-      <span class="price-compare">{{ current_variant.compare_at_price | money }}</span>
-      <span class="price-sale">{{ current_variant.price | money }}</span>
-      <span class="price-badge">Sale</span>
-    {% else %}
-      <span class="price-regular">
-        {% if product.price_varies %}
-          From {{ product.price_min | money }}
-        {% else %}
-          {{ current_variant.price | money }}
-        {% endif %}
-      </span>
-    {% endif %}
+        {%- when 'description' -%}
+          {%- if product.description != blank -%}
+            <div class="product-description" {{ block.shopify_attributes }}>
+              {{ product.description }}
+            </div>
+          {%- endif -%}
+
+        {%- when 'variant_picker' -%}
+          <div class="product-variants" {{ block.shopify_attributes }}>
+            {%- unless product.has_only_default_variant -%}
+              {%- for option in product.options_with_values -%}
+                <div class="variant-option">
+                  <label class="variant-label">{{ option.name }}: <span class="selected-value">{{ option.selected_value }}</span></label>
+                  
+                  <fieldset class="variant-fieldset">
+                    {%- if option.name == 'Color' -%}
+                      <div class="color-swatches">
+                        {%- for value in option.values -%}
+                          <input
+                            type="radio"
+                            id="{{ section.id }}-{{ option.name }}-{{ forloop.index0 }}"
+                            name="{{ option.name }}"
+                            value="{{ value | escape }}"
+                            {% if option.selected_value == value %}checked{% endif %}
+                            class="color-input"
+                          >
+                          <label 
+                            for="{{ section.id }}-{{ option.name }}-{{ forloop.index0 }}"
+                            class="color-swatch"
+                            style="background-color: {{ value | handleize }};"
+                            title="{{ value }}"
+                          >
+                            <span class="visually-hidden">{{ value }}</span>
+                          </label>
+                        {%- endfor -%}
+                      </div>
+                    {%- else -%}
+                      <div class="variant-buttons">
+                        {%- for value in option.values -%}
+                          <input
+                            type="radio"
+                            id="{{ section.id }}-{{ option.name }}-{{ forloop.index0 }}"
+                            name="{{ option.name }}"
+                            value="{{ value | escape }}"
+                            {% if option.selected_value == value %}checked{% endif %}
+                            class="variant-radio"
+                          >
+                          <label 
+                            for="{{ section.id }}-{{ option.name }}-{{ forloop.index0 }}"
+                            class="variant-button"
+                          >
+                            {{ value }}
+                          </label>
+                        {%- endfor -%}
+                      </div>
+                    {%- endif -%}
+                  </fieldset>
+                </div>
+              {%- endfor -%}
+            {%- endunless -%}
+          </div>
+
+        {%- when 'quantity_selector' -%}
+          <div class="quantity-selector-wrapper" {{ block.shopify_attributes }}>
+            <label for="Quantity-{{ section.id }}" class="visually-hidden">Quantity</label>
+            <div class="quantity-selector">
+              <button class="quantity-button" type="button" name="minus" aria-label="Decrease quantity">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3.125 10H16.875" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <input
+                type="number"
+                id="Quantity-{{ section.id }}"
+                name="quantity"
+                value="1"
+                min="1"
+                class="quantity-input"
+                form="product-form-{{ section.id }}"
+              >
+              <button class="quantity-button" type="button" name="plus" aria-label="Increase quantity">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3.125 10H16.875M10 3.125V16.875" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+        {%- when 'buy_buttons' -%}
+          <div class="product-form-wrapper" {{ block.shopify_attributes }}>
+            {%- form 'product', product, id: form_id, class: 'product-form' -%}
+              <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+              
+              <div class="product-actions">
+                <button
+                  type="submit"
+                  name="add"
+                  class="button button-primary add-to-cart"
+                  {% unless product.available %}disabled{% endunless %}
+                >
+                  {%- if product.available -%}
+                    Add To Cart
+                  {%- else -%}
+                    Sold Out
+                  {%- endif -%}
+                </button>
+
+                <button type="button" class="button button-secondary buy-now">
+                  Buy It Now
+                </button>
+              </div>
+            {%- endform -%}
+          </div>
+
+        {%- when 'shipping' -%}
+          <div class="product-shipping-info" {{ block.shopify_attributes }}>
+            <div class="shipping-item">
+              <svg class="shipping-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M16.875 16.25H15C14.8342 16.25 14.6753 16.1842 14.5581 16.0669C14.4408 15.9497 14.375 15.7908 14.375 15.625V13.75H5.625V15.625C5.625 15.7908 5.55915 15.9497 5.44194 16.0669C5.32473 16.1842 5.16576 16.25 5 16.25H3.125C2.95924 16.25 2.80027 16.1842 2.68306 16.0669C2.56585 15.9497 2.5 15.7908 2.5 15.625V8.75L4.83516 3.49609C4.88426 3.38564 4.96435 3.29179 5.06572 3.22592C5.16708 3.16006 5.28537 3.125 5.40625 3.125H14.5938C14.7146 3.125 14.8329 3.16006 14.9343 3.22592C15.0356 3.29179 15.1157 3.38564 15.1648 3.49609L17.5 8.75V15.625C17.5 15.7908 17.4342 15.9497 17.3169 16.0669C17.1997 16.1842 17.0408 16.25 16.875 16.25V16.25" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Free International Shipping over $500</span>
+            </div>
+            <div class="shipping-item">
+              <svg class="shipping-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.25 15.625H13.125C14.2853 15.625 15.3981 15.1641 16.2186 14.3436C17.0391 13.5231 17.5 12.4103 17.5 11.25C17.5 10.0897 17.0391 8.97688 16.2186 8.15641C15.3981 7.33594 14.2853 6.875 13.125 6.875H2.5M6.25 10.625L2.5 6.875L6.25 3.125" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Free Returns Within 30 days</span>
+            </div>
+          </div>
+
+        {%- when 'pickup' -%}
+          <div class="pickup-availability" {{ block.shopify_attributes }}>
+            <div class="pickup-header">
+              <svg class="pickup-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <div class="pickup-info">
+                <div class="pickup-title">Pickup available at California Store</div>
+                <div class="pickup-subtitle">Usually ready in 24 hours</div>
+              </div>
+            </div>
+          </div>
+
+      {%- endcase -%}
+    {%- endfor -%}
   </div>
-
-  {% unless current_variant.available %}
-    <p class="product-availability sold-out">Sold out</p>
-  {% endunless %}
-
-  {% if product.description != blank %}
-    <div class="product-description">
-      {{ product.description }}
-    </div>
-  {% endif %}
-
 </div>
