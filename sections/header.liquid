@@ -1,66 +1,64 @@
 {% comment %}
   ECOMBIO Header Section
   File: sections/header.liquid
-  Responsive: mobile / tablet / desktop
-
-  Snippets used:
-    - snippets/ecombio-header-logo.liquid
-    - snippets/ecombio-header-icons.liquid
-    - snippets/ecombio-search-form.liquid
-    - snippets/ecombio-mobile-nav.liquid
-    - snippets/ecombio-cart-drawer.liquid
 {% endcomment %}
 
-{%- assign show_category          = section.settings.show_category_filter -%}
-{%- assign show_sticky_toggle     = section.settings.show_category_controller | default: true -%}
-{%- assign header_style           = section.settings.header_style | default: 'hyper' -%}
-{%- assign enable_drawer          = section.settings.enable_cart_drawer | default: true -%}
-{%- assign enable_upsells         = section.settings.enable_upsells | default: true -%}
-{%- assign enable_bar             = section.settings.enable_free_shipping_bar | default: true -%}
-{%- assign free_ship_min          = section.settings.free_shipping_threshold | default: 75 -%}
-{%- assign upsell_page            = section.settings.enable_upsell_page | default: true -%}
+{%- assign show_category       = section.settings.show_category_filter -%}
+{%- assign show_sticky_toggle  = section.settings.show_category_controller | default: true -%}
+{%- assign header_style        = section.settings.header_style | default: 'hyper' -%}
+{%- assign enable_drawer       = section.settings.enable_cart_drawer | default: true -%}
+{%- assign enable_upsells      = section.settings.enable_upsells | default: true -%}
+{%- assign enable_bar          = section.settings.enable_free_shipping_bar | default: true -%}
+{%- assign free_ship_min       = section.settings.free_shipping_threshold | default: 75 -%}
+{%- assign upsell_page         = section.settings.enable_upsell_page | default: true -%}
 
 <header class="ecombio-header ecombio-header--{{ header_style }}" id="ecombio-header">
 
-  {%- comment -%} ── TOP ROW ── Hamburger + Sticky Toggle + Logo + Search + Icons {%- endcomment -%}
   <div class="ecombio-header__bar">
     <div class="ecombio-header__inner">
 
-      {%- comment -%} Hamburger (mobile + tablet only) {%- endcomment -%}
+      <!-- Hamburger (Mobile + Tablet) -->
       <button class="ecombio-header__hamburger" id="ecombio-nav-toggle"
               aria-label="Open navigation" aria-expanded="false" aria-controls="ecombio-mobile-nav">
         <span></span><span></span><span></span>
       </button>
 
-      {%- comment -%} Sticky Header Toggle (Hamburger → X) — only shows when header is sticky {%- endcomment -%}
+      <!-- Desktop Sticky Toggle (Hamburger → X) -->
       {%- if show_sticky_toggle -%}
         <button 
-          class="ecombio-header__sticky-toggle" 
+          class="ecombio-header__sticky-toggle hidden lg:flex"
           type="button"
-          aria-label="Toggle menu"
-          aria-expanded="false"
+          aria-label="Toggle menu bar"
+          aria-expanded="true"
         >
           <span></span><span></span><span></span>
         </button>
       {%- endif -%}
 
-      {%- comment -%} Logo {%- endcomment -%}
-      {%- render 'ecombio-header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width -%}
+      <!-- Logo -->
+      {%- render 'ecombio-header-logo', 
+            logo: section.settings.logo, 
+            logo_width: section.settings.logo_width -%}
 
-      {%- comment -%} SEARCH (inline on desktop) {%- endcomment -%}
+      <!-- Search (Desktop inline) -->
       <div class="ecombio-header__search ecombio-header__search--inline">
-        {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'desktop' -%}
+        {%- render 'ecombio-search-form', 
+              show_category: show_category, 
+              id_suffix: 'desktop' -%}
       </div>
 
+      <!-- Right side icons -->
       {%- render 'ecombio-header-icons' -%}
 
     </div>
   </div>
 
-  {%- comment -%} ── SEARCH ROW (tablet + mobile) {%- endcomment -%}
+  <!-- Search row (Tablet + Mobile) -->
   <div class="ecombio-header__search-row">
     <div class="ecombio-header__search-row-inner">
-      {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'mobile' -%}
+      {%- render 'ecombio-search-form', 
+            show_category: show_category, 
+            id_suffix: 'mobile' -%}
     </div>
   </div>
 
@@ -68,7 +66,6 @@
 
 {%- render 'ecombio-mobile-nav' -%}
 
-{%- comment -%} Cart Drawer {%- endcomment -%}
 {%- if enable_drawer -%}
   {%- render 'ecombio-cart-drawer',
         enable_upsells: enable_upsells,
@@ -117,17 +114,17 @@
     {
       "type": "checkbox",
       "id": "show_category_controller",
-      "label": "Show sticky header menu toggle",
+      "label": "Show sticky header menu toggle (desktop)",
       "default": true,
-      "info": "Shows a hamburger-style toggle before the logo when the header becomes sticky."
+      "info": "Desktop only. Shows a hamburger that can hide/show the menu bar when the header is sticky."
     },
     {
       "type": "select",
       "id": "header_style",
-      "label": "Header Style Preset",
+      "label": "Header Style",
       "options": [
-        { "value": "hyper", "label": "Hyper — Bold & Energetic" },
-        { "value": "focus", "label": "Focus — Clean & Minimal" }
+        { "value": "hyper", "label": "Hyper" },
+        { "value": "focus", "label": "Focus" }
       ],
       "default": "hyper"
     },
@@ -143,7 +140,7 @@
     },
     {
       "type": "header",
-      "content": "Free Shipping Bar"
+      "content": "Free Shipping"
     },
     {
       "type": "checkbox",
@@ -159,7 +156,7 @@
     },
     {
       "type": "header",
-      "content": "Upsells & Recommendations"
+      "content": "Upsells"
     },
     {
       "type": "checkbox",
@@ -172,16 +169,6 @@
       "id": "enable_upsell_page",
       "label": "Enable Pre-Checkout Upsell Page",
       "default": true
-    }
-  ],
-  "presets": [
-    {
-      "name": "Hyper Header",
-      "settings": {
-        "header_style": "hyper",
-        "show_category_filter": true,
-        "logo_width": 140
-      }
     }
   ]
 }
