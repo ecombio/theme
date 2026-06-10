@@ -4,6 +4,7 @@
      1. Category filter dropdowns (multiple instances: desktop + mobile)
      2. Mobile / tablet drawer nav (hamburger toggle)
      3. Header height CSS variable (--ecombio-header-height)
+     4. Sticky header menu toggle (hamburger → X, only visible when sticky)
    ============================================================================= */
 
 (function () {
@@ -145,15 +146,12 @@
 
   /* ===========================================================================
      3. HEADER HEIGHT CSS VARIABLE
-     Sets --ecombio-header-height on :root so the sticky menu bar always sits
-     flush underneath the header regardless of its height at any breakpoint.
      =========================================================================== */
 
   function initHeaderHeight() {
     var headerGroup = document.querySelector('.shopify-section-group-header-group');
     var header      = document.getElementById('ecombio-header');
 
-    // Prefer the full group if available, fall back to just the header element
     var target = headerGroup || header;
     if (!target) return;
 
@@ -162,15 +160,62 @@
       document.documentElement.style.setProperty('--ecombio-header-height', height + 'px');
     }
 
-    // Set immediately, then watch for size changes (font load, resize, etc.)
     update();
     window.addEventListener('resize', update);
 
-    // ResizeObserver catches height changes without needing a resize event
-    // (e.g. search row appearing on tablet, banner dismissal, etc.)
     if (window.ResizeObserver) {
       new ResizeObserver(update).observe(target);
     }
+  }
+
+  /* ===========================================================================
+     4. STICKY HEADER MENU TOGGLE (Hamburger → X)
+     Only visible when header is sticky. Opens the mobile nav drawer.
+     =========================================================================== */
+
+  function initStickyHeaderToggle() {
+    var toggle = document.querySelector('.ecombio-header__sticky-toggle');
+    var drawer = document.getElementById('ecombio-mobile-nav');
+    var header = document.querySelector('.ecombio-sticky-header');
+
+    if (!toggle || !drawer || !header) return;
+
+    // Detect when header becomes sticky and add .is-sticky class
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          header.classList.toggle('is-sticky', !entry.isIntersecting);
+        });
+      },
+      { threshold: [1] }
+    );
+    observer.observe(header);
+
+    // Toggle click handler
+    toggle.addEventListener('click', function () {
+      var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+      drawer.classList.toggle('is-open', !isOpen);
+      drawer.setAttribute('aria-hidden', String(isOpen));
+
+      if (!isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+        toggle.focus();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+        toggle.setAttribute('aria-expanded', 'false');
+        drawer.classList.remove('is-open');
+        document.body.style.overflow = '';
+        toggle.focus();
+      }
+    });
   }
 
   /* ===========================================================================
@@ -181,6 +226,7 @@
     initCategoryDropdowns();
     initDrawer();
     initHeaderHeight();
+    initStickyHeaderToggle();     // ← New sticky hamburger toggle
   }
 
 })();
