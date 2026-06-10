@@ -307,7 +307,7 @@
 .collection-layout {
   display: flex;
   gap: 2.5rem;
-  align-items: flex-start;
+  align-items: stretch;
   padding-top: 1.5rem;
   position: relative;
 }
@@ -321,10 +321,12 @@
 .collection-filters {
   width: 240px;
   flex-shrink: 0;
+  align-self: flex-start;   /* KEY: prevents sidebar stretching full col height */
   position: sticky;
   top: calc(var(--sticky-bar-height) + 1.5rem);
-  max-height: calc(100vh - var(--sticky-bar-height) - 1.5rem);
+  max-height: calc(100vh - var(--sticky-bar-height) - 3rem);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Desktop: OPEN by default, toggle collapses it */
@@ -332,13 +334,13 @@
   .collection-filters {
     display: block;
     width: 240px;
-    overflow: visible;
     transition: width 0.25s ease;
   }
 
   .collection-filters:not(.sidebar-open) {
     width: 0;
     overflow: hidden;
+    padding: 0;
   }
 }
 
@@ -358,6 +360,7 @@
     background: #fff;
     z-index: 200;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1.5rem;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
     transform: translateX(-100%);
