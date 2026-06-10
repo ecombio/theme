@@ -1,167 +1,164 @@
 /**
- * Product Page — Static Demo
- * Handles gallery, variant selection, quantity, and cart/buy feedback.
+ * Product Page JS
+ * Real variant handling + AJAX Add to Cart + Cart Drawer
  */
-
 (function () {
   'use strict';
 
-  /* ─── Gallery ─────────────────────────────────────────── */
+  /* ─── Variant Selection + Add to Cart ─────────────────── */
 
-  const GALLERY_IMAGES = [
-    {
-      src: 'https://placehold.co/787x787/f5f0ea/8c7355?text=Task+Chair+Luxe',
-      alt: 'Task Chair Luxe – front view',
-    },
-    {
-      src: 'https://placehold.co/787x787/ede6db/8c7355?text=Side+View',
-      alt: 'Task Chair Luxe – side view',
-    },
-    {
-      src: 'https://placehold.co/787x787/e3dbd0/8c7355?text=Lifestyle',
-      alt: 'Task Chair Luxe – lifestyle setting',
-    },
-  ];
+  function initProductForm() {
+    const form = document.getElementById('ProductForm');
+    if (!form) return;
 
-  function initGallery() {
-    const thumbnails = document.querySelectorAll('.thumbnail-item');
-    const mainImage = document.getElementById('FeaturedImage');
+    const variantIdInput   = document.getElementById('ProductVariantId');
+    const addToCartBtn     = document.getElementById('AddToCart');
+    const quantityInput    = document.getElementById('ProductQuantity');
+    const priceEl          = document.getElementById('ProductPrice');
+    const comparePriceEl   = document.getElementById('ProductComparePrice');
+    const stockIndicator   = document.getElementById('StockIndicator');
 
-    if (!thumbnails.length || !mainImage) return;
+    const variants = window.productVariants || [];
 
-    function selectThumbnail(index) {
-      thumbnails.forEach((t, i) => {
-        const active = i === index;
-        t.classList.toggle('active', active);
-        t.setAttribute('aria-pressed', active ? 'true' : 'false');
+    if (!variants.length) {
+      console.error('[Product] window.productVariants is missing!');
+      return;
+    }
+
+    // Find matching variant from selected options
+    function getCurrentVariant() {
+      const selected = {};
+      form.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+        selected[radio.name] = radio.value;
       });
 
-      const img = GALLERY_IMAGES[index];
-      if (img) {
-        mainImage.src = img.src;
-        mainImage.alt = img.alt;
+      return variants.find(v => {
+        const match1 = !selected.Color     || v.option1 === selected.Color;
+        const match2 = !selected.Size      || v.option2 === selected.Size;
+        const match3 = !selected.Material  || v.option3 === selected.Material;
+        return match1 && match2 && match3;
+      });
+    }
+
+    function updateUI(variant) {
+      if (!variant) return;
+
+      if (variantIdInput) variantIdInput.value = variant.id;
+
+      if (priceEl) {
+        priceEl.textContent = formatMoney(variant.price);
+        priceEl.classList.toggle('sale-price', variant.compare_at_price > variant.price);
+      }
+
+      if (comparePriceEl) {
+        if (variant.compare_at_price > variant.price) {
+          comparePriceEl.textContent = formatMoney(variant.compare_at_price);
+          comparePriceEl.style.display = '';
+        } else {
+          comparePriceEl.style.display = 'none';
+        }
+      }
+
+      if (stockIndicator) {
+        const available = variant.available;
+        stockIndicator.classList.toggle('available', available);
+        stockIndicator.classList.toggle('sold-out', !available);
+
+        const text = stockIndicator.querySelector('.stock-text');
+        if (text) {
+          text.textContent = available 
+            ? (variant.inventory_quantity ? `Available in stock (${variant.inventory_quantity})` : 'Available in stock')
+            : 'Sold Out';
+        }
+      }
+
+      if (addToCartBtn) {
+        addToCartBtn.disabled = !variant.available;
+        addToCartBtn.textContent = variant.available ? 'Add To Cart' : 'Sold Out';
       }
     }
 
-    thumbnails.forEach((thumb, i) => {
-      thumb.addEventListener('click', () => selectThumbnail(i));
-      thumb.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          selectThumbnail(i);
-        }
-      });
-    });
-  }
-
-  /* ─── Variant Selection ────────────────────────────────── */
-
-  function initVariantSelection() {
-    // Color swatches
-    const colorInputs = document.querySelectorAll('input[name="Color"]');
-    const colorLabel = document.getElementById('SelectedColor');
-
-    colorInputs.forEach((input) => {
-      input.addEventListener('change', () => {
-        if (colorLabel) colorLabel.textContent = input.value;
-      });
-    });
-
-    // Material buttons
-    const materialInputs = document.querySelectorAll('input[name="Material"]');
-    const materialLabel = document.getElementById('SelectedMaterial');
-
-    materialInputs.forEach((input) => {
-      input.addEventListener('change', () => {
-        if (materialLabel) materialLabel.textContent = input.value;
-      });
-    });
-  }
-
-  /* ─── Quantity Selector ────────────────────────────────── */
-
-  function initQuantitySelector() {
-    const input = document.getElementById('ProductQuantity');
-    const minus = document.querySelector('.quantity-button[name="minus"]');
-    const plus = document.querySelector('.quantity-button[name="plus"]');
-
-    if (!input) return;
-
-    function clamp(val) {
-      return Math.max(1, Math.min(99, val));
-    }
-
-    if (minus) {
-      minus.addEventListener('click', () => {
-        input.value = clamp((parseInt(input.value, 10) || 1) - 1);
+    function formatMoney(cents) {
+      return (cents / 100).toLocaleString('en-US', {
+        style: 'currency',
+        currency: window.Shopify?.currency?.active || 'USD'
       });
     }
 
-    if (plus) {
-      plus.addEventListener('click', () => {
-        input.value = clamp((parseInt(input.value, 10) || 1) + 1);
-      });
-    }
-
-    input.addEventListener('change', () => {
-      input.value = clamp(parseInt(input.value, 10) || 1);
+    // When user changes any option
+    form.addEventListener('change', () => {
+      const variant = getCurrentVariant();
+      if (variant) updateUI(variant);
     });
 
-    input.addEventListener('blur', () => {
-      input.value = clamp(parseInt(input.value, 10) || 1);
+    // Real AJAX Add to Cart
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const variantId = parseInt(variantIdInput?.value);
+      const qty = parseInt(quantityInput?.value) || 1;
+
+      if (!variantId) return alert('Please select all options');
+
+      addToCartBtn.disabled = true;
+      addToCartBtn.textContent = 'Adding...';
+
+      try {
+        const res = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: variantId, quantity: qty })
+        });
+
+        if (!res.ok) throw new Error();
+
+        // Open your cart drawer
+        document.dispatchEvent(new CustomEvent('cart:open'));
+
+        addToCartBtn.textContent = 'Added!';
+        setTimeout(() => {
+          addToCartBtn.textContent = 'Add To Cart';
+          addToCartBtn.disabled = false;
+        }, 1200);
+
+      } catch (err) {
+        addToCartBtn.textContent = 'Error';
+        setTimeout(() => {
+          addToCartBtn.textContent = 'Add To Cart';
+          addToCartBtn.disabled = false;
+        }, 1500);
+      }
     });
+
+    // Quantity +/- buttons
+    const minusBtn = form.querySelector('button[name="minus"]');
+    const plusBtn = form.querySelector('button[name="plus"]');
+
+    if (minusBtn) minusBtn.addEventListener('click', () => {
+      quantityInput.value = Math.max(1, (parseInt(quantityInput.value) || 1) - 1);
+    });
+
+    if (plusBtn) plusBtn.addEventListener('click', () => {
+      quantityInput.value = (parseInt(quantityInput.value) || 1) + 1;
+    });
+
+    // Initial load
+    const initial = getCurrentVariant() || variants[0];
+    if (initial) updateUI(initial);
   }
 
-  /* ─── Buy Buttons ──────────────────────────────────────── */
+  /* ─── Gallery (you can delete this block later) ───────── */
 
-  function initBuyButtons() {
-    const addToCart = document.getElementById('AddToCart');
-    const buyNow = document.getElementById('BuyNow');
-
-    if (addToCart) {
-      addToCart.addEventListener('click', () => {
-        if (addToCart.disabled) return;
-        setButtonState(addToCart, 'Added to Cart ✓', true, 'success');
-        setTimeout(() => resetButtonState(addToCart, 'Add To Cart'), 2500);
-      });
-    }
-
-    if (buyNow) {
-      buyNow.addEventListener('click', () => {
-        setButtonState(buyNow, 'Redirecting…', true, null);
-        // In a real implementation: window.location.href = '/checkout';
-        setTimeout(() => resetButtonState(buyNow, 'Buy It Now'), 2000);
-      });
-    }
-  }
-
-  function setButtonState(btn, text, disabled, cssClass) {
-    btn.textContent = text;
-    btn.disabled = disabled;
-    if (cssClass) btn.classList.add(cssClass);
-  }
-
-  function resetButtonState(btn, text) {
-    btn.textContent = text;
-    btn.disabled = false;
-    btn.classList.remove('success');
-  }
-
-  /* ─── Accordions ───────────────────────────────────────── */
-
-  function initAccordions() {
-    // Nothing extra needed — <details>/<summary> handles open/close natively.
-    // The CSS handles icon rotation via details[open] selector.
+  function initGallery() {
+    // Your existing gallery code can stay here if you still want it
+    // For now I'm leaving it out so it doesn't conflict
   }
 
   /* ─── Boot ─────────────────────────────────────────────── */
 
   function init() {
+    initProductForm();
     initGallery();
-    initVariantSelection();
-    initQuantitySelector();
-    initBuyButtons();
-    initAccordions();
   }
 
   if (document.readyState === 'loading') {
