@@ -1,14 +1,11 @@
 {% comment %}
   collection-filters.liquid
-  Sidebar filter panel — supports tag filters, availability, and price range.
-  Reads active filters from current_tags and request params.
   Parameters:
     - open {Boolean} - adds sidebar-open class to show sidebar on page load (desktop)
-{% endcomment %}
 
-{%- liquid
-  assign active_tags = collection.all_tags | where: 'active'
--%}
+  Tag groups are whitelisted below. To add a group, add its label and the
+  tags that belong to it. Tags are matched exactly (case-insensitive via handleize).
+{% endcomment %}
 
 <aside
   class="collection-filters{% if open %} sidebar-open{% endif %}"
@@ -31,7 +28,7 @@
     <button
       class="filter-group__toggle"
       type="button"
-      aria-expanded="true"
+      aria-expanded="false"
       aria-controls="filter-availability"
     >
       Availability
@@ -59,7 +56,7 @@
     <button
       class="filter-group__toggle"
       type="button"
-      aria-expanded="true"
+      aria-expanded="false"
       aria-controls="filter-price"
     >
       Price
@@ -109,99 +106,78 @@
     </div>
   </div>
 
-  {%- comment -%} ── Tags — grouped by prefix (e.g. "Color_Red" → Color group) ── {%- endcomment -%}
-  {%- assign tag_groups = '' -%}
-  {%- assign ungrouped_tags = '' -%}
+  {%- comment -%}
+    ── Whitelisted tag groups ──
+    Each group defines a label and a pipe-separated list of exact tags to show.
+    Only tags that actually exist in collection.all_tags are rendered.
+    To edit: change the tag values in the assign statements below.
+  {%- endcomment -%}
 
-  {%- for tag in collection.all_tags -%}
-    {%- if tag contains '_' -%}
-      {%- assign parts = tag | split: '_' -%}
-      {%- assign group_name = parts | first | capitalize -%}
-      {%- unless tag_groups contains group_name -%}
-        {%- assign tag_groups = tag_groups | append: group_name | append: '|' -%}
-      {%- endunless -%}
-    {%- else -%}
-      {%- assign ungrouped_tags = ungrouped_tags | append: tag | append: '|' -%}
+  {%- assign filter_groups = "Bike Style|Frame|Motor" -%}
+
+  {%- assign tags_Bike-Style = "Commuter,Cargo,Folding,Fat,Road,Step" -%}
+  {%- assign tags_Frame      = "Step-through,Mid-step,Diamond,Aluminum frame" -%}
+  {%- assign tags_Motor      = "Fat,Electric,Mid-drive,Hub drive" -%}
+
+  {%- assign filter_group_array = filter_groups | split: "|" -%}
+
+  {%- for group_label in filter_group_array -%}
+    {%- assign group_id    = group_label | handleize -%}
+    {%- assign tag_key     = "tags_" | append: group_id -%}
+    {%- assign allowed_tags = tag_key | split: "" -%}
+
+    {%- comment -%} Liquid can't do dynamic variable lookup, so we branch manually {%- endcomment -%}
+    {%- if group_id == "bike-style" -%}{%- assign allowed_tags = tags_Bike-Style | split: "," -%}
+    {%- elsif group_id == "frame"      -%}{%- assign allowed_tags = tags_Frame      | split: "," -%}
+    {%- elsif group_id == "motor"      -%}{%- assign allowed_tags = tags_Motor      | split: "," -%}
+    {%- endif -%}
+
+    {%- comment -%} Only render the group if at least one tag exists in the collection {%- endcomment -%}
+    {%- assign group_has_tags = false -%}
+    {%- for allowed in allowed_tags -%}
+      {%- assign allowed_h = allowed | strip | handleize -%}
+      {%- for tag in collection.all_tags -%}
+        {%- if tag | handleize == allowed_h -%}{%- assign group_has_tags = true -%}{%- endif -%}
+      {%- endfor -%}
+    {%- endfor -%}
+
+    {%- if group_has_tags -%}
+      <div class="filter-group" data-filter-group="{{ group_id }}">
+        <button
+          class="filter-group__toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="filter-{{ group_id }}"
+        >
+          {{ group_label }}
+          <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="filter-group__body" id="filter-{{ group_id }}">
+          {%- for allowed in allowed_tags -%}
+            {%- assign allowed_h = allowed | strip | handleize -%}
+            {%- for tag in collection.all_tags -%}
+              {%- assign tag_h = tag | handleize -%}
+              {%- if tag_h == allowed_h -%}
+                <label class="filter-option">
+                  <input
+                    class="filter-option__checkbox"
+                    type="checkbox"
+                    name="tag"
+                    value="{{ tag_h }}"
+                    {% if current_tags contains tag %}checked{% endif %}
+                    data-filter-type="tag"
+                    data-tag="{{ tag_h }}"
+                  >
+                  <span class="filter-option__label">{{ allowed | strip }}</span>
+                </label>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+        </div>
+      </div>
     {%- endif -%}
   {%- endfor -%}
-
-  {%- assign tag_group_array = tag_groups | split: '|' | uniq -%}
-
-  {%- for group in tag_group_array -%}
-    {%- if group == blank -%}{%- continue -%}{%- endif -%}
-    <div class="filter-group" data-filter-group="{{ group | handleize }}">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="true"
-        aria-controls="filter-{{ group | handleize }}"
-      >
-        {{ group }}
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-{{ group | handleize }}">
-        {%- for tag in collection.all_tags -%}
-          {%- if tag contains group -%}
-            {%- assign parts = tag | split: '_' -%}
-            {%- assign label = parts | last | capitalize -%}
-            <label class="filter-option">
-              <input
-                class="filter-option__checkbox"
-                type="checkbox"
-                name="tag"
-                value="{{ tag | handleize }}"
-                {% if current_tags contains tag %}checked{% endif %}
-                data-filter-type="tag"
-                data-tag="{{ tag | handleize }}"
-              >
-              <span class="filter-option__label">{{ label }}</span>
-            </label>
-          {%- endif -%}
-        {%- endfor -%}
-      </div>
-    </div>
-  {%- endfor -%}
-
-  {%- comment -%} ── Ungrouped tags ── {%- endcomment -%}
-  {%- assign ungrouped_array = ungrouped_tags | split: '|' -%}
-  {%- assign has_ungrouped = false -%}
-  {%- for tag in ungrouped_array -%}
-    {%- if tag != blank -%}{%- assign has_ungrouped = true -%}{%- endif -%}
-  {%- endfor -%}
-
-  {%- if has_ungrouped -%}
-    <div class="filter-group" data-filter-group="other">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="true"
-        aria-controls="filter-other"
-      >
-        Other
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-other">
-        {%- for tag in ungrouped_array -%}
-          {%- if tag == blank -%}{%- continue -%}{%- endif -%}
-          <label class="filter-option">
-            <input
-              class="filter-option__checkbox"
-              type="checkbox"
-              name="tag"
-              value="{{ tag | handleize }}"
-              {% if current_tags contains tag %}checked{% endif %}
-              data-filter-type="tag"
-              data-tag="{{ tag | handleize }}"
-            >
-            <span class="filter-option__label">{{ tag | capitalize }}</span>
-          </label>
-        {%- endfor -%}
-      </div>
-    </div>
-  {%- endif -%}
 
 </aside>

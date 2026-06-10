@@ -260,6 +260,20 @@ console.log('Collection JS loaded');
     });
   }
 
+
+  // ── Sticky bar height → CSS var ───────────────────────────
+  // Keeps sidebar top + max-height in sync with the actual bar height,
+  // which changes as pills appear/disappear and compare bar activates.
+
+  function updateStickyBarHeight() {
+    const bar = qs('#collection-sticky-bar') || qs('.collection-sticky-bar');
+    if (!bar) return;
+    document.documentElement.style.setProperty(
+      '--sticky-bar-height',
+      bar.offsetHeight + 'px'
+    );
+  }
+
   // ── Init ───────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -271,6 +285,16 @@ console.log('Collection JS loaded');
     initSort();
     initFilterBtn();
     buildPills();
+    updateStickyBarHeight();
+
+    // Re-measure on resize (toolbar reflows on mobile/desktop switch)
+    window.addEventListener('resize', updateStickyBarHeight);
+
+    // Re-measure after pills render (they change bar height)
+    const stickyBar = qs('.collection-sticky-bar');
+    if (stickyBar && window.ResizeObserver) {
+      new ResizeObserver(updateStickyBarHeight).observe(stickyBar);
+    }
   });
 
 })();
