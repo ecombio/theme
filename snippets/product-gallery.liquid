@@ -1,17 +1,22 @@
 <div class="product-gallery" id="ProductGallery">
+
+  {%- if product.images.size > 1 -%}
   <!-- Thumbnail Navigation -->
   <div class="product-thumbnails">
     <div class="thumbnail-container">
-      <div class="thumbnail-item active"
-           data-index="0"
+      {%- for image in product.images -%}
+      <div class="thumbnail-item{% if forloop.first %} active{% endif %}"
+           data-index="{{ forloop.index0 }}"
+           data-image-src="{{ image | image_url: width: 787, height: 787 }}"
+           data-image-alt="{{ image.alt | default: product.title | escape }}"
            tabindex="0"
            role="button"
-           aria-label="View image 1"
-           aria-pressed="true">
+           aria-label="View image {{ forloop.index }}"
+           aria-pressed="{{ forloop.first | json }}">
         <div class="thumbnail-wrapper">
           <img
-            src="https://placehold.co/84x84/f0ece4/8c7355?text=1"
-            alt="Task Chair Luxe – front view"
+            src="{{ image | image_url: width: 84, height: 84, crop: 'center' }}"
+            alt="{{ image.alt | default: product.title | escape }}"
             width="84"
             height="84"
             loading="lazy"
@@ -19,52 +24,19 @@
           >
         </div>
       </div>
-
-      <div class="thumbnail-item"
-           data-index="1"
-           tabindex="0"
-           role="button"
-           aria-label="View image 2"
-           aria-pressed="false">
-        <div class="thumbnail-wrapper">
-          <img
-            src="https://placehold.co/84x84/e8e0d4/8c7355?text=2"
-            alt="Task Chair Luxe – side view"
-            width="84"
-            height="84"
-            loading="lazy"
-            class="thumbnail-image"
-          >
-        </div>
-      </div>
-
-      <div class="thumbnail-item"
-           data-index="2"
-           tabindex="0"
-           role="button"
-           aria-label="View image 3"
-           aria-pressed="false">
-        <div class="thumbnail-wrapper">
-          <img
-            src="https://placehold.co/84x84/ddd5c8/8c7355?text=3"
-            alt="Task Chair Luxe – lifestyle"
-            width="84"
-            height="84"
-            loading="lazy"
-            class="thumbnail-image"
-          >
-        </div>
-      </div>
+      {%- endfor -%}
     </div>
   </div>
+  {%- endif -%}
 
   <!-- Main Image -->
   <div class="product-gallery-main">
     <div class="gallery-viewer">
       <div class="main-image-container" id="MainImage">
+        {%- assign featured = product.selected_or_first_available_variant.featured_image | default: product.featured_image -%}
         <img
-          src="https://placehold.co/787x787/f5f0ea/8c7355?text=Task+Chair+Luxe"
-          alt="Task Chair Luxe – front view"
+          src="{{ featured | image_url: width: 787, height: 787 }}"
+          alt="{{ featured.alt | default: product.title | escape }}"
           width="787"
           height="787"
           loading="eager"
@@ -74,4 +46,52 @@
       </div>
     </div>
   </div>
+
 </div>
+
+<script>
+(function () {
+  var gallery = document.getElementById('ProductGallery');
+  if (!gallery) return;
+
+  var featuredImg = document.getElementById('FeaturedImage');
+  var thumbnails = gallery.querySelectorAll('.thumbnail-item');
+
+  function selectThumbnail(thumb) {
+    thumbnails.forEach(function (t) {
+      t.classList.remove('active');
+      t.setAttribute('aria-pressed', 'false');
+    });
+    thumb.classList.add('active');
+    thumb.setAttribute('aria-pressed', 'true');
+
+    var src = thumb.dataset.imageSrc;
+    var alt = thumb.dataset.imageAlt;
+    if (src && featuredImg) {
+      featuredImg.src = src;
+      featuredImg.alt = alt;
+    }
+  }
+
+  thumbnails.forEach(function (thumb) {
+    thumb.addEventListener('click', function () { selectThumbnail(this); });
+    thumb.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectThumbnail(this);
+      }
+    });
+  });
+
+  // Sync with variant changes dispatched by Shopify themes
+  document.addEventListener('variant:changed', function (e) {
+    var variant = e.detail && e.detail.variant;
+    if (!variant || !variant.featured_image) return;
+    var src = variant.featured_image.src;
+    var matchIndex = variant.featured_image.position - 1; // position is 1-based
+    thumbnails.forEach(function (t, i) {
+      if (i === matchIndex) selectThumbnail(t);
+    });
+  });
+})();
+</script>
