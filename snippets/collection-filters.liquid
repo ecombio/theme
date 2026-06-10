@@ -2,9 +2,6 @@
   collection-filters.liquid
   Parameters:
     - open {Boolean} - adds sidebar-open class to show sidebar on page load (desktop)
-
-  Tag groups are whitelisted below. To add a group, add its label and the
-  tags that belong to it. Tags are matched exactly (case-insensitive via handleize).
 {% endcomment %}
 
 <aside
@@ -23,12 +20,12 @@
     >Clear all</button>
   </div>
 
-  {%- comment -%} ── Availability ── {%- endcomment -%}
+  {%- comment -%} ── Availability (OPEN BY DEFAULT) ── {%- endcomment -%}
   <div class="filter-group" data-filter-group="availability">
     <button
       class="filter-group__toggle"
       type="button"
-      aria-expanded="false"
+      aria-expanded="true"
       aria-controls="filter-availability"
     >
       Availability
@@ -64,7 +61,7 @@
         <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
-    <div class="filter-group__body" id="filter-price">
+    <div class="filter-group__body" id="filter-price" hidden>
       <div class="filter-price">
         <div class="filter-price__inputs">
           <div class="filter-price__field">
@@ -108,9 +105,6 @@
 
   {%- comment -%}
     ── Whitelisted tag groups ──
-    Each group defines a label and a pipe-separated list of exact tags to show.
-    Only tags that actually exist in collection.all_tags are rendered.
-    To edit: change the tag values in the assign statements below.
   {%- endcomment -%}
 
   {%- assign filter_groups = "Bike Style|Frame|Motor" -%}
@@ -124,15 +118,12 @@
   {%- for group_label in filter_group_array -%}
     {%- assign group_id    = group_label | handleize -%}
     {%- assign tag_key     = "tags_" | append: group_id -%}
-    {%- assign allowed_tags = tag_key | split: "" -%}
 
-    {%- comment -%} Liquid can't do dynamic variable lookup, so we branch manually {%- endcomment -%}
     {%- if group_id == "bike-style" -%}{%- assign allowed_tags = tags_Bike-Style | split: "," -%}
     {%- elsif group_id == "frame"      -%}{%- assign allowed_tags = tags_Frame      | split: "," -%}
     {%- elsif group_id == "motor"      -%}{%- assign allowed_tags = tags_Motor      | split: "," -%}
     {%- endif -%}
 
-    {%- comment -%} Only render the group if at least one tag exists in the collection {%- endcomment -%}
     {%- assign group_has_tags = false -%}
     {%- for allowed in allowed_tags -%}
       {%- assign allowed_h = allowed | strip | handleize -%}
@@ -154,7 +145,7 @@
             <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <div class="filter-group__body" id="filter-{{ group_id }}">
+        <div class="filter-group__body" id="filter-{{ group_id }}" hidden>
           {%- for allowed in allowed_tags -%}
             {%- assign allowed_h = allowed | strip | handleize -%}
             {%- for tag in collection.all_tags -%}
