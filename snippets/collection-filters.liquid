@@ -1,0 +1,205 @@
+{% comment %}
+  collection-filters.liquid
+  Sidebar filter panel — supports tag filters, availability, and price range.
+  Reads active filters from current_tags and request params.
+{% endcomment %}
+
+{%- liquid
+  assign active_tags = collection.all_tags | where: 'active'
+-%}
+
+<aside class="collection-filters" id="collection-filters" aria-label="Product filters">
+
+  <div class="collection-filters__header">
+    <span class="collection-filters__heading">Filters</span>
+    <button
+      class="collection-filters__clear"
+      id="filters-clear-all"
+      type="button"
+      aria-label="Clear all filters"
+    >Clear all</button>
+  </div>
+
+  {%- comment -%} ── Availability ── {%- endcomment -%}
+  <div class="filter-group" data-filter-group="availability">
+    <button
+      class="filter-group__toggle"
+      type="button"
+      aria-expanded="true"
+      aria-controls="filter-availability"
+    >
+      Availability
+      <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="filter-group__body" id="filter-availability">
+      <label class="filter-option">
+        <input
+          class="filter-option__checkbox"
+          type="checkbox"
+          name="filter.p.available"
+          value="true"
+          {% if request.params['filter.p.available'] == 'true' %}checked{% endif %}
+          data-filter-type="availability"
+        >
+        <span class="filter-option__label">In stock</span>
+      </label>
+    </div>
+  </div>
+
+  {%- comment -%} ── Price ── {%- endcomment -%}
+  <div class="filter-group" data-filter-group="price">
+    <button
+      class="filter-group__toggle"
+      type="button"
+      aria-expanded="true"
+      aria-controls="filter-price"
+    >
+      Price
+      <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="filter-group__body" id="filter-price">
+      <div class="filter-price">
+        <div class="filter-price__inputs">
+          <div class="filter-price__field">
+            <label class="filter-price__label" for="filter-price-min">Min</label>
+            <div class="filter-price__input-wrap">
+              <span class="filter-price__symbol">$</span>
+              <input
+                id="filter-price-min"
+                class="filter-price__input"
+                type="number"
+                name="filter.v.price.gte"
+                min="0"
+                placeholder="0"
+                value="{{ request.params['filter.v.price.gte'] }}"
+                data-filter-type="price-min"
+              >
+            </div>
+          </div>
+          <span class="filter-price__sep">—</span>
+          <div class="filter-price__field">
+            <label class="filter-price__label" for="filter-price-max">Max</label>
+            <div class="filter-price__input-wrap">
+              <span class="filter-price__symbol">$</span>
+              <input
+                id="filter-price-max"
+                class="filter-price__input"
+                type="number"
+                name="filter.v.price.lte"
+                min="0"
+                placeholder="Any"
+                value="{{ request.params['filter.v.price.lte'] }}"
+                data-filter-type="price-max"
+              >
+            </div>
+          </div>
+        </div>
+        <button class="filter-price__apply" type="button" data-filter-price-apply>Apply</button>
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%} ── Tags — grouped by prefix (e.g. "Color_Red" → Color group) ── {%- endcomment -%}
+  {%- assign tag_groups = '' -%}
+  {%- assign ungrouped_tags = '' -%}
+
+  {%- for tag in collection.all_tags -%}
+    {%- if tag contains '_' -%}
+      {%- assign parts = tag | split: '_' -%}
+      {%- assign group_name = parts | first | capitalize -%}
+      {%- unless tag_groups contains group_name -%}
+        {%- assign tag_groups = tag_groups | append: group_name | append: '|' -%}
+      {%- endunless -%}
+    {%- else -%}
+      {%- assign ungrouped_tags = ungrouped_tags | append: tag | append: '|' -%}
+    {%- endif -%}
+  {%- endfor -%}
+
+  {%- assign tag_group_array = tag_groups | split: '|' | uniq -%}
+
+  {%- for group in tag_group_array -%}
+    {%- if group == blank -%}{%- continue -%}{%- endif -%}
+    <div class="filter-group" data-filter-group="{{ group | handleize }}">
+      <button
+        class="filter-group__toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="filter-{{ group | handleize }}"
+      >
+        {{ group }}
+        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="filter-group__body" id="filter-{{ group | handleize }}">
+        {%- for tag in collection.all_tags -%}
+          {%- if tag contains group -%}
+            {%- assign parts = tag | split: '_' -%}
+            {%- assign label = parts | last | capitalize -%}
+            {%- assign is_active = current_tags | where: tag -%}
+            <label class="filter-option">
+              <input
+                class="filter-option__checkbox"
+                type="checkbox"
+                name="tag"
+                value="{{ tag | handleize }}"
+                {% if current_tags contains tag %}checked{% endif %}
+                data-filter-type="tag"
+                data-tag="{{ tag | handleize }}"
+              >
+              <span class="filter-option__label">{{ label }}</span>
+            </label>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endfor -%}
+
+  {%- comment -%} ── Ungrouped tags ── {%- endcomment -%}
+  {%- assign ungrouped_array = ungrouped_tags | split: '|' -%}
+  {%- assign has_ungrouped = false -%}
+  {%- for tag in ungrouped_array -%}
+    {%- if tag != blank -%}{%- assign has_ungrouped = true -%}{%- endif -%}
+  {%- endfor -%}
+
+  {%- if has_ungrouped -%}
+    <div class="filter-group" data-filter-group="other">
+      <button
+        class="filter-group__toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="filter-other"
+      >
+        Other
+        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="filter-group__body" id="filter-other">
+        {%- for tag in ungrouped_array -%}
+          {%- if tag == blank -%}{%- continue -%}{%- endif -%}
+          <label class="filter-option">
+            <input
+              class="filter-option__checkbox"
+              type="checkbox"
+              name="tag"
+              value="{{ tag | handleize }}"
+              {% if current_tags contains tag %}checked{% endif %}
+              data-filter-type="tag"
+              data-tag="{{ tag | handleize }}"
+            >
+            <span class="filter-option__label">{{ tag | capitalize }}</span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+</aside>
+
+{%- comment -%} Mobile overlay backdrop {%- endcomment -%}
+<div class="filters-backdrop" id="filters-backdrop" aria-hidden="true"></div>
