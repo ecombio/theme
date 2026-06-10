@@ -16,6 +16,48 @@
   const thumbContainer = document.getElementById('vertical-thumbnails');
 
   // -------------------------------------------------------
+  // Build a color → [mediaIds] map from productData.media.
+  //
+  // Strategy: for each media item, check its src filename
+  // against each unique option value (e.g. "Glacier",
+  // "Polar", "Himalayan"). Case-insensitive match.
+  //
+  // Falls back gracefully — if no match is found for a
+  // color, switchMedia() is a no-op.
+  // -------------------------------------------------------
+  const colorMediaMap = {}; // { "Glacier": [id, id, ...], ... }
+
+  // Collect unique color option values from variants.
+  // This product uses option2 for color — we check all
+  // options to be safe.
+  const colorOptions = new Set();
+  productData.variants.forEach(v => {
+    [v.option1, v.option2, v.option3].forEach(opt => {
+      if (opt) colorOptions.add(opt);
+    });
+  });
+
+  // Map each media item's filename to matching color(s).
+  (productData.media || []).forEach(media => {
+    const src = (media.src || '').toLowerCase();
+    colorOptions.forEach(color => {
+      if (src.includes(color.toLowerCase())) {
+        if (!colorMediaMap[color]) colorMediaMap[color] = [];
+        colorMediaMap[color].push(String(media.id));
+      }
+    });
+  });
+
+  // -------------------------------------------------------
+  // Given a variant, return the color value that has
+  // mapped images. Checks all options.
+  // -------------------------------------------------------
+  function getVariantColor(variant) {
+    const opts = [variant.option1, variant.option2, variant.option3];
+    return opts.find(opt => opt && colorMediaMap[opt]) || null;
+  }
+
+  // -------------------------------------------------------
   // Format Shopify price integer (cents) → currency string
   // -------------------------------------------------------
   function formatMoney(cents) {
@@ -63,7 +105,6 @@
   // -------------------------------------------------------
   function updateQuantity(variant) {
     if (!qtyInput) return;
-
     if (variant.inventory_management === 'shopify') {
       const max = variant.inventory_quantity;
       qtyInput.max = max;
@@ -74,26 +115,34 @@
   }
 
   // -------------------------------------------------------
-  // Switch gallery to the variant's featured image.
-  // Falls back gracefully if the variant has no image.
+  // Switch gallery to the first image matching this color.
+  // Activates the correct thumbnail and updates main image.
   // -------------------------------------------------------
-  function switchMedia(mediaId) {
-    if (!mediaId || !thumbContainer || !mainImage) return;
+  function switchMedia(color) {
+    if (!color || !thumbContainer || !mainImage) return;
 
-    const targetThumb = thumbContainer.querySelector(
-      `.thumbnail[data-media-id="${mediaId}"]`
-    );
+    const mediaIds = colorMediaMap[color];
+    if (!mediaIds || !mediaIds.length) return;
+
+    // Find the first thumbnail whose data-media-id is in this color's set
+    const thumbs = thumbContainer.querySelectorAll('.thumbnail');
+    let targetThumb = null;
+
+    for (const thumb of thumbs) {
+      if (mediaIds.includes(thumb.dataset.mediaId)) {
+        targetThumb = thumb;
+        break;
+      }
+    }
+
     if (!targetThumb) return;
 
-    // Update main image
     mainImage.src = targetThumb.dataset.fullImage;
     mainImage.alt = targetThumb.dataset.alt;
 
-    // Update active thumbnail
-    thumbContainer.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+    thumbs.forEach(t => t.classList.remove('active'));
     targetThumb.classList.add('active');
 
-    // Scroll thumbnail into view (vertical on desktop, horizontal on mobile)
     targetThumb.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   }
 
@@ -114,7 +163,6 @@
       const pill = e.target.closest('.variant-pill');
       if (!pill || pill.classList.contains('sold-out')) return;
 
-      // Update active pill
       pillContainer.querySelectorAll('.variant-pill').forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
 
@@ -122,13 +170,12 @@
       const variant   = productData.variants.find(v => v.id === variantId);
       if (!variant) return;
 
-      // Sync hidden form input
       if (variantIdInput) variantIdInput.value = variantId;
 
       updatePrice(variant);
       updateButton(variant.available);
       updateQuantity(variant);
-      switchMedia(pill.dataset.mediaId);
+      switchMedia(getVariantColor(variant));
       syncUrl(variantId);
     });
   }
@@ -136,7 +183,7 @@
   // -------------------------------------------------------
   // Thumbnail manual click (still works independently)
   // -------------------------------------------------------
-  if (thumbContainer) {
+  if (thumbContainer && mainImage) {
     thumbContainer.addEventListener('click', (e) => {
       const thumb = e.target.closest('.thumbnail');
       if (!thumb) return;
@@ -164,7 +211,6 @@
       if (val < max) qtyInput.value = val + 1;
     });
 
-    // Clamp manual keyboard input
     qtyInput.addEventListener('change', () => {
       const val = parseInt(qtyInput.value, 10);
       const max = qtyInput.max ? parseInt(qtyInput.max, 10) : Infinity;
