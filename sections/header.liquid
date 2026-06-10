@@ -1,5 +1,14 @@
 {% comment %}
   ECOMBIO Header Section
+  File: sections/header.liquid
+  Responsive: mobile / tablet / desktop
+
+  Snippets used:
+    - snippets/ecombio-header-logo.liquid
+    - snippets/ecombio-header-icons.liquid
+    - snippets/ecombio-search-form.liquid
+    - snippets/ecombio-mobile-nav.liquid
+    - snippets/ecombio-cart-drawer.liquid
 {% endcomment %}
 
 {%- assign show_category          = section.settings.show_category_filter -%}
@@ -13,31 +22,32 @@
 
 <header class="ecombio-header ecombio-header--{{ header_style }}" id="ecombio-header">
 
+  {%- comment -%} ── TOP ROW ── Hamburger + Sticky Toggle + Logo + Search + Icons {%- endcomment -%}
   <div class="ecombio-header__bar">
     <div class="ecombio-header__inner">
 
-      <!-- Hamburger (mobile) -->
+      {%- comment -%} Hamburger (mobile + tablet only) {%- endcomment -%}
       <button class="ecombio-header__hamburger" id="ecombio-nav-toggle"
               aria-label="Open navigation" aria-expanded="false" aria-controls="ecombio-mobile-nav">
         <span></span><span></span><span></span>
       </button>
 
-      <!-- Desktop Sticky Toggle (Hamburger → X) - Controls menu-bar visibility -->
+      {%- comment -%} Sticky Header Toggle (Hamburger → X) — only shows when header is sticky {%- endcomment -%}
       {%- if show_sticky_toggle -%}
         <button 
-          class="ecombio-header__sticky-toggle hidden lg:flex"
+          class="ecombio-header__sticky-toggle" 
           type="button"
-          aria-label="Toggle menu bar"
-          aria-expanded="true"
+          aria-label="Toggle menu"
+          aria-expanded="false"
         >
           <span></span><span></span><span></span>
         </button>
       {%- endif -%}
 
-      <!-- Logo -->
+      {%- comment -%} Logo {%- endcomment -%}
       {%- render 'ecombio-header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width -%}
 
-      <!-- Search (desktop inline) -->
+      {%- comment -%} SEARCH (inline on desktop) {%- endcomment -%}
       <div class="ecombio-header__search ecombio-header__search--inline">
         {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'desktop' -%}
       </div>
@@ -47,7 +57,7 @@
     </div>
   </div>
 
-  <!-- Search row (tablet + mobile) -->
+  {%- comment -%} ── SEARCH ROW (tablet + mobile) {%- endcomment -%}
   <div class="ecombio-header__search-row">
     <div class="ecombio-header__search-row-inner">
       {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'mobile' -%}
@@ -58,6 +68,7 @@
 
 {%- render 'ecombio-mobile-nav' -%}
 
+{%- comment -%} Cart Drawer {%- endcomment -%}
 {%- if enable_drawer -%}
   {%- render 'ecombio-cart-drawer',
         enable_upsells: enable_upsells,
@@ -106,17 +117,17 @@
     {
       "type": "checkbox",
       "id": "show_category_controller",
-      "label": "Show sticky header menu toggle (desktop)",
+      "label": "Show sticky header menu toggle",
       "default": true,
-      "info": "Desktop only. Toggles visibility of the menu bar when header is sticky."
+      "info": "Shows a hamburger-style toggle before the logo when the header becomes sticky."
     },
     {
       "type": "select",
       "id": "header_style",
       "label": "Header Style Preset",
       "options": [
-        { "value": "hyper", "label": "Hyper" },
-        { "value": "focus", "label": "Focus" }
+        { "value": "hyper", "label": "Hyper — Bold & Energetic" },
+        { "value": "focus", "label": "Focus — Clean & Minimal" }
       ],
       "default": "hyper"
     },
@@ -132,7 +143,7 @@
     },
     {
       "type": "header",
-      "content": "Free Shipping"
+      "content": "Free Shipping Bar"
     },
     {
       "type": "checkbox",
@@ -148,7 +159,7 @@
     },
     {
       "type": "header",
-      "content": "Upsells"
+      "content": "Upsells & Recommendations"
     },
     {
       "type": "checkbox",
@@ -161,6 +172,16 @@
       "id": "enable_upsell_page",
       "label": "Enable Pre-Checkout Upsell Page",
       "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hyper Header",
+      "settings": {
+        "header_style": "hyper",
+        "show_category_filter": true,
+        "logo_width": 140
+      }
     }
   ]
 }
