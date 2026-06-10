@@ -2,13 +2,19 @@
   collection-filters.liquid
   Sidebar filter panel — supports tag filters, availability, and price range.
   Reads active filters from current_tags and request params.
+  Parameters:
+    - open {Boolean} - adds sidebar-open class to show sidebar on page load (desktop)
 {% endcomment %}
 
 {%- liquid
   assign active_tags = collection.all_tags | where: 'active'
 -%}
 
-<aside class="collection-filters" id="collection-filters" aria-label="Product filters">
+<aside
+  class="collection-filters{% if open %} sidebar-open{% endif %}"
+  id="collection-filters"
+  aria-label="Product filters"
+>
 
   <div class="collection-filters__header">
     <span class="collection-filters__heading">Filters</span>
@@ -140,7 +146,6 @@
           {%- if tag contains group -%}
             {%- assign parts = tag | split: '_' -%}
             {%- assign label = parts | last | capitalize -%}
-            {%- assign is_active = current_tags | where: tag -%}
             <label class="filter-option">
               <input
                 class="filter-option__checkbox"
@@ -200,6 +205,3 @@
   {%- endif -%}
 
 </aside>
-
-{%- comment -%} Mobile overlay backdrop {%- endcomment -%}
-<div class="filters-backdrop" id="filters-backdrop" aria-hidden="true"></div>
