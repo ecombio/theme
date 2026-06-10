@@ -1,0 +1,209 @@
+{% comment %}
+  Cart Drawer Snippet
+  Include once in theme.liquid, just before </body>:
+    {% render 'cart-drawer' %}
+
+  Free shipping threshold is controlled by the JS constant FREE_SHIPPING_THRESHOLD (see cart-drawer.js).
+  Change it there to update the progress bar goal.
+{% endcomment %}
+
+{%- liquid
+  assign free_shipping_threshold = 500
+-%}
+
+<!-- Overlay -->
+<div
+  class="cart-drawer__overlay"
+  id="ecombio-cart-overlay"
+  aria-hidden="true"
+  data-ecombio-cart-overlay
+></div>
+
+<!-- Drawer -->
+<div
+  class="cart-drawer"
+  id="ecombio-cart-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Shopping cart"
+  aria-hidden="true"
+  data-ecombio-cart-drawer
+>
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <div class="cart-drawer__header">
+    <div class="cart-drawer__shipping-bar" data-ecombio-shipping-bar>
+      <p class="cart-drawer__shipping-bar-label" data-ecombio-shipping-label>
+        {%- comment -%}Populated by JS{%- endcomment -%}
+      </p>
+      <div class="cart-drawer__shipping-bar-track">
+        <div class="cart-drawer__shipping-bar-fill" data-ecombio-shipping-fill></div>
+      </div>
+    </div>
+
+    <div class="cart-drawer__title-row">
+      <h2 class="cart-drawer__title">
+        Your cart
+        <span class="cart-drawer__count" data-ecombio-drawer-count></span>
+      </h2>
+      <button
+        type="button"
+        class="cart-drawer__close"
+        aria-label="Close cart"
+        data-ecombio-cart-close
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Body ──────────────────────────────────────────── -->
+  <div class="cart-drawer__body" data-ecombio-cart-body>
+
+    <!-- Filled state -->
+    <div class="cart-drawer__filled" data-ecombio-cart-filled>
+
+      <!-- Item list -->
+      <ul class="cart-drawer__items" data-ecombio-cart-items aria-label="Cart items">
+        {%- comment -%}Rendered by JS via cart-drawer__item template below{%- endcomment -%}
+      </ul>
+
+      <!-- Recommendations -->
+      <div class="cart-drawer__recommendations" data-ecombio-recommendations>
+        <p class="cart-drawer__recommendations-title">Pair Well With</p>
+        <ul class="cart-drawer__recommendations-list" data-ecombio-recommendations-list>
+          {%- comment -%}Populated by JS via Recommendations API{%- endcomment -%}
+        </ul>
+      </div>
+
+    </div><!-- /filled -->
+
+    <!-- Empty state -->
+    <div class="cart-drawer__empty" data-ecombio-cart-empty aria-hidden="true">
+      <p class="cart-drawer__empty-heading">Your cart is currently empty.</p>
+      <p class="cart-drawer__empty-sub">Not sure where to start? Try these collections:</p>
+
+      <ul class="cart-drawer__collections">
+        {%- for collection in collections limit: 4 -%}
+          {%- if collection.featured_image -%}
+            <li class="cart-drawer__collection-item">
+              <a href="{{ collection.url }}" class="cart-drawer__collection-link">
+                <div class="cart-drawer__collection-img-wrap">
+                  <img
+                    src="{{ collection.featured_image | image_url: width: 400 }}"
+                    alt="{{ collection.title | escape }}"
+                    width="200"
+                    height="160"
+                    loading="lazy"
+                    class="cart-drawer__collection-img"
+                  >
+                </div>
+                <span class="cart-drawer__collection-name">{{ collection.title }}</span>
+                <svg class="cart-drawer__collection-arrow" width="16" height="16"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true" focusable="false">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </a>
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+
+      <a href="/collections/all" class="cart-drawer__continue-btn">
+        Continue Shopping
+      </a>
+    </div><!-- /empty -->
+
+  </div><!-- /body -->
+
+  <!-- ── Footer (filled state only) ───────────────────── -->
+  <div class="cart-drawer__footer" data-ecombio-cart-footer>
+    <div class="cart-drawer__footer-meta">
+      <div class="cart-drawer__footer-links">
+        <button type="button" class="cart-drawer__footer-link" data-ecombio-order-note-toggle>
+          Order Note
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Order note (hidden by default) -->
+    <div class="cart-drawer__order-note" data-ecombio-order-note aria-hidden="true">
+      <label class="cart-drawer__note-label" for="ecombio-cart-note">Add a note</label>
+      <textarea
+        id="ecombio-cart-note"
+        class="cart-drawer__note-textarea"
+        rows="3"
+        placeholder="Special instructions, gift messages…"
+        data-ecombio-note-input
+      >{{ cart.note }}</textarea>
+    </div>
+
+    <div class="cart-drawer__subtotal-row">
+      <span class="cart-drawer__subtotal-label">Estimated total</span>
+      <span class="cart-drawer__subtotal-value" data-ecombio-subtotal></span>
+    </div>
+    <p class="cart-drawer__subtotal-note">Taxes and shipping calculated at checkout</p>
+
+    <div class="cart-drawer__actions">
+      <a href="/cart" class="cart-drawer__btn cart-drawer__btn--secondary">View Cart</a>
+      <a href="/checkout" class="cart-drawer__btn cart-drawer__btn--primary">Check Out</a>
+    </div>
+  </div><!-- /footer -->
+
+</div><!-- /drawer -->
+
+<!-- ── Item template (cloned by JS) ──────────────────── -->
+<template id="ecombio-cart-item-tpl">
+  <li class="cart-drawer__item" data-ecombio-item data-line="">
+    <a class="cart-drawer__item-img-link" href="" data-item-url>
+      <div class="cart-drawer__item-img-wrap">
+        <img class="cart-drawer__item-img" src="" alt="" width="80" height="80" loading="lazy">
+      </div>
+    </a>
+    <div class="cart-drawer__item-info">
+      <a class="cart-drawer__item-title" href="" data-item-url></a>
+      <p class="cart-drawer__item-variant"></p>
+      <div class="cart-drawer__item-bottom">
+        <div class="cart-drawer__item-qty">
+          <button type="button" class="cart-drawer__qty-btn cart-drawer__qty-btn--minus" aria-label="Decrease quantity">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <span class="cart-drawer__qty-value" aria-live="polite" aria-atomic="true"></span>
+          <button type="button" class="cart-drawer__qty-btn cart-drawer__qty-btn--plus" aria-label="Increase quantity">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <span class="cart-drawer__item-price"></span>
+      </div>
+    </div>
+    <button type="button" class="cart-drawer__item-remove" aria-label="Remove item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </li>
+</template>
+
+<!-- ── Recommendation item template ──────────────────── -->
+<template id="ecombio-rec-item-tpl">
+  <li class="cart-drawer__rec-item">
+    <a class="cart-drawer__rec-link" href="">
+      <div class="cart-drawer__rec-img-wrap">
+        <img class="cart-drawer__rec-img" src="" alt="" width="100" height="100" loading="lazy">
+      </div>
+      <p class="cart-drawer__rec-title"></p>
+      <p class="cart-drawer__rec-price"></p>
+      <span class="cart-drawer__rec-cta">View</span>
+    </a>
+  </li>
+</template>
