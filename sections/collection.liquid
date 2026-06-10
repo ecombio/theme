@@ -15,6 +15,7 @@
 
   <div class="collection-sticky-bar">
 
+    {%- comment -%} Toolbar: filter button + product count + sort {%- endcomment -%}
     <div class="collection-toolbar">
       {%- if show_filters -%}
         <button
@@ -52,19 +53,21 @@
       </div>
     </div>
 
+    {%- comment -%} Active filter pills {%- endcomment -%}
     <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
+
+    {%- comment -%} Compare bar {%- endcomment -%}
     {% render 'collection-compare-bar' %}
 
-  </div>
+  </div>{%- comment -%} /.collection-sticky-bar {%- endcomment -%}
 
   <div id="filters-backdrop" class="filters-backdrop"></div>
 
   <div class="collection-layout">
 
-    <!-- Search & Discovery Filters Sidebar -->
-    <div class="collection-sidebar">
-      <!-- Filters will appear here after you add the section in theme editor -->
-    </div>
+    {%- if show_filters -%}
+      {% render 'collection-filters', open: true %}
+    {%- endif -%}
 
     <div class="collection-main">
       {% paginate collection.products by per_page %}
