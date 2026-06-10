@@ -11,7 +11,7 @@
         - snippets/ecombio-header-icon-cart.liquid
     - snippets/ecombio-search-form.liquid
     - snippets/ecombio-mobile-nav.liquid
-    - snippets/ecombio-cart-drawer.liquid
+    - snippets/ecombio-cart-drawer.liquid  ← NEW: Cart Drawer owned by Header Section
 {% endcomment %}
 
 {%- assign show_category   = section.settings.show_category_filter -%}
@@ -34,7 +34,10 @@
         <span></span><span></span><span></span>
       </button>
 
-      {%- render 'ecombio-header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width -%}
+{%- render 'ecombio-header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width -%}
+
+{%- comment -%} Categories Controller (right next to logo) {%- endcomment -%}
+{%- render 'ecombio-header-category-controller' -%}
 
       {%- comment -%} ── SEARCH (inline on desktop) ── {%- endcomment -%}
       <div class="ecombio-header__search ecombio-header__search--inline">
@@ -43,8 +46,8 @@
 
       {%- render 'ecombio-header-icons' -%}
 
-    </div>
-  </div>
+    </div>{%- comment -%}/.ecombio-header__inner{%- endcomment -%}
+  </div>{%- comment -%}/.ecombio-header__bar{%- endcomment -%}
 
   {%- comment -%} ── SEARCH ROW (tablet + mobile — shown below bar) ── {%- endcomment -%}
   <div class="ecombio-header__search-row">
@@ -55,15 +58,20 @@
 
 </header>
 
-{%- render 'ecombio-mobile-nav', menu: section.settings.mobile_nav_menu -%}
+{%- render 'ecombio-mobile-nav' -%}
 
-{%- comment -%} ── CART DRAWER ── {%- endcomment -%}
+{%- comment -%}
+  ── CART DRAWER ──
+  Owned by the Header Section. Rendered at the section level (not from
+  ecombio-header-icons.liquid or ecombio-header-icon-cart.liquid).
+  Passes all relevant settings down to the drawer snippet.
+{%- endcomment -%}
 {%- if enable_drawer -%}
   {%- render 'ecombio-cart-drawer',
-    enable_upsells:           enable_upsells,
+    enable_upsells:          enable_upsells,
     enable_free_shipping_bar: enable_bar,
-    free_shipping_threshold:  free_ship_min,
-    enable_upsell_page:       upsell_page
+    free_shipping_threshold: free_ship_min,
+    enable_upsell_page:      upsell_page
   -%}
 {%- endif -%}
 
@@ -97,6 +105,104 @@
       "content": "Search & Navigation"
     },
     {
-      "type": "link_list",
-      "id": "mobile_nav_menu",
-      "label":
+      "type": "checkbox",
+      "id": "show_category_filter",
+      "label": "Show category dropdown in search",
+      "default": true,
+      "info": "Hyper usually keeps this on. Focus can turn it off for cleaner look."
+    },
+    {
+      "type": "select",
+      "id": "header_style",
+      "label": "Header Style Preset",
+      "options": [
+        { "value": "hyper", "label": "Hyper — Bold & Energetic (Default)" },
+        { "value": "focus", "label": "Focus — Clean & Minimal" }
+      ],
+      "default": "hyper",
+      "info": "Hyper is the current default vibe. Focus is the next clean version."
+    },
+    {
+      "type": "header",
+      "content": "Cart Drawer"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_cart_drawer",
+      "label": "Enable Cart Drawer",
+      "default": true,
+      "info": "Replaces default cart page link with a slide-in drawer."
+    },
+    {
+      "type": "header",
+      "content": "Free Shipping Bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_free_shipping_bar",
+      "label": "Enable Free Shipping Progress Bar",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free shipping minimum ($)",
+      "default": 75,
+      "info": "Cart subtotal threshold for free shipping. Displays as a progress bar in the drawer."
+    },
+    {
+      "type": "header",
+      "content": "Upsells & Recommendations"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_upsells",
+      "label": "Enable Cart Upsells",
+      "default": true,
+      "info": "Shows frequently-bought-together and cross-sell products inside the cart drawer."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_cart_recommendations",
+      "label": "Enable Cart Recommendations",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_ai_recommendations",
+      "label": "Enable AI Recommendations (future)",
+      "default": false,
+      "info": "Placeholder for future AI-powered product recommendations."
+    },
+    {
+      "type": "header",
+      "content": "Pre-Checkout Upsell Page"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_upsell_page",
+      "label": "Enable Pre-Checkout Upsell Page",
+      "default": true,
+      "info": "Routes checkout through /pages/cart-upsell before Shopify Checkout."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hyper Header",
+      "settings": {
+        "header_style": "hyper",
+        "show_category_filter": true,
+        "logo_width": 140
+      }
+    },
+    {
+      "name": "Focus Header",
+      "settings": {
+        "header_style": "focus",
+        "show_category_filter": false,
+        "logo_width": 180
+      }
+    }
+  ]
+}
+{% endschema %}
