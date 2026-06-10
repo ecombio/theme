@@ -1,11 +1,13 @@
 /* =============================================================================
-   ECOMBIO Header JS  |  assets/header.js
+   ECOMBIO Header JS
+   assets/header.js
+
    Handles:
-     1. Category filter dropdowns (multiple instances: desktop + mobile)
-     2. Mobile / tablet drawer nav (hamburger toggle)
-     3. Header height CSS variable (--ecombio-header-height)
-     4. Sticky header menu toggle (hamburger → X, only visible when sticky)
-   ============================================================================= */
+   - Search category dropdowns (desktop + mobile)
+   - Mobile navigation drawer
+   - Header height CSS variable
+   - Desktop sticky header toggle (show/hide menu bar)
+============================================================================= */
 
 (function () {
   'use strict';
@@ -13,16 +15,16 @@
   document.addEventListener('DOMContentLoaded', init);
 
   /* ===========================================================================
-     1. CATEGORY DROPDOWNS
-     =========================================================================== */
+     1. SEARCH CATEGORY DROPDOWNS
+  =========================================================================== */
 
   function initCategoryDropdowns() {
     document.querySelectorAll('.ecombio-search__cat-btn').forEach(function (btn) {
 
-      var suffix  = btn.id.replace('ecombio-cat-btn-', '');
-      var list    = document.getElementById('ecombio-cat-list-'  + suffix);
-      var label   = document.getElementById('ecombio-cat-label-' + suffix);
-      var hidden  = document.getElementById('ecombio-cat-value-' + suffix);
+      var suffix = btn.id.replace('ecombio-cat-btn-', '');
+      var list   = document.getElementById('ecombio-cat-list-' + suffix);
+      var label  = document.getElementById('ecombio-cat-label-' + suffix);
+      var hidden = document.getElementById('ecombio-cat-value-' + suffix);
 
       if (!list) return;
 
@@ -37,9 +39,9 @@
       });
 
       list.addEventListener('keydown', function (e) {
-        var items   = Array.from(list.querySelectorAll('li[role="option"]'));
+        var items = Array.from(list.querySelectorAll('li[role="option"]'));
         var current = document.activeElement;
-        var idx     = items.indexOf(current);
+        var idx = items.indexOf(current);
 
         if (e.key === 'ArrowDown') {
           e.preventDefault();
@@ -70,7 +72,7 @@
       document.querySelectorAll('.ecombio-search__cat-list').forEach(function (list) {
         if (!isOpen(list)) return;
         var suffix = list.id.replace('ecombio-cat-list-', '');
-        var btn    = document.getElementById('ecombio-cat-btn-' + suffix);
+        var btn = document.getElementById('ecombio-cat-btn-' + suffix);
         setDropdown(false, btn, list);
       });
     });
@@ -97,8 +99,8 @@
     list.querySelectorAll('li[role="option"]').forEach(function (li) {
       li.setAttribute('aria-selected', 'false');
     });
-
     item.setAttribute('aria-selected', 'true');
+
     if (label) label.textContent = item.textContent.trim();
     if (hidden) hidden.value = item.dataset.value || '';
 
@@ -108,7 +110,7 @@
 
   /* ===========================================================================
      2. MOBILE / TABLET DRAWER NAV
-     =========================================================================== */
+  =========================================================================== */
 
   function initDrawer() {
     var toggle  = document.getElementById('ecombio-nav-toggle');
@@ -119,7 +121,7 @@
     if (!toggle || !drawer) return;
 
     toggle.addEventListener('click', function () { openDrawer(); });
-    if (close)   close.addEventListener('click',   function () { closeDrawer(); });
+    if (close) close.addEventListener('click', function () { closeDrawer(); });
     if (overlay) overlay.addEventListener('click', function () { closeDrawer(); });
 
     document.addEventListener('keydown', function (e) {
@@ -146,13 +148,13 @@
 
   /* ===========================================================================
      3. HEADER HEIGHT CSS VARIABLE
-     =========================================================================== */
+  =========================================================================== */
 
   function initHeaderHeight() {
     var headerGroup = document.querySelector('.shopify-section-group-header-group');
-    var header      = document.getElementById('ecombio-header');
-
+    var header = document.getElementById('ecombio-header');
     var target = headerGroup || header;
+
     if (!target) return;
 
     function update() {
@@ -169,64 +171,50 @@
   }
 
   /* ===========================================================================
-     4. STICKY HEADER MENU TOGGLE (Hamburger → X)
-     Only visible when header is sticky. Opens the mobile nav drawer.
-     =========================================================================== */
+     4. DESKTOP STICKY HEADER TOGGLE
+     Shows a hamburger button when header is sticky.
+     Clicking it hides/shows the big menu-bar section.
+  =========================================================================== */
 
   function initStickyHeaderToggle() {
     var toggle = document.querySelector('.ecombio-header__sticky-toggle');
-    var drawer = document.getElementById('ecombio-mobile-nav');
+    var menuBar = document.getElementById('shopify-section-header-menu-bar');
     var header = document.querySelector('.ecombio-sticky-header');
 
-    if (!toggle || !drawer || !header) return;
+    if (!toggle || !menuBar || !header) return;
 
-    // Detect when header becomes sticky and add .is-sticky class
-    var observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          header.classList.toggle('is-sticky', !entry.isIntersecting);
-        });
-      },
-      { threshold: [1] }
-    );
+    // Add .is-sticky class when header becomes sticky
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        header.classList.toggle('is-sticky', !entry.isIntersecting);
+      });
+    }, { threshold: [1] });
+
     observer.observe(header);
 
-    // Toggle click handler
+    // Toggle menu bar visibility
     toggle.addEventListener('click', function () {
-      var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      var isHidden = menuBar.classList.contains('menu-bar--hidden');
 
-      toggle.setAttribute('aria-expanded', String(!isOpen));
-      drawer.classList.toggle('is-open', !isOpen);
-      drawer.setAttribute('aria-hidden', String(isOpen));
-
-      if (!isOpen) {
-        document.body.style.overflow = 'hidden';
+      if (isHidden) {
+        menuBar.classList.remove('menu-bar--hidden');
+        toggle.setAttribute('aria-expanded', 'true');
       } else {
-        document.body.style.overflow = '';
-        toggle.focus();
-      }
-    });
-
-    // Close on Escape key
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+        menuBar.classList.add('menu-bar--hidden');
         toggle.setAttribute('aria-expanded', 'false');
-        drawer.classList.remove('is-open');
-        document.body.style.overflow = '';
-        toggle.focus();
       }
     });
   }
 
   /* ===========================================================================
-     INIT
-     =========================================================================== */
+     INIT - Boot everything
+  =========================================================================== */
 
   function init() {
     initCategoryDropdowns();
     initDrawer();
     initHeaderHeight();
-    initStickyHeaderToggle();     // ← New sticky hamburger toggle
+    initStickyHeaderToggle();     // New sticky toggle
   }
 
 })();
