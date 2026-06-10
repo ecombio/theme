@@ -3,47 +3,60 @@
 
     {% assign current_variant = product.selected_or_first_available_variant %}
 
+    {%- comment -%}
+      Hidden input that JS keeps updated as the user selects a variant pill.
+      The form always submits whichever variant id is set here.
+    {%- endcomment -%}
+    <input type="hidden" name="id" id="variant-id" value="{{ current_variant.id }}">
+
     {% if product.variants.size > 1 %}
       <div class="form-group">
-        <label for="variant">Variant</label>
-        <select name="id" id="variant" class="variant-select">
+        <p class="form-label">
+          {%- if product.options.size == 1 -%}
+            {{ product.options.first }}
+          {%- else -%}
+            Variant
+          {%- endif -%}
+        </p>
+
+        <div class="variant-pills" id="variant-pills">
           {% for variant in product.variants %}
-            <option
-              value="{{ variant.id }}"
+            <button
+              type="button"
+              class="variant-pill{% if variant == current_variant %} active{% endif %}{% unless variant.available %} sold-out{% endunless %}"
+              data-variant-id="{{ variant.id }}"
               data-price="{{ variant.price }}"
-              data-compare-at-price="{{ variant.compare_at_price }}"
+              data-compare-at-price="{{ variant.compare_at_price | default: 0 }}"
               data-available="{{ variant.available }}"
-              data-inventory="{{ variant.inventory_quantity }}"
-              {% if variant == current_variant %}selected{% endif %}
-              {% unless variant.available %}disabled{% endunless %}
+              data-inventory-management="{{ variant.inventory_management }}"
+              data-inventory-quantity="{{ variant.inventory_quantity }}"
+              {% unless variant.available %}aria-disabled="true"{% endunless %}
             >
-              {{ variant.title }} — {{ variant.price | money }}
-              {% unless variant.available %} — Sold out{% endunless %}
-            </option>
+              {{ variant.title }}
+            </button>
           {% endfor %}
-        </select>
+        </div>
       </div>
-    {% else %}
-      {%- comment -%}
-        Single-variant product — still output a hidden input so the
-        form submits with the correct variant id.
-      {%- endcomment -%}
-      <input type="hidden" name="id" value="{{ current_variant.id }}">
     {% endif %}
 
     <div class="form-group">
-      <label for="quantity">Quantity</label>
-      <input
-        type="number"
-        name="quantity"
-        id="quantity"
-        class="quantity-input"
-        min="1"
-        {% if current_variant.inventory_management == 'shopify' %}
-          max="{{ current_variant.inventory_quantity }}"
-        {% endif %}
-        value="1"
-      >
+      <p class="form-label">Quantity</p>
+      <div class="qty-stepper">
+        <button type="button" class="qty-btn" id="qty-dec" aria-label="Decrease quantity">−</button>
+        <input
+          type="number"
+          name="quantity"
+          id="quantity"
+          class="qty-input"
+          min="1"
+          {% if current_variant.inventory_management == 'shopify' %}
+            max="{{ current_variant.inventory_quantity }}"
+          {% endif %}
+          value="1"
+          aria-label="Quantity"
+        >
+        <button type="button" class="qty-btn" id="qty-inc" aria-label="Increase quantity">+</button>
+      </div>
     </div>
 
     <button
