@@ -4,8 +4,7 @@
 
 /* ── Section wrapper ── */
 .collection-products-section {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
   padding: 2rem 1.5rem 4rem;
 }
 
@@ -48,8 +47,8 @@
   background: #f8f8f8;
 }
 
-/* Only show the mobile filter button on mobile; hide on desktop */
-@media (min-width: 900px) {
+/* Show filter button on tablet + mobile; hide on desktop */
+@media (min-width: 1024px) {
   .collection-toolbar__filter-btn {
     display: none;
   }
@@ -167,10 +166,12 @@
   flex-shrink: 0;
   position: sticky;
   top: 1.5rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
 }
 
-/* Mobile: sidebar becomes a drawer */
-@media (max-width: 899px) {
+/* Tablet + mobile: sidebar becomes a drawer */
+@media (max-width: 1023px) {
   .collection-layout {
     display: block;
   }
@@ -181,6 +182,7 @@
     left: 0;
     width: min(320px, 85vw);
     height: 100%;
+    max-height: 100%;
     background: #fff;
     z-index: 200;
     overflow-y: auto;
@@ -247,7 +249,7 @@
   line-height: 1;
 }
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .collection-filters__close {
     display: flex;
   }
@@ -461,44 +463,47 @@
   opacity: 1;
 }
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .filters-backdrop.is-active {
     display: block;
   }
 }
 
 /* ── Product grid ── */
+/* Desktop ≥1024px: sidebar present, 3 cols */
 .collection-products {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
 }
 
-/* With sidebar: 3 cols at default desktop */
-@media (min-width: 1200px) {
+/* Desktop wide: 4 cols */
+@media (min-width: 1400px) {
   .collection-products {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
-@media (max-width: 1100px) {
+/* Tablet 600–1023px: no sidebar (drawer), 3 cols */
+@media (max-width: 1023px) {
   .collection-products {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 899px) {
-  /* No sidebar on mobile — wider grid */
-  .collection-products {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
 }
 
-@media (max-width: 480px) {
+/* Mobile <600px: 2 cols */
+@media (max-width: 599px) {
+  .collection-products {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+  }
+}
+
+/* Small mobile <380px: 1 col */
+@media (max-width: 379px) {
   .collection-products {
     grid-template-columns: 1fr;
-    gap: 0.875rem;
   }
 }
 
@@ -661,7 +666,7 @@
 }
 
 /* ── Section padding adjustment on small screens ── */
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .collection-products-section {
     padding: 1.25rem 1rem 3rem;
   }
