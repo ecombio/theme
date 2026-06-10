@@ -1,295 +1,142 @@
 {% comment %}
   collection-filters.liquid
-  - Availability starts OPEN by default
-  - Filters are now grouped into sections
-  - Added: Brands + Type filter groups
+  Requires: Shopify Search & Discovery app
+  Loops collection.filters — no hardcoded tags, no inline scripts
 {% endcomment %}
 
+{%- assign has_active_filters = false -%}
+{%- for filter in collection.filters -%}
+  {%- if filter.active_values.size > 0 or filter.min_value.value or filter.max_value.value -%}
+    {%- assign has_active_filters = true -%}
+  {%- endif -%}
+{%- endfor -%}
+
 <aside
-  class="collection-filters{% if open %} sidebar-open{% endif %}"
+  class="collection-filters"
   id="collection-filters"
   aria-label="Product filters"
 >
 
   <div class="collection-filters__header">
     <span class="collection-filters__heading">Filters</span>
-    <button
-      class="collection-filters__clear"
-      id="filters-clear-all"
-      type="button"
-      aria-label="Clear all filters"
-    >Clear all</button>
+    {%- if has_active_filters -%}
+      <a
+        href="{{ collection.url }}"
+        class="collection-filters__clear"
+        aria-label="Clear all filters"
+      >Clear all</a>
+    {%- endif -%}
   </div>
 
-  <!-- ===================== -->
-  <!-- GENERAL               -->
-  <!-- ===================== -->
-  <div class="filter-section">
-    <div class="filter-section__heading">General</div>
-
-    <!-- Availability (OPEN BY DEFAULT) -->
-    <div class="filter-group" data-filter-group="availability">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="true"
-        aria-controls="filter-availability"
-      >
-        Availability
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-availability">
-        <label class="filter-option">
-          <input
-            class="filter-option__checkbox"
-            type="checkbox"
-            name="filter.p.available"
-            value="true"
-            {% if request.params['filter.p.available'] == 'true' %}checked{% endif %}
-            data-filter-type="availability"
-          >
-          <span class="filter-option__label">In stock</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Price -->
-    <div class="filter-group" data-filter-group="price">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="filter-price"
-      >
-        Price
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-price" hidden>
-        <div class="filter-price">
-          <div class="filter-price__inputs">
-            <div class="filter-price__field">
-              <label class="filter-price__label" for="filter-price-min">Min</label>
-              <div class="filter-price__input-wrap">
-                <span class="filter-price__symbol">$</span>
-                <input
-                  id="filter-price-min"
-                  class="filter-price__input"
-                  type="number"
-                  name="filter.v.price.gte"
-                  min="0"
-                  placeholder="0"
-                  value="{{ request.params['filter.v.price.gte'] }}"
-                  data-filter-type="price-min"
-                >
-              </div>
-            </div>
-            <span class="filter-price__sep">—</span>
-            <div class="filter-price__field">
-              <label class="filter-price__label" for="filter-price-max">Max</label>
-              <div class="filter-price__input-wrap">
-                <span class="filter-price__symbol">$</span>
-                <input
-                  id="filter-price-max"
-                  class="filter-price__input"
-                  type="number"
-                  name="filter.v.price.lte"
-                  min="0"
-                  placeholder="Any"
-                  value="{{ request.params['filter.v.price.lte'] }}"
-                  data-filter-type="price-max"
-                >
-              </div>
-            </div>
-          </div>
-          <button class="filter-price__apply" type="button" data-filter-price-apply>Apply</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- BIKE SPECS            -->
-  <!-- ===================== -->
-  <div class="filter-section">
-    <div class="filter-section__heading">Bike Specs</div>
-
-    <!-- Bike Style -->
-    <div class="filter-group" data-filter-group="bike-style">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="filter-bike-style"
-      >
-        Bike Style
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-bike-style" hidden>
-        <!-- Populated by dynamic loop below -->
-      </div>
-    </div>
-
-    <!-- Frame -->
-    <div class="filter-group" data-filter-group="frame">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="filter-frame"
-      >
-        Frame
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-frame" hidden>
-        <!-- Populated by dynamic loop below -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- POWER                 -->
-  <!-- ===================== -->
-  <div class="filter-section">
-    <div class="filter-section__heading">Power</div>
-
-    <!-- Motor -->
-    <div class="filter-group" data-filter-group="motor">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="filter-motor"
-      >
-        Motor
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-motor" hidden>
-        <!-- Populated by dynamic loop below -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- CLASSIFICATION (NEW)  -->
-  <!-- ===================== -->
-  <div class="filter-section">
-    <div class="filter-section__heading">Classification</div>
-
-    <!-- Brands -->
-    <div class="filter-group" data-filter-group="brands">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="filter-brands"
-      >
-        Brands
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-brands" hidden>
-        <!-- Populated by dynamic loop below -->
-      </div>
-    </div>
-
-    <!-- Type -->
-    <div class="filter-group" data-filter-group="type">
-      <button
-        class="filter-group__toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="filter-type"
-      >
-        Type
-        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="filter-group__body" id="filter-type" hidden>
-        <!-- Populated by dynamic loop below -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- DYNAMIC TAG GROUPS    -->
-  <!-- ===================== -->
-  {%- assign filter_groups = "Bike Style|Frame|Motor|Brands|Type" -%}
-
-  {%- assign tags_Bike-Style = "Commuter,Cargo,Folding,Fat,Road,Step" -%}
-  {%- assign tags_Frame      = "Step-through,Mid-step,Diamond,Aluminum frame" -%}
-  {%- assign tags_Motor      = "Fat,Electric,Mid-drive,Hub drive" -%}
-  {%- assign tags_Brands     = "Rad Power,Bosch,Shimano,Specialized,Trek,Giant" -%}
-  {%- assign tags_Type       = "Electric Bike,Hybrid,Cruiser,Mountain,Commuter" -%}
-
-  {%- assign filter_group_array = filter_groups | split: "|" -%}
-
-  {%- for group_label in filter_group_array -%}
-    {%- assign group_id = group_label | handleize -%}
-
-    {%- if group_id == "bike-style" -%}{%- assign allowed_tags = tags_Bike-Style | split: "," -%}
-    {%- elsif group_id == "frame"      -%}{%- assign allowed_tags = tags_Frame      | split: "," -%}
-    {%- elsif group_id == "motor"      -%}{%- assign allowed_tags = tags_Motor      | split: "," -%}
-    {%- elsif group_id == "brands"     -%}{%- assign allowed_tags = tags_Brands     | split: "," -%}
-    {%- elsif group_id == "type"       -%}{%- assign allowed_tags = tags_Type       | split: "," -%}
+  {%- for filter in collection.filters -%}
+    {%- assign filter_id = "filter-" | append: filter.param_name | handleize -%}
+    {%- assign is_open = false -%}
+    {%- if filter.active_values.size > 0 or filter.min_value.value or filter.max_value.value -%}
+      {%- assign is_open = true -%}
+    {%- elsif forloop.first -%}
+      {%- assign is_open = true -%}
     {%- endif -%}
 
-    {%- assign group_has_tags = false -%}
-    {%- for allowed in allowed_tags -%}
-      {%- assign allowed_h = allowed | strip | handleize -%}
-      {%- for tag in collection.all_tags -%}
-        {%- assign tag_h = tag | handleize -%}
-        {%- if tag_h == allowed_h -%}{%- assign group_has_tags = true -%}{%- endif -%}
-      {%- endfor -%}
-    {%- endfor -%}
+    <div
+      class="filter-group"
+      data-filter-group="{{ filter.param_name | handleize }}"
+    >
+      <button
+        class="filter-group__toggle"
+        type="button"
+        aria-expanded="{{ is_open }}"
+        aria-controls="{{ filter_id }}"
+      >
+        {{- filter.label -}}
+        {%- if filter.active_values.size > 0 -%}
+          <span class="filter-group__count" aria-label="{{ filter.active_values.size }} active">
+            {{- filter.active_values.size -}}
+          </span>
+        {%- endif -%}
+        <svg class="filter-group__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
 
-    {%- if group_has_tags -%}
-      {%- assign target_id = "filter-" | append: group_id -%}
+      <div
+        class="filter-group__body"
+        id="{{ filter_id }}"
+        {%- unless is_open %} hidden{%- endunless %}
+      >
 
-      <script>
-        // Inject tags into the correct filter body
-        (function() {
-          const container = document.getElementById("{{ target_id }}");
-          if (!container) return;
+        {%- case filter.type -%}
 
-          const tags = {{ allowed_tags | json }};
-          let html = '';
-
-          tags.forEach(function(tag) {
-            const tagHandle = tag.toLowerCase().replace(/\s+/g, '-');
-            const isChecked = {{ current_tags | json }}.includes(tagHandle);
-
-            html += `
-              <label class="filter-option">
+          {%- when 'boolean', 'list' -%}
+            {%- for filter_value in filter.values -%}
+              <label class="filter-option{% if filter_value.count == 0 and filter_value.active == false %} filter-option--disabled{% endif %}">
                 <input
                   class="filter-option__checkbox"
                   type="checkbox"
-                  name="tag"
-                  value="${tagHandle}"
-                  ${isChecked ? 'checked' : ''}
-                  data-filter-type="tag"
-                  data-tag="${tagHandle}"
+                  name="{{ filter_value.param_name }}"
+                  value="{{ filter_value.value }}"
+                  {% if filter_value.active %}checked{% endif %}
+                  {% if filter_value.count == 0 and filter_value.active == false %}disabled{% endif %}
+                  data-filter-url-add="{{ filter_value.url_to_add }}"
+                  data-filter-url-remove="{{ filter_value.url_to_remove }}"
                 >
-                <span class="filter-option__label">${tag}</span>
+                <span class="filter-option__label">
+                  {{- filter_value.label -}}
+                  <span class="filter-option__count">({{ filter_value.count }})</span>
+                </span>
               </label>
-            `;
-          });
+            {%- endfor -%}
 
-          container.innerHTML = html;
-        })();
-      </script>
-    {%- endif -%}
+          {%- when 'price_range' -%}
+            {%- assign min_price = filter.min_value.value | default: 0 -%}
+            {%- assign max_price = filter.max_value.value | default: filter.range_max -%}
+
+            <div class="filter-price">
+              <div class="filter-price__inputs">
+                <div class="filter-price__field">
+                  <label class="filter-price__label" for="filter-price-min">Min</label>
+                  <div class="filter-price__input-wrap">
+                    <span class="filter-price__symbol">{{ cart.currency.symbol }}</span>
+                    <input
+                      id="filter-price-min"
+                      class="filter-price__input"
+                      type="number"
+                      name="{{ filter.min_value.param_name }}"
+                      min="0"
+                      max="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                      placeholder="0"
+                      value="{{ min_price | money_without_currency | remove: ',' }}"
+                      data-filter-type="price-min"
+                    >
+                  </div>
+                </div>
+                <span class="filter-price__sep">—</span>
+                <div class="filter-price__field">
+                  <label class="filter-price__label" for="filter-price-max">Max</label>
+                  <div class="filter-price__input-wrap">
+                    <span class="filter-price__symbol">{{ cart.currency.symbol }}</span>
+                    <input
+                      id="filter-price-max"
+                      class="filter-price__input"
+                      type="number"
+                      name="{{ filter.max_value.param_name }}"
+                      min="0"
+                      max="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                      placeholder="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                      value="{{ max_price | money_without_currency | remove: ',' }}"
+                      data-filter-type="price-max"
+                    >
+                  </div>
+                </div>
+              </div>
+              <button class="filter-price__apply" type="button" data-filter-price-apply>
+                Apply
+              </button>
+            </div>
+
+        {%- endcase -%}
+
+      </div>
+    </div>
   {%- endfor -%}
 
 </aside>
