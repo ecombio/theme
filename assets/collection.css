@@ -16,36 +16,35 @@
   letter-spacing: -0.02em;
 }
 
+/* ── Sticky bar ── */
+.collection-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+}
+
 /* ── Toolbar ── */
 .collection-toolbar {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 0.75rem 0;
   flex-wrap: wrap;
 }
 
 @media (max-width: 1023px) {
   .collection-toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: #fff;
-    margin-bottom: 0;
-    padding: 0.75rem 0 0;
     flex-wrap: nowrap;
     gap: 0;
-    border-bottom: 1px solid #e5e5e5;
+    padding: 0;
   }
 
-  /* Hide product count on tablet/mobile — not enough room */
   .collection-toolbar__count {
     display: none;
   }
 
-  /* Filter and sort split 50/50 */
   .collection-toolbar__filter-btn {
     flex: 1;
     justify-content: center;
@@ -113,13 +112,6 @@
   background: #f8f8f8;
 }
 
-/* Show filter button on tablet + mobile; hide on desktop */
-@media (min-width: 1024px) {
-  .collection-toolbar__filter-btn {
-    display: none;
-  }
-}
-
 .collection-toolbar__active-count {
   display: inline-flex;
   align-items: center;
@@ -133,7 +125,6 @@
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
-  /* hidden until count > 0 via JS */
 }
 
 .collection-toolbar__active-count:empty {
@@ -150,6 +141,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: auto;
 }
 
 .collection-toolbar__sort-label {
@@ -182,8 +174,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0;
   min-height: 0;
+}
+
+.collection-active-filters:empty {
+  display: none;
 }
 
 .filter-pill {
@@ -214,11 +210,101 @@
   opacity: 1;
 }
 
+/* ── Compare bar ── */
+.compare-bar {
+  display: none; /* hidden until compare JS activates it */
+  padding: 0.625rem 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+.compare-bar.is-active {
+  display: block;
+}
+
+.compare-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .compare-bar__inner {
+    flex-wrap: nowrap;
+  }
+}
+
+.compare-bar__actions-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-shrink: 0;
+  flex-grow: 1;
+}
+
+@media (min-width: 768px) {
+  .compare-bar__actions-wrap {
+    order: 1;
+  }
+}
+
+.compare-bar__count {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111;
+}
+
+.compare-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.compare-bar__list-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-width: 0;
+}
+
+.compare-bar__list {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.compare-bar__item-placeholder {
+  width: 48px;
+  height: 48px;
+  border: 1.5px dashed #d0d0d0;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.compare-bar__clear-mobile {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 768px) {
+  .compare-bar__clear-mobile {
+    display: none;
+  }
+}
+
 /* ── Layout: sidebar + main ── */
 .collection-layout {
   display: flex;
   gap: 2.5rem;
   align-items: flex-start;
+  padding-top: 1.5rem;
 }
 
 .collection-main {
@@ -226,14 +312,30 @@
   min-width: 0;
 }
 
-/* ── Sidebar ── */
+/* ── Sidebar — desktop always visible ── */
 .collection-filters {
   width: 240px;
   flex-shrink: 0;
   position: sticky;
-  top: 1.5rem;
+  top: 1.5rem; /* offset below sticky bar handled below */
   max-height: calc(100vh - 3rem);
   overflow-y: auto;
+}
+
+/* Desktop: sidebar hidden/shown by .sidebar-open toggle */
+@media (min-width: 1024px) {
+  .collection-filters {
+    display: block; /* always in flow */
+    /* collapsed state */
+    width: 0;
+    overflow: hidden;
+    transition: width 0.25s ease;
+  }
+
+  .collection-filters.sidebar-open {
+    width: 240px;
+    overflow: visible;
+  }
 }
 
 /* Tablet + mobile: sidebar becomes a drawer */
@@ -296,7 +398,6 @@
   color: #111;
 }
 
-/* Mobile close button (injected by JS) */
 .collection-filters__close {
   display: none;
   position: absolute;
@@ -321,7 +422,7 @@
   }
 
   .collection-filters {
-    padding-top: 3.5rem; /* room for close button */
+    padding-top: 3.5rem;
   }
 }
 
@@ -536,21 +637,18 @@
 }
 
 /* ── Product grid ── */
-/* Desktop ≥1024px: sidebar present, 3 cols */
 .collection-products {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
 }
 
-/* Desktop wide: 4 cols */
 @media (min-width: 1400px) {
   .collection-products {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
-/* Tablet 600–1023px: no sidebar (drawer), 3 cols */
 @media (max-width: 1023px) {
   .collection-products {
     grid-template-columns: repeat(3, 1fr);
@@ -558,7 +656,6 @@
   }
 }
 
-/* Mobile <600px: 2 cols */
 @media (max-width: 599px) {
   .collection-products {
     grid-template-columns: repeat(2, 1fr);
@@ -566,7 +663,6 @@
   }
 }
 
-/* Small mobile <380px: 1 col */
 @media (max-width: 379px) {
   .collection-products {
     grid-template-columns: 1fr;
@@ -638,7 +734,6 @@
   overflow: hidden;
 }
 
-/* 4:3 image container */
 .card-product__image-wrapper {
   display: block;
   position: relative;
@@ -647,7 +742,6 @@
   background: #f5f5f5;
 }
 
-/* Primary image */
 .card-product__image {
   position: absolute;
   top: 0;
@@ -660,7 +754,6 @@
   transition: opacity 0.3s ease;
 }
 
-/* Secondary image — sits on top, hidden until hover */
 .card-product__image--secondary {
   opacity: 0;
 }
@@ -731,7 +824,7 @@
   color: #c0392b;
 }
 
-/* ── Section padding adjustment on small screens ── */
+/* ── Small screen adjustments ── */
 @media (max-width: 599px) {
   .collection-products-section {
     padding: 1.25rem 1rem 3rem;
@@ -740,43 +833,4 @@
   .collection-products__title {
     margin-bottom: 1rem;
   }
-}
-/* -----------------------------------------------
-   Sticky bar — toolbar + active filters + compare
-   ----------------------------------------------- */
-
-.collection-sticky-bar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--color-background);
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* -----------------------------------------------
-   Layout — sidebar hidden by default,
-   revealed when JS adds .filters-open
-   ----------------------------------------------- */
-
-.collection-layout {
-  display: grid;
-  /* sidebar column collapses to 0 when closed */
-  grid-template-columns: 0 1fr;
-  transition: grid-template-columns 0.25s ease;
-}
-
-.collection-layout .collection-filters {
-  overflow: hidden;
-  /* prevent content peaking out while column animates */
-  visibility: hidden;
-  transition: visibility 0s 0.25s;
-}
-
-.collection-layout.filters-open {
-  grid-template-columns: 260px 1fr;
-}
-
-.collection-layout.filters-open .collection-filters {
-  visibility: visible;
-  transition: visibility 0s 0s;
 }
