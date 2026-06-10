@@ -741,3 +741,42 @@
     margin-bottom: 1rem;
   }
 }
+/* -----------------------------------------------
+   Sticky bar — toolbar + active filters + compare
+   ----------------------------------------------- */
+
+.collection-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* -----------------------------------------------
+   Layout — sidebar hidden by default,
+   revealed when JS adds .filters-open
+   ----------------------------------------------- */
+
+.collection-layout {
+  display: grid;
+  /* sidebar column collapses to 0 when closed */
+  grid-template-columns: 0 1fr;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.collection-layout .collection-filters {
+  overflow: hidden;
+  /* prevent content peaking out while column animates */
+  visibility: hidden;
+  transition: visibility 0s 0.25s;
+}
+
+.collection-layout.filters-open {
+  grid-template-columns: 260px 1fr;
+}
+
+.collection-layout.filters-open .collection-filters {
+  visibility: visible;
+  transition: visibility 0s 0s;
+}

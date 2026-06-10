@@ -338,3 +338,18 @@ console.log('Collection JS loaded');
   });
 
 })();
+// Filter sidebar toggle
+// Toggles `filters-open` on #collection-layout, which CSS uses to show/hide
+// the sidebar and adjust the grid columns.
+
+(function () {
+  const btn = document.getElementById('filters-open-btn');
+  const layout = document.getElementById('collection-layout');
+
+  if (!btn || !layout) return;
+
+  btn.addEventListener('click', () => {
+    const isOpen = layout.classList.toggle('filters-open');
+    btn.setAttribute('aria-expanded', String(isOpen));
+  });
+})();
