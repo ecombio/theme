@@ -1,67 +1,43 @@
 /* ================================================
-   Product Page Layout
+   Product Page — Responsive Layout
+   Breakpoints:
+     Desktop  ≥ 1024px  (base styles, no query)
+     Tablet   600–1023px  @media (max-width: 1023px)
+     Mobile   < 600px     @media (max-width: 599px)
    ================================================ */
 
-.product-page {
-  display: flex;
-  gap: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  align-items: flex-start;
+/* ------------------------------------------------
+   Custom Properties
+   ------------------------------------------------ */
+:root {
+  --product-gap: 48px;
+  --product-media-basis: 55%;
+  --product-padding-x: 40px;
+  --product-padding-y: 48px;
+  --sticky-top: 40px; /* update if header is fixed */
+  --btn-bg: #000;
+  --btn-bg-hover: #222;
+  --btn-radius: 8px;
+  --breadcrumb-color: #666;
+  --breadcrumb-active: #111;
+  --breadcrumb-sep: #aaa;
 }
 
-/* Right Column */
-.product-details {
-  flex: 1;
-  position: sticky;
-  top: 40px;
-}
-
-.product-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.add-to-cart-btn {
-  width: 100%;
-  padding: 16px;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-.add-to-cart-btn:hover {
-  background: #222;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .product-page {
-    flex-direction: column;
-  }
-
-  .product-details {
-    position: static;
-  }
-}
-
-/* Breadcrumbs */
+/* ------------------------------------------------
+   Breadcrumbs  (shared snippet — keep here or
+   move to base.css if used outside product pages)
+   ------------------------------------------------ */
 .breadcrumbs {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.95rem;
   margin-bottom: 32px;
-  color: #666;
+  color: var(--breadcrumb-color);
 }
 
 .breadcrumbs a {
-  color: #666;
+  color: var(--breadcrumb-color);
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -71,11 +47,153 @@
 }
 
 .breadcrumbs .separator {
-  color: #aaa;
+  color: var(--breadcrumb-sep);
   user-select: none;
 }
 
 .breadcrumbs .current {
-  color: #111;
+  color: var(--breadcrumb-active);
   font-weight: 500;
+}
+
+/* ------------------------------------------------
+   Page Layout — Desktop (base)
+   ------------------------------------------------ */
+.product-page {
+  display: flex;
+  flex-direction: row;
+  gap: var(--product-gap);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--product-padding-y) var(--product-padding-x);
+  /* flex-start required for sticky sidebar to work */
+  align-items: flex-start;
+}
+
+/* Left column — media */
+.product-media {
+  flex: 0 0 var(--product-media-basis);
+  min-width: 0; /* prevent flex blowout */
+}
+
+/* Right column — details (sticky) */
+.product-details {
+  flex: 1;
+  min-width: 0;
+  position: sticky;
+  top: var(--sticky-top);
+}
+
+/* ------------------------------------------------
+   Product Form
+   ------------------------------------------------ */
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ------------------------------------------------
+   Add-to-Cart Button
+   ------------------------------------------------ */
+.add-to-cart-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--btn-bg);
+  color: #fff;
+  border: none;
+  border-radius: var(--btn-radius);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  /* Minimum accessible tap target */
+  min-height: 48px;
+}
+
+.add-to-cart-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+.add-to-cart-btn:focus-visible {
+  outline: 2px solid var(--btn-bg);
+  outline-offset: 3px;
+}
+
+.add-to-cart-btn:disabled,
+.add-to-cart-btn[aria-disabled="true"] {
+  background: #aaa;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ------------------------------------------------
+   Tablet  600px – 1023px
+   Two-column layout holds, but tighter spacing
+   and a narrower media column.
+   ------------------------------------------------ */
+@media (max-width: 1023px) {
+  :root {
+    --product-gap: 28px;
+    --product-media-basis: 50%;
+    --product-padding-x: 24px;
+    --product-padding-y: 32px;
+    --sticky-top: 24px;
+  }
+
+  .breadcrumbs {
+    font-size: 0.875rem;
+    margin-bottom: 24px;
+  }
+
+  .add-to-cart-btn {
+    font-size: 1rem;
+    padding: 14px;
+  }
+}
+
+/* ------------------------------------------------
+   Mobile  < 600px
+   Single-column stack; sticky sidebar disabled.
+   ------------------------------------------------ */
+@media (max-width: 599px) {
+  :root {
+    --product-padding-x: 16px;
+    --product-padding-y: 20px;
+  }
+
+  .product-page {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Full-width columns */
+  .product-media,
+  .product-details {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  /* Disable sticky — no room to scroll within the detail panel */
+  .product-details {
+    position: static;
+  }
+
+  .breadcrumbs {
+    font-size: 0.8125rem;
+    margin-bottom: 16px;
+    /* Allow wrapping on very small screens */
+    flex-wrap: wrap;
+  }
+
+  .product-form {
+    gap: 16px;
+  }
+
+  .add-to-cart-btn {
+    font-size: 1rem;
+    padding: 15px;
+    /* Ensure generous tap target on touch devices */
+    min-height: 52px;
+    border-radius: 6px;
+  }
 }
