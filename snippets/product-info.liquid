@@ -1,8 +1,37 @@
 <div class="product-info">
+
+  {% if product.vendor %}
+    <p class="product-vendor">{{ product.vendor }}</p>
+  {% endif %}
+
   <h1 class="product-title">{{ product.title }}</h1>
-  <p class="product-price">{{ product.price | money }}</p>
-  
-  <div class="product-description">
-    {{ product.description }}
+
+  {% assign current_variant = product.selected_or_first_available_variant %}
+
+  <div class="product-price" id="product-price">
+    {% if current_variant.compare_at_price > current_variant.price %}
+      <span class="price-compare">{{ current_variant.compare_at_price | money }}</span>
+      <span class="price-sale">{{ current_variant.price | money }}</span>
+      <span class="price-badge">Sale</span>
+    {% else %}
+      <span class="price-regular">
+        {% if product.price_varies %}
+          From {{ product.price_min | money }}
+        {% else %}
+          {{ current_variant.price | money }}
+        {% endif %}
+      </span>
+    {% endif %}
   </div>
+
+  {% unless current_variant.available %}
+    <p class="product-availability sold-out">Sold out</p>
+  {% endunless %}
+
+  {% if product.description != blank %}
+    <div class="product-description">
+      {{ product.description }}
+    </div>
+  {% endif %}
+
 </div>

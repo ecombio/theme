@@ -1,24 +1,71 @@
 <div class="product-form">
   {% form 'product', product %}
+
     {% assign current_variant = product.selected_or_first_available_variant %}
 
-    <div class="form-group">
-      <label for="variant">Variant</label>
-      <select name="id" id="variant" class="variant-select">
-        {% for variant in product.variants %}
-          <option value="{{ variant.id }}" {% if variant == current_variant %}selected{% endif %}>
-            {{ variant.title }} — {{ variant.price | money }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
+    {% if product.variants.size > 1 %}
+      <div class="form-group">
+        <label for="variant">Variant</label>
+        <select name="id" id="variant" class="variant-select">
+          {% for variant in product.variants %}
+            <option
+              value="{{ variant.id }}"
+              data-price="{{ variant.price }}"
+              data-compare-at-price="{{ variant.compare_at_price }}"
+              data-available="{{ variant.available }}"
+              data-inventory="{{ variant.inventory_quantity }}"
+              {% if variant == current_variant %}selected{% endif %}
+              {% unless variant.available %}disabled{% endunless %}
+            >
+              {{ variant.title }} — {{ variant.price | money }}
+              {% unless variant.available %} — Sold out{% endunless %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    {% else %}
+      {%- comment -%}
+        Single-variant product — still output a hidden input so the
+        form submits with the correct variant id.
+      {%- endcomment -%}
+      <input type="hidden" name="id" value="{{ current_variant.id }}">
+    {% endif %}
 
     <div class="form-group">
       <label for="quantity">Quantity</label>
-      <input type="number" name="quantity" id="quantity" min="1" value="1" class="quantity-input">
+      <input
+        type="number"
+        name="quantity"
+        id="quantity"
+        class="quantity-input"
+        min="1"
+        {% if current_variant.inventory_management == 'shopify' %}
+          max="{{ current_variant.inventory_quantity }}"
+        {% endif %}
+        value="1"
+      >
     </div>
 
-    <button type="submit" class="add-to-cart-btn">Add to cart</button>
-    {{ form | payment_button }}
+    <button
+      type="submit"
+      class="add-to-cart-btn"
+      id="add-to-cart"
+      {% unless current_variant.available %}disabled aria-disabled="true"{% endunless %}
+    >
+      {% if current_variant.available %}
+        Add to cart
+      {% else %}
+        Sold out
+      {% endif %}
+    </button>
+
+    <div class="dynamic-checkout">
+      {{ form | payment_button }}
+    </div>
+
+    <script>
+      window.productData = {{ product | json }};
+    </script>
+
   {% endform %}
 </div>
