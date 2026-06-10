@@ -1,227 +1,172 @@
 /**
- * Product Page JavaScript
- * Handles gallery interactions, variant selection, quantity updates, and buy button functionality
+ * Product Page — Static Demo
+ * Handles gallery, variant selection, quantity, and cart/buy feedback.
  */
 
-class ProductPage {
-  constructor() {
-    this.initGallery();
-    this.initVariantSelection();
-    this.initQuantitySelector();
-    this.initBuyButtons();
-  }
+(function () {
+  'use strict';
 
-  /**
-   * Initialize product gallery functionality
-   */
-  initGallery() {
+  /* ─── Gallery ─────────────────────────────────────────── */
+
+  const GALLERY_IMAGES = [
+    {
+      src: 'https://placehold.co/787x787/f5f0ea/8c7355?text=Task+Chair+Luxe',
+      alt: 'Task Chair Luxe – front view',
+    },
+    {
+      src: 'https://placehold.co/787x787/ede6db/8c7355?text=Side+View',
+      alt: 'Task Chair Luxe – side view',
+    },
+    {
+      src: 'https://placehold.co/787x787/e3dbd0/8c7355?text=Lifestyle',
+      alt: 'Task Chair Luxe – lifestyle setting',
+    },
+  ];
+
+  function initGallery() {
     const thumbnails = document.querySelectorAll('.thumbnail-item');
-    const mainImage = document.querySelector('.main-image');
+    const mainImage = document.getElementById('FeaturedImage');
 
     if (!thumbnails.length || !mainImage) return;
 
-    thumbnails.forEach((thumbnail) => {
-      thumbnail.addEventListener('click', (e) => {
-        // Remove active class from all thumbnails
-        thumbnails.forEach(t => t.classList.remove('active'));
-        
-        // Add active class to clicked thumbnail
-        thumbnail.classList.add('active');
-
-        // Get the corresponding image
-        const mediaId = thumbnail.dataset.mediaId;
-        const img = thumbnail.querySelector('img');
-        
-        if (img) {
-          // Update main image
-          const largeSrc = img.src.replace('width=84', 'width=787');
-          mainImage.src = largeSrc;
-          mainImage.alt = img.alt;
-        }
+    function selectThumbnail(index) {
+      thumbnails.forEach((t, i) => {
+        const active = i === index;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
 
-      // Add keyboard support
-      thumbnail.addEventListener('keydown', (e) => {
+      const img = GALLERY_IMAGES[index];
+      if (img) {
+        mainImage.src = img.src;
+        mainImage.alt = img.alt;
+      }
+    }
+
+    thumbnails.forEach((thumb, i) => {
+      thumb.addEventListener('click', () => selectThumbnail(i));
+      thumb.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          thumbnail.click();
+          selectThumbnail(i);
         }
       });
     });
   }
 
-  /**
-   * Initialize variant selection
-   */
-  initVariantSelection() {
-    const variantInputs = document.querySelectorAll('.variant-radio, .color-input');
-    const selectedValueSpans = document.querySelectorAll('.selected-value');
+  /* ─── Variant Selection ────────────────────────────────── */
 
-    if (!variantInputs.length) return;
+  function initVariantSelection() {
+    // Color swatches
+    const colorInputs = document.querySelectorAll('input[name="Color"]');
+    const colorLabel = document.getElementById('SelectedColor');
 
-    variantInputs.forEach((input) => {
-      input.addEventListener('change', (e) => {
-        const optionName = e.target.name;
-        const optionValue = e.target.value;
+    colorInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        if (colorLabel) colorLabel.textContent = input.value;
+      });
+    });
 
-        // Update selected value display
-        const valueSpan = Array.from(selectedValueSpans).find(
-          span => span.closest('.variant-option').querySelector(`[name="${optionName}"]`)
-        );
-        
-        if (valueSpan) {
-          valueSpan.textContent = optionValue;
-        }
+    // Material buttons
+    const materialInputs = document.querySelectorAll('input[name="Material"]');
+    const materialLabel = document.getElementById('SelectedMaterial');
 
-        // Update URL and form
-        this.updateVariant();
+    materialInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        if (materialLabel) materialLabel.textContent = input.value;
       });
     });
   }
 
-  /**
-   * Update selected variant
-   */
-  updateVariant() {
-    const form = document.querySelector('.product-form');
-    if (!form) return;
+  /* ─── Quantity Selector ────────────────────────────────── */
 
-    // Get all selected options
-    const selectedOptions = {};
-    const variantInputs = document.querySelectorAll('.variant-radio:checked, .color-input:checked');
-    
-    variantInputs.forEach(input => {
-      selectedOptions[input.name] = input.value;
-    });
+  function initQuantitySelector() {
+    const input = document.getElementById('ProductQuantity');
+    const minus = document.querySelector('.quantity-button[name="minus"]');
+    const plus = document.querySelector('.quantity-button[name="plus"]');
 
-    // In a real Shopify implementation, you would:
-    // 1. Find the matching variant based on selected options
-    // 2. Update the hidden variant ID input
-    // 3. Update price display
-    // 4. Update availability
-    // 5. Update URL with variant parameter
-    
-    console.log('Selected options:', selectedOptions);
-  }
+    if (!input) return;
 
-  /**
-   * Initialize quantity selector
-   */
-  initQuantitySelector() {
-    const quantityInput = document.querySelector('.quantity-input');
-    const minusButton = document.querySelector('.quantity-button[name="minus"]');
-    const plusButton = document.querySelector('.quantity-button[name="plus"]');
+    function clamp(val) {
+      return Math.max(1, Math.min(99, val));
+    }
 
-    if (!quantityInput || !minusButton || !plusButton) return;
-
-    minusButton.addEventListener('click', () => {
-      const currentValue = parseInt(quantityInput.value) || 1;
-      if (currentValue > 1) {
-        quantityInput.value = currentValue - 1;
-      }
-    });
-
-    plusButton.addEventListener('click', () => {
-      const currentValue = parseInt(quantityInput.value) || 1;
-      quantityInput.value = currentValue + 1;
-    });
-
-    // Ensure valid input
-    quantityInput.addEventListener('change', () => {
-      const value = parseInt(quantityInput.value) || 1;
-      quantityInput.value = Math.max(1, value);
-    });
-  }
-
-  /**
-   * Initialize buy buttons
-   */
-  initBuyButtons() {
-    const buyNowButton = document.querySelector('.buy-now');
-    const addToCartButton = document.querySelector('.add-to-cart');
-
-    if (buyNowButton) {
-      buyNowButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        
-        // In a real Shopify implementation, this would:
-        // 1. Add the product to cart
-        // 2. Redirect to checkout
-        
-        const form = document.querySelector('.product-form');
-        if (form) {
-          const formData = new FormData(form);
-          console.log('Buy Now clicked with:', Object.fromEntries(formData));
-          
-          // Redirect to checkout (Shopify specific)
-          // window.location.href = '/checkout';
-        }
+    if (minus) {
+      minus.addEventListener('click', () => {
+        input.value = clamp((parseInt(input.value, 10) || 1) - 1);
       });
     }
 
-    if (addToCartButton) {
-      const form = addToCartButton.closest('form');
-      
-      if (form) {
-        form.addEventListener('submit', (e) => {
-          e.preventDefault();
-          
-          const formData = new FormData(form);
-          
-          // In a real Shopify implementation, this would use the AJAX API:
-          // fetch('/cart/add.js', {
-          //   method: 'POST',
-          //   body: formData
-          // })
-          // .then(response => response.json())
-          // .then(data => {
-          //   // Show success message
-          //   // Update cart count
-          // });
-          
-          console.log('Add to Cart clicked with:', Object.fromEntries(formData));
-          
-          // Show temporary success message
-          const originalText = addToCartButton.textContent;
-          addToCartButton.textContent = 'Added to Cart!';
-          addToCartButton.style.backgroundColor = '#4CAF50';
-          
-          setTimeout(() => {
-            addToCartButton.textContent = originalText;
-            addToCartButton.style.backgroundColor = '';
-          }, 2000);
-        });
-      }
-    }
-  }
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    new ProductPage();
-  });
-} else {
-  new ProductPage();
-}
-
-// Add accordion functionality
-document.addEventListener('DOMContentLoaded', () => {
-  const accordions = document.querySelectorAll('details');
-  
-  accordions.forEach(accordion => {
-    const summary = accordion.querySelector('summary');
-    
-    if (summary) {
-      summary.addEventListener('click', (e) => {
-        // Optional: Close other accordions when opening one
-        // const isOpen = accordion.hasAttribute('open');
-        // if (!isOpen) {
-        //   accordions.forEach(acc => {
-        //     if (acc !== accordion) acc.removeAttribute('open');
-        //   });
-        // }
+    if (plus) {
+      plus.addEventListener('click', () => {
+        input.value = clamp((parseInt(input.value, 10) || 1) + 1);
       });
     }
-  });
-});
+
+    input.addEventListener('change', () => {
+      input.value = clamp(parseInt(input.value, 10) || 1);
+    });
+
+    input.addEventListener('blur', () => {
+      input.value = clamp(parseInt(input.value, 10) || 1);
+    });
+  }
+
+  /* ─── Buy Buttons ──────────────────────────────────────── */
+
+  function initBuyButtons() {
+    const addToCart = document.getElementById('AddToCart');
+    const buyNow = document.getElementById('BuyNow');
+
+    if (addToCart) {
+      addToCart.addEventListener('click', () => {
+        if (addToCart.disabled) return;
+        setButtonState(addToCart, 'Added to Cart ✓', true, 'success');
+        setTimeout(() => resetButtonState(addToCart, 'Add To Cart'), 2500);
+      });
+    }
+
+    if (buyNow) {
+      buyNow.addEventListener('click', () => {
+        setButtonState(buyNow, 'Redirecting…', true, null);
+        // In a real implementation: window.location.href = '/checkout';
+        setTimeout(() => resetButtonState(buyNow, 'Buy It Now'), 2000);
+      });
+    }
+  }
+
+  function setButtonState(btn, text, disabled, cssClass) {
+    btn.textContent = text;
+    btn.disabled = disabled;
+    if (cssClass) btn.classList.add(cssClass);
+  }
+
+  function resetButtonState(btn, text) {
+    btn.textContent = text;
+    btn.disabled = false;
+    btn.classList.remove('success');
+  }
+
+  /* ─── Accordions ───────────────────────────────────────── */
+
+  function initAccordions() {
+    // Nothing extra needed — <details>/<summary> handles open/close natively.
+    // The CSS handles icon rotation via details[open] selector.
+  }
+
+  /* ─── Boot ─────────────────────────────────────────────── */
+
+  function init() {
+    initGallery();
+    initVariantSelection();
+    initQuantitySelector();
+    initBuyButtons();
+    initAccordions();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

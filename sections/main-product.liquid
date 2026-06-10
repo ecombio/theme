@@ -1,118 +1,33 @@
-{{ 'product.css' | asset_url | stylesheet_tag }}
-
-<script src="{{ 'product.js' | asset_url }}" defer="defer"></script>
+<link rel="stylesheet" href="{{ 'product.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ 'product.css' | asset_url }}"></noscript>
+<script src="{{ 'product.js' | asset_url }}" defer></script>
 
 {%- render 'breadcrumbs' -%}
 
-<div class="product-page" id="ProductSection-{{ section.id }}" data-section="{{ section.id }}">
+<div class="product-page" id="ProductSection">
+
   <div class="product-layout">
-    <!-- Product Media Gallery -->
+    <!-- Product Gallery -->
     <div class="product-media">
-      {%- render 'product-gallery',
-        product: product,
-        section: section
-      -%}
+      {%- render 'product-gallery' -%}
     </div>
 
     <!-- Product Info -->
     <div class="product-info">
-      {%- render 'product-info',
-        product: product,
-        section: section,
-        block_settings: section.blocks
-      -%}
+      {%- render 'product-info' -%}
     </div>
   </div>
 
-  <!-- Product Details Sections -->
+  <!-- Product Details -->
   <div class="product-details">
-    {%- render 'product-specifications', product: product -%}
-    {%- render 'product-accordion', product: product -%}
+    {%- render 'product-specifications' -%}
+    {%- render 'product-accordion' -%}
     {%- render 'product-payment-security' -%}
   </div>
 
-  <!-- Recommended Products -->
-  {%- if section.settings.show_recommendations -%}
-    <div class="product-recommendations">
-      {%- render 'product-recommendations', product: product -%}
-    </div>
-  {%- endif -%}
-</div>
+  <!-- Recommendations -->
+  <div class="product-recommendations">
+    {%- render 'product-recommendations' -%}
+  </div>
 
-{% schema %}
-{
-  "name": "Product",
-  "tag": "section",
-  "class": "section",
-  "settings": [
-    {
-      "type": "checkbox",
-      "id": "show_recommendations",
-      "default": true,
-      "label": "Show product recommendations"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_zoom",
-      "default": false,
-      "label": "Enable image zoom"
-    }
-  ],
-  "blocks": [
-    {
-      "type": "title",
-      "name": "Title",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "price",
-      "name": "Price",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "variant_picker",
-      "name": "Variant Picker",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "quantity_selector",
-      "name": "Quantity Selector",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "buy_buttons",
-      "name": "Buy Buttons",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "features",
-      "name": "Features",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "shipping",
-      "name": "Shipping Info",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "pickup",
-      "name": "Pickup Availability",
-      "limit": 1,
-      "settings": []
-    },
-    {
-      "type": "description",
-      "name": "Description",
-      "limit": 1,
-      "settings": []
-    }
-  ]
-}
-{% endschema %}
+</div>
