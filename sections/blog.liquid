@@ -14,8 +14,7 @@
       assign cap_word    = word | capitalize
       assign display_tag = display_tag | append: cap_word | append: ' '
     endfor
-    assign display_tag = display_tag | strip
-    assign page_title  = display_tag
+    assign page_title = display_tag | strip
   else
     assign page_title = blog.title | escape
   endif
@@ -29,41 +28,35 @@
 
   <div class="blog-feed__grid" style="--columns: {{ columns }};">
     {%- for article in blog.articles -%}
+      <div class="blog-feed__card">
 
-      <a href="{{ article.url }}" class="blog-feed__card">
         {%- if show_image -%}
-          {%- if article.image -%}
-            {{ article.image | image_url: width: 600 | image_tag: class: 'blog-feed__image', loading: 'lazy', alt: article.title }}
-          {%- else -%}
-            <div class="blog-feed__image blog-feed__image--placeholder" aria-hidden="true"></div>
-          {%- endif -%}
+          <a href="{{ article.url }}" class="blog-feed__image-link">
+            {%- if article.image -%}
+              {{ article.image | image_url: width: 600 | image_tag: class: 'blog-feed__image', loading: 'lazy', alt: article.title }}
+            {%- else -%}
+              <div class="blog-feed__image blog-feed__image--placeholder"></div>
+            {%- endif -%}
+          </a>
         {%- endif -%}
 
         <div class="blog-feed__content">
           {%- if article.tags.size > 0 -%}
             <div class="blog-feed__card-tags">
               {%- for tag in article.tags -%}
-                {%- assign tag_words_card = tag | replace: '-', ' ' | split: ' ' -%}
-                {%- assign tag_label = '' -%}
-                {%- for w in tag_words_card -%}
-                  {%- assign tag_label = tag_label | append: w | capitalize | append: ' ' -%}
-                {%- endfor -%}
-                {%- assign tag_label = tag_label | strip -%}
-                <a href="{{ blog.url }}/tagged/{{ tag | handle }}"
-                   class="blog-feed__card-tag"
-                   onclick="event.stopPropagation()">
-                  {{ tag_label }}
+                <a href="{{ blog.url }}/tagged/{{ tag | handle }}" class="blog-feed__card-tag">
+                  {{ tag | replace: '-', ' ' | capitalize }}
                 </a>
               {%- endfor -%}
             </div>
           {%- endif -%}
 
-          <h2 class="blog-feed__heading">{{ article.title | escape }}</h2>
+          <h2 class="blog-feed__heading">
+            <a href="{{ article.url }}" class="blog-feed__heading-link">{{ article.title | escape }}</a>
+          </h2>
 
           {%- if article.excerpt != blank -%}
-            <p class="blog-feed__excerpt">
-              {{ article.excerpt | strip_html | truncate: 110 }}
-            </p>
+            <p class="blog-feed__excerpt">{{ article.excerpt | strip_html | truncate: 110 }}</p>
           {%- endif -%}
 
           <div class="blog-feed__meta">
@@ -75,8 +68,8 @@
             {%- endif -%}
           </div>
         </div>
-      </a>
 
+      </div>
     {%- endfor -%}
   </div>
 
