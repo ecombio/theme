@@ -1,0 +1,38 @@
+{% comment %}
+  ECOMBIO Flyout — Parent wrapper
+  File: snippets/flyout.liquid
+
+  Renders flyout-panel (vertical sidebar) and flyout-menu (horizontal panels)
+  together as one composed component.
+
+  Called from snippets/ecombio-header-menu-bar.liquid:
+    {%- render 'flyout', menu: flyout_menu, uid: block.id -%}
+
+  Params:
+    menu  {linklist}  The Shopify nav menu assigned to this block
+    uid   {string}    block.id — scopes all IDs so multiple flyouts coexist safely
+
+  Nav structure expected in Shopify admin:
+    Level 1  →  sidebar category    (Electric Scooters, Electric Bikes…)
+    Level 2  →  column heading      (Trending, Shop by Category…)
+    Level 3  →  individual links    (Shop all, New arrivals, Commuter…)
+{% endcomment %}
+
+{%- if menu != blank and menu.links.size > 0 -%}
+  {%- assign scope = uid | default: 'flyout' -%}
+
+  <div class="flyout" data-flyout>
+
+    {%- comment -%}── LEFT: vertical sidebar ──{%- endcomment -%}
+    {%- render 'flyout-panel', menu: menu, scope: scope -%}
+
+    {%- comment -%}── RIGHT: horizontal column panels (one per sidebar item) ──{%- endcomment -%}
+    <div class="flyout__stage">
+      {%- for cat in menu.links -%}
+        {%- assign panel_id = scope | append: '-menu-' | append: forloop.index -%}
+        {%- render 'flyout-menu', cat: cat, panel_id: panel_id, active: forloop.first -%}
+      {%- endfor -%}
+    </div>
+
+  </div>
+{%- endif -%}

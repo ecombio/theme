@@ -1,0 +1,33 @@
+{% comment %}
+  ECOMBIO Flyout Panel — Vertical Sidebar Rail
+  File: snippets/flyout-panel.liquid
+
+  Renders the left vertical category list.
+  Each item is a trigger that activates its matching flyout-menu panel.
+
+  Params:
+    menu   {linklist}  The nav menu object
+    scope  {string}    ID prefix passed down from flyout.liquid
+{% endcomment %}
+
+<ul class="flyout-panel" role="list" aria-label="{{ menu.title | escape }}">
+  {%- for cat in menu.links -%}
+    {%- assign panel_id = scope | append: '-menu-' | append: forloop.index -%}
+    <li class="flyout-panel__item">
+      <a
+        href="{{ cat.url }}"
+        class="flyout-panel__trigger{% if forloop.first %} flyout-panel__trigger--active{% endif %}"
+        data-flyout-target="{{ panel_id }}"
+        aria-controls="{{ panel_id }}"
+        aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+      >
+        {{- cat.title -}}
+        <svg class="flyout-panel__chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M7.5 3.75L13.75 10L7.5 16.25"
+                stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </li>
+  {%- endfor -%}
+</ul>

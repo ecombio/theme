@@ -1,9 +1,13 @@
 {% comment %}
-  ECOMBIO Header Menu Bar Snippet
+  ECOMBIO Header Menu Bar
   File: snippets/ecombio-header-menu-bar.liquid
 
-  Rendered by sections/header.liquid when the section has 1+ blocks.
+  Rendered by sections/header.liquid when blocks exist.
   Blocks: single | highlight | dropdown | mega | flyout
+
+  flyout blocks render snippets/flyout.liquid which composes:
+    flyout-panel.liquid  (vertical sidebar)
+    flyout-menu.liquid   (horizontal column panels)
 {% endcomment %}
 
 {%- if section.blocks.size > 0 -%}
@@ -12,7 +16,6 @@
     <ul class="menu-bar__list">
 
       {%- for block in section.blocks -%}
-
         {%- case block.type -%}
 
           {%- when 'single' -%}
@@ -32,15 +35,9 @@
                   <span class="menu-bar__icon">{% render 'menu-icon', icon: block.settings.icon %}</span>
                 {%- endif -%}
                 <span class="reversed-link">{{ block.settings.label | default: 'On Sale' }}</span>
-                <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-                  <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
-                </svg>
-                <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-                  <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
-                </svg>
-                <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-                  <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
-                </svg>
+                <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+                <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+                <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
               </a>
             </li>
 
@@ -54,21 +51,20 @@
                   <span class="menu-bar__icon">{% render 'menu-icon', icon: block.settings.icon %}</span>
                 {%- endif -%}
                 {{ block.settings.label | default: dd_menu.title | default: 'Menu' }}
-                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </a>
-
               {%- if dd_menu != blank and dd_menu.links.size > 0 -%}
                 <div class="dropdown" role="region">
                   <div class="dropdown__container">
                     <ul class="dropdown__nav" role="list">
                       {%- for link in dd_menu.links -%}
-                        <li class="dropdown__item {% if link.links.size > 0 %}dropdown__item--has-child{% endif %}">
+                        <li class="dropdown__item{% if link.links.size > 0 %} dropdown__item--has-child{% endif %}">
                           {%- if link.links.size > 0 -%}
                             <span class="dropdown__link dropdown__link--parent">
                               {{ link.title }}
-                              <svg class="icon-caret-right" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <svg class="icon-caret-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                 <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                               </svg>
                             </span>
@@ -76,9 +72,7 @@
                               <div class="dropdown__container">
                                 <ul class="dropdown__nav" role="list">
                                   {%- for child in link.links -%}
-                                    <li>
-                                      <a href="{{ child.url }}" class="dropdown__link">{{ child.title }}</a>
-                                    </li>
+                                    <li><a href="{{ child.url }}" class="dropdown__link">{{ child.title }}</a></li>
                                   {%- endfor -%}
                                 </ul>
                               </div>
@@ -104,16 +98,13 @@
                   <span class="menu-bar__icon">{% render 'menu-icon', icon: block.settings.icon %}</span>
                 {%- endif -%}
                 {{ block.settings.label | default: mega_menu.title | default: 'Menu' }}
-                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </a>
-
               {%- if mega_menu != blank and mega_menu.links.size > 0 -%}
                 <div class="mega-menu" role="region">
-                  {%- render 'header-mega-menu',
-                      menu: mega_menu,
-                      show_products: block.settings.show_products -%}
+                  {%- render 'header-mega-menu', menu: mega_menu, show_products: block.settings.show_products -%}
                 </div>
               {%- endif -%}
             </li>
@@ -123,25 +114,24 @@
             <li class="menu-bar__item menu-bar__item--has-flyout" {{ block.shopify_attributes }}>
               <a href="{{ block.settings.link | default: '#' }}"
                  class="menu-bar__link menu-bar__link--flyout"
-                 aria-haspopup="true">
+                 aria-haspopup="true"
+                 aria-expanded="false">
                 {%- if block.settings.icon != blank -%}
                   <span class="menu-bar__icon">{% render 'menu-icon', icon: block.settings.icon %}</span>
                 {%- endif -%}
                 {{ block.settings.label | default: 'Browse all categories' }}
-                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </a>
-
               {%- if flyout_menu != blank and flyout_menu.links.size > 0 -%}
                 <div class="mega-menu mega-menu--flyout" role="region">
-                  {%- render 'flyout-menu', menu: flyout_menu -%}
+                  {%- render 'flyout', menu: flyout_menu, uid: block.id -%}
                 </div>
               {%- endif -%}
             </li>
 
         {%- endcase -%}
-
       {%- endfor -%}
 
     </ul>
@@ -149,5 +139,7 @@
 </nav>
 
 {{ 'header-mega-menu.js' | asset_url | script_tag }}
-{{ 'flyout-menu.js' | asset_url | script_tag }}
+{{ 'flyout-panel.js'     | asset_url | script_tag }}
+{{ 'flyout-menu.js'      | asset_url | script_tag }}
+{{ 'flyout.js'           | asset_url | script_tag }}
 {%- endif -%}
