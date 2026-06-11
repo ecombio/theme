@@ -2,15 +2,27 @@
 
 {% comment %}
   Barebone Article Feed Section
-  Clean, minimal article grid filtered by tag
+  Article grid filtered server-side by owner-configured tags (multi, OR logic)
 {% endcomment %}
 
 {%- liquid
   assign blog_handle = section.settings.blog | default: 'articles'
-  assign tag         = section.settings.tag | strip
   assign limit       = section.settings.limit | default: 6
   assign show_image  = section.settings.show_image
   assign columns     = section.settings.columns | default: 3
+
+  comment
+    Split the textarea value into an array, stripping blank lines.
+    Each line the owner types becomes one tag to match against.
+  endcomment
+  assign filter_tags_raw = section.settings.tags | newline_to_br | split: '<br />'
+  assign filter_tags = '' | split: ''
+  for raw_tag in filter_tags_raw
+    assign t = raw_tag | strip
+    if t != blank
+      assign filter_tags = filter_tags | concat: t
+    endif
+  endfor
 -%}
 
 <div class="article-feed">
@@ -22,39 +34,54 @@
     {%- assign rendered = 0 -%}
 
     {%- for article in blogs[blog_handle].articles -%}
-      {%- if tag == blank or article.tags contains tag -%}
-        {%- assign rendered = rendered | plus: 1 -%}
-        {%- if rendered > limit -%}{%- break -%}{%- endif -%}
+      {%- comment -%} Tag match: show if no filter set, or article has ANY of the filter tags {%- endcomment -%}
+      {%- assign matched = false -%}
+      {%- if filter_tags.size == 0 -%}
+        {%- assign matched = true -%}
+      {%- else -%}
+        {%- for filter_tag in filter_tags -%}
+          {%- if article.tags contains filter_tag -%}
+            {%- assign matched = true -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
 
-        <a href="{{ article.url }}" class="article-feed__card">
-          {%- if show_image -%}
-            {%- if article.image -%}
-              {{ article.image | image_url: width: 600 | image_tag: class: 'article-feed__image', loading: 'lazy' }}
-            {%- else -%}
-              <div class="article-feed__image article-feed__image--placeholder"></div>
-            {%- endif -%}
+      {%- unless matched -%}{%- continue -%}{%- endunless -%}
+
+      {%- assign rendered = rendered | plus: 1 -%}
+      {%- if rendered > limit -%}{%- break -%}{%- endif -%}
+
+      <a href="{{ article.url }}" class="article-feed__card">
+        {%- if show_image -%}
+          {%- if article.image -%}
+            {{ article.image | image_url: width: 600 | image_tag: class: 'article-feed__image', loading: 'lazy' }}
+          {%- else -%}
+            <div class="article-feed__image article-feed__image--placeholder"></div>
+          {%- endif -%}
+        {%- endif -%}
+
+        <div class="article-feed__content">
+          <div class="article-feed__card-tags">
+            {%- for tag in article.tags -%}
+              <span class="article-feed__card-tag">{{ tag | escape }}</span>
+            {%- endfor -%}
+          </div>
+          <h3 class="article-feed__heading">{{ article.title | escape }}</h3>
+
+          {%- if article.excerpt != blank -%}
+            <p class="article-feed__excerpt">
+              {{ article.excerpt | strip_html | truncate: 110 }}
+            </p>
           {%- endif -%}
 
-          <div class="article-feed__content">
-            <h3 class="article-feed__heading">{{ article.title | escape }}</h3>
-
-            {%- if article.excerpt != blank -%}
-              <p class="article-feed__excerpt">
-                {{ article.excerpt | strip_html | truncate: 110 }}
-              </p>
-            {%- endif -%}
-
-            <div class="article-feed__meta">
-              {{ article.published_at | date: "%b %d, %Y" }}
-            </div>
+          <div class="article-feed__meta">
+            {{ article.published_at | date: "%b %d, %Y" }}
           </div>
-        </a>
-      {%- endif -%}
+        </div>
+      </a>
     {%- endfor -%}
   </div>
 </div>
-
-{{ 'article-feed.js' | asset_url | script_tag }}
 
 {% schema %}
 {
@@ -74,10 +101,10 @@
       "label": "Blog"
     },
     {
-      "type": "text",
-      "id": "tag",
-      "label": "Filter by tag",
-      "info": "Leave blank to show all articles from the blog"
+      "type": "textarea",
+      "id": "tags",
+      "label": "Filter by tags",
+      "info": "Enter one tag per line. Articles matching any tag will be shown. Leave blank to show all articles."
     },
     {
       "type": "range",
