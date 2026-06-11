@@ -35,7 +35,7 @@
           {%- if article.image -%}
             {{ article.image | image_url: width: 600 | image_tag: class: 'blog-feed__image', loading: 'lazy', alt: article.title }}
           {%- else -%}
-            {{ 'lifestyle-1' | placeholder_svg_tag: 'blog-feed__image blog-feed__image--placeholder' }}
+            <div class="blog-feed__image blog-feed__image--placeholder" aria-hidden="true"></div>
           {%- endif -%}
         {%- endif -%}
 
@@ -43,10 +43,16 @@
           {%- if article.tags.size > 0 -%}
             <div class="blog-feed__card-tags">
               {%- for tag in article.tags -%}
+                {%- assign tag_words_card = tag | replace: '-', ' ' | split: ' ' -%}
+                {%- assign tag_label = '' -%}
+                {%- for w in tag_words_card -%}
+                  {%- assign tag_label = tag_label | append: w | capitalize | append: ' ' -%}
+                {%- endfor -%}
+                {%- assign tag_label = tag_label | strip -%}
                 <a href="{{ blog.url }}/tagged/{{ tag | handle }}"
                    class="blog-feed__card-tag"
                    onclick="event.stopPropagation()">
-                  {{ tag | escape }}
+                  {{ tag_label }}
                 </a>
               {%- endfor -%}
             </div>
