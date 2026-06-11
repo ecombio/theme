@@ -4,7 +4,7 @@
   assign limit      = section.settings.limit | default: 6
   assign show_image = section.settings.show_image
   assign columns    = section.settings.columns | default: 3
-  assign tag        = section.settings.tag | strip | downcase
+  assign filter_tags = section.settings.tag | downcase | split: ','
 -%}
 
 <div class="article-feed">
@@ -17,16 +17,23 @@
 
     {%- for article_item in blogs['articles'].articles -%}
 
-      {%- unless tag == blank -%}
-        {%- assign match = false -%}
-        {%- for native_tag in article_item.tags -%}
-          {%- assign native_tag_clean = native_tag | downcase | strip -%}
-          {%- if native_tag_clean == tag -%}
-            {%- assign match = true -%}
-          {%- endif -%}
+      {%- assign match = false -%}
+
+      {%- if section.settings.tag == blank -%}
+        {%- assign match = true -%}
+      {%- else -%}
+        {%- for filter_tag in filter_tags -%}
+          {%- assign filter_tag_clean = filter_tag | strip -%}
+          {%- for native_tag in article_item.tags -%}
+            {%- assign native_tag_clean = native_tag | downcase | strip -%}
+            {%- if native_tag_clean == filter_tag_clean -%}
+              {%- assign match = true -%}
+            {%- endif -%}
+          {%- endfor -%}
         {%- endfor -%}
-        {%- unless match -%}{%- continue -%}{%- endunless -%}
-      {%- endunless -%}
+      {%- endif -%}
+
+      {%- unless match -%}{%- continue -%}{%- endunless -%}
 
       {%- assign rendered = rendered | plus: 1 -%}
       {%- if rendered > limit -%}{%- break -%}{%- endif -%}
@@ -81,8 +88,8 @@
     {
       "type": "text",
       "id": "tag",
-      "label": "Filter tag",
-      "info": "Must match a native article tag exactly, e.g. cycling-buying-guides"
+      "label": "Filter tags",
+      "info": "Comma-separated. e.g. cycling, electric-scooters. Leave blank to show all."
     },
     {
       "type": "range",
