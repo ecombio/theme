@@ -27,15 +27,6 @@
 
   <h1 class="blog-feed__title">{{ page_title }}</h1>
 
-  {%- if current_tags.size > 0 -%}
-    <div class="blog-feed__active-tags">
-      {%- for tag in current_tags -%}
-        <span class="blog-feed__active-tag">{{ tag | escape }}</span>
-      {%- endfor -%}
-      <a href="{{ blog.url }}" class="blog-feed__clear-tags">Clear</a>
-    </div>
-  {%- endif -%}
-
   <div class="blog-feed__grid" style="--columns: {{ columns }};">
     {%- for article in blog.articles -%}
 
@@ -44,14 +35,7 @@
           {%- if article.image -%}
             {{ article.image | image_url: width: 600 | image_tag: class: 'blog-feed__image', loading: 'lazy', alt: article.title }}
           {%- else -%}
-            <img
-              src="{{ 'blog-placeholder.jpg' | asset_url }}"
-              alt=""
-              class="blog-feed__image"
-              loading="lazy"
-              width="600"
-              height="338"
-            >
+            {{ 'lifestyle-1' | placeholder_svg_tag: 'blog-feed__image blog-feed__image--placeholder' }}
           {%- endif -%}
         {%- endif -%}
 
