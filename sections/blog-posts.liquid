@@ -1,10 +1,12 @@
 {% comment %}
-  Blog Posts Section with Custom Article Tags (Metafield)
-  File: sections/blog-posts.liquid
+  Blog Posts Section - Locked to /blogs/articles (using native tags)
+  Best version for production
 {% endcomment %}
 
 {{ 'blog-posts.css' | asset_url | stylesheet_tag }}
 {{ 'blog-posts.js' | asset_url | script_tag }}
+
+{% assign target_blog = blogs['articles'] %}
 
 <div class="blog-posts-section section-{{ section.id }}">
   
@@ -16,26 +18,16 @@
 
   {% assign current_tag = request.params.tag %}
 
-  {% comment %} Collect unique tags for filter bar {% endcomment %}
-  {% assign all_tags = '' | split: '' %}
-  {% for article in blog.articles %}
-    {% assign a_tags = article.metafields.theme['article-tags'].value | default: empty %}
-    {% for tag in a_tags %}
-      {% unless all_tags contains tag %}
-        {% assign all_tags = all_tags | append: tag | append: '|' %}
-      {% endunless %}
-    {% endfor %}
-  {% endfor %}
-  {% assign all_tags = all_tags | split: '|' | uniq | compact %}
-
   {% comment %} Tag Filter Bar {% endcomment %}
+  {% assign all_tags = target_blog.all_tags %}
+
   {% if all_tags.size > 0 %}
     <div class="tag-filter-bar" id="tag-filter-bar">
-      <a href="{{ blog.url }}" class="tag-pill {% if current_tag == blank %}active{% endif %}">
+      <a href="{{ target_blog.url }}" class="tag-pill {% if current_tag == blank %}active{% endif %}">
         All
       </a>
       {% for tag in all_tags %}
-        <a href="{{ blog.url }}?tag={{ tag | url_encode }}" 
+        <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}" 
            class="tag-pill {% if current_tag == tag %}active{% endif %}">
           {{ tag }}
         </a>
@@ -45,10 +37,9 @@
 
   {% comment %} Articles Grid {% endcomment %}
   <div class="blog-posts-grid">
-    {% for article in blog.articles limit: section.settings.limit %}
-      {% assign art_tags = article.metafields.theme['article-tags'].value | default: empty %}
-
-      {% if current_tag == blank or art_tags contains current_tag %}
+    {% for article in target_blog.articles limit: section.settings.limit %}
+      
+      {% if current_tag == blank or article.tags contains current_tag %}
         <article class="blog-post-card">
           
           {% if article.image %}
@@ -69,10 +60,10 @@
               <p class="blog-post-excerpt">{{ article.excerpt | strip_html | truncate: 135 }}</p>
             {% endif %}
 
-            {% if art_tags != blank %}
+            {% if article.tags.size > 0 %}
               <div class="blog-post-tags">
-                {% for tag in art_tags %}
-                  <a href="{{ blog.url }}?tag={{ tag | url_encode }}" class="tag-pill small">
+                {% for tag in article.tags %}
+                  <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}" class="tag-pill small">
                     {{ tag }}
                   </a>
                 {% endfor %}
@@ -96,7 +87,7 @@
 
 {% schema %}
 {
-  "name": "Blog Posts with Tags",
+  "name": "Blog Posts (Articles)",
   "settings": [
     {
       "type": "text",
@@ -116,7 +107,7 @@
   ],
   "presets": [
     {
-      "name": "Blog Posts with Tags",
+      "name": "Blog Posts from Articles",
       "category": "Blog"
     }
   ]
