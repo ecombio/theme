@@ -11,6 +11,7 @@
         - snippets/ecombio-header-icon-cart.liquid
     - snippets/ecombio-search-form.liquid
     - snippets/ecombio-mobile-nav.liquid
+    - snippets/ecombio-header-menu-bar.liquid  ← menu bar (renders only when blocks exist)
 {% endcomment %}
 
 {%- assign show_category   = section.settings.show_category_filter -%}
@@ -52,6 +53,9 @@
     </div>
   </div>
 
+  {%- comment -%} ── MENU BAR ── Only rendered when blocks are present {%- endcomment -%}
+  {%- render 'ecombio-header-menu-bar' -%}
+
 </header>
 
 {%- render 'ecombio-mobile-nav' -%}
@@ -71,6 +75,7 @@
   "name": "Header",
   "tag": "header",
   "class": "section-header",
+  "max_blocks": 20,
   "settings": [
     {
       "type": "header",
@@ -177,6 +182,188 @@
       "info": "Routes checkout through /cart before Shopify Checkout."
     }
   ],
+  "blocks": [
+    {
+      "type": "single",
+      "name": "Single Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "", "label": "None" },
+            { "value": "hamburger", "label": "Hamburger" },
+            { "value": "home", "label": "Home" },
+            { "value": "sale", "label": "Sale" },
+            { "value": "category", "label": "Category" },
+            { "value": "star", "label": "Star" }
+          ],
+          "default": ""
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link URL"
+        }
+      ]
+    },
+    {
+      "type": "highlight",
+      "name": "Highlighted Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "On Sale"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "", "label": "None" },
+            { "value": "hamburger", "label": "Hamburger" },
+            { "value": "home", "label": "Home" },
+            { "value": "sale", "label": "Sale" },
+            { "value": "category", "label": "Category" },
+            { "value": "star", "label": "Star" }
+          ],
+          "default": ""
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link URL"
+        }
+      ]
+    },
+    {
+      "type": "dropdown",
+      "name": "Dropdown Menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label (overrides menu title)",
+          "info": "Leave blank to use the menu's title"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "", "label": "None" },
+            { "value": "hamburger", "label": "Hamburger" },
+            { "value": "home", "label": "Home" },
+            { "value": "sale", "label": "Sale" },
+            { "value": "category", "label": "Category" },
+            { "value": "star", "label": "Star" }
+          ],
+          "default": ""
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level link URL",
+          "info": "Where clicking the label itself goes"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Dropdown menu"
+        }
+      ]
+    },
+    {
+      "type": "mega",
+      "name": "Mega Menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label (overrides menu title)",
+          "info": "Leave blank to use the menu's title"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "", "label": "None" },
+            { "value": "hamburger", "label": "Hamburger" },
+            { "value": "home", "label": "Home" },
+            { "value": "sale", "label": "Sale" },
+            { "value": "category", "label": "Category" },
+            { "value": "star", "label": "Star" }
+          ],
+          "default": ""
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level link URL",
+          "info": "Where clicking the label itself goes"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Mega menu"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_products",
+          "label": "Show trending products panel",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "flyout",
+      "name": "Flyout Menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Browse all categories"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "", "label": "None" },
+            { "value": "hamburger", "label": "Hamburger" },
+            { "value": "home", "label": "Home" },
+            { "value": "sale", "label": "Sale" },
+            { "value": "category", "label": "Category" },
+            { "value": "star", "label": "Star" }
+          ],
+          "default": "hamburger"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level link URL",
+          "info": "Where clicking the label itself goes"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Flyout menu",
+          "info": "Top-level items become the left sidebar. Their children appear on hover."
+        }
+      ]
+    }
+  ],
   "presets": [
     {
       "name": "Hyper Header",
@@ -184,7 +371,13 @@
         "header_style": "hyper",
         "show_category_filter": true,
         "logo_width": 140
-      }
+      },
+      "blocks": [
+        { "type": "flyout",   "settings": { "label": "Browse all categories", "icon": "hamburger" } },
+        { "type": "dropdown", "settings": { "label": "Shop by Room" } },
+        { "type": "mega",     "settings": { "label": "Tables & Desks" } },
+        { "type": "highlight","settings": { "label": "On Sale", "icon": "sale" } }
+      ]
     },
     {
       "name": "Focus Header",
