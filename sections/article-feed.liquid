@@ -1,28 +1,34 @@
 {{ 'article-feed.css' | asset_url | stylesheet_tag }}
 
 {% comment %}
-  Barebone Article Feed Section
-  Filters articles server-side using a metafield (list of tags) on each article.
-  Metafield: article.tags (Single line text, List)
-
-  Filter mode: OR — article shows if its metafield tags contain ANY of the
-  tags entered in the section's "Filter by tags" textarea.
-  Leave textarea blank to show all articles.
+  Article Feed Section
+  
+  Two ways to filter:
+  1. AUTO: reads hub.tags metafield from the current article (category hub page)
+     — matches against native Shopify tags on all articles in the blog
+  2. MANUAL: owner types tags in the section textarea (overrides auto)
+  
+  OR logic — article shows if it has ANY matching tag.
 {% endcomment %}
 
 {%- liquid
-  assign blog_handle = section.settings.blog | default: 'articles'
+  assign blog_handle = 'articles'
   assign limit       = section.settings.limit | default: 6
   assign show_image  = section.settings.show_image
   assign columns     = section.settings.columns | default: 3
 -%}
 
 {%- comment -%}
-  Split the textarea on real newlines into an array, then downcase.
-  Done outside a liquid tag to avoid pipe-in-condition limitations.
+  Determine filter tags:
+  - If textarea has values, use those (manual override)
+  - Otherwise fall back to the current article's hub.tags metafield
 {%- endcomment -%}
-{%- assign filter_tags = section.settings.tags | downcase | split: "
+{%- if section.settings.tags != blank -%}
+  {%- assign filter_tags = section.settings.tags | downcase | split: "
 " -%}
+{%- else -%}
+  {%- assign filter_tags = article.metafields.hub.tags.value -%}
+{%- endif -%}
 
 <div class="article-feed">
   {%- if section.settings.title != blank -%}
@@ -32,20 +38,19 @@
   <div class="article-feed__grid" style="--columns: {{ columns }};">
     {%- assign rendered = 0 -%}
 
-    {%- for article in blogs[blog_handle].articles -%}
-
-      {%- assign meta_tags = article.metafields.article.tags.value -%}
+    {%- for article_item in blogs[blog_handle].articles -%}
 
       {%- assign matched = false -%}
-      {%- if filter_tags.size == 0 or section.settings.tags == blank -%}
+
+      {%- if filter_tags == blank or filter_tags.size == 0 -%}
         {%- assign matched = true -%}
       {%- else -%}
         {%- for filter_tag in filter_tags -%}
-          {%- assign filter_tag_clean = filter_tag | strip -%}
+          {%- assign filter_tag_clean = filter_tag | strip | downcase -%}
           {%- if filter_tag_clean == blank -%}{%- continue -%}{%- endif -%}
-          {%- for meta_tag in meta_tags -%}
-            {%- assign meta_tag_lower = meta_tag | downcase | strip -%}
-            {%- if meta_tag_lower == filter_tag_clean -%}
+          {%- for native_tag in article_item.tags -%}
+            {%- assign native_tag_lower = native_tag | downcase | strip -%}
+            {%- if native_tag_lower == filter_tag_clean -%}
               {%- assign matched = true -%}
             {%- endif -%}
           {%- endfor -%}
@@ -57,34 +62,34 @@
       {%- assign rendered = rendered | plus: 1 -%}
       {%- if rendered > limit -%}{%- break -%}{%- endif -%}
 
-      <a href="{{ article.url }}" class="article-feed__card">
+      <a href="{{ article_item.url }}" class="article-feed__card">
         {%- if show_image -%}
-          {%- if article.image -%}
-            {{ article.image | image_url: width: 600 | image_tag: class: 'article-feed__image', loading: 'lazy' }}
+          {%- if article_item.image -%}
+            {{ article_item.image | image_url: width: 600 | image_tag: class: 'article-feed__image', loading: 'lazy' }}
           {%- else -%}
             <div class="article-feed__image article-feed__image--placeholder"></div>
           {%- endif -%}
         {%- endif -%}
 
         <div class="article-feed__content">
-          {%- if meta_tags != blank -%}
+          {%- if article_item.tags.size > 0 -%}
             <div class="article-feed__card-tags">
-              {%- for tag in meta_tags -%}
+              {%- for tag in article_item.tags -%}
                 <span class="article-feed__card-tag">{{ tag | escape }}</span>
               {%- endfor -%}
             </div>
           {%- endif -%}
 
-          <h3 class="article-feed__heading">{{ article.title | escape }}</h3>
+          <h3 class="article-feed__heading">{{ article_item.title | escape }}</h3>
 
-          {%- if article.excerpt != blank -%}
+          {%- if article_item.excerpt != blank -%}
             <p class="article-feed__excerpt">
-              {{ article.excerpt | strip_html | truncate: 110 }}
+              {{ article_item.excerpt | strip_html | truncate: 110 }}
             </p>
           {%- endif -%}
 
           <div class="article-feed__meta">
-            {{ article.published_at | date: "%b %d, %Y" }}
+            {{ article_item.published_at | date: "%b %d, %Y" }}
           </div>
         </div>
       </a>
@@ -105,15 +110,10 @@
       "default": "Latest Articles"
     },
     {
-      "type": "blog",
-      "id": "blog",
-      "label": "Blog"
-    },
-    {
       "type": "textarea",
       "id": "tags",
-      "label": "Filter by tags",
-      "info": "Enter one tag per line. Matches against each article's Tags metafield (article.tags). Case-insensitive. Leave blank to show all articles."
+      "label": "Filter by tags (optional override)",
+      "info": "One tag per line. Overrides the hub metafield. Leave blank to auto-read from this article's hub.tags metafield."
     },
     {
       "type": "range",
