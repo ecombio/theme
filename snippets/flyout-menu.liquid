@@ -1,16 +1,18 @@
 {% comment %}
-  ECOMBIO Flyout Menu — Two-panel sidebar nav
+  ECOMBIO Flyout Menu — Sidebar + Mega Column Hybrid
   File: snippets/flyout-menu.liquid
 
-  Parameters (passed via render tag):
-    menu {linklist} Required. Top-level items become sidebar categories.
-                    Their children populate the right-hand content panel.
-
   Structure:
-    Left  → Sidebar: one button per top-level link
-    Right → Content panel: swaps on hover, shows children of active category
+    Left  → Sidebar: one button per top-level menu link (hover to switch)
+    Right → Mega menu columns: each top-level item's children rendered as
+            subheading groups + links, exactly like header-mega-menu.liquid
 
-  Usage:
+  Menu setup in Shopify admin (Online Store → Navigation):
+    Top-level items  = sidebar categories (Electric Scooters, Electric Bikes…)
+    Their children   = column headings inside the right panel
+    Grandchildren    = grouped links under each subheading
+
+  Usage (already called from ecombio-header-menu-bar.liquid):
     {%- render 'flyout-menu', menu: flyout_menu -%}
 {% endcomment %}
 
@@ -19,7 +21,7 @@
 <div class="flyout-menu" data-flyout-menu>
 
   {%- comment -%}── LEFT: CATEGORY SIDEBAR ──{%- endcomment -%}
-  <ul class="flyout-menu__sidebar" role="list">
+  <ul class="flyout-menu__sidebar" role="list" aria-label="Product categories">
     {%- for cat in menu.links -%}
       <li>
         <a
@@ -37,61 +39,61 @@
     {%- endfor -%}
   </ul>
 
-  {%- comment -%}── RIGHT: CONTENT PANELS ──{%- endcomment -%}
+  {%- comment -%}── RIGHT: MEGA COLUMN PANELS ──{%- endcomment -%}
   <div class="flyout-menu__content">
     {%- for cat in menu.links -%}
       <div
         class="flyout-menu__section{% if forloop.first %} flyout-menu__section--visible{% endif %}"
         id="flyout-section-{{ forloop.index }}"
         aria-hidden="{% unless forloop.first %}true{% endunless %}"
+        role="region"
+        aria-label="{{ cat.title }}"
       >
+
         {%- if cat.links.size > 0 -%}
 
-          {%- comment -%}
-            Group children into columns of up to 6 links.
-            Shopify Liquid doesn't have native chunking, so we use modulo
-            to open/close column divs at the right intervals.
-          {%- endcomment -%}
-          {%- assign col_size = 6 -%}
+          <div class="flyout-menu__columns" style="--flyout-col-count: {{ cat.links.size }};">
 
-          <div class="flyout-menu__columns">
+            {%- for column in cat.links -%}
+              <div class="flyout-menu__column">
 
-            {%- comment -%} Section heading — links back to the category page {%- endcomment -%}
-            <div class="flyout-menu__column">
-              <a href="{{ cat.url }}" class="flyout-menu__col-heading">{{ cat.title }}</a>
+                <a href="{{ column.url }}" class="flyout-menu__col-heading">
+                  {{ column.title }}
+                </a>
 
-              {%- assign col_count = 0 -%}
-              {%- for item in cat.links -%}
+                {%- for item in column.links -%}
+                  {%- if item.links.size > 0 -%}
 
-                {%- if item.links.size > 0 -%}
-                  {%- comment -%} Item has children → render as subheading + list {%- endcomment -%}
-                  <p class="flyout-menu__subheading">{{ item.title }}</p>
-                  <ul class="flyout-menu__link-list">
-                    {%- for child in item.links -%}
-                      <li><a href="{{ child.url }}" class="flyout-menu__link">{{ child.title }}</a></li>
-                    {%- endfor -%}
-                  </ul>
+                    <p class="flyout-menu__subheading">{{ item.title }}</p>
+                    <ul class="flyout-menu__link-list">
+                      {%- for link in item.links -%}
+                        <li>
+                          <a href="{{ link.url }}" class="flyout-menu__link">{{ link.title }}</a>
+                        </li>
+                      {%- endfor -%}
+                    </ul>
 
-                {%- else -%}
-                  {%- comment -%} Leaf link {%- endcomment -%}
-                  <a href="{{ item.url }}" class="flyout-menu__link">{{ item.title }}</a>
-                  {%- assign col_count = col_count | plus: 1 -%}
+                  {%- else -%}
 
-                {%- endif -%}
+                    <a href="{{ item.url }}" class="flyout-menu__link">{{ item.title }}</a>
 
-              {%- endfor -%}
-            </div>
+                  {%- endif -%}
+                {%- endfor -%}
+
+              </div>
+            {%- endfor -%}
 
           </div>
 
         {%- else -%}
-          {%- comment -%} No children — show a simple "Shop all" link {%- endcomment -%}
+
           <div class="flyout-menu__columns">
             <div class="flyout-menu__column">
               <a href="{{ cat.url }}" class="flyout-menu__col-heading">{{ cat.title }}</a>
               <a href="{{ cat.url }}" class="flyout-menu__link">Shop all</a>
             </div>
           </div>
+
         {%- endif -%}
 
       </div>

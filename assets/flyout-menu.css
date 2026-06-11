@@ -1,5 +1,5 @@
 /* =============================================================================
-   ECOMBIO Flyout Menu — Two-panel sidebar nav
+   ECOMBIO Flyout Menu — Sidebar + Mega Column Hybrid
    File: assets/flyout-menu.css
    ============================================================================= */
 
@@ -8,7 +8,7 @@
   display: flex;
   align-items: stretch;
   min-height: 320px;
-  max-height: 520px;
+  max-height: 560px;
 }
 
 /* ── LEFT: Sidebar ── */
@@ -35,6 +35,7 @@
   cursor: pointer;
   transition: background-color 0.1s ease, color 0.1s ease;
   border-left: 2px solid transparent;
+  white-space: nowrap;
 }
 
 .flyout-menu__cat:hover {
@@ -53,6 +54,7 @@
   height: 13px;
   flex-shrink: 0;
   color: #9ca3af;
+  margin-left: 8px;
 }
 
 .flyout-menu__cat--active .flyout-menu__chevron,
@@ -64,32 +66,37 @@
 .flyout-menu__content {
   flex: 1;
   min-width: 0;
-  padding: 24px 32px;
   overflow-y: auto;
   position: relative;
 }
 
 .flyout-menu__section {
   display: none;
+  padding: 24px 32px;
 }
 
 .flyout-menu__section--visible {
   display: block;
 }
 
-/* ── Column grid inside each section ── */
+/* ── Column grid — adapts to number of columns via CSS var ── */
 .flyout-menu__columns {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(
+    var(--flyout-col-count, 4),
+    minmax(140px, max-content)
+  );
   gap: 0 48px;
+  align-items: start;
 }
 
 .flyout-menu__column {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
-/* ── Column heading (links to category page) ── */
+/* ── Column heading — mirrors mega-menu-heading ── */
 .flyout-menu__col-heading {
   display: block;
   font-size: 11px;
@@ -110,7 +117,7 @@
   border-color: #c4301c;
 }
 
-/* ── Subheadings (grandchild group labels) ── */
+/* ── Subheadings — mirrors mega-menu-subheading ── */
 .flyout-menu__subheading {
   font-size: 10px;
   font-weight: 700;
@@ -121,14 +128,14 @@
   white-space: nowrap;
 }
 
-/* ── Link list (grandchildren) ── */
+/* ── Link list ── */
 .flyout-menu__link-list {
   list-style: none;
   padding: 0;
   margin: 0 0 10px;
 }
 
-/* ── Individual links ── */
+/* ── Individual links — mirrors mega-menu-link ── */
 .flyout-menu__link {
   display: inline-block;
   padding: 4px 0;
