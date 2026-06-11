@@ -1,26 +1,36 @@
 {% comment %}
-  Header Mega Menu - Flexible with Products
-  Left: Text columns | Right: Product grid (optional)
+  ECOMBIO Header Mega Menu — Text columns + optional product grid
+  File: snippets/header-mega-menu.liquid
+
+  Called from snippets/ecombio-header-menu-bar.liquid for 'mega' blocks:
+    {%- render 'header-mega-menu', menu: mega_menu, show_products: block.settings.show_products -%}
+
+  Params:
+    menu          {linklist}  The mega menu nav object
+    show_products {bool}      Whether to render the right-hand product grid
+
+  Nav structure (3 levels max):
+    Level 1  →  column heading   (passed in as `menu`)
+    Level 2  →  subheading or direct link
+    Level 3  →  links under subheading
 {% endcomment %}
 
-{% assign mega_menu = menu %}
-{% assign show_products = show_products | default: false %}
+{%- assign show_products = show_products | default: false -%}
 
-{% if mega_menu and mega_menu.links.size > 0 %}
-  <div class="mega-menu-items {% if show_products %}mega-menu-items--with-products{% endif %}">
+{%- if menu != blank and menu.links.size > 0 -%}
+  <div class="mega-menu-items{% if show_products %} mega-menu-items--with-products{% endif %}">
 
-    <!-- Left Side: Text Columns -->
-<div class="mega-menu__text-columns" style="--mega-col-count: {{ mega_menu.links.size }};">
-  
-      {%- for column in mega_menu.links -%}
+    {%- comment -%}── LEFT: TEXT COLUMNS ──{%- endcomment -%}
+    <div class="mega-menu__text-columns" style="--mega-col-count: {{ menu.links.size }};">
+
+      {%- for column in menu.links -%}
         <div class="mega-menu-column">
 
           <a href="{{ column.url }}" class="mega-menu-heading mega-menu__link--top">
-            {{ column.title }}
+            {{- column.title -}}
           </a>
 
           {%- for item in column.links -%}
-
             {%- if item.links.size > 0 -%}
               <div class="mega-menu-subheading">{{ item.title }}</div>
               <ul class="mega-menu-list">
@@ -33,7 +43,6 @@
             {%- else -%}
               <a href="{{ item.url }}" class="mega-menu-link">{{ item.title }}</a>
             {%- endif -%}
-
           {%- endfor -%}
 
         </div>
@@ -41,7 +50,7 @@
 
     </div>
 
-    <!-- Right Side: Products (when enabled) -->
+    {%- comment -%}── RIGHT: PRODUCT GRID (optional) ──{%- endcomment -%}
     {%- if show_products -%}
       <div class="mega-menu__products">
 
@@ -50,17 +59,16 @@
         </div>
 
         <div class="mega-menu__product-grid">
-          {%- comment %} 
-            Replace this loop with a collection or featured products as needed
-          {% endcomment -%}
-
           {%- for product in collections.all.products limit: 6 -%}
             <a href="{{ product.url }}" class="mega-menu__product-card">
 
               <div class="mega-menu__product-image">
-                <img src="{{ product.featured_image | image_url: width: 400 }}" 
-                     alt="{{ product.title }}" loading="lazy">
-
+                <img
+                  src="{{ product.featured_image | image_url: width: 400 }}"
+                  alt="{{ product.title | escape }}"
+                  loading="lazy"
+                  width="400"
+                >
                 {%- if product.compare_at_price > product.price -%}
                   <span class="mega-menu__badge">Sale</span>
                 {%- endif -%}
@@ -68,7 +76,6 @@
 
               <div class="mega-menu__product-info">
                 <h3 class="mega-menu__product-title">{{ product.title }}</h3>
-
                 <div class="mega-menu__product-price">
                   {%- if product.compare_at_price > product.price -%}
                     <span class="price--sale">{{ product.price | money }}</span>
@@ -81,11 +88,10 @@
 
             </a>
           {%- endfor -%}
-
         </div>
 
       </div>
     {%- endif -%}
 
   </div>
-{% endif %}
+{%- endif -%}
