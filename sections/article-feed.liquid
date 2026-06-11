@@ -8,16 +8,14 @@
   assign pagination_style = section.settings.pagination_style
 -%}
 
-{%- paginate blogs['articles'].articles by per_page -%}
+<div class="article-feed">
+  {%- if section.settings.title != blank -%}
+    <h2 class="article-feed__title">{{ section.settings.title | escape }}</h2>
+  {%- endif -%}
 
-  {%- comment -%} Pre-filter into a counted loop to honour tag filter + paginate together {%- endcomment -%}
+  {%- render 'article-feed-pills', articles: blogs['articles'].articles -%}
 
-  <div class="article-feed">
-    {%- if section.settings.title != blank -%}
-      <h2 class="article-feed__title">{{ section.settings.title | escape }}</h2>
-    {%- endif -%}
-
-{%- render 'article-feed-pills', articles: blogs['articles'].articles -%}
+  {%- paginate blogs['articles'].articles by per_page -%}
 
     <div class="article-feed__grid" style="--columns: {{ columns }};">
       {%- for article_item in blogs['articles'].articles -%}
@@ -78,9 +76,9 @@
       {%- render 'article-feed-pagination', paginate: paginate, style: pagination_style -%}
     {%- endif -%}
 
-  </div>
+  {%- endpaginate -%}
 
-{%- endpaginate -%}
+</div>
 
 {% schema %}
 {
