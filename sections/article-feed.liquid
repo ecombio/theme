@@ -1,0 +1,113 @@
+{{ 'article-feed.css' | asset_url | stylesheet_tag }}
+
+{% comment %}
+  Barebone Article Feed Section
+  Clean, minimal article grid filtered by tag
+{% endcomment %}
+
+{%- liquid
+  assign blog_handle = section.settings.blog | default: 'articles'
+  assign tag         = section.settings.tag | strip
+  assign limit       = section.settings.limit | default: 6
+  assign show_image  = section.settings.show_image
+  assign columns     = section.settings.columns | default: 3
+-%}
+
+<div class="article-feed">
+  {%- if section.settings.title != blank -%}
+    <h2 class="article-feed__title">{{ section.settings.title | escape }}</h2>
+  {%- endif -%}
+
+  <div class="article-feed__grid" style="--columns: {{ columns }};">
+    {%- assign rendered = 0 -%}
+
+    {%- for article in blogs[blog_handle].articles -%}
+      {%- if tag == blank or article.tags contains tag -%}
+        {%- assign rendered = rendered | plus: 1 -%}
+        {%- if rendered > limit -%}{%- break -%}{%- endif -%}
+
+        <a href="{{ article.url }}" class="article-feed__card">
+          {%- if show_image -%}
+            {%- if article.image -%}
+              {{ article.image | image_url: width: 600 | image_tag: class: 'article-feed__image', loading: 'lazy' }}
+            {%- else -%}
+              <div class="article-feed__image article-feed__image--placeholder"></div>
+            {%- endif -%}
+          {%- endif -%}
+
+          <div class="article-feed__content">
+            <h3 class="article-feed__heading">{{ article.title | escape }}</h3>
+
+            {%- if article.excerpt != blank -%}
+              <p class="article-feed__excerpt">
+                {{ article.excerpt | strip_html | truncate: 110 }}
+              </p>
+            {%- endif -%}
+
+            <div class="article-feed__meta">
+              {{ article.published_at | date: "%b %d, %Y" }}
+            </div>
+          </div>
+        </a>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</div>
+
+{{ 'article-feed.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Article Feed",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Latest Articles"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "text",
+      "id": "tag",
+      "label": "Filter by tag",
+      "info": "Leave blank to show all articles from the blog"
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "default": 6,
+      "label": "Number of articles"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "label": "Columns on desktop"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "default": true,
+      "label": "Show featured images"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Article Feed"
+    }
+  ]
+}
+{% endschema %}
