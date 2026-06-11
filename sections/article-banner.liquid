@@ -1,0 +1,99 @@
+{{ 'article-banner.css' | asset_url | stylesheet_tag }}
+
+{% comment %}
+  Barebone Article Banner Section
+  Simple hero-style banner for content hubs / article pages
+{% endcomment %}
+
+{%- liquid
+  assign title = section.settings.title
+  assign subtitle = section.settings.subtitle
+  assign button_text = section.settings.button_text
+  assign button_link = section.settings.button_link
+  assign background_image = section.settings.background_image
+  assign text_alignment = section.settings.text_alignment | default: 'left'
+-%}
+
+<div class="article-banner {% if background_image != blank %}has-image{% endif %}">
+  {%- if background_image != blank -%}
+    <div class="article-banner__background">
+      {{ background_image | image_url: width: 2000 | image_tag: class: 'article-banner__bg-image', loading: 'eager' }}
+      <div class="article-banner__overlay"></div>
+    </div>
+  {%- endif -%}
+
+  <div class="article-banner__content article-banner__content--{{ text_alignment }}">
+    {%- if title != blank -%}
+      <h1 class="article-banner__title">{{ title | escape }}</h1>
+    {%- endif -%}
+
+    {%- if subtitle != blank -%}
+      <p class="article-banner__subtitle">{{ subtitle | escape }}</p>
+    {%- endif -%}
+
+    {%- if button_text != blank and button_link != blank -%}
+      <a href="{{ button_link }}" class="article-banner__button">
+        {{ button_text | escape }}
+      </a>
+    {%- endif -%}
+  </div>
+</div>
+
+{{ 'article-banner.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Article Banner",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background Image"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Welcome to our Hub"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Subtitle",
+      "default": "Discover the latest guides, tips, and stories."
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text Alignment",
+      "default": "left",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Browse Articles"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button Link"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Article Banner"
+    }
+  ]
+}
+{% endschema %}
