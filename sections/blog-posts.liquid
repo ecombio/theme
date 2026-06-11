@@ -1,6 +1,5 @@
 {% comment %}
-  Blog Posts Section - Locked to /blogs/articles
-  Uses custom metafield: theme.article-tags
+  Only shows articles that have theme.article-tags metafield filled
 {% endcomment %}
 
 {{ 'blog-posts.css' | asset_url | stylesheet_tag }}
@@ -18,15 +17,17 @@
 
   {% assign current_tag = request.params.tag %}
 
-  {% comment %} === Collect all unique tags from the metafield === {% endcomment %}
+  {% comment %} === Collect tags only from articles that have the metafield === {% endcomment %}
   {% assign all_tags = '' | split: '' %}
   {% for article in target_blog.articles %}
     {% assign a_tags = article.metafields.theme['article-tags'].value | default: empty %}
-    {% for tag in a_tags %}
-      {% unless all_tags contains tag %}
-        {% assign all_tags = all_tags | append: tag | append: '|' %}
-      {% endunless %}
-    {% endfor %}
+    {% if a_tags != blank %}
+      {% for tag in a_tags %}
+        {% unless all_tags contains tag %}
+          {% assign all_tags = all_tags | append: tag | append: '|' %}
+        {% endunless %}
+      {% endfor %}
+    {% endif %}
   {% endfor %}
   {% assign all_tags = all_tags | split: '|' | uniq | compact %}
 
@@ -45,33 +46,33 @@
     </div>
   {% endif %}
 
-  {% comment %} === Articles Grid === {% endcomment %}
+  {% comment %} === Only show articles that have the metafield === {% endcomment %}
   <div class="blog-posts-grid">
-    {% for article in target_blog.articles limit: section.settings.limit %}
+    {% for article in target_blog.articles %}
       {% assign art_tags = article.metafields.theme['article-tags'].value | default: empty %}
 
-      {% if current_tag == blank or art_tags contains current_tag %}
-        <article class="blog-post-card">
-          
-          {% if article.image %}
-            <a href="{{ article.url }}" class="blog-post-image">
-              <img 
-                src="{{ article.image | image_url: width: 800, height: 520, crop: 'center' }}" 
-                alt="{{ article.image.alt | escape }}"
-                loading="lazy">
-            </a>
-          {% endif %}
-
-          <div class="blog-post-content">
-            <h3 class="blog-post-title">
-              <a href="{{ article.url }}">{{ article.title }}</a>
-            </h3>
-
-            {% if article.excerpt != blank %}
-              <p class="blog-post-excerpt">{{ article.excerpt | strip_html | truncate: 135 }}</p>
+      {% if art_tags != blank %}
+        {% if current_tag == blank or art_tags contains current_tag %}
+          <article class="blog-post-card">
+            
+            {% if article.image %}
+              <a href="{{ article.url }}" class="blog-post-image">
+                <img 
+                  src="{{ article.image | image_url: width: 800, height: 520, crop: 'center' }}" 
+                  alt="{{ article.image.alt | escape }}"
+                  loading="lazy">
+              </a>
             {% endif %}
 
-            {% if art_tags != blank %}
+            <div class="blog-post-content">
+              <h3 class="blog-post-title">
+                <a href="{{ article.url }}">{{ article.title }}</a>
+              </h3>
+
+              {% if article.excerpt != blank %}
+                <p class="blog-post-excerpt">{{ article.excerpt | strip_html | truncate: 135 }}</p>
+              {% endif %}
+
               <div class="blog-post-tags">
                 {% for tag in art_tags %}
                   <a href="{{ target_blog.url }}?tag={{ tag | url_encode }}" class="tag-pill small">
@@ -79,17 +80,17 @@
                   </a>
                 {% endfor %}
               </div>
-            {% endif %}
 
-            <div class="blog-post-meta">
-              <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
-                {{ article.published_at | date: '%b %d, %Y' }}
-              </time>
-              <a href="{{ article.url }}" class="read-more-link">Read article →</a>
+              <div class="blog-post-meta">
+                <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+                  {{ article.published_at | date: '%b %d, %Y' }}
+                </time>
+                <a href="{{ article.url }}" class="read-more-link">Read article →</a>
+              </div>
             </div>
-          </div>
 
-        </article>
+          </article>
+        {% endif %}
       {% endif %}
     {% endfor %}
   </div>
