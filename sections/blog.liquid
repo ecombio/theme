@@ -1,17 +1,31 @@
 {{ 'blog.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign show_image  = section.settings.show_image
-  assign columns     = section.settings.columns | default: 3
-  assign per_page    = section.settings.per_page | default: 6
+  assign show_image       = section.settings.show_image
+  assign columns          = section.settings.columns | default: 3
+  assign per_page         = section.settings.per_page | default: 6
   assign pagination_style = section.settings.pagination_style | default: 'numbered'
+
+  if current_tags.size > 0
+    assign raw_tag     = current_tags | join: ' & '
+    assign tag_words   = raw_tag | replace: '-', ' ' | split: ' '
+    assign display_tag = ''
+    for word in tag_words
+      assign cap_word    = word | capitalize
+      assign display_tag = display_tag | append: cap_word | append: ' '
+    endfor
+    assign display_tag = display_tag | strip
+    assign page_title  = display_tag
+  else
+    assign page_title = blog.title | escape
+  endif
 -%}
 
 {%- paginate blog.articles by per_page -%}
 
 <div class="blog-feed">
 
-  <h1 class="blog-feed__title">{{ blog.title | escape }}</h1>
+  <h1 class="blog-feed__title">{{ page_title }}</h1>
 
   {%- if current_tags.size > 0 -%}
     <div class="blog-feed__active-tags">
@@ -28,9 +42,16 @@
       <a href="{{ article.url }}" class="blog-feed__card">
         {%- if show_image -%}
           {%- if article.image -%}
-            {{ article.image | image_url: width: 600 | image_tag: class: 'blog-feed__image', loading: 'lazy' }}
+            {{ article.image | image_url: width: 600 | image_tag: class: 'blog-feed__image', loading: 'lazy', alt: article.title }}
           {%- else -%}
-            <div class="blog-feed__image blog-feed__image--placeholder"></div>
+            <img
+              src="{{ 'blog-placeholder.jpg' | asset_url }}"
+              alt=""
+              class="blog-feed__image"
+              loading="lazy"
+              width="600"
+              height="338"
+            >
           {%- endif -%}
         {%- endif -%}
 
