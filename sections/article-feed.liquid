@@ -1,34 +1,11 @@
 {{ 'article-feed.css' | asset_url | stylesheet_tag }}
 
-{% comment %}
-  Article Feed Section
-  
-  Two ways to filter:
-  1. AUTO: reads hub.tags metafield from the current article (category hub page)
-     — matches against native Shopify tags on all articles in the blog
-  2. MANUAL: owner types tags in the section textarea (overrides auto)
-  
-  OR logic — article shows if it has ANY matching tag.
-{% endcomment %}
-
 {%- liquid
-  assign blog_handle = 'articles'
-  assign limit       = section.settings.limit | default: 6
-  assign show_image  = section.settings.show_image
-  assign columns     = section.settings.columns | default: 3
+  assign limit      = section.settings.limit | default: 6
+  assign show_image = section.settings.show_image
+  assign columns    = section.settings.columns | default: 3
+  assign tag        = section.settings.tag | strip | downcase
 -%}
-
-{%- comment -%}
-  Determine filter tags:
-  - If textarea has values, use those (manual override)
-  - Otherwise fall back to the current article's hub.tags metafield
-{%- endcomment -%}
-{%- if section.settings.tags != blank -%}
-  {%- assign filter_tags = section.settings.tags | downcase | split: "
-" -%}
-{%- else -%}
-  {%- assign filter_tags = article.metafields.hub.tags.value -%}
-{%- endif -%}
 
 <div class="article-feed">
   {%- if section.settings.title != blank -%}
@@ -38,26 +15,18 @@
   <div class="article-feed__grid" style="--columns: {{ columns }};">
     {%- assign rendered = 0 -%}
 
-    {%- for article_item in blogs[blog_handle].articles -%}
+    {%- for article_item in blogs['articles'].articles -%}
 
-      {%- assign matched = false -%}
-
-      {%- if filter_tags == blank or filter_tags.size == 0 -%}
-        {%- assign matched = true -%}
-      {%- else -%}
-        {%- for filter_tag in filter_tags -%}
-          {%- assign filter_tag_clean = filter_tag | strip | downcase -%}
-          {%- if filter_tag_clean == blank -%}{%- continue -%}{%- endif -%}
-          {%- for native_tag in article_item.tags -%}
-            {%- assign native_tag_lower = native_tag | downcase | strip -%}
-            {%- if native_tag_lower == filter_tag_clean -%}
-              {%- assign matched = true -%}
-            {%- endif -%}
-          {%- endfor -%}
+      {%- unless tag == blank -%}
+        {%- assign match = false -%}
+        {%- for native_tag in article_item.tags -%}
+          {%- assign native_tag_clean = native_tag | downcase | strip -%}
+          {%- if native_tag_clean == tag -%}
+            {%- assign match = true -%}
+          {%- endif -%}
         {%- endfor -%}
-      {%- endif -%}
-
-      {%- unless matched -%}{%- continue -%}{%- endunless -%}
+        {%- unless match -%}{%- continue -%}{%- endunless -%}
+      {%- endunless -%}
 
       {%- assign rendered = rendered | plus: 1 -%}
       {%- if rendered > limit -%}{%- break -%}{%- endif -%}
@@ -74,8 +43,8 @@
         <div class="article-feed__content">
           {%- if article_item.tags.size > 0 -%}
             <div class="article-feed__card-tags">
-              {%- for tag in article_item.tags -%}
-                <span class="article-feed__card-tag">{{ tag | escape }}</span>
+              {%- for t in article_item.tags -%}
+                <span class="article-feed__card-tag">{{ t | escape }}</span>
               {%- endfor -%}
             </div>
           {%- endif -%}
@@ -110,10 +79,10 @@
       "default": "Latest Articles"
     },
     {
-      "type": "textarea",
-      "id": "tags",
-      "label": "Filter by tags (optional override)",
-      "info": "One tag per line. Overrides the hub metafield. Leave blank to auto-read from this article's hub.tags metafield."
+      "type": "text",
+      "id": "tag",
+      "label": "Filter tag",
+      "info": "Must match a native article tag exactly, e.g. cycling-buying-guides"
     },
     {
       "type": "range",
