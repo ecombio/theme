@@ -2,51 +2,45 @@
 
 {%- comment -%}
   Snippet: article-feed-pills.liquid
+  Uses native Shopify article.tags — no metafield needed.
 
-  Must be called with the articles array passed in, because render
-  has isolated scope and cannot access blogs[] directly:
-
+  Call from article-feed section, right after the title block:
     {%- render 'article-feed-pills', articles: blogs['articles'].articles -%}
-
-  Metafield: article.tags — stored as a plain comma-separated string,
-  e.g. "cycling, electric-scooters". This snippet splits on commas,
-  de-dupes, and renders pills linking to /blogs/articles/tagged/{slug}.
 {%- endcomment -%}
 
 {%- liquid
-  assign active_tag = current_tags | first | downcase
-  assign all_tags   = '' | split: ','
+  assign active_tag   = current_tags | first | downcase
+  assign seen_slugs   = ''
+  assign all_slugs    = '' | split: ','
+  assign all_labels   = '' | split: ','
 
   for article_item in articles
-    assign raw = article_item.metafields.article.tags.value
-    if raw != blank
-      assign parts = raw | split: ','
-      for part in parts
-        assign t = part | strip
-        if t != blank
-          assign t_slug = t | handleize
-          unless all_tags contains t_slug
-            assign all_tags = all_tags | concat: t_slug | split: ','
-          endunless
-        endif
-      endfor
-    endif
+    for t in article_item.tags
+      assign t_slug = t | handleize
+      assign marker = t_slug | prepend: '|' | append: '|'
+      unless seen_slugs contains marker
+        assign seen_slugs = seen_slugs | append: marker
+        assign all_slugs  = all_slugs  | concat: t_slug  | split: ','
+        assign all_labels = all_labels | concat: t        | split: ','
+      endunless
+    endfor
   endfor
 -%}
 
-{%- if all_tags.size > 0 -%}
+{%- if all_slugs.size > 0 -%}
   <nav class="article-feed-pills" aria-label="Filter articles by tag">
 
     <a
-      href="{{ blog.url | default: '/blogs/articles' }}"
+      href="/blogs/articles"
       class="article-feed-pills__pill{% if active_tag == blank %} article-feed-pills__pill--active{% endif %}"
     >All</a>
 
-    {%- for pill_slug in all_tags -%}
+    {%- for pill_slug in all_slugs -%}
+      {%- assign pill_label = all_labels[forloop.index0] -%}
       <a
         href="/blogs/articles/tagged/{{ pill_slug }}"
         class="article-feed-pills__pill{% if active_tag == pill_slug %} article-feed-pills__pill--active{% endif %}"
-      >{{ pill_slug | replace: '-', ' ' | capitalize | escape }}</a>
+      >{{ pill_label | escape }}</a>
     {%- endfor -%}
 
   </nav>
