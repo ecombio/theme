@@ -1,4 +1,4 @@
-/* article-feed.css — Barebone Article Feed */
+/* article-feed.css â€” Barebone Article Feed */
 
 .article-feed {
   padding: 40px 0;
@@ -9,6 +9,165 @@
   font-size: 26px;
   font-weight: 600;
 }
+
+/* â”€â”€ Filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.article-feed__filter {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 28px;
+}
+
+.article-feed__filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.article-feed__multiselect {
+  position: relative;
+}
+
+.article-feed__multiselect-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #222;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.article-feed__multiselect-toggle:hover {
+  border-color: #bbb;
+}
+
+.article-feed__multiselect-toggle[aria-expanded="true"] {
+  border-color: #222;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.article-feed__multiselect-chevron {
+  flex-shrink: 0;
+  color: #888;
+  transition: transform 0.2s ease;
+}
+
+.article-feed__multiselect-toggle[aria-expanded="true"] .article-feed__multiselect-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown panel */
+
+.article-feed__multiselect-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
+  min-width: 200px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+  padding: 6px;
+}
+
+.article-feed__multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #222;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s ease;
+}
+
+.article-feed__multiselect-option:hover {
+  background: #f5f5f5;
+}
+
+/* Hide native checkbox, use custom box */
+
+.article-feed__tag-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.article-feed__option-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  position: relative;
+}
+
+.article-feed__tag-checkbox:checked + .article-feed__option-check {
+  background: #222;
+  border-color: #222;
+}
+
+.article-feed__tag-checkbox:checked + .article-feed__option-check::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 5px;
+  height: 8px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* Active tag pills */
+
+.article-feed__active-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-self: center;
+}
+
+.article-feed__active-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.article-feed__active-tag:hover {
+  background: #444;
+}
+
+/* â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .article-feed__grid {
   display: grid;
@@ -28,6 +187,8 @@
   }
 }
 
+/* â”€â”€ Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
 .article-feed__card {
   display: block;
   text-decoration: none;
@@ -37,6 +198,10 @@
   border-radius: 12px;
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.article-feed__card[hidden] {
+  display: none;
 }
 
 .article-feed__card:hover {
@@ -59,6 +224,26 @@
   padding: 20px;
 }
 
+/* Inline tag badges on each card */
+
+.article-feed__card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.article-feed__card-tag {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  background: #f2f2f2;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
 .article-feed__heading {
   font-size: 17px;
   font-weight: 600;
@@ -76,4 +261,17 @@
 .article-feed__meta {
   font-size: 13px;
   color: #888;
+}
+
+/* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.article-feed__empty {
+  font-size: 14px;
+  color: #888;
+  padding: 32px 0;
+  text-align: center;
+}
+
+.article-feed__empty[hidden] {
+  display: none;
 }
