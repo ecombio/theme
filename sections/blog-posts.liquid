@@ -1,0 +1,124 @@
+{% comment %}
+  Blog Posts Section with Custom Article Tags (Metafield)
+  File: sections/blog-posts.liquid
+{% endcomment %}
+
+{{ 'blog-posts.css' | asset_url | stylesheet_tag }}
+{{ 'blog-posts.js' | asset_url | script_tag }}
+
+<div class="blog-posts-section section-{{ section.id }}">
+  
+  {% if section.settings.heading != blank %}
+    <div class="blog-posts-header">
+      <h2 class="blog-posts-title">{{ section.settings.heading }}</h2>
+    </div>
+  {% endif %}
+
+  {% assign current_tag = request.params.tag %}
+
+  {% comment %} Collect unique tags for filter bar {% endcomment %}
+  {% assign all_tags = '' | split: '' %}
+  {% for article in blog.articles %}
+    {% assign a_tags = article.metafields.theme['article-tags'].value | default: empty %}
+    {% for tag in a_tags %}
+      {% unless all_tags contains tag %}
+        {% assign all_tags = all_tags | append: tag | append: '|' %}
+      {% endunless %}
+    {% endfor %}
+  {% endfor %}
+  {% assign all_tags = all_tags | split: '|' | uniq | compact %}
+
+  {% comment %} Tag Filter Bar {% endcomment %}
+  {% if all_tags.size > 0 %}
+    <div class="tag-filter-bar" id="tag-filter-bar">
+      <a href="{{ blog.url }}" class="tag-pill {% if current_tag == blank %}active{% endif %}">
+        All
+      </a>
+      {% for tag in all_tags %}
+        <a href="{{ blog.url }}?tag={{ tag | url_encode }}" 
+           class="tag-pill {% if current_tag == tag %}active{% endif %}">
+          {{ tag }}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% comment %} Articles Grid {% endcomment %}
+  <div class="blog-posts-grid">
+    {% for article in blog.articles limit: section.settings.limit %}
+      {% assign art_tags = article.metafields.theme['article-tags'].value | default: empty %}
+
+      {% if current_tag == blank or art_tags contains current_tag %}
+        <article class="blog-post-card">
+          
+          {% if article.image %}
+            <a href="{{ article.url }}" class="blog-post-image">
+              <img 
+                src="{{ article.image | image_url: width: 800, height: 520, crop: 'center' }}" 
+                alt="{{ article.image.alt | escape }}"
+                loading="lazy">
+            </a>
+          {% endif %}
+
+          <div class="blog-post-content">
+            <h3 class="blog-post-title">
+              <a href="{{ article.url }}">{{ article.title }}</a>
+            </h3>
+
+            {% if article.excerpt != blank %}
+              <p class="blog-post-excerpt">{{ article.excerpt | strip_html | truncate: 135 }}</p>
+            {% endif %}
+
+            {% if art_tags != blank %}
+              <div class="blog-post-tags">
+                {% for tag in art_tags %}
+                  <a href="{{ blog.url }}?tag={{ tag | url_encode }}" class="tag-pill small">
+                    {{ tag }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <div class="blog-post-meta">
+              <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+                {{ article.published_at | date: '%b %d, %Y' }}
+              </time>
+              <a href="{{ article.url }}" class="read-more-link">Read article →</a>
+            </div>
+          </div>
+
+        </article>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+</div>
+
+{% schema %}
+{
+  "name": "Blog Posts with Tags",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section Heading",
+      "default": "Latest Articles"
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "min": 3,
+      "max": 24,
+      "step": 1,
+      "default": 12,
+      "label": "Max articles to show"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog Posts with Tags",
+      "category": "Blog"
+    }
+  ]
+}
+{% endschema %}
