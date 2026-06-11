@@ -4,7 +4,7 @@
   Barebone Article Feed Section
   Filters articles server-side using a metafield (list of tags) on each article.
   Metafield: article.tags (Single line text, List)
-  
+
   Filter mode: OR — article shows if its metafield tags contain ANY of the
   tags entered in the section's "Filter by tags" textarea.
   Leave textarea blank to show all articles.
@@ -15,19 +15,14 @@
   assign limit       = section.settings.limit | default: 6
   assign show_image  = section.settings.show_image
   assign columns     = section.settings.columns | default: 3
-
-  comment
-    Parse the owner's filter textarea into a clean array (one tag per line).
-  endcomment
-  assign filter_tags_raw = section.settings.tags | newline_to_br | split: '<br />'
-  assign filter_tags = '' | split: ''
-  for raw_tag in filter_tags_raw
-    assign t = raw_tag | strip | downcase
-    if t != blank
-      assign filter_tags = filter_tags | concat: t
-    endif
-  endfor
 -%}
+
+{%- comment -%}
+  Split the textarea on real newlines into an array, then downcase.
+  Done outside a liquid tag to avoid pipe-in-condition limitations.
+{%- endcomment -%}
+{%- assign filter_tags = section.settings.tags | downcase | split: "
+" -%}
 
 <div class="article-feed">
   {%- if section.settings.title != blank -%}
@@ -39,21 +34,18 @@
 
     {%- for article in blogs[blog_handle].articles -%}
 
-      {%- comment -%}
-        Pull the metafield tag list for this article.
-        article.metafields.custom.tags returns an array for List-type metafields.
-        We downcase every value so matching is case-insensitive.
-      {%- endcomment -%}
       {%- assign meta_tags = article.metafields.article.tags.value -%}
 
       {%- assign matched = false -%}
-      {%- if filter_tags.size == 0 -%}
+      {%- if filter_tags.size == 0 or section.settings.tags == blank -%}
         {%- assign matched = true -%}
       {%- else -%}
         {%- for filter_tag in filter_tags -%}
+          {%- assign filter_tag_clean = filter_tag | strip -%}
+          {%- if filter_tag_clean == blank -%}{%- continue -%}{%- endif -%}
           {%- for meta_tag in meta_tags -%}
-            {%- assign meta_tag_lower = meta_tag | downcase -%}
-            {%- if meta_tag_lower == filter_tag -%}
+            {%- assign meta_tag_lower = meta_tag | downcase | strip -%}
+            {%- if meta_tag_lower == filter_tag_clean -%}
               {%- assign matched = true -%}
             {%- endif -%}
           {%- endfor -%}
@@ -75,7 +67,6 @@
         {%- endif -%}
 
         <div class="article-feed__content">
-          {%- comment -%} Display the metafield tags as pills on the card {%- endcomment -%}
           {%- if meta_tags != blank -%}
             <div class="article-feed__card-tags">
               {%- for tag in meta_tags -%}
