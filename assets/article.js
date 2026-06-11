@@ -28,7 +28,6 @@
       const a  = document.createElement('a');
       a.href        = '#' + heading.id;
       a.textContent = heading.textContent;
-      if (heading.tagName === 'H3') li.style.paddingLeft = '0.75rem';
 
       a.addEventListener('click', function (e) {
         e.preventDefault();
@@ -51,7 +50,7 @@
     const content  = document.querySelector('.article-content');
     if (!content) return;
 
-    const headings = content.querySelectorAll('h2, h3');
+    const headings = content.querySelectorAll('h2');
     if (!headings.length) return;
 
     const observer = new IntersectionObserver(function (entries) {
