@@ -1,0 +1,154 @@
+{{ 'article-feed.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign show_image  = section.settings.show_image
+  assign columns     = section.settings.columns | default: 3
+  assign per_page    = section.settings.per_page | default: 6
+  assign filter_tags = section.settings.tag | downcase | split: ','
+  assign pagination_style = section.settings.pagination_style
+-%}
+
+{%- paginate blogs['articles'].articles by per_page -%}
+
+  {%- comment -%} Pre-filter into a counted loop to honour tag filter + paginate together {%- endcomment -%}
+
+  <div class="article-feed">
+    {%- if section.settings.title != blank -%}
+      <h2 class="article-feed__title">{{ section.settings.title | escape }}</h2>
+    {%- endif -%}
+
+      {%- render 'article-feed-pills' -%}   ← add this line
+
+    <div class="article-feed__grid" style="--columns: {{ columns }};">
+      {%- for article_item in blogs['articles'].articles -%}
+
+        {%- assign match = false -%}
+        {%- if section.settings.tag == blank -%}
+          {%- assign match = true -%}
+        {%- else -%}
+          {%- for filter_tag in filter_tags -%}
+            {%- assign filter_tag_clean = filter_tag | strip -%}
+            {%- for native_tag in article_item.tags -%}
+              {%- assign native_tag_clean = native_tag | downcase | strip -%}
+              {%- if native_tag_clean == filter_tag_clean -%}
+                {%- assign match = true -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+        {%- endif -%}
+
+        {%- unless match -%}{%- continue -%}{%- endunless -%}
+
+        <a href="{{ article_item.url }}" class="article-feed__card">
+          {%- if show_image -%}
+            {%- if article_item.image -%}
+              {{ article_item.image | image_url: width: 600 | image_tag: class: 'article-feed__image', loading: 'lazy' }}
+            {%- else -%}
+              <div class="article-feed__image article-feed__image--placeholder"></div>
+            {%- endif -%}
+          {%- endif -%}
+
+          <div class="article-feed__content">
+            {%- if article_item.tags.size > 0 -%}
+              <div class="article-feed__card-tags">
+                {%- for t in article_item.tags -%}
+                  <span class="article-feed__card-tag">{{ t | escape }}</span>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+
+            <h3 class="article-feed__heading">{{ article_item.title | escape }}</h3>
+
+            {%- if article_item.excerpt != blank -%}
+              <p class="article-feed__excerpt">
+                {{ article_item.excerpt | strip_html | truncate: 110 }}
+              </p>
+            {%- endif -%}
+
+            <div class="article-feed__meta">
+              {{ article_item.published_at | date: "%b %d, %Y" }}
+            </div>
+          </div>
+        </a>
+
+      {%- endfor -%}
+    </div>
+
+    {%- if paginate.pages > 1 -%}
+      {%- render 'article-feed-pagination', paginate: paginate, style: pagination_style -%}
+    {%- endif -%}
+
+  </div>
+
+{%- endpaginate -%}
+
+{% schema %}
+{
+  "name": "Article Feed",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Latest Articles"
+    },
+    {
+      "type": "text",
+      "id": "tag",
+      "label": "Filter tags",
+      "info": "Comma-separated. e.g. cycling, electric-scooters. Leave blank to show all."
+    },
+    {
+      "type": "header",
+      "content": "Pagination"
+    },
+    {
+      "type": "range",
+      "id": "per_page",
+      "min": 3,
+      "max": 24,
+      "step": 3,
+      "default": 6,
+      "label": "Articles per page"
+    },
+    {
+      "type": "select",
+      "id": "pagination_style",
+      "label": "Pagination style",
+      "default": "numbered",
+      "options": [
+        { "value": "numbered",  "label": "Numbered pages" },
+        { "value": "prevnext",  "label": "Prev / Next only" },
+        { "value": "loadmore",  "label": "Load More button" },
+        { "value": "infinite",  "label": "Infinite scroll" }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "label": "Columns on desktop"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "default": true,
+      "label": "Show featured images"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Article Feed"
+    }
+  ]
+}
+{% endschema %}
