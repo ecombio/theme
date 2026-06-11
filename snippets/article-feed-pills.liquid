@@ -6,13 +6,22 @@
   assign pill_tags  = '' | split: ','
 
   for article_item in articles
-    for t in article_item.tags
-      assign marker = t | handleize | prepend: '|' | append: '|'
-      unless seen contains marker
-        assign seen      = seen | append: marker
-        assign pill_tags = pill_tags | append: t | append: '~~' | split: '~~'
-      endunless
-    endfor
+    assign meta_val = article_item.metafields['theme.article-tags'].value
+    if meta_val != blank
+      for item in meta_val
+        assign parts = item | split: ','
+        for raw in parts
+          assign t = raw | strip
+          unless t == blank
+            assign marker = t | handleize | prepend: '|' | append: '|'
+            unless seen contains marker
+              assign seen      = seen | append: marker
+              assign pill_tags = pill_tags | append: t | append: '~~' | split: '~~'
+            endunless
+          endunless
+        endfor
+      endfor
+    endif
   endfor
 -%}
 
