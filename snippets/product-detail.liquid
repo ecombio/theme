@@ -14,20 +14,7 @@
         <span class="product-badge">Save {{ savings_pct }}%</span>
       {%- endif -%}
       <h1 class="product-title">{{ product.title }}</h1>
-      {% comment %}
-      {%- if product.vendor != blank -%}
-        <div class="product-vendor">
-          Vendor: <a href="{{ routes.collections_url }}/vendors?q={{ product.vendor | url_encode }}">{{ product.vendor }}</a>
-        </div>
-      {%- endif -%}
-      {%- if product.type != blank -%}
-        <div class="product-type">
-          Type: <a href="{{ routes.collections_url }}/types?q={{ product.type | url_encode }}">{{ product.type }}</a>
-        </div>
-      {%- endif -%}
-    </div>
-{% endcomment %}
-    <!-- Pricing -->
+  
     <div class="product-pricing">
       <div class="price-wrapper">
         <span class="price {% if current_variant.compare_at_price > current_variant.price %}sale-price{% endif %}" id="ProductPrice">
@@ -40,45 +27,6 @@
         {%- endif -%}
       </div>
     </div>
-{% comment %}
-    <!-- Features + Stock -->
-    <div class="product-features">
-      <div class="feature-item">
-        <svg class="feature-icon" width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <path d="M16.875 5.625L8.125 14.375L3.75 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Modern</span>
-      </div>
-      <div class="feature-item">
-        <svg class="feature-icon" width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <path d="M16.875 5.625L8.125 14.375L3.75 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Eco-certified</span>
-      </div>
-      <div class="feature-item">
-        <svg class="feature-icon" width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <path d="M16.875 5.625L8.125 14.375L3.75 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Warranty</span>
-      </div>
-    </div>
-
-    <div class="stock-indicator {% if current_variant.available %}available{% else %}sold-out{% endif %}" id="StockIndicator">
-      <span class="stock-dot"></span>
-      <span class="stock-text">
-        {%- if current_variant.available -%}
-          {%- if current_variant.inventory_management == 'shopify' and current_variant.inventory_policy == 'deny' -%}
-            Available in stock ({{ current_variant.inventory_quantity }})
-          {%- else -%}
-            Available in stock
-          {%- endif -%}
-        {%- else -%}
-          Sold Out
-        {%- endif -%}
-      </span>
-    </div>
-{% endcomment %}
-    <!-- Description -->
 
 
     {%- form 'product', product, id: 'ProductForm', novalidate: 'novalidate' -%}
@@ -219,60 +167,5 @@
         Buy It Now
       </button>
     {%- endform -%}
-{% comment %}
-    <!-- Shipping Info -->
-    <div class="product-shipping-info">
-      <div class="shipping-item">
-        <svg class="shipping-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="5.5" cy="18.5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-          <circle cx="18.5" cy="18.5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <span>Free International Shipping over $500</span>
-      </div>
-      <div class="shipping-item">
-        <svg class="shipping-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M3 12h14M3 12l4-4M3 12l4 4M21 5v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Free Returns Within 30 days</span>
-      </div>
-    </div>
 
-    <!-- Pickup Availability -->
-    <div class="pickup-availability">
-      <div class="pickup-header">
-        <svg class="pickup-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <div class="pickup-info">
-          <div class="pickup-title">Pickup available at California Store</div>
-          <div class="pickup-subtitle">Usually ready in 24 hours</div>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" class="pickup-chevron" aria-hidden="true">
-          <path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-
-    <!-- Limited-time offer banner -->
-    <div class="promo-banner" id="PromoBanner" role="alert">
-      <div class="promo-banner-inner">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="promo-icon">
-          <path d="M10 3v1M10 16v1M3 10H2M18 10h-1M5.05 5.05l-.707-.707M15.657 15.657l-.707-.707M15.657 4.343l-.707.707M5.05 14.95l-.707.707" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <div class="promo-text">
-          <strong>Limited time offer</strong>
-          <span>Get $20 off when you spend $1,000 or more! <a href="#" class="promo-link">Learn more</a></span>
-        </div>
-        <button class="promo-close" aria-label="Dismiss offer" onclick="this.closest('.promo-banner').remove()">
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-{% endcomment %}
   </div>
-</div>
