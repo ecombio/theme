@@ -3,37 +3,34 @@
    File: assets/flyout.css
    ============================================================================= */
 
-/* The <li> needs position:relative so the panel anchors to it */
-.menu-bar__item--has-flyout {
-  position: static; /* changed from relative — lets panel anchor to .menu-bar instead */
-}
-
-/* Anchor .mega-menu--flyout to the full menu bar width */
-.menu-bar {
-  position: relative;
-}
-
-/* Outer container — hidden until header.js adds mega-menu--open */
+/* Override the generic .mega-menu positioning for the flyout variant */
 .mega-menu--flyout {
   display: none;
   position: absolute;
-  top: 100%;
+  top: 100%;        /* flush under the menu bar — no gap */
   left: 0;
-  right: 0;            /* stretch across the full menu bar */
+  right: 0;
   width: auto;
   max-width: 100%;
-  z-index: 100;
+  transform: none;  /* cancel the translateX(-50%) from .mega-menu */
+  padding-top: 0;   /* cancel the 6px gap from .mega-menu */
+  z-index: 200;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-top: none;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
 }
 
 .mega-menu--flyout.mega-menu--open {
   display: block;
 }
 
-/* Inner flex wrapper — panel sidebar + stage side by side */
+/* Anchor to the full menu bar, not the individual <li> */
+.menu-bar__item--has-flyout {
+  position: static;
+}
+
+/* Inner flex wrapper — sidebar rail + stage */
 .flyout {
   display: flex;
   align-items: stretch;
@@ -42,7 +39,7 @@
   overflow: hidden;
 }
 
-/* Stage: the right-hand area that holds all flyout-menu panels */
+/* Stage: right-hand area holding all flyout-menu panels */
 .flyout__stage {
   flex: 1;
   min-width: 0;
