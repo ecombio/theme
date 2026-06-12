@@ -1,6 +1,5 @@
 {%- comment -%}
   card-product.liquid
-  ───────────────────────────────────────────────────────────────
   Parameters:
     product               – product object (required)
     show_vendor           – boolean
@@ -44,17 +43,10 @@
   data-product-handle="{{ p.handle }}"
 >
 
-  {{- '<!-- card-product: ' | append: p.handle | append: ' -->' -}}
-
   {%- comment -%} ══ IMAGE ZONE ══ {%- endcomment -%}
   <div class="card-product__img-zone">
 
-    <a
-      href="{{ p.url }}"
-      class="card-product__image-wrapper"
-      aria-label="{{ p.title | escape }}"
-      tabindex="0"
-    >
+    <a href="{{ p.url }}" class="card-product__image-wrapper" aria-label="{{ p.title | escape }}" tabindex="0">
       {%- if p.featured_image -%}
         {{
           p.featured_image
@@ -82,13 +74,11 @@
         <div class="card-product__image-placeholder" aria-hidden="true"></div>
       {%- endif -%}
 
-      {%- comment -%} Badges – bottom-left of image {%- endcomment -%}
       {%- unless available -%}
         <span class="card-product__badge card-product__badge--sold-out">Sold out</span>
       {%- endunless -%}
     </a>
 
-    {%- comment -%} Wishlist – top-right corner, always visible {%- endcomment -%}
     {%- if _wishlist -%}
       <button
         class="card-product__wishlist-btn"
@@ -106,7 +96,6 @@
       </button>
     {%- endif -%}
 
-    {%- comment -%} Quick View – appears on hover over image zone {%- endcomment -%}
     {%- if _quickview -%}
       <button
         class="card-product__quickview-btn"
@@ -124,47 +113,35 @@
       </button>
     {%- endif -%}
 
-  </div>{%- comment -%} /.card-product__img-zone {%- endcomment -%}
+  </div>
 
   {%- comment -%} ══ CONTENT ══ {%- endcomment -%}
   <div class="card-product__content">
 
-    {%- comment -%} Vendor {%- endcomment -%}
     {%- if _show_vendor and p.vendor != blank -%}
       <span class="card-product__vendor">{{ p.vendor }}</span>
     {%- endif -%}
 
-    {%- comment -%} Title {%- endcomment -%}
     <a href="{{ p.url }}" class="card-product__title">{{ p.title }}</a>
 
-    {%- comment -%} ── Judge.me star widget ── {%- endcomment -%}
     <div class="card-product__reviews">
-      {%- render 'judgeme_widgets',
-        widget_type: 'judgeme_preview_badge',
-        concierge_install: true,
-        product: p
-      -%}
+      {%- render 'judgeme_widgets', widget_type: 'judgeme_preview_badge', concierge_install: true, product: p -%}
     </div>
 
-    {%- comment -%} ── Price block ── {%- endcomment -%}
     <div class="card-product__pricing">
       <span class="card-product__price{% if on_sale %} card-product__price--sale{% endif %}">
         {{ p.price | money }}
       </span>
-
       {%- if on_sale -%}
         <div class="card-product__savings-row">
           <span class="card-product__save-badge">Save {{ savings_amt | money }}</span>
           {%- if _show_compare_price -%}
-            <span class="card-product__comp-value">
-              Comp. Value: <s>{{ p.compare_at_price | money }}</s>
-            </span>
+            <span class="card-product__comp-value">Comp. Value: <s>{{ p.compare_at_price | money }}</s></span>
           {%- endif -%}
         </div>
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── ETA / delivery line ── {%- endcomment -%}
     {%- if _eta -%}
       {%- if available -%}
         <div class="card-product__eta" aria-label="Estimated delivery">
@@ -176,9 +153,8 @@
           </svg>
           <span>
             {{ _eta_label }}
-            <strong>{{ 'now' | date: '%a, %b %-d' | replace: 'now', '' -}}
             {%- assign eta_date = 'now' | date: '%s' | plus: _eta_max | times: 86400 -%}
-            {{- eta_date | date: '%a, %b %-d' }}</strong> • <strong class="card-product__eta-free">FREE</strong>
+            <strong>{{ eta_date | date: '%a, %b %-d' }}</strong> • <strong class="card-product__eta-free">FREE</strong>
           </span>
         </div>
       {%- else -%}
@@ -192,7 +168,6 @@
       {%- endif -%}
     {%- endif -%}
 
-    {%- comment -%} ── Bottom row: ATC + Compare ── {%- endcomment -%}
     {%- if _atc or _compare -%}
       <div class="card-product__bottom-row">
 
@@ -209,9 +184,7 @@
               <span class="card-product__atc-label">Add to cart</span>
             </button>
           {%- else -%}
-            <button class="card-product__atc-btn card-product__atc-btn--disabled" type="button" disabled aria-disabled="true">
-              Sold out
-            </button>
+            <button class="card-product__atc-btn card-product__atc-btn--disabled" type="button" disabled aria-disabled="true">Sold out</button>
           {%- endif -%}
         {%- endif -%}
 
@@ -222,6 +195,7 @@
               type="checkbox"
               data-compare-checkbox
               data-product-id="{{ p.id }}"
+              data-product-handle="{{ p.handle }}"
               data-product-title="{{ p.title | escape }}"
               data-product-image="{{ p.featured_image | image_url: width: 120 }}"
               data-product-price="{{ p.price | money }}"
@@ -234,6 +208,6 @@
       </div>
     {%- endif -%}
 
-  </div>{%- comment -%} /.card-product__content {%- endcomment -%}
+  </div>
 
 </div>
