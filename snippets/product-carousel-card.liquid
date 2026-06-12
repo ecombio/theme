@@ -1,0 +1,58 @@
+{%- liquid
+  if product != blank
+    assign featured_image = product.featured_media.preview_image
+    assign title = product.title
+    assign price = product.price
+    assign compare_price = product.compare_at_price
+    assign url = product.url
+  else
+    assign featured_image = blank
+    assign title = 'Product title'
+    assign price = 0
+    assign compare_price = 0
+    assign url = '#'
+  endif
+-%}
+
+<div class="product-carousel__item">
+  <a href="{{ url }}" class="product-carousel-card" {% if product == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
+    <span class="product-carousel-card__image-wrap">
+      {%- if featured_image != blank -%}
+        <img
+          class="product-carousel-card__image"
+          src="{{ featured_image | image_url: width: 600 }}"
+          srcset="{{ featured_image | image_url: width: 300 }} 300w, {{ featured_image | image_url: width: 600 }} 600w, {{ featured_image | image_url: width: 900 }} 900w"
+          sizes="(min-width: 990px) 260px, (min-width: 750px) 220px, 70vw"
+          alt="{{ featured_image.alt | default: title | escape }}"
+          loading="lazy"
+          width="{{ featured_image.width }}"
+          height="{{ featured_image.height }}"
+        >
+      {%- else -%}
+        <span class="product-carousel-card__placeholder">
+          {{ 'product-1' | placeholder_svg_tag: 'product-carousel-card__placeholder-svg' }}
+        </span>
+      {%- endif -%}
+
+      {%- if product != blank and compare_price > price -%}
+        <span class="product-carousel-card__badge">Sale</span>
+      {%- endif -%}
+    </span>
+
+    <span class="product-carousel-card__info">
+      <span class="product-carousel-card__title">{{ title }}</span>
+      <span class="product-carousel-card__price">
+        {%- if product != blank -%}
+          {%- if compare_price > price -%}
+            <span class="product-carousel-card__price--sale">{{ price | money }}</span>
+            <span class="product-carousel-card__price--compare">{{ compare_price | money }}</span>
+          {%- else -%}
+            <span>{{ price | money }}</span>
+          {%- endif -%}
+        {%- else -%}
+          <span>{{ 0 | money }}</span>
+        {%- endif -%}
+      </span>
+    </span>
+  </a>
+</div>
