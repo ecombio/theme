@@ -1,11 +1,21 @@
 {% comment %}
   collection-filters.liquid
   Requires: Shopify Search & Discovery app
-  Loops collection.filters — no hardcoded tags, no inline scripts
+  Supports both collection and search contexts automatically.
+  Loops collection.filters or search.filters — no hardcoded tags, no inline scripts
 {% endcomment %}
 
+{%- comment -%} ── Context detection ───────────────────────────────────────── {%- endcomment -%}
+{%- assign _filters = search.filters | default: collection.filters -%}
+
+{%- if search.performed -%}
+  {%- assign _clear_url = routes.search_url | append: '?type=product&q=' | append: search.terms -%}
+{%- else -%}
+  {%- assign _clear_url = collection.url -%}
+{%- endif -%}
+
 {%- assign has_active_filters = false -%}
-{%- for filter in collection.filters -%}
+{%- for filter in _filters -%}
   {%- if filter.active_values.size > 0 or filter.min_value.value or filter.max_value.value -%}
     {%- assign has_active_filters = true -%}
   {%- endif -%}
@@ -21,14 +31,14 @@
     <span class="collection-filters__heading">Filters</span>
     {%- if has_active_filters -%}
       <a
-        href="{{ collection.url }}"
+        href="{{ _clear_url }}"
         class="collection-filters__clear"
         aria-label="Clear all filters"
       >Clear all</a>
     {%- endif -%}
   </div>
 
-  {%- for filter in collection.filters -%}
+  {%- for filter in _filters -%}
     {%- assign filter_id = "filter-" | append: filter.param_name | handleize -%}
     {%- assign is_open = true -%}
 
