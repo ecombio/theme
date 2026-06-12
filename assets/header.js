@@ -4,6 +4,9 @@
      1. Category filter dropdowns (multiple instances: desktop + mobile)
      2. Mobile / tablet drawer nav (hamburger toggle)
      3. Header height CSS variable (--ecombio-header-height)
+     4. Flyout nav — open/close the .mega-menu--flyout container
+        (FlyoutPanel handles the sidebar ↔ stage wiring inside the flyout;
+         this section handles showing/hiding the flyout itself)
    ============================================================================= */
 
 (function () {
@@ -145,16 +148,12 @@
 
   /* ===========================================================================
      3. HEADER HEIGHT CSS VARIABLE
-     Sets --ecombio-header-height on :root so the sticky menu bar always sits
-     flush underneath the header regardless of its height at any breakpoint.
      =========================================================================== */
 
   function initHeaderHeight() {
     var headerGroup = document.querySelector('.shopify-section-group-header-group');
     var header      = document.getElementById('ecombio-header');
-
-    // Prefer the full group if available, fall back to just the header element
-    var target = headerGroup || header;
+    var target      = headerGroup || header;
     if (!target) return;
 
     function update() {
@@ -162,15 +161,126 @@
       document.documentElement.style.setProperty('--ecombio-header-height', height + 'px');
     }
 
-    // Set immediately, then watch for size changes (font load, resize, etc.)
     update();
     window.addEventListener('resize', update);
 
-    // ResizeObserver catches height changes without needing a resize event
-    // (e.g. search row appearing on tablet, banner dismissal, etc.)
     if (window.ResizeObserver) {
       new ResizeObserver(update).observe(target);
     }
+  }
+
+  /* ===========================================================================
+     4. FLYOUT NAV
+     -------------------------------------------------------------------------
+     The flyout <li> lives in .menu-bar__item--has-flyout.
+     Inside it: <a class="menu-bar__link--flyout"> (the trigger)
+                <div class="mega-menu mega-menu--flyout">  (the panel)
+
+     This section handles OPENING and CLOSING that outer panel.
+     FlyoutPanel (flyout-panel.js) handles the sidebar ↔ stage wiring
+     INSIDE the panel once it is already visible.
+
+     Open on:  mouseenter the <li>  |  click the <a>
+     Close on: mouseleave the <li>  |  Escape key  |  click outside
+     =========================================================================== */
+
+  function initFlyouts() {
+    var items = document.querySelectorAll('.menu-bar__item--has-flyout');
+    if (!items.length) return;
+
+    var leaveTimer = null;
+
+    items.forEach(function (item) {
+      var trigger = item.querySelector('.menu-bar__link--flyout');
+      var panel   = item.querySelector('.mega-menu--flyout');
+      if (!trigger || !panel) return;
+
+      // ── Mouse ──────────────────────────────────────────────────────────────
+      item.addEventListener('mouseenter', function () {
+        clearTimeout(leaveTimer);
+        openFlyout(item, trigger, panel);
+      });
+
+      item.addEventListener('mouseleave', function () {
+        // Small delay so cursor can travel from trigger into the panel
+        leaveTimer = setTimeout(function () {
+          closeFlyout(item, trigger, panel);
+        }, 120);
+      });
+
+      // ── Click (also covers keyboard Enter/Space on the link) ───────────────
+      trigger.addEventListener('click', function (e) {
+        var isOpen = item.classList.contains('is-flyout-open');
+        if (isOpen) {
+          // Second click navigates — let the href through
+          return;
+        }
+        // First click opens the flyout instead of navigating
+        e.preventDefault();
+        openFlyout(item, trigger, panel);
+      });
+
+      // ── Keyboard ───────────────────────────────────────────────────────────
+      trigger.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          if (!item.classList.contains('is-flyout-open')) {
+            e.preventDefault();
+            openFlyout(item, trigger, panel);
+            // Move focus into the first panel trigger
+            var firstTrigger = panel.querySelector('.flyout-panel__trigger');
+            if (firstTrigger) firstTrigger.focus();
+          }
+        } else if (e.key === 'Escape') {
+          closeFlyout(item, trigger, panel);
+          trigger.focus();
+        }
+      });
+
+      // Tab out of the panel → close
+      panel.addEventListener('focusout', function (e) {
+        if (!item.contains(e.relatedTarget)) {
+          closeFlyout(item, trigger, panel);
+        }
+      });
+    });
+
+    // Click outside closes all open flyouts
+    document.addEventListener('click', function (e) {
+      items.forEach(function (item) {
+        if (!item.contains(e.target) && item.classList.contains('is-flyout-open')) {
+          var trigger = item.querySelector('.menu-bar__link--flyout');
+          var panel   = item.querySelector('.mega-menu--flyout');
+          if (trigger && panel) closeFlyout(item, trigger, panel);
+        }
+      });
+    });
+
+    // Escape from anywhere closes all open flyouts
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      items.forEach(function (item) {
+        if (item.classList.contains('is-flyout-open')) {
+          var trigger = item.querySelector('.menu-bar__link--flyout');
+          var panel   = item.querySelector('.mega-menu--flyout');
+          if (trigger && panel) {
+            closeFlyout(item, trigger, panel);
+            trigger.focus();
+          }
+        }
+      });
+    });
+  }
+
+  function openFlyout(item, trigger, panel) {
+    item.classList.add('is-flyout-open');
+    panel.classList.add('mega-menu--open');
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeFlyout(item, trigger, panel) {
+    item.classList.remove('is-flyout-open');
+    panel.classList.remove('mega-menu--open');
+    trigger.setAttribute('aria-expanded', 'false');
   }
 
   /* ===========================================================================
@@ -181,6 +291,7 @@
     initCategoryDropdowns();
     initDrawer();
     initHeaderHeight();
+    initFlyouts();
   }
 
 })();
