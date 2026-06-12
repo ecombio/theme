@@ -4,17 +4,23 @@
   assign largest_count = 0
   assign smallest_count = 999999
 
+  assign vendor_handle = product.vendor | handleize
+
   for col in product.collections
-    if col.all_products_count > largest_count
-      assign parent_col = col
-      assign largest_count = col.all_products_count
+    if col.handle != vendor_handle
+      if col.all_products_count > largest_count
+        assign parent_col = col
+        assign largest_count = col.all_products_count
+      endif
     endif
   endfor
 
   for col in product.collections
-    if col.handle != parent_col.handle and col.all_products_count < smallest_count
-      assign child_col = col
-      assign smallest_count = col.all_products_count
+    if col.handle != vendor_handle and col.handle != parent_col.handle
+      if col.all_products_count < smallest_count
+        assign child_col = col
+        assign smallest_count = col.all_products_count
+      endif
     endif
   endfor
 -%}
@@ -29,7 +35,7 @@
       <a href="{{ parent_col.url }}">{{ parent_col.title }}</a>
     {%- endif -%}
 
-    {%- if child_col and child_col.handle != parent_col.handle -%}
+    {%- if child_col -%}
       <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
       <a href="{{ child_col.url }}">{{ child_col.title }}</a>
     {%- endif -%}
