@@ -1,19 +1,36 @@
+{%- liquid
+  assign primary_collection = collection
+  assign parent_collection = nil
+
+  if primary_collection == nil and product.collections.size > 0
+    assign primary_collection = product.collections.last
+  endif
+
+  for col in product.collections
+    if col.handle contains 'electric-scooters' or col.handle contains 'e-scooters' or col.handle contains 'scooters'
+      unless col.handle == primary_collection.handle
+        assign parent_collection = col
+      endunless
+    endif
+  endfor
+-%}
+
 <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
   <div class="breadcrumbs-container">
 
     <a href="/">Home</a>
 
-    {%- if collection -%}
-      <span class="breadcrumb-divider" aria-hidden="true">
-        <span class="divider-line"></span>
-      </span>
-      <a href="{{ collection.url }}">{{ collection.title }}</a>
+    {%- if parent_collection -%}
+      <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
+      <a href="{{ parent_collection.url }}">{{ parent_collection.title }}</a>
     {%- endif -%}
 
-    <span class="breadcrumb-divider" aria-hidden="true">
-      <span class="divider-line"></span>
-    </span>
+    {%- if primary_collection -%}
+      <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
+      <a href="{{ primary_collection.url }}">{{ primary_collection.title }}</a>
+    {%- endif -%}
 
+    <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
     <span class="breadcrumb-current" aria-current="page">{{ product.title }}</span>
 
   </div>
