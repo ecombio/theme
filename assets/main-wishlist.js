@@ -1,13 +1,8 @@
 /* ============================================================
    main-wishlist.js
    Reads `shopify_wishlist` from localStorage, fetches each
-   product via /products/{handle}.js, and renders cards.
-
-   Storage format (written by card-product-features.js):
-     [{ id: "123456", handle: "my-product" }, …]
-
-   Backward-compat: bare string entries (old format) are
-   skipped — the user just needs to re-toggle those items.
+   product via /products/{handle}.js, renders real card-product
+   markup (matching the live collection card exactly).
    ============================================================ */
 
 (function () {
@@ -24,11 +19,27 @@
     try { localStorage.setItem(WISHLIST_KEY, JSON.stringify(list)); } catch (e) { /* noop */ }
   }
   function entryId(entry) {
-    return typeof entry === 'object' ? entry.id : entry;
+    return typeof entry === 'object' ? String(entry.id) : String(entry);
+  }
+  function formatMoney(cents) {
+    return '$' + (cents / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  function savings(price, compare) {
+    return '$' + ((compare - price) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
-  function formatMoney(cents) {
-    return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  /* srcset helper — mirrors Shopify CDN width params */
+  function buildSrcset(src, widths) {
+    if (!src) return '';
+    return widths.map(function (w) {
+      var sep = src.indexOf('?') === -1 ? '?' : '&';
+      return src + sep + 'width=' + w + ' ' + w + 'w';
+    }).join(', ');
+  }
+  function sized(src, w) {
+    if (!src) return '';
+    var sep = src.indexOf('?') === -1 ? '?' : '&';
+    return src + sep + 'width=' + w;
   }
 
   /* ── DOM refs ────────────────────────────────────────────── */
@@ -40,90 +51,145 @@
 
   if (!grid || !tpl) return;
 
-  /* ── Fetch one product by handle via Shopify Product API ─── */
+  /* ── Fetch product JSON ──────────────────────────────────── */
   function fetchProduct(handle) {
     return fetch('/products/' + handle + '.js')
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   }
 
-  /* ── Build a card node from the <template> ───────────────── */
+  /* ── Build card from <template> ─────────────────────────── */
   function buildCard(product) {
     var frag    = tpl.content.cloneNode(true);
-    var card    = frag.querySelector('.card-product--wishlist-page');
-    var id      = String(product.id);
+    var card    = frag.querySelector('.card-product');
     var variant = product.variants && product.variants[0];
-    var image   = product.featured_image || (product.images && product.images[0]) || '';
-    var url     = '/products/' + product.handle;
+    var id      = String(product.id);
+    var handle  = product.handle;
+    var url     = '/products/' + handle;
+    var title   = product.title;
 
+    /* Images — primary + secondary (second image if available) */
+    var images  = product.images || [];
+    var img1src = images[0] || product.featured_image || '';
+    var img2src = images[1] || '';
+    var srcWidths = [300, 400, 600, 800];
+
+    /* Card root */
     card.setAttribute('data-product-id', id);
-    card.setAttribute('data-product-handle', product.handle);
+    card.setAttribute('data-product-handle', handle);
 
-    /* image */
-    var img  = card.querySelector('.card-product__img');
-    var aImg = card.querySelector('.card-product__media-link');
-    img.src = image + (image.indexOf('?') === -1 ? '?' : '&') + 'width=600';
-    img.alt = product.title;
-    aImg.href = url;
-    aImg.setAttribute('aria-label', product.title);
+    /* Image wrapper link */
+    var imgWrap = card.querySelector('.card-product__image-wrapper');
+    imgWrap.href = url;
+    imgWrap.setAttribute('aria-label', title);
 
-    /* wishlist (remove) btn */
+    /* Primary image */
+    var imgPrimary = card.querySelector('.card-product__image--primary');
+    imgPrimary.src    = sized(img1src, 800);
+    imgPrimary.srcset = buildSrcset(img1src, srcWidths);
+    imgPrimary.alt    = title;
+
+    /* Secondary image */
+    var imgSecondary = card.querySelector('[data-secondary-img]');
+    if (img2src) {
+      imgSecondary.src    = sized(img2src, 800);
+      imgSecondary.srcset = buildSrcset(img2src, srcWidths);
+      imgSecondary.alt    = title + ' — alternate view';
+    } else {
+      imgSecondary.remove();
+    }
+
+    /* Wishlist (remove) button */
     var wBtn = card.querySelector('[data-wishlist-btn]');
     wBtn.setAttribute('data-product-id', id);
+    wBtn.setAttribute('aria-label', 'Remove ' + title + ' from wishlist');
 
-    /* title */
-    var titleA = card.querySelector('[data-title]');
-    titleA.textContent = product.title;
-    titleA.href = url;
+    /* Quick view button */
+    var qvBtn = card.querySelector('[data-quickview-btn]');
+    qvBtn.setAttribute('data-product-handle', handle);
+    qvBtn.setAttribute('data-product-url', url);
+    qvBtn.setAttribute('aria-label', 'Quick view ' + title);
 
-    /* vendor */
+    /* Vendor */
     var vendorEl = card.querySelector('[data-vendor]');
-    if (vendorEl) vendorEl.textContent = product.vendor || '';
-
-    /* price */
-    var priceEl = card.querySelector('[data-price]');
-    if (priceEl && variant) {
-      var compare = variant.compare_at_price;
-      if (compare && compare > variant.price) {
-        priceEl.innerHTML =
-          '<s class="card-product__price--compare">' + formatMoney(compare) + '</s> ' +
-          '<span class="card-product__price--sale">' + formatMoney(variant.price) + '</span>';
-      } else {
-        priceEl.textContent = formatMoney(variant.price);
-      }
+    if (product.vendor) {
+      vendorEl.textContent = product.vendor;
+    } else {
+      vendorEl.remove();
     }
 
-    /* ATC */
-    var atcBtn = card.querySelector('[data-atc-btn]');
-    if (atcBtn) {
-      if (variant) {
-        atcBtn.setAttribute('data-variant-id', variant.id);
-        if (!variant.available) {
-          atcBtn.textContent = 'Sold out';
-          atcBtn.disabled    = true;
-        }
+    /* Title link */
+    var titleEl = card.querySelector('[data-title]');
+    titleEl.textContent = title;
+    titleEl.href = url;
+
+    /* Price + savings */
+    var price   = variant ? variant.price : null;
+    var compare = variant ? variant.compare_at_price : null;
+
+    var priceEl   = card.querySelector('[data-price-current]');
+    var savingsRow = card.querySelector('[data-savings-row]');
+    var saveBadge  = card.querySelector('[data-save-badge]');
+    var compareEl  = card.querySelector('[data-compare-price]');
+
+    if (price !== null) {
+      if (compare && compare > price) {
+        priceEl.textContent = formatMoney(price);
+        priceEl.classList.add('card-product__price--sale');
+        saveBadge.textContent = 'Save ' + savings(price, compare);
+        compareEl.textContent = formatMoney(compare);
+        savingsRow.hidden = false;
       } else {
+        priceEl.textContent = formatMoney(price);
+        savingsRow.remove();
+      }
+    } else {
+      priceEl.remove();
+      savingsRow.remove();
+    }
+
+    /* ETA — hidden on wishlist page (no section setting available client-side) */
+    var etaEl = card.querySelector('[data-eta]');
+    if (etaEl) etaEl.remove();
+
+    /* ATC button */
+    var atcBtn = card.querySelector('[data-atc-btn]');
+    atcBtn.setAttribute('data-product-title', title);
+    atcBtn.setAttribute('aria-label', 'Add ' + title + ' to cart');
+    if (variant) {
+      atcBtn.setAttribute('data-variant-id', String(variant.id));
+      if (!variant.available) {
+        atcBtn.querySelector('.card-product__atc-label').textContent = 'Sold out';
         atcBtn.disabled = true;
       }
+    } else {
+      atcBtn.disabled = true;
     }
+
+    /* Compare checkbox */
+    var compareChk = card.querySelector('[data-compare-checkbox]');
+    compareChk.setAttribute('data-product-id', id);
+    compareChk.setAttribute('data-product-handle', handle);
+    compareChk.setAttribute('data-product-title', title);
+    compareChk.setAttribute('data-product-image', sized(img1src, 120));
+    compareChk.setAttribute('data-product-price', price !== null ? formatMoney(price) : '');
+    compareChk.setAttribute('aria-label', 'Compare ' + title);
 
     return card;
   }
 
-  /* ── Update header count ─────────────────────────────────── */
+  /* ── Count / empty state ─────────────────────────────────── */
   function updateCount(n) {
     if (!counter) return;
     counter.textContent = n === 0 ? '' : n === 1 ? '1 item saved' : n + ' items saved';
   }
-
-  /* ── Show / hide empty state ─────────────────────────────── */
   function setEmpty(isEmpty) {
     grid.hidden    = isEmpty;
     empty.hidden   = !isEmpty;
     actions.hidden = isEmpty;
   }
 
-  /* ── Remove a card from the grid ────────────────────────── */
+  /* ── Remove a card ───────────────────────────────────────── */
   function removeCard(productId) {
     var card = grid.querySelector('[data-product-id="' + productId + '"]');
     if (card) {
@@ -131,8 +197,7 @@
       card.addEventListener('transitionend', function () { card.remove(); }, { once: true });
       setTimeout(function () { if (card.parentNode) card.remove(); }, 400);
     }
-
-    var list = getWishlist().filter(function (entry) { return entryId(entry) !== productId; });
+    var list = getWishlist().filter(function (e) { return entryId(e) !== productId; });
     saveWishlist(list);
     updateCount(list.length);
     if (list.length === 0) setEmpty(true);
@@ -140,87 +205,72 @@
 
   /* ── Add to cart ─────────────────────────────────────────── */
   function addToCart(variantId, btn) {
-    btn.disabled    = true;
-    btn.textContent = 'Adding…';
+    var label = btn.querySelector('.card-product__atc-label');
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    if (label) label.textContent = 'Adding…';
 
-    fetch(settings.routes && settings.routes.cartAdd || '/cart/add.js', {
+    fetch((settings.routes && settings.routes.cartAdd) || '/cart/add.js', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body:    JSON.stringify({ id: variantId, quantity: 1 })
     })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.status) {
-          btn.textContent = 'Error';
-          setTimeout(function () { btn.textContent = 'Add to cart'; btn.disabled = false; }, 1500);
-        } else {
-          btn.textContent = 'Added!';
-          document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
-          setTimeout(function () { btn.textContent = 'Add to cart'; btn.disabled = false; }, 1500);
-        }
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function () {
+        btn.classList.remove('is-loading');
+        if (label) label.textContent = 'Added!';
+        document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+        setTimeout(function () { if (label) label.textContent = 'Add to cart'; btn.disabled = false; }, 1800);
       })
       .catch(function () {
-        btn.textContent = 'Error';
-        setTimeout(function () { btn.textContent = 'Add to cart'; btn.disabled = false; }, 1500);
+        btn.classList.remove('is-loading');
+        if (label) label.textContent = 'Try again';
+        setTimeout(function () { if (label) label.textContent = 'Add to cart'; btn.disabled = false; }, 2000);
       });
   }
 
-  /* ── Render all saved products ───────────────────────────── */
+  /* ── Render ──────────────────────────────────────────────── */
   function render() {
-    var entries = getWishlist();
-
-    /* Filter to only object entries with a handle (new format) */
-    var valid = entries.filter(function (e) {
+    var entries = getWishlist().filter(function (e) {
       return typeof e === 'object' && e.handle;
     });
 
-    updateCount(valid.length);
-
-    if (valid.length === 0) {
-      setEmpty(true);
-      return;
-    }
+    updateCount(entries.length);
+    if (entries.length === 0) { setEmpty(true); return; }
 
     grid.hidden    = false;
     actions.hidden = false;
     empty.hidden   = true;
 
-    var fetches = valid.map(function (entry) {
-      return fetchProduct(entry.handle);
-    });
-
-    Promise.all(fetches).then(function (products) {
-      grid.innerHTML = '';
-      var rendered = 0;
-
-      products.forEach(function (product) {
-        if (!product) return;
-        grid.appendChild(buildCard(product));
-        rendered++;
+    Promise.all(entries.map(function (e) { return fetchProduct(e.handle); }))
+      .then(function (products) {
+        grid.innerHTML = '';
+        var rendered = 0;
+        products.forEach(function (p) {
+          if (!p) return;
+          grid.appendChild(buildCard(p));
+          rendered++;
+        });
+        updateCount(rendered);
+        if (rendered === 0) setEmpty(true);
       });
-
-      updateCount(rendered);
-      if (rendered === 0) setEmpty(true);
-    });
   }
 
-  /* ── Event delegation ────────────────────────────────────── */
+  /* ── Events ──────────────────────────────────────────────── */
   document.addEventListener('click', function (e) {
-    /* Remove button on wishlist page cards */
+    /* Wishlist remove */
     var wBtn = e.target.closest('[data-wishlist-btn]');
     if (wBtn && grid.contains(wBtn)) {
       removeCard(wBtn.getAttribute('data-product-id'));
       return;
     }
-
-    /* ATC buttons */
+    /* ATC */
     var atcBtn = e.target.closest('[data-atc-btn]');
     if (atcBtn && grid.contains(atcBtn)) {
-      var variantId = atcBtn.getAttribute('data-variant-id');
-      if (variantId) addToCart(variantId, atcBtn);
+      var vid = atcBtn.getAttribute('data-variant-id');
+      if (vid) addToCart(vid, atcBtn);
       return;
     }
-
     /* Clear all */
     if (e.target.closest('[data-wishlist-clear]')) {
       saveWishlist([]);
@@ -231,20 +281,17 @@
     }
   });
 
-  /* Sync when toggled from another section on the same page */
+  /* Sync removals triggered elsewhere on same page */
   document.addEventListener('wishlist:toggle', function (e) {
-    var detail = e.detail || {};
-    if (!detail.wishlisted) {
-      removeCard(String(detail.productId));
-    }
+    var d = e.detail || {};
+    if (!d.wishlisted) removeCard(String(d.productId));
   });
 
-  /* Sync if wishlist changes in another tab */
+  /* Sync across tabs */
   window.addEventListener('storage', function (e) {
     if (e.key === WISHLIST_KEY) render();
   });
 
-  /* ── Boot ────────────────────────────────────────────────── */
   render();
 
 })();
