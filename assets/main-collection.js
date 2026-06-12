@@ -1,8 +1,8 @@
 console.log('Collection JS loaded');
 
 /* ============================================================
-   collection.js
-   Wired to Shopify Search & Discovery (collection.filters)
+   main-collection.js
+   Wired to Shopify Search & Discovery (main-collection.filters)
    - Filter checkboxes → url_to_add / url_to_remove
    - Price range apply → filter.v.price.gte / lte params
    - Active filter pills built from URL params
