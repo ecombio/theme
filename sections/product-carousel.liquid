@@ -33,7 +33,14 @@
     <div class="product-carousel-content">
       {%- if section.settings.heading != blank -%}
         <div class="product-carousel-section__header">
-          <h2 class="product-carousel-section__heading">{{ section.settings.heading }}</h2>
+          <div class="product-carousel-section__header-top">
+            <h2 class="product-carousel-section__heading">{{ section.settings.heading }}</h2>
+            {%- if section.settings.show_view_all and section.settings.collection != blank -%}
+              <a href="{{ section.settings.collection.url }}" class="product-carousel-section__view-all">
+                {{ section.settings.view_all_label | default: 'View all' }}
+              </a>
+            {%- endif -%}
+          </div>
           {%- if section.settings.subheading != blank -%}
             <p class="product-carousel-section__subheading">{{ section.settings.subheading }}</p>
           {%- endif -%}
@@ -105,6 +112,18 @@
       "step": 1,
       "label": "Number of products",
       "default": 8
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "Show 'View all' button",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "view_all_label",
+      "label": "'View all' button label",
+      "default": "View all"
     },
     {
       "type": "header",
