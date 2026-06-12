@@ -130,6 +130,32 @@
       }
     });
 
+    // ── Accordion toggles ────────────────────────────────────────────────────
+    drawer.addEventListener('click', function (e) {
+      var btn = e.target.closest('.ecombio-mobile-nav__toggle');
+      if (!btn) return;
+
+      var item   = btn.closest('.ecombio-mobile-nav__item--has-children');
+      if (!item) return;
+
+      var sub    = item.querySelector(':scope > .ecombio-mobile-nav__sub');
+      var isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+      // Close siblings at the same level first
+      var parent = item.parentElement;
+      parent.querySelectorAll(':scope > .ecombio-mobile-nav__item--has-children').forEach(function (sibling) {
+        if (sibling === item) return;
+        var sibBtn = sibling.querySelector(':scope > .ecombio-mobile-nav__row > .ecombio-mobile-nav__toggle');
+        var sibSub = sibling.querySelector(':scope > .ecombio-mobile-nav__sub');
+        if (sibBtn) sibBtn.setAttribute('aria-expanded', 'false');
+        if (sibSub) sibSub.hidden = true;
+      });
+
+      // Toggle this item
+      btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      if (sub) sub.hidden = isOpen;
+    });
+
     function openDrawer() {
       drawer.classList.add('is-open');
       drawer.setAttribute('aria-hidden', 'false');
@@ -143,6 +169,14 @@
       toggle.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
       toggle.focus();
+
+      // Collapse all open accordions on close
+      drawer.querySelectorAll('.ecombio-mobile-nav__toggle[aria-expanded="true"]').forEach(function (b) {
+        b.setAttribute('aria-expanded', 'false');
+        var s = b.closest('.ecombio-mobile-nav__item--has-children')
+                  .querySelector(':scope > .ecombio-mobile-nav__sub');
+        if (s) s.hidden = true;
+      });
     }
   }
 
