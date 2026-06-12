@@ -1,12 +1,20 @@
 {%- liquid
-  assign primary_collection = collection
-  assign best_parent = nil
+  assign parent_col = nil
+  assign child_col = nil
   assign largest_count = 0
+  assign smallest_count = 999999
 
   for col in product.collections
-    if col.handle != primary_collection.handle and col.all_products_count > largest_count
-      assign best_parent = col
+    if col.all_products_count > largest_count
+      assign parent_col = col
       assign largest_count = col.all_products_count
+    endif
+  endfor
+
+  for col in product.collections
+    if col.handle != parent_col.handle and col.all_products_count < smallest_count
+      assign child_col = col
+      assign smallest_count = col.all_products_count
     endif
   endfor
 -%}
@@ -16,14 +24,14 @@
 
     <a href="/">Home</a>
 
-    {%- if best_parent -%}
+    {%- if parent_col -%}
       <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
-      <a href="{{ best_parent.url }}">{{ best_parent.title }}</a>
+      <a href="{{ parent_col.url }}">{{ parent_col.title }}</a>
     {%- endif -%}
 
-    {%- if primary_collection -%}
+    {%- if child_col and child_col.handle != parent_col.handle -%}
       <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
-      <a href="{{ primary_collection.url }}">{{ primary_collection.title }}</a>
+      <a href="{{ child_col.url }}">{{ child_col.title }}</a>
     {%- endif -%}
 
     <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
