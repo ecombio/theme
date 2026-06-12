@@ -1,0 +1,283 @@
+{{ 'main-collection.css' | asset_url | stylesheet_tag }}
+{{ 'main-collection.js' | asset_url | script_tag }}
+{{ 'card-product-features.js' | asset_url | script_tag }}
+
+{%- liquid
+  assign per_page     = section.settings.products_per_page | default: 20
+  assign show_filters = section.settings.show_filters | default: true
+  assign search_term  = search.terms | escape
+-%}
+
+<div class="collection-products-section">
+
+  {%- comment -%} ── Search header (mirrors Gymshark "Search results for …") ── {%- endcomment -%}
+  <div class="search-results-header">
+    {%- if search.performed -%}
+      <p class="search-results-header__label">Search results for</p>
+      <h1 class="search-results-header__term">&ldquo;{{ search_term }}&rdquo;</h1>
+      <span class="search-results-header__count">
+        {{ search.results_count }}
+        {%- if search.results_count == 1 -%} Product{%- else -%} Products{%- endif -%}
+      </span>
+    {%- else -%}
+      <h1 class="search-results-header__term">Search</h1>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%} ── Sticky toolbar (sort + active filters) ── {%- endcomment -%}
+  <div class="collection-sticky-bar">
+    <div class="collection-toolbar">
+      {%- if show_filters -%}
+        <button
+          class="collection-toolbar__filter-btn"
+          type="button"
+          id="filters-open-btn"
+          aria-expanded="true"
+          aria-controls="collection-filters"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Filters
+          <span class="collection-toolbar__active-count" id="active-filter-count" aria-live="polite"></span>
+        </button>
+      {%- endif -%}
+
+      <span class="collection-toolbar__count">
+        {{ search.results_count }}
+        {%- if search.results_count == 1 -%} product{%- else -%} products{%- endif -%}
+      </span>
+
+      <div class="collection-toolbar__sort">
+        <label class="collection-toolbar__sort-label" for="sort-select">Sort</label>
+        <select id="sort-select" class="collection-toolbar__sort-select" data-sort-select>
+          <option value="relevance"         {% if search.sort_by == 'relevance'         %}selected{% endif %}>Relevancy</option>
+          <option value="price-ascending"   {% if search.sort_by == 'price-ascending'   %}selected{% endif %}>Price: Low to High</option>
+          <option value="price-descending"  {% if search.sort_by == 'price-descending'  %}selected{% endif %}>Price: High to Low</option>
+          <option value="created-descending"{% if search.sort_by == 'created-descending'%}selected{% endif %}>Newest</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
+  </div>
+
+  <div id="filters-backdrop" class="filters-backdrop"></div>
+
+  <div class="collection-layout">
+
+    {%- comment -%}
+      Pass `search: search` so the filters snippet can build predictive-search
+      URLs using `search.terms` instead of `collection.url`.
+    {%- endcomment -%}
+    {%- if show_filters and search.performed -%}
+      {% render 'collection-filters',
+        open:   true,
+        search: search
+      %}
+    {%- endif -%}
+
+    <div class="collection-main">
+
+      {%- if search.performed -%}
+        {% paginate search.results by per_page %}
+
+          {%- liquid
+            assign active_filter_count = 0
+            for filter in search.filters
+              assign active_filter_count = active_filter_count | plus: filter.active_values.size
+            endfor
+          -%}
+
+          <div class="collection-products" id="collection-grid">
+            {%- for item in search.results -%}
+
+              {%- if item.object_type == 'product' -%}
+                <div class="collection-product-wrapper">
+                  {% render 'card-product',
+                    product:              item,
+                    show_vendor:          true,
+                    show_compare_at_price: true
+                  %}
+                </div>
+
+              {%- elsif item.object_type == 'article' and section.settings.show_articles -%}
+                <div class="collection-product-wrapper collection-product-wrapper--article">
+                  {% render 'card-article', article: item %}
+                </div>
+
+              {%- elsif item.object_type == 'page' and section.settings.show_pages -%}
+                <div class="collection-product-wrapper collection-product-wrapper--page">
+                  {% render 'card-page', page: item %}
+                </div>
+              {%- endif -%}
+
+            {%- else -%}
+              <p class="collection-empty">
+                No results for &ldquo;{{ search_term }}&rdquo;.
+                {%- if active_filter_count > 0 -%}
+                  Try clearing some filters, or
+                {%- else -%}
+                  Try
+                {%- endif -%}
+                a different search term.
+              </p>
+            {%- endfor -%}
+          </div>
+
+          {%- if paginate.pages > 1 -%}
+            <div class="collection-pagination">
+              {{ paginate | default_pagination }}
+            </div>
+          {%- endif -%}
+
+        {% endpaginate %}
+
+      {%- else -%}
+        {%- comment -%} Pre-search state: show a search form {%- endcomment -%}
+        <div class="search-results-empty">
+          <form action="{{ routes.search_url }}" method="get" role="search" class="search-results-empty__form">
+            <input type="hidden" name="type" value="product">
+            <input
+              type="search"
+              name="q"
+              placeholder="Search products…"
+              class="search-results-empty__input"
+              aria-label="Search"
+              autofocus
+            >
+            <button type="submit" class="search-results-empty__btn">Search</button>
+          </form>
+        </div>
+      {%- endif -%}
+
+    </div>{%- comment -%}/.collection-main{%- endcomment -%}
+  </div>{%- comment -%}/.collection-layout{%- endcomment -%}
+
+</div>{%- comment -%}/.collection-products-section{%- endcomment -%}
+
+<style>
+  /* ── Search results header ───────────────────────────────────────────── */
+  .search-results-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25em 0.5em;
+    padding: 1.5rem var(--page-gutter, 1.5rem) 0.75rem;
+  }
+
+  .search-results-header__label {
+    font-size: 0.875rem;
+    color: var(--color-foreground-secondary, #6b7280);
+    margin: 0;
+  }
+
+  .search-results-header__term {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-foreground, #111);
+  }
+
+  .search-results-header__count {
+    font-size: 0.875rem;
+    color: var(--color-foreground-secondary, #6b7280);
+    margin-left: 0.25em;
+  }
+
+  /* ── Pre-search form ─────────────────────────────────────────────────── */
+  .search-results-empty {
+    display: flex;
+    justify-content: center;
+    padding: 4rem 1rem;
+  }
+
+  .search-results-empty__form {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .search-results-empty__input {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: var(--radius-sm, 4px);
+    font-size: 1rem;
+  }
+
+  .search-results-empty__btn {
+    padding: 0.625rem 1.25rem;
+    background: var(--color-button-bg, #111);
+    color: var(--color-button-text, #fff);
+    border: none;
+    border-radius: var(--radius-sm, 4px);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Search Results",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show sidebar filters",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 20,
+      "label": "Results per page"
+    },
+    {
+      "type": "header",
+      "content": "Result types"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_articles",
+      "label": "Show article results",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pages",
+      "label": "Show page results",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Product card features"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_quickview",
+      "label": "Enable Quick View button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_atc",
+      "label": "Enable Add to Cart button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_wishlist",
+      "label": "Enable Wishlist button",
+      "default": true
+    }
+  ],
+  "presets": [
+    { "name": "Search Results" }
+  ]
+}
+{% endschema %}
