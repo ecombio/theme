@@ -304,16 +304,7 @@ console.log('Collection JS loaded');
   });
 
 })();
-/* ============================================================
-   Sub-collection Carousel — append to main-collection.js
-   (inside the IIFE, before the closing })(); )
-
-   Wires up prev/next buttons for every [data-subcollection-carousel]
-   element in the page. Scrolls by roughly one "page" of tiles at a
-   time and disables the buttons at either end.
-   ============================================================ */
-
-  // ── Sub-collection carousel ────────────────────────────────
+// ── Sub-collection carousel ────────────────────────────────
 
   function initSubcollectionCarousels() {
     qsa('[data-subcollection-carousel]').forEach(function (carousel) {
@@ -323,14 +314,41 @@ console.log('Collection JS loaded');
 
       if (!track || !prevBtn || !nextBtn) return;
 
-      // How far to scroll: one full visible width of the track
+      // Mark button glyphs as decorative so aria-label is the only read text
+      prevBtn.querySelector('*') && prevBtn.firstChild && (prevBtn.innerHTML = '<span aria-hidden="true">&#8249;</span>');
+      nextBtn.querySelector('*') || (nextBtn.innerHTML = '<span aria-hidden="true">&#8250;</span>');
+
+      // Scroll by one tile width rather than the full track width,
+      // so no tiles get skipped over on wide screens.
       function scrollAmount() {
-        return track.clientWidth;
+        var firstTile = track.querySelector('.subcollection-carousel__tile');
+        if (firstTile) {
+          var style = window.getComputedStyle(track);
+          var gap   = parseFloat(style.columnGap) || parseFloat(style.gap) || 12;
+          return firstTile.offsetWidth + gap;
+        }
+        // Fallback: scroll 40% of track width
+        return Math.round(track.clientWidth * 0.4);
       }
 
+      // Use Math.round to handle sub-pixel values on retina screens
+      function atStart() { return Math.round(track.scrollLeft) <= 0; }
+      function atEnd()   { return Math.round(track.scrollLeft + track.clientWidth) >= track.scrollWidth; }
+
       function updateButtons() {
-        prevBtn.disabled = track.scrollLeft <= 0;
-        nextBtn.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+        prevBtn.disabled = atStart();
+        nextBtn.disabled = atEnd();
+      }
+
+      // Throttle scroll handler — only run updateButtons once per animation frame
+      var rafPending = false;
+      function onScroll() {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(function () {
+          updateButtons();
+          rafPending = false;
+        });
       }
 
       prevBtn.addEventListener('click', function () {
@@ -341,7 +359,14 @@ console.log('Collection JS loaded');
         track.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
       });
 
-      track.addEventListener('scroll', updateButtons, { passive: true });
+      track.addEventListener('scroll', onScroll, { passive: true });
+
+      // Re-check button state when the track resizes (sidebar toggle, viewport change)
+      if (window.ResizeObserver) {
+        new ResizeObserver(updateButtons).observe(track);
+      } else {
+        window.addEventListener('resize', updateButtons);
+      }
 
       // Initial state
       updateButtons();
