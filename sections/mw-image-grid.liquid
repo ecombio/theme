@@ -1,20 +1,104 @@
-{{ 'mw-image-grid.css' | asset_url | stylesheet_tag }}
+{% style %}
+.mw-grid-wrap-{{ section.id }} {
+  padding: 32px clamp(16px, 4vw, 48px);
+  background-color: {{ section.settings.bg_color }};
+}
 
-<div class="mw-grid-wrap" style="background-color: {{ section.settings.bg_color }};">
+.mw-grid-heading-{{ section.id }} {
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+
+.mw-grid-cards-{{ section.id }} {
+  display: grid;
+  grid-template-columns: repeat({{ section.settings.cards_mobile | default: 2 }}, 1fr);
+  gap: {{ section.settings.card_gap | default: 16 }}px;
+}
+
+@media screen and (min-width: 750px) {
+  .mw-grid-cards-{{ section.id }} {
+    grid-template-columns: repeat({{ section.settings.cards_tablet | default: 3 }}, 1fr);
+  }
+}
+
+@media screen and (min-width: 990px) {
+  .mw-grid-cards-{{ section.id }} {
+    grid-template-columns: repeat({{ section.settings.cards_desktop | default: 4 }}, 1fr);
+  }
+}
+
+.mw-grid-card-{{ section.id }} {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-decoration: none;
+  color: #1a1a1a;
+  border-radius: 12px;
+  padding: 24px 16px 20px;
+  aspect-ratio: 1 / 1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mw-grid-card-{{ section.id }}:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.mw-grid-card__media-{{ section.id }} {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.mw-grid-card__img-{{ section.id }} {
+  max-width: 90%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.mw-grid-card__placeholder-{{ section.id }} {
+  width: 60%;
+  opacity: 0.5;
+}
+
+.mw-grid-card__label-{{ section.id }} {
+  margin: 12px 0 0;
+  font-size: clamp(0.875rem, 1.2vw, 1rem);
+  font-weight: 600;
+  text-align: center;
+}
+
+@media screen and (max-width: 480px) {
+  .mw-grid-card-{{ section.id }} {
+    padding: 16px 12px 14px;
+    border-radius: 10px;
+  }
+}
+{% endstyle %}
+
+<div class="mw-grid-wrap-{{ section.id }}">
   {% if section.settings.heading != blank %}
-    <h2 class="mw-grid-heading">{{ section.settings.heading | escape }}</h2>
+    <h2 class="mw-grid-heading-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
   {% endif %}
 
-  <div class="mw-grid-cards">
+  <div class="mw-grid-cards-{{ section.id }}">
     {% for block in section.blocks %}
       {% if block.type == 'card' %}
+        {% assign img_class = 'mw-grid-card__img-' | append: section.id %}
         <a
           href="{{ block.settings.link | default: '#' }}"
-          class="mw-grid-card"
+          class="mw-grid-card-{{ section.id }}"
           style="background-color: {{ block.settings.card_color }};"
           {{ block.shopify_attributes }}
         >
-          <div class="mw-grid-card__media">
+          <div class="mw-grid-card__media-{{ section.id }}">
             {% if block.settings.image != blank %}
               {{
                 block.settings.image
@@ -23,14 +107,15 @@
                   loading: 'lazy',
                   sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 50vw',
                   widths: '150, 300, 450, 600',
-                  class: 'mw-grid-card__img'
+                  class: img_class
               }}
             {% else %}
-              {{ 'image' | placeholder_svg_tag: 'mw-grid-card__img mw-grid-card__placeholder' }}
+              {% assign placeholder_class = img_class | append: ' mw-grid-card__placeholder-' | append: section.id %}
+              {{ 'image' | placeholder_svg_tag: placeholder_class }}
             {% endif %}
           </div>
           {% if block.settings.label != blank %}
-            <p class="mw-grid-card__label">{{ block.settings.label | escape }}</p>
+            <p class="mw-grid-card__label-{{ section.id }}">{{ block.settings.label | escape }}</p>
           {% endif %}
         </a>
       {% endif %}
