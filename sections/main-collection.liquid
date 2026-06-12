@@ -92,6 +92,8 @@
             {%- if show_banners -%}
               {%- assign loop_pos = forloop.index -%}
               {%- for block in section.blocks -%}
+
+                {%- comment -%} Existing: image banner {%- endcomment -%}
                 {%- if block.type == 'grid_banner'
                        and block.settings.image != blank
                        and block.settings.position == loop_pos -%}
@@ -123,6 +125,55 @@
                     {%- endif -%}
                   </div>
                 {%- endif -%}
+
+                {%- comment -%} NEW: collection carousel {%- endcomment -%}
+                {%- if block.type == 'grid_carousel'
+                       and block.settings.source_collection != blank
+                       and block.settings.position == loop_pos -%}
+                  {%- assign carousel_col   = block.settings.source_collection -%}
+                  {%- assign carousel_span  = block.settings.span | default: 'full' -%}
+                  {%- assign carousel_limit = block.settings.products_to_show | default: 6 -%}
+                  <div
+                    class="collection-grid-carousel collection-banner-item--span-{{ carousel_span }}"
+                    data-carousel
+                    {{ block.shopify_attributes }}
+                  >
+                    {%- if block.settings.heading != blank -%}
+                      <h2 class="collection-grid-carousel__heading">{{ block.settings.heading }}</h2>
+                    {%- endif -%}
+                    <div class="collection-grid-carousel__track-wrap">
+                      <button class="collection-grid-carousel__btn collection-grid-carousel__btn--prev" aria-label="Previous">&#8249;</button>
+                      <div class="collection-grid-carousel__track">
+                        {%- for p in carousel_col.products limit: carousel_limit -%}
+                          <div class="collection-grid-carousel__slide">
+                            <a href="{{ p.url }}" class="collection-grid-carousel__card">
+                              <div class="collection-grid-carousel__img-wrap">
+                                {%- if p.featured_image -%}
+                                  {{ p.featured_image
+                                    | image_url: width: 400
+                                    | image_tag:
+                                      loading: 'lazy',
+                                      class: 'collection-grid-carousel__img',
+                                      widths: '200, 300, 400',
+                                      sizes: '200px',
+                                      alt: p.featured_image.alt | escape }}
+                                {%- else -%}
+                                  <div class="collection-grid-carousel__img-placeholder"></div>
+                                {%- endif -%}
+                              </div>
+                              <div class="collection-grid-carousel__info">
+                                <span class="collection-grid-carousel__title">{{ p.title }}</span>
+                                <span class="collection-grid-carousel__price">{{ p.price | money }}</span>
+                              </div>
+                            </a>
+                          </div>
+                        {%- endfor -%}
+                      </div>
+                      <button class="collection-grid-carousel__btn collection-grid-carousel__btn--next" aria-label="Next">&#8250;</button>
+                    </div>
+                  </div>
+                {%- endif -%}
+
               {%- endfor -%}
             {%- endif -%}
 
@@ -222,6 +273,51 @@
           "type": "text",
           "id": "overlay_text",
           "label": "Overlay text (optional)"
+        }
+      ]
+    },
+    {
+      "type": "grid_carousel",
+      "name": "Grid Carousel",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "source_collection",
+          "label": "Collection to show"
+        },
+        {
+          "type": "range",
+          "id": "position",
+          "min": 1,
+          "max": 48,
+          "step": 1,
+          "default": 4,
+          "label": "Insert before product #"
+        },
+        {
+          "type": "select",
+          "id": "span",
+          "label": "Width",
+          "options": [
+            { "value": "2", "label": "2 columns" },
+            { "value": "full", "label": "Full row" }
+          ],
+          "default": "full"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Carousel heading",
+          "default": "You might also like"
+        },
+        {
+          "type": "range",
+          "id": "products_to_show",
+          "min": 2,
+          "max": 12,
+          "step": 1,
+          "default": 6,
+          "label": "Products to show"
         }
       ]
     }
