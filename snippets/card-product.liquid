@@ -137,14 +137,19 @@
     {%- comment -%} Title {%- endcomment -%}
     <a href="{{ p.url }}" class="card-product__title">{{ p.title }}</a>
 
-    {%- comment -%} ── Judge.me star widget ── {%- endcomment -%}
-    <div class="card-product__reviews">
-      {%- render 'judgeme_widgets',
-        widget_type: 'judgeme_preview_badge',
-        concierge_install: true,
-        product: p
-      -%}
-    </div>
+    {%- comment -%} ── Judge.me star widget (only renders if app is installed) ── {%- endcomment -%}
+{%- assign judgeme_installed = false -%}
+{%- for snippet in shop.metafields -%}{%- endfor -%}
+<div class="card-product__reviews">
+  {%- capture judgeme_output -%}
+    {%- render 'judgeme_widgets',
+      widget_type: 'judgeme_preview_badge',
+      concierge_install: true,
+      product: p
+    -%}
+  {%- endcapture -%}
+  {{- judgeme_output -}}
+</div>
 
     {%- comment -%} ── Price block ── {%- endcomment -%}
     <div class="card-product__pricing">
