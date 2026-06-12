@@ -1,14 +1,5 @@
 {{- 'compare-products.css' | asset_url | stylesheet_tag -}}
 
-{%- comment -%}
-  Section: compare-products
-  URL shape: /pages/compare?handles=handle-a,handle-b,handle-c
-
-  Strategy: all_products[handle] is unreliable on page templates.
-  Instead we render a loading shell and fetch each product via
-  /products/{handle}.js (Shopify AJAX API — no auth needed).
-{%- endcomment -%}
-
 {%- liquid
   assign max_products     = section.settings.max_products     | default: 5
   assign show_vendor      = section.settings.show_vendor      | default: true
@@ -16,32 +7,39 @@
   assign show_sku         = section.settings.show_sku         | default: true
   assign show_type        = section.settings.show_type        | default: true
   assign show_weight      = section.settings.show_weight      | default: false
+  assign show_tags        = section.settings.show_tags        | default: true
+  assign show_options     = section.settings.show_options     | default: true
 -%}
 
 <section class="compare-section page-width" id="compare-section">
 
   <header class="compare-header">
     <a href="javascript:history.back()" class="compare-header__back">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M10 13L5 8l5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10 13L5 8l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       Back
     </a>
-    <h1 class="compare-header__title">Compare products</h1>
+    <h1 class="compare-header__title">Compare</h1>
+    <p class="compare-header__meta" id="compare-meta"></p>
+    <button class="compare-diff-toggle" id="compare-diff-toggle" type="button" hidden>
+      <span class="compare-diff-toggle__dot"></span>
+      Show differences only
+    </button>
   </header>
 
   <div id="compare-loading" class="compare-loading" aria-live="polite">
     <div class="compare-spinner"></div>
-    Loading products…
+    Loading…
   </div>
 
   <div id="compare-empty" class="compare-empty" hidden>
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+    <svg width="44" height="44" viewBox="0 0 48 48" fill="none" aria-hidden="true">
       <rect x="6" y="10" width="14" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/>
       <rect x="28" y="10" width="14" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/>
       <path d="M20 24h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
     </svg>
-    <p>No products to compare. Select some from the collection first.</p>
+    <p>No products selected. Pick some from the collection first.</p>
     <a href="/collections/all" class="btn btn--primary">Browse products</a>
   </div>
 
@@ -51,186 +49,276 @@
 
 <script>
 (function () {
+
   var settings = {
     showVendor     : {{ show_vendor      | json }},
     showDescription: {{ show_description | json }},
     showSku        : {{ show_sku         | json }},
     showType       : {{ show_type        | json }},
-    showWeight     : {{ show_weight      | json }}
+    showWeight     : {{ show_weight      | json }},
+    showTags       : {{ show_tags        | json }},
+    showOptions    : {{ show_options     | json }}
   };
 
   var loadingEl  = document.getElementById('compare-loading');
   var emptyEl    = document.getElementById('compare-empty');
   var tableWrap  = document.getElementById('compare-table-wrap');
+  var metaEl     = document.getElementById('compare-meta');
+  var diffToggle = document.getElementById('compare-diff-toggle');
 
-  // Parse handles from URL
   var params  = new URLSearchParams(window.location.search);
   var raw     = params.get('handles') || '';
-  var handles = raw.split(',').map(function (h) { return h.trim(); }).filter(Boolean);
+  var handles = raw.split(',').map(function(h){ return h.trim(); }).filter(Boolean);
 
-  if (handles.length === 0) {
+  if (!handles.length) {
     loadingEl.hidden = true;
     emptyEl.hidden   = false;
     return;
   }
 
-  // Fetch all products in parallel via Shopify AJAX API
-  Promise.all(
-    handles.map(function (handle) {
-      return fetch('/products/' + handle + '.js')
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .catch(function () { return null; });
-    })
-  ).then(function (results) {
+  // ── Fetch all products via Shopify AJAX API ───────────────
+  Promise.all(handles.map(function(handle) {
+    return fetch('/products/' + handle + '.js')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; });
+  })).then(function(results) {
     var products = results.filter(Boolean);
     loadingEl.hidden = true;
 
-    if (products.length === 0) {
-      emptyEl.hidden = false;
-      return;
-    }
+    if (!products.length) { emptyEl.hidden = false; return; }
 
-    tableWrap.hidden = false;
+    metaEl.textContent = products.length + ' product' + (products.length > 1 ? 's' : '');
+    tableWrap.hidden   = false;
     tableWrap.innerHTML = buildTable(products);
 
-    // Wire up Remove buttons
-    tableWrap.querySelectorAll('[data-compare-page-remove]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var removeHandle = btn.getAttribute('data-compare-page-remove');
-        var url  = new URL(window.location.href);
-        var kept = (url.searchParams.get('handles') || '')
-          .split(',').filter(function (h) { return h.trim() && h.trim() !== removeHandle; });
-        if (kept.length === 0) {
-          url.searchParams.delete('handles');
-        } else {
-          url.searchParams.set('handles', kept.join(','));
-        }
+    // Add data-product attr to mobile cells for CSS ::before labels
+    tableWrap.querySelectorAll('tr:not(.compare-row--header)').forEach(function(row) {
+      var cells = row.querySelectorAll('.compare-cell:not(.compare-cell--label)');
+      cells.forEach(function(cell, i) {
+        if (products[i]) cell.setAttribute('data-product', products[i].title);
+      });
+    });
+
+    wireRemoveButtons();
+    wireDiffToggle(products);
+  });
+
+  // ── Remove button ─────────────────────────────────────────
+  function wireRemoveButtons() {
+    tableWrap.querySelectorAll('[data-compare-page-remove]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var h   = btn.getAttribute('data-compare-page-remove');
+        var url = new URL(window.location.href);
+        var kept = (url.searchParams.get('handles') || '').split(',')
+          .filter(function(x){ return x.trim() && x.trim() !== h; });
+        kept.length
+          ? url.searchParams.set('handles', kept.join(','))
+          : url.searchParams.delete('handles');
         window.location.href = url.toString();
       });
     });
-  });
+  }
 
+  // ── Diff mode ─────────────────────────────────────────────
+  function wireDiffToggle(products) {
+    if (products.length < 2) return;
+    diffToggle.hidden = false;
+    var diffOn = false;
+
+    diffToggle.addEventListener('click', function() {
+      diffOn = !diffOn;
+      diffToggle.classList.toggle('is-active', diffOn);
+      diffToggle.querySelector('span').textContent = diffOn ? 'Show all rows' : 'Show differences only';
+      applyDiff(diffOn);
+    });
+  }
+
+  function applyDiff(on) {
+    var rows = tableWrap.querySelectorAll('tbody tr:not(.compare-row--atc)');
+    rows.forEach(function(row) {
+      var cells = Array.from(row.querySelectorAll('.compare-cell:not(.compare-cell--label)'));
+      var label = row.querySelector('.compare-cell--label');
+
+      // Clear previous state
+      cells.forEach(function(c){ c.classList.remove('compare-cell--diff'); });
+      if (label) label.classList.remove('compare-cell--diff-label');
+      row.classList.remove('compare-row--diff-hidden');
+
+      if (!on) return;
+
+      var values = cells.map(function(c){ return c.dataset.rawValue || c.textContent.trim(); });
+      var allSame = values.every(function(v){ return v === values[0]; });
+
+      if (allSame) {
+        row.classList.add('compare-row--diff-hidden');
+      } else {
+        cells.forEach(function(c){ c.classList.add('compare-cell--diff'); });
+        if (label) label.classList.add('compare-cell--diff-label');
+      }
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
   function money(cents) {
     return '$' + (cents / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
-
-  function esc(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function dataCell(content, rawValue) {
+    var raw = rawValue !== undefined ? rawValue : content.replace(/<[^>]+>/g,'').trim();
+    return '<td class="compare-cell" data-raw-value="' + esc(raw) + '">' + content + '</td>';
+  }
+  function labelCell(label) {
+    return '<th class="compare-cell compare-cell--label" scope="row">' + label + '</th>';
   }
 
+  // ── Table builder ─────────────────────────────────────────
   function buildTable(products) {
-    var cols = products.length;
-
-    function labelCell(label) {
-      return '<th class="compare-cell compare-cell--label" scope="row">' + label + '</th>';
-    }
-
     // ── Header row ──
-    var headerCells = products.map(function (p) {
+    var headerCells = products.map(function(p) {
       var img = p.images && p.images[0]
-        ? '<a href="/products/' + p.handle + '" class="compare-product-header__img-link"><img class="compare-product-header__img" src="' + esc(p.images[0]) + '" alt="' + esc(p.title) + '" loading="eager"></a>'
+        ? '<a href="/products/' + p.handle + '" class="compare-product-header__img-link">'
+          + '<img class="compare-product-header__img" src="' + esc(p.images[0]) + '" alt="' + esc(p.title) + '" loading="eager">'
+          + '</a>'
         : '<div class="compare-product-header__img-placeholder"></div>';
 
       var vendor = settings.showVendor && p.vendor
-        ? '<span class="compare-product-header__vendor">' + esc(p.vendor) + '</span>'
-        : '';
+        ? '<span class="compare-product-header__vendor">' + esc(p.vendor) + '</span>' : '';
 
       return '<th class="compare-cell compare-cell--product" scope="col">'
         + '<div class="compare-product-header">'
         + img
         + '<a href="/products/' + p.handle + '" class="compare-product-header__title">' + esc(p.title) + '</a>'
         + vendor
-        + '<button class="compare-product-header__remove" type="button" data-compare-page-remove="' + esc(p.handle) + '" aria-label="Remove ' + esc(p.title) + '">'
-        + '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+        + '<button class="compare-product-header__remove" type="button" data-compare-page-remove="' + esc(p.handle) + '">'
+        + '<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
         + ' Remove</button>'
         + '</div></th>';
     }).join('');
 
-    // ── Price row ──
-    var priceRow = '<tr class="compare-row">'
-      + labelCell('Price')
-      + products.map(function (p) {
+    var rows = '';
+
+    // ── Price ──
+    rows += '<tr class="compare-row">' + labelCell('Price')
+      + products.map(function(p) {
           var v = p.variants && p.variants[0];
-          var price = v ? v.price : p.price;
+          var price = v ? v.price : 0;
           var comp  = v ? v.compare_at_price : null;
+          var html  = '';
           if (comp && comp > price) {
-            return '<td class="compare-cell"><span class="compare-price compare-price--sale">' + money(price) + '</span> <s class="compare-price compare-price--was">' + money(comp) + '</s></td>';
+            var pct = Math.round((comp - price) / comp * 100);
+            html = '<span class="compare-price compare-price--sale">' + money(price) + '</span>'
+                 + '<s class="compare-price compare-price--was">' + money(comp) + '</s>'
+                 + '<span class="compare-save-badge">Save ' + pct + '%</span>';
+          } else {
+            html = '<span class="compare-price">' + money(price) + '</span>';
           }
-          return '<td class="compare-cell"><span class="compare-price">' + money(price) + '</span></td>';
-        }).join('')
-      + '</tr>';
+          return dataCell(html, String(price));
+        }).join('') + '</tr>';
 
-    // ── Availability row ──
-    var availRow = '<tr class="compare-row">'
-      + labelCell('Availability')
-      + products.map(function (p) {
-          var avail = p.available;
-          return '<td class="compare-cell"><span class="compare-badge ' + (avail ? 'compare-badge--in' : 'compare-badge--out') + '">' + (avail ? 'In stock' : 'Sold out') + '</span></td>';
-        }).join('')
-      + '</tr>';
+    // ── Availability ──
+    rows += '<tr class="compare-row">' + labelCell('Availability')
+      + products.map(function(p) {
+          var a = p.available;
+          return dataCell('<span class="compare-badge ' + (a ? 'compare-badge--in' : 'compare-badge--out') + '">' + (a ? 'In stock' : 'Sold out') + '</span>', String(a));
+        }).join('') + '</tr>';
 
-    // ── Vendor row ──
-    var vendorRow = settings.showVendor ? '<tr class="compare-row">'
-      + labelCell('Vendor')
-      + products.map(function (p) { return '<td class="compare-cell">' + esc(p.vendor || '—') + '</td>'; }).join('')
-      + '</tr>' : '';
+    // ── Vendor ──
+    if (settings.showVendor) {
+      rows += '<tr class="compare-row">' + labelCell('Vendor')
+        + products.map(function(p){ return dataCell(esc(p.vendor || '—')); }).join('') + '</tr>';
+    }
 
-    // ── Type row ──
-    var typeRow = settings.showType ? '<tr class="compare-row">'
-      + labelCell('Type')
-      + products.map(function (p) { return '<td class="compare-cell">' + esc(p.product_type || '—') + '</td>'; }).join('')
-      + '</tr>' : '';
+    // ── Type ──
+    if (settings.showType) {
+      rows += '<tr class="compare-row">' + labelCell('Type')
+        + products.map(function(p){ return dataCell(esc(p.product_type || '—')); }).join('') + '</tr>';
+    }
 
-    // ── SKU row ──
-    var skuRow = settings.showSku ? '<tr class="compare-row">'
-      + labelCell('SKU')
-      + products.map(function (p) {
-          var sku = p.variants && p.variants[0] && p.variants[0].sku;
-          return '<td class="compare-cell">' + esc(sku || '—') + '</td>';
-        }).join('')
-      + '</tr>' : '';
+    // ── SKU ──
+    if (settings.showSku) {
+      rows += '<tr class="compare-row">' + labelCell('SKU')
+        + products.map(function(p) {
+            var sku = p.variants && p.variants[0] && p.variants[0].sku;
+            return dataCell(esc(sku || '—'));
+          }).join('') + '</tr>';
+    }
 
-    // ── Weight row ──
-    var weightRow = settings.showWeight ? '<tr class="compare-row">'
-      + labelCell('Weight')
-      + products.map(function (p) {
-          var w = p.variants && p.variants[0] && p.variants[0].weight;
-          return '<td class="compare-cell">' + (w ? w + ' ' + (p.variants[0].weight_unit || 'kg') : '—') + '</td>';
-        }).join('')
-      + '</tr>' : '';
+    // ── Weight ──
+    if (settings.showWeight) {
+      rows += '<tr class="compare-row">' + labelCell('Weight')
+        + products.map(function(p) {
+            var v = p.variants && p.variants[0];
+            var w = v && v.weight;
+            return dataCell(w ? esc(w + ' ' + (v.weight_unit || 'kg')) : '—', String(w || ''));
+          }).join('') + '</tr>';
+    }
 
-    // ── Description row ──
-    var descRow = settings.showDescription ? '<tr class="compare-row">'
-      + labelCell('Description')
-      + products.map(function (p) {
-          var d = p.description ? p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g,' ').trim().slice(0, 200) + '…' : '—';
-          return '<td class="compare-cell compare-cell--description"><div class="compare-description">' + esc(d) + '</div></td>';
-        }).join('')
-      + '</tr>' : '';
+    // ── Options / variants (e.g. Color, Size) ──
+    if (settings.showOptions) {
+      // Collect all option names across products
+      var allOptionNames = [];
+      products.forEach(function(p) {
+        (p.options || []).forEach(function(opt) {
+          if (allOptionNames.indexOf(opt.name) === -1) allOptionNames.push(opt.name);
+        });
+      });
 
-    // ── ATC row ──
-    var atcRow = '<tr class="compare-row compare-row--atc">'
+      allOptionNames.forEach(function(optName) {
+        rows += '<tr class="compare-row">' + labelCell(esc(optName))
+          + products.map(function(p) {
+              var opt = (p.options || []).find(function(o){ return o.name === optName; });
+              if (!opt || !opt.values || !opt.values.length) return dataCell('—', '');
+              var vals = opt.values.map(function(v){ return '<span class="compare-option-val">' + esc(v) + '</span>'; }).join('');
+              return dataCell('<div class="compare-option-vals">' + vals + '</div>', opt.values.join(', '));
+            }).join('') + '</tr>';
+      });
+    }
+
+    // ── Tags ──
+    if (settings.showTags) {
+      rows += '<tr class="compare-row">' + labelCell('Tags')
+        + products.map(function(p) {
+            var tags = p.tags || [];
+            if (!tags.length) return dataCell('—', '');
+            var pills = tags.slice(0, 8).map(function(t){ return '<span class="compare-tag">' + esc(t) + '</span>'; }).join('');
+            return dataCell('<div class="compare-tags">' + pills + '</div>', tags.join(', '));
+          }).join('') + '</tr>';
+    }
+
+    // ── Description ──
+    if (settings.showDescription) {
+      rows += '<tr class="compare-row">' + labelCell('Description')
+        + products.map(function(p) {
+            var d = p.description
+              ? p.description.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0, 220) + '…'
+              : '—';
+            return dataCell('<div class="compare-description">' + esc(d) + '</div>', d);
+          }).join('') + '</tr>';
+    }
+
+    // ── Add to cart ──
+    rows += '<tr class="compare-row compare-row--atc">'
       + '<th class="compare-cell compare-cell--label" scope="row"></th>'
-      + products.map(function (p) {
+      + products.map(function(p) {
           var v = p.variants && p.variants[0];
           if (p.available && v) {
             return '<td class="compare-cell compare-cell--atc">'
-              + '<button class="btn btn--primary compare-atc-btn" type="button" data-atc-btn data-variant-id="' + v.id + '" data-product-title="' + esc(p.title) + '">'
+              + '<button class="btn btn--primary compare-atc-btn" type="button" data-atc-btn'
+              + ' data-variant-id="' + v.id + '" data-product-title="' + esc(p.title) + '">'
               + '<span class="card-product__atc-label">Add to cart</span></button></td>';
           }
           return '<td class="compare-cell compare-cell--atc"><button class="btn btn--secondary" disabled>Sold out</button></td>';
-        }).join('')
-      + '</tr>';
+        }).join('') + '</tr>';
 
     return '<table class="compare-table">'
       + '<thead><tr class="compare-row compare-row--header">'
       + '<th class="compare-cell compare-cell--label" aria-label="Feature"></th>'
-      + headerCells
-      + '</tr></thead>'
-      + '<tbody>'
-      + priceRow + availRow + vendorRow + typeRow + skuRow + weightRow + descRow + atcRow
-      + '</tbody></table>';
+      + headerCells + '</tr></thead>'
+      + '<tbody>' + rows + '</tbody></table>';
   }
+
 })();
 </script>
 
@@ -241,18 +329,17 @@
     {
       "type": "range",
       "id": "max_products",
-      "min": 2,
-      "max": 5,
-      "step": 1,
-      "default": 5,
+      "min": 2, "max": 5, "step": 1, "default": 5,
       "label": "Max products to compare"
     },
     { "type": "header", "content": "Rows to show" },
-    { "type": "checkbox", "id": "show_vendor",      "label": "Vendor",      "default": true  },
-    { "type": "checkbox", "id": "show_type",        "label": "Type",        "default": true  },
-    { "type": "checkbox", "id": "show_sku",         "label": "SKU",         "default": true  },
-    { "type": "checkbox", "id": "show_description", "label": "Description", "default": true  },
-    { "type": "checkbox", "id": "show_weight",      "label": "Weight",      "default": false }
+    { "type": "checkbox", "id": "show_vendor",      "label": "Vendor",           "default": true  },
+    { "type": "checkbox", "id": "show_type",        "label": "Type",             "default": true  },
+    { "type": "checkbox", "id": "show_sku",         "label": "SKU",              "default": true  },
+    { "type": "checkbox", "id": "show_options",     "label": "Options / variants","default": true  },
+    { "type": "checkbox", "id": "show_tags",        "label": "Tags",             "default": true  },
+    { "type": "checkbox", "id": "show_description", "label": "Description",      "default": true  },
+    { "type": "checkbox", "id": "show_weight",      "label": "Weight",           "default": false }
   ]
 }
 {% endschema %}

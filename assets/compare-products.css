@@ -1,0 +1,451 @@
+/* ============================================================
+   compare-products.css
+   ============================================================ */
+
+/* ── Section shell ───────────────────────────────────────── */
+.compare-section {
+  padding-block: 2rem 5rem;
+}
+
+/* ── Page header ─────────────────────────────────────────── */
+.compare-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-bottom: 2rem;
+}
+.compare-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: inherit;
+  opacity: 0.45;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.compare-header__back:hover { opacity: 1; }
+.compare-header__title {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.compare-header__meta {
+  margin: 0 0 0 auto;
+  font-size: 0.8rem;
+  opacity: 0.45;
+}
+
+/* ── Diff toggle pill ────────────────────────────────────── */
+.compare-diff-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid var(--color-border, rgba(0,0,0,0.15));
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.compare-diff-toggle:hover {
+  background: var(--color-background-secondary, rgba(0,0,0,0.04));
+}
+.compare-diff-toggle.is-active {
+  background: var(--color-foreground, #111);
+  color: var(--color-background, #fff);
+  border-color: var(--color-foreground, #111);
+}
+.compare-diff-toggle__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.compare-diff-toggle.is-active .compare-diff-toggle__dot { opacity: 1; }
+
+/* ── Loading ─────────────────────────────────────────────── */
+.compare-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 5rem 1rem;
+  font-size: 0.9rem;
+  opacity: 0.5;
+}
+.compare-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: compare-spin 0.7s linear infinite;
+}
+@keyframes compare-spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.compare-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 5rem 1rem;
+  text-align: center;
+  opacity: 0.6;
+}
+.compare-empty p { margin: 0; font-size: 1rem; }
+
+/* ── Scrollable wrapper ──────────────────────────────────── */
+.compare-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1.5px solid var(--color-border, rgba(0,0,0,0.1));
+  border-radius: 16px;
+  /* subtle shadow for depth */
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+
+/* ── Table base ──────────────────────────────────────────── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* ── Sticky label column ─────────────────────────────────── */
+.compare-cell--label {
+  width: 8.5rem;
+  min-width: 7rem;
+  padding: 0.85rem 0.75rem 0.85rem 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-foreground, #111);
+  opacity: 0.4;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: var(--color-background, #fff);
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  border-right: 1.5px solid var(--color-border, rgba(0,0,0,0.07));
+}
+
+/* ── Product header cells ────────────────────────────────── */
+.compare-cell--product {
+  min-width: 200px;
+  padding: 1.5rem 1.25rem 1.25rem;
+  vertical-align: top;
+  border-left: 1px solid var(--color-border, rgba(0,0,0,0.07));
+  background: var(--color-background, #fff);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* ── Data cells ──────────────────────────────────────────── */
+.compare-cell {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  vertical-align: middle;
+  border-top: 1px solid var(--color-border, rgba(0,0,0,0.06));
+  border-left: 1px solid var(--color-border, rgba(0,0,0,0.06));
+  transition: background 0.2s;
+}
+.compare-cell:first-child { border-left: none; }
+
+/* Alternating rows */
+.compare-row:nth-child(even) .compare-cell {
+  background: var(--color-background-secondary, rgba(0,0,0,0.018));
+}
+.compare-row:nth-child(even) .compare-cell--label {
+  background: var(--color-background-secondary, rgba(0,0,0,0.018));
+}
+
+/* ── Difference highlight ────────────────────────────────── */
+/* Applied by JS when diff mode is on and values differ */
+.compare-cell--diff {
+  background: #fffbeb !important;
+  border-top-color: #f59e0b33;
+}
+.compare-cell--diff-label {
+  opacity: 1 !important;
+  color: #b45309 !important;
+  background: #fffbeb !important;
+}
+/* Rows where all values are identical get dimmed in diff mode */
+.compare-row--same-hidden .compare-cell,
+.compare-row--same-hidden .compare-cell--label {
+  opacity: 0.35;
+}
+
+/* ── Product header card ─────────────────────────────────── */
+.compare-product-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+.compare-product-header__img-link {
+  display: block;
+  width: 100%;
+  max-width: 130px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-background-secondary, #f5f5f5);
+  transition: transform 0.2s;
+}
+.compare-product-header__img-link:hover { transform: scale(1.03); }
+.compare-product-header__img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  display: block;
+  padding: 0.5rem;
+}
+.compare-product-header__img-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--color-background-secondary, #f3f3f3);
+}
+.compare-product-header__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1.3;
+}
+.compare-product-header__title:hover { text-decoration: underline; }
+.compare-product-header__vendor {
+  font-size: 0.72rem;
+  opacity: 0.45;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.compare-product-header__remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.35;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  transition: opacity 0.15s, background 0.15s;
+  color: inherit;
+  margin-top: 0.1rem;
+}
+.compare-product-header__remove:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.06);
+}
+
+/* ── Price ───────────────────────────────────────────────── */
+.compare-price {
+  display: block;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.compare-price--sale { color: var(--color-sale, #dc2626); }
+.compare-price--was {
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.45;
+  display: block;
+  text-decoration: line-through;
+}
+.compare-save-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15em 0.5em;
+  border-radius: 4px;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Availability ────────────────────────────────────────── */
+.compare-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25em 0.7em;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.compare-badge::before {
+  content: '';
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.compare-badge--in  { background: #dcfce7; color: #16a34a; }
+.compare-badge--out { background: #fee2e2; color: #dc2626; }
+
+/* ── Tags ────────────────────────────────────────────────── */
+.compare-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.compare-tag {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.15em 0.55em;
+  border-radius: 4px;
+  background: var(--color-background-secondary, rgba(0,0,0,0.06));
+  opacity: 0.7;
+}
+
+/* ── Variants / options ──────────────────────────────────── */
+.compare-options { display: flex; flex-direction: column; gap: 0.4rem; }
+.compare-option-row { font-size: 0.8rem; }
+.compare-option-name { font-weight: 600; opacity: 0.6; margin-right: 0.3rem; }
+.compare-option-vals {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.compare-option-val {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1em 0.45em;
+  border-radius: 3px;
+  border: 1px solid var(--color-border, rgba(0,0,0,0.15));
+}
+
+/* ── Description ─────────────────────────────────────────── */
+.compare-cell--description { vertical-align: top; }
+.compare-description {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  opacity: 0.65;
+  max-width: 280px;
+}
+
+/* ── ATC row ─────────────────────────────────────────────── */
+.compare-row--atc .compare-cell {
+  padding-block: 1.25rem;
+  border-top: 2px solid var(--color-border, rgba(0,0,0,0.1));
+  vertical-align: middle;
+}
+.compare-atc-btn { width: 100%; }
+
+/* ── Hidden rows (diff mode) ─────────────────────────────── */
+.compare-row--diff-hidden {
+  display: none;
+}
+
+/* ── Mobile: card stack instead of wide table ────────────── */
+@media (max-width: 680px) {
+  .compare-table-wrap {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .compare-table,
+  .compare-table thead,
+  .compare-table tbody,
+  .compare-table tr,
+  .compare-table th,
+  .compare-table td {
+    display: block;
+    width: 100%;
+  }
+  /* hide the label column header on mobile */
+  .compare-row--header .compare-cell--label { display: none; }
+
+  /* product header cells become full-width cards */
+  .compare-row--header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .compare-cell--product {
+    position: static;
+    border: 1.5px solid var(--color-border, rgba(0,0,0,0.1));
+    border-radius: 12px;
+    min-width: 0;
+    padding: 1rem;
+  }
+
+  /* each data row becomes a labeled mini-card per product */
+  .compare-row:not(.compare-row--header):not(.compare-row--atc) {
+    border: 1px solid var(--color-border, rgba(0,0,0,0.08));
+    border-radius: 10px;
+    margin-bottom: 0.6rem;
+    overflow: hidden;
+    padding: 0;
+  }
+  .compare-cell--label {
+    position: static;
+    display: block;
+    width: 100%;
+    background: var(--color-background-secondary, rgba(0,0,0,0.03));
+    border-right: none;
+    border-bottom: 1px solid var(--color-border, rgba(0,0,0,0.08));
+    padding: 0.5rem 1rem;
+    white-space: normal;
+  }
+  .compare-cell {
+    display: grid;
+    grid-template-columns: 1fr;
+    border-left: none;
+    border-top: 1px solid var(--color-border, rgba(0,0,0,0.06));
+    padding: 0.6rem 1rem;
+  }
+  /* label each data cell with product title via data attr */
+  .compare-cell[data-product]::before {
+    content: attr(data-product);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    opacity: 0.4;
+    margin-bottom: 0.2rem;
+  }
+
+  /* ATC row */
+  .compare-row--atc {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    border: none;
+  }
+  .compare-row--atc .compare-cell--label { display: none; }
+  .compare-row--atc .compare-cell {
+    border: none;
+    padding: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .compare-cell--label { width: 100%; min-width: 0; }
+}
