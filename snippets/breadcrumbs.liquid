@@ -1,16 +1,12 @@
 {%- liquid
   assign primary_collection = collection
-  assign parent_collection = nil
-
-  if primary_collection == nil and product.collections.size > 0
-    assign primary_collection = product.collections.last
-  endif
+  assign best_parent = nil
+  assign largest_count = 0
 
   for col in product.collections
-    if col.handle contains 'electric-scooters' or col.handle contains 'e-scooters' or col.handle contains 'scooters'
-      unless col.handle == primary_collection.handle
-        assign parent_collection = col
-      endunless
+    if col.handle != primary_collection.handle and col.all_products_count > largest_count
+      assign best_parent = col
+      assign largest_count = col.all_products_count
     endif
   endfor
 -%}
@@ -20,9 +16,9 @@
 
     <a href="/">Home</a>
 
-    {%- if parent_collection -%}
+    {%- if best_parent -%}
       <span class="breadcrumb-divider" aria-hidden="true"><span class="divider-line"></span></span>
-      <a href="{{ parent_collection.url }}">{{ parent_collection.title }}</a>
+      <a href="{{ best_parent.url }}">{{ best_parent.title }}</a>
     {%- endif -%}
 
     {%- if primary_collection -%}
