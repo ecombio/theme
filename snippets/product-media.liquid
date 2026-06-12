@@ -1,32 +1,106 @@
-{{ 'product-media.css' | asset_url | stylesheet_tag }}
+<div class="product-gallery" id="ProductGallery">
 
-<div class="product-images">
+  {%- if product.images.size > 1 -%}
+  <div class="product-thumbnails">
+    <div class="thumbnail-container">
+      {%- for image in product.images -%}
+      <div class="thumbnail-item{% if forloop.first %} active{% endif %}"
+           data-index="{{ forloop.index0 }}"
+           data-image-src="{{ image | image_url: width: 787, height: 787 }}"
+           data-image-alt="{{ image.alt | default: product.title | escape }}"
+           tabindex="0"
+           role="button"
+           aria-label="View image {{ forloop.index }}"
+           aria-pressed="{{ forloop.first | json }}">
+        <div class="thumbnail-wrapper">
+          <img
+            src="{{ image | image_url: width: 84, height: 84, crop: 'center' }}"
+            alt="{{ image.alt | default: product.title | escape }}"
+            width="84"
+            height="84"
+            loading="lazy"
+            class="thumbnail-image"
+          >
+        </div>
+      </div>
+      {%- endfor -%}
+    </div>
+  </div>
+  {%- endif -%}
 
-  <!-- Main Image -->
-  <div class="main-image-wrapper">
-    {% assign featured = product.selected_or_first_available_variant.featured_image | default: product.featured_image | default: product.images.first %}
-    <img
-      src="{{ featured | image_url: width: 900 }}"
-      alt="{{ featured.alt | escape }}"
-      class="main-product-image"
-      id="main-product-image"
-    >
+  <div class="product-gallery-main">
+    <div class="gallery-viewer" id="GalleryViewer">
+      <div class="main-image-container" id="MainImage">
+        {%- assign featured = product.selected_or_first_available_variant.featured_image | default: product.featured_image -%}
+        <img
+          src="{{ featured | image_url: width: 787, height: 787 }}"
+          alt="{{ featured.alt | default: product.title | escape }}"
+          width="787"
+          height="787"
+          loading="eager"
+          class="main-image"
+          id="FeaturedImage"
+        >
+      </div>
+    </div>
   </div>
 
-  <!-- Vertical Thumbnails -->
-  {% if product.images.size > 1 %}
-    <div class="vertical-thumbnails" id="vertical-thumbnails">
-      {% for image in product.images %}
-        <img
-          src="{{ image | image_url: width: 120 }}"
-          alt="{{ image.alt | escape }}"
-          class="thumbnail{% if image == featured %} active{% endif %}"
-          data-media-id="{{ image.id }}"
-          data-full-image="{{ image | image_url: width: 900 }}"
-          data-alt="{{ image.alt | escape }}"
-        >
-      {% endfor %}
-    </div>
-  {% endif %}
-
 </div>
+
+<script>
+(function () {
+  var gallery = document.getElementById('ProductGallery');
+  if (!gallery) return;
+
+  var featuredImg = document.getElementById('FeaturedImage');
+  var thumbnails  = gallery.querySelectorAll('.thumbnail-item');
+
+  // ── Thumbnail selection ──────────────────────────────────────────────────
+  function selectThumbnail(thumb) {
+    thumbnails.forEach(function (t) {
+      t.classList.remove('active');
+      t.setAttribute('aria-pressed', 'false');
+    });
+    thumb.classList.add('active');
+    thumb.setAttribute('aria-pressed', 'true');
+    var src = thumb.dataset.imageSrc;
+    var alt = thumb.dataset.imageAlt;
+    if (src && featuredImg) {
+      featuredImg.src = src;
+      featuredImg.alt = alt;
+    }
+  }
+
+  thumbnails.forEach(function (thumb) {
+    thumb.addEventListener('click', function () { selectThumbnail(this); });
+    thumb.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectThumbnail(this);
+      }
+    });
+  });
+
+  document.addEventListener('variant:changed', function (e) {
+    var variant = e.detail && e.detail.variant;
+    if (!variant || !variant.featured_image) return;
+    var matchIndex = variant.featured_image.position - 1;
+    thumbnails.forEach(function (t, i) {
+      if (i === matchIndex) selectThumbnail(t);
+    });
+  });
+
+  // ── Sync thumbnail column height to gallery viewer ───────────────────────
+  var viewer     = document.getElementById('GalleryViewer');
+  var thumbCol   = gallery.querySelector('.product-thumbnails');
+
+  if (viewer && thumbCol) {
+    function syncHeight() {
+      var h = viewer.getBoundingClientRect().height;
+      if (h > 0) gallery.style.setProperty('--gallery-height', h + 'px');
+    }
+    syncHeight();
+    new ResizeObserver(syncHeight).observe(viewer);
+  }
+})();
+</script>
