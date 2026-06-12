@@ -3,35 +3,22 @@
 {%- comment -%}
   Section: compare-products
   URL shape: /pages/compare?handles=handle-a,handle-b,handle-c
-  Uses all_products[handle] — the only valid Liquid product lookup by handle.
-  NOTE: for loops cannot live inside {%- liquid -%} blocks; they must be standalone.
+
+  Strategy: all_products[handle] is unreliable on page templates.
+  Instead we render a loading shell and fetch each product via
+  /products/{handle}.js (Shopify AJAX API — no auth needed).
 {%- endcomment -%}
 
 {%- liquid
-  assign max_products      = section.settings.max_products      | default: 5
-  assign show_vendor       = section.settings.show_vendor       | default: true
-  assign show_description  = section.settings.show_description  | default: true
-  assign show_sku          = section.settings.show_sku          | default: true
-  assign show_availability = section.settings.show_availability | default: true
-  assign show_price        = section.settings.show_price        | default: true
-  assign show_type         = section.settings.show_type         | default: true
-  assign show_weight       = section.settings.show_weight       | default: false
-
-  assign raw_handles = request.query_string | split: 'handles=' | last | split: '&' | first
-  assign handle_list = raw_handles | split: ','
-  assign products    = '' | split: ''
+  assign max_products     = section.settings.max_products     | default: 5
+  assign show_vendor      = section.settings.show_vendor      | default: true
+  assign show_description = section.settings.show_description | default: true
+  assign show_sku         = section.settings.show_sku         | default: true
+  assign show_type        = section.settings.show_type        | default: true
+  assign show_weight      = section.settings.show_weight      | default: false
 -%}
 
-{%- comment -%} Build products array — for loop MUST be outside liquid tag {%- endcomment -%}
-{%- for handle_raw in handle_list limit: 5 -%}
-  {%- assign h = handle_raw | strip -%}
-  {%- assign looked_up = all_products[h] -%}
-  {%- if looked_up.id -%}
-    {%- assign products = products | concat: looked_up -%}
-  {%- endif -%}
-{%- endfor -%}
-
-<section class="compare-section page-width">
+<section class="compare-section page-width" id="compare-section">
 
   <header class="compare-header">
     <a href="javascript:history.back()" class="compare-header__back">
@@ -41,200 +28,210 @@
       Back
     </a>
     <h1 class="compare-header__title">Compare products</h1>
-    {%- if products.size > 0 -%}
-      <p class="compare-header__count">{{ products.size }} of {{ max_products }}</p>
-    {%- endif -%}
   </header>
 
-  {%- if products.size == 0 -%}
+  <div id="compare-loading" class="compare-loading" aria-live="polite">
+    <div class="compare-spinner"></div>
+    Loading products…
+  </div>
 
-    <div class="compare-empty">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-        <rect x="6" y="10" width="14" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/>
-        <rect x="28" y="10" width="14" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/>
-        <path d="M20 24h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-      <p>No products to compare. Select some from the collection first.</p>
-      <a href="/collections/all" class="btn btn--primary">Browse products</a>
-    </div>
+  <div id="compare-empty" class="compare-empty" hidden>
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <rect x="6" y="10" width="14" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/>
+      <rect x="28" y="10" width="14" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M20 24h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <p>No products to compare. Select some from the collection first.</p>
+    <a href="/collections/all" class="btn btn--primary">Browse products</a>
+  </div>
 
-  {%- else -%}
-
-    <div class="compare-table-wrap">
-      <table class="compare-table">
-
-        <thead>
-          <tr class="compare-row compare-row--header">
-            <th class="compare-cell compare-cell--label" aria-label="Feature"></th>
-            {%- for p in products -%}
-              <th class="compare-cell compare-cell--product" scope="col">
-                <div class="compare-product-header">
-                  <a href="{{ p.url }}" class="compare-product-header__img-link">
-                    {%- if p.featured_image -%}
-                      {{
-                        p.featured_image
-                        | image_url: width: 300
-                        | image_tag:
-                          class: 'compare-product-header__img',
-                          loading: 'eager',
-                          widths: '150, 200, 300',
-                          alt: p.featured_image.alt | escape
-                      }}
-                    {%- else -%}
-                      <div class="compare-product-header__img-placeholder"></div>
-                    {%- endif -%}
-                  </a>
-                  <a href="{{ p.url }}" class="compare-product-header__title">{{ p.title }}</a>
-                  {%- if show_vendor and p.vendor != blank -%}
-                    <span class="compare-product-header__vendor">{{ p.vendor }}</span>
-                  {%- endif -%}
-                  <button
-                    class="compare-product-header__remove"
-                    type="button"
-                    aria-label="Remove {{ p.title | escape }} from comparison"
-                    data-compare-page-remove="{{ p.handle }}"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                      <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                    </svg>
-                    Remove
-                  </button>
-                </div>
-              </th>
-            {%- endfor -%}
-          </tr>
-        </thead>
-
-        <tbody>
-
-          {%- if show_price -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">Price</th>
-              {%- for p in products -%}
-                <td class="compare-cell">
-                  {%- if p.compare_at_price > p.price -%}
-                    <span class="compare-price compare-price--sale">{{ p.price | money }}</span>
-                    <s class="compare-price compare-price--was">{{ p.compare_at_price | money }}</s>
-                  {%- else -%}
-                    <span class="compare-price">{{ p.price | money }}</span>
-                  {%- endif -%}
-                </td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          {%- if show_availability -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">Availability</th>
-              {%- for p in products -%}
-                <td class="compare-cell">
-                  {%- if p.available -%}
-                    <span class="compare-badge compare-badge--in">In stock</span>
-                  {%- else -%}
-                    <span class="compare-badge compare-badge--out">Sold out</span>
-                  {%- endif -%}
-                </td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          {%- if show_vendor -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">Vendor</th>
-              {%- for p in products -%}
-                <td class="compare-cell">{{ p.vendor | default: '—' }}</td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          {%- if show_type -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">Type</th>
-              {%- for p in products -%}
-                <td class="compare-cell">{{ p.type | default: '—' }}</td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          {%- if show_sku -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">SKU</th>
-              {%- for p in products -%}
-                <td class="compare-cell">{{ p.variants.first.sku | default: '—' }}</td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          {%- if show_weight -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">Weight</th>
-              {%- for p in products -%}
-                <td class="compare-cell">
-                  {%- assign w = p.variants.first.weight -%}
-                  {%- if w > 0 -%}{{ w | weight_with_unit }}{%- else -%}—{%- endif -%}
-                </td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          {%- if show_description -%}
-            <tr class="compare-row">
-              <th class="compare-cell compare-cell--label" scope="row">Description</th>
-              {%- for p in products -%}
-                <td class="compare-cell compare-cell--description">
-                  {%- if p.description != blank -%}
-                    <div class="compare-description rte">{{ p.description | truncatewords: 40 }}</div>
-                  {%- else -%}—{%- endif -%}
-                </td>
-              {%- endfor -%}
-            </tr>
-          {%- endif -%}
-
-          <tr class="compare-row compare-row--atc">
-            <th class="compare-cell compare-cell--label" scope="row"></th>
-            {%- for p in products -%}
-              <td class="compare-cell compare-cell--atc">
-                {%- if p.available -%}
-                  <button
-                    class="btn btn--primary compare-atc-btn"
-                    type="button"
-                    data-atc-btn
-                    data-variant-id="{{ p.variants.first.id }}"
-                    data-product-title="{{ p.title | escape }}"
-                  >
-                    <span class="card-product__atc-label">Add to cart</span>
-                  </button>
-                {%- else -%}
-                  <button class="btn btn--secondary" disabled aria-disabled="true">Sold out</button>
-                {%- endif -%}
-              </td>
-            {%- endfor -%}
-          </tr>
-
-        </tbody>
-      </table>
-    </div>
-
-  {%- endif -%}
+  <div id="compare-table-wrap" class="compare-table-wrap" hidden></div>
 
 </section>
 
 <script>
-  document.querySelectorAll('[data-compare-page-remove]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var removeHandle = btn.getAttribute('data-compare-page-remove');
-      var url     = new URL(window.location.href);
-      var handles = (url.searchParams.get('handles') || '')
-        .split(',')
-        .filter(function (h) { return h && h.trim() !== removeHandle; });
-      if (handles.length === 0) {
-        url.searchParams.delete('handles');
-      } else {
-        url.searchParams.set('handles', handles.join(','));
-      }
-      window.location.href = url.toString();
+(function () {
+  var settings = {
+    showVendor     : {{ show_vendor      | json }},
+    showDescription: {{ show_description | json }},
+    showSku        : {{ show_sku         | json }},
+    showType       : {{ show_type        | json }},
+    showWeight     : {{ show_weight      | json }}
+  };
+
+  var loadingEl  = document.getElementById('compare-loading');
+  var emptyEl    = document.getElementById('compare-empty');
+  var tableWrap  = document.getElementById('compare-table-wrap');
+
+  // Parse handles from URL
+  var params  = new URLSearchParams(window.location.search);
+  var raw     = params.get('handles') || '';
+  var handles = raw.split(',').map(function (h) { return h.trim(); }).filter(Boolean);
+
+  if (handles.length === 0) {
+    loadingEl.hidden = true;
+    emptyEl.hidden   = false;
+    return;
+  }
+
+  // Fetch all products in parallel via Shopify AJAX API
+  Promise.all(
+    handles.map(function (handle) {
+      return fetch('/products/' + handle + '.js')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    })
+  ).then(function (results) {
+    var products = results.filter(Boolean);
+    loadingEl.hidden = true;
+
+    if (products.length === 0) {
+      emptyEl.hidden = false;
+      return;
+    }
+
+    tableWrap.hidden = false;
+    tableWrap.innerHTML = buildTable(products);
+
+    // Wire up Remove buttons
+    tableWrap.querySelectorAll('[data-compare-page-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var removeHandle = btn.getAttribute('data-compare-page-remove');
+        var url  = new URL(window.location.href);
+        var kept = (url.searchParams.get('handles') || '')
+          .split(',').filter(function (h) { return h.trim() && h.trim() !== removeHandle; });
+        if (kept.length === 0) {
+          url.searchParams.delete('handles');
+        } else {
+          url.searchParams.set('handles', kept.join(','));
+        }
+        window.location.href = url.toString();
+      });
     });
   });
+
+  function money(cents) {
+    return '$' + (cents / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function buildTable(products) {
+    var cols = products.length;
+
+    function labelCell(label) {
+      return '<th class="compare-cell compare-cell--label" scope="row">' + label + '</th>';
+    }
+
+    // ── Header row ──
+    var headerCells = products.map(function (p) {
+      var img = p.images && p.images[0]
+        ? '<a href="/products/' + p.handle + '" class="compare-product-header__img-link"><img class="compare-product-header__img" src="' + esc(p.images[0]) + '" alt="' + esc(p.title) + '" loading="eager"></a>'
+        : '<div class="compare-product-header__img-placeholder"></div>';
+
+      var vendor = settings.showVendor && p.vendor
+        ? '<span class="compare-product-header__vendor">' + esc(p.vendor) + '</span>'
+        : '';
+
+      return '<th class="compare-cell compare-cell--product" scope="col">'
+        + '<div class="compare-product-header">'
+        + img
+        + '<a href="/products/' + p.handle + '" class="compare-product-header__title">' + esc(p.title) + '</a>'
+        + vendor
+        + '<button class="compare-product-header__remove" type="button" data-compare-page-remove="' + esc(p.handle) + '" aria-label="Remove ' + esc(p.title) + '">'
+        + '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+        + ' Remove</button>'
+        + '</div></th>';
+    }).join('');
+
+    // ── Price row ──
+    var priceRow = '<tr class="compare-row">'
+      + labelCell('Price')
+      + products.map(function (p) {
+          var v = p.variants && p.variants[0];
+          var price = v ? v.price : p.price;
+          var comp  = v ? v.compare_at_price : null;
+          if (comp && comp > price) {
+            return '<td class="compare-cell"><span class="compare-price compare-price--sale">' + money(price) + '</span> <s class="compare-price compare-price--was">' + money(comp) + '</s></td>';
+          }
+          return '<td class="compare-cell"><span class="compare-price">' + money(price) + '</span></td>';
+        }).join('')
+      + '</tr>';
+
+    // ── Availability row ──
+    var availRow = '<tr class="compare-row">'
+      + labelCell('Availability')
+      + products.map(function (p) {
+          var avail = p.available;
+          return '<td class="compare-cell"><span class="compare-badge ' + (avail ? 'compare-badge--in' : 'compare-badge--out') + '">' + (avail ? 'In stock' : 'Sold out') + '</span></td>';
+        }).join('')
+      + '</tr>';
+
+    // ── Vendor row ──
+    var vendorRow = settings.showVendor ? '<tr class="compare-row">'
+      + labelCell('Vendor')
+      + products.map(function (p) { return '<td class="compare-cell">' + esc(p.vendor || '—') + '</td>'; }).join('')
+      + '</tr>' : '';
+
+    // ── Type row ──
+    var typeRow = settings.showType ? '<tr class="compare-row">'
+      + labelCell('Type')
+      + products.map(function (p) { return '<td class="compare-cell">' + esc(p.product_type || '—') + '</td>'; }).join('')
+      + '</tr>' : '';
+
+    // ── SKU row ──
+    var skuRow = settings.showSku ? '<tr class="compare-row">'
+      + labelCell('SKU')
+      + products.map(function (p) {
+          var sku = p.variants && p.variants[0] && p.variants[0].sku;
+          return '<td class="compare-cell">' + esc(sku || '—') + '</td>';
+        }).join('')
+      + '</tr>' : '';
+
+    // ── Weight row ──
+    var weightRow = settings.showWeight ? '<tr class="compare-row">'
+      + labelCell('Weight')
+      + products.map(function (p) {
+          var w = p.variants && p.variants[0] && p.variants[0].weight;
+          return '<td class="compare-cell">' + (w ? w + ' ' + (p.variants[0].weight_unit || 'kg') : '—') + '</td>';
+        }).join('')
+      + '</tr>' : '';
+
+    // ── Description row ──
+    var descRow = settings.showDescription ? '<tr class="compare-row">'
+      + labelCell('Description')
+      + products.map(function (p) {
+          var d = p.description ? p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g,' ').trim().slice(0, 200) + '…' : '—';
+          return '<td class="compare-cell compare-cell--description"><div class="compare-description">' + esc(d) + '</div></td>';
+        }).join('')
+      + '</tr>' : '';
+
+    // ── ATC row ──
+    var atcRow = '<tr class="compare-row compare-row--atc">'
+      + '<th class="compare-cell compare-cell--label" scope="row"></th>'
+      + products.map(function (p) {
+          var v = p.variants && p.variants[0];
+          if (p.available && v) {
+            return '<td class="compare-cell compare-cell--atc">'
+              + '<button class="btn btn--primary compare-atc-btn" type="button" data-atc-btn data-variant-id="' + v.id + '" data-product-title="' + esc(p.title) + '">'
+              + '<span class="card-product__atc-label">Add to cart</span></button></td>';
+          }
+          return '<td class="compare-cell compare-cell--atc"><button class="btn btn--secondary" disabled>Sold out</button></td>';
+        }).join('')
+      + '</tr>';
+
+    return '<table class="compare-table">'
+      + '<thead><tr class="compare-row compare-row--header">'
+      + '<th class="compare-cell compare-cell--label" aria-label="Feature"></th>'
+      + headerCells
+      + '</tr></thead>'
+      + '<tbody>'
+      + priceRow + availRow + vendorRow + typeRow + skuRow + weightRow + descRow + atcRow
+      + '</tbody></table>';
+  }
+})();
 </script>
 
 {% schema %}
@@ -251,13 +248,11 @@
       "label": "Max products to compare"
     },
     { "type": "header", "content": "Rows to show" },
-    { "type": "checkbox", "id": "show_price",        "label": "Price",        "default": true  },
-    { "type": "checkbox", "id": "show_availability", "label": "Availability", "default": true  },
-    { "type": "checkbox", "id": "show_vendor",       "label": "Vendor",       "default": true  },
-    { "type": "checkbox", "id": "show_type",         "label": "Type",         "default": true  },
-    { "type": "checkbox", "id": "show_sku",          "label": "SKU",          "default": true  },
-    { "type": "checkbox", "id": "show_description",  "label": "Description",  "default": true  },
-    { "type": "checkbox", "id": "show_weight",       "label": "Weight",       "default": false }
+    { "type": "checkbox", "id": "show_vendor",      "label": "Vendor",      "default": true  },
+    { "type": "checkbox", "id": "show_type",        "label": "Type",        "default": true  },
+    { "type": "checkbox", "id": "show_sku",         "label": "SKU",         "default": true  },
+    { "type": "checkbox", "id": "show_description", "label": "Description", "default": true  },
+    { "type": "checkbox", "id": "show_weight",      "label": "Weight",      "default": false }
   ]
 }
 {% endschema %}
