@@ -1,122 +1,331 @@
-{% comment %}
-  ECOMBIO Header — Mobile / Tablet Drawer Nav
-  File: snippets/ecombio-mobile-nav.liquid
+/* =============================================================================
+   ECOMBIO Header JS  |  assets/header.js
+   Handles:
+     1. Category filter dropdowns (multiple instances: desktop + mobile)
+     2. Mobile / tablet drawer nav (hamburger toggle)
+     3. Header height CSS variable (--ecombio-header-height)
+     4. Flyout nav — open/close the .mega-menu--flyout container
+        (FlyoutPanel handles the sidebar ↔ stage wiring inside the flyout;
+         this section handles showing/hiding the flyout itself)
+   ============================================================================= */
 
-  Supports 3 levels:
-    Level 1 — top-level links (always visible)
-    Level 2 — accordion expand (category headings)
-    Level 3 — nested links shown when level 2 opens
-{% endcomment %}
+(function () {
+  'use strict';
 
-{%- assign nav_menu = linklists[menu] | default: linklists['main-menu'] -%}
+  document.addEventListener('DOMContentLoaded', init);
 
-<div class="ecombio-mobile-nav" id="ecombio-mobile-nav" aria-hidden="true">
-  <div class="ecombio-mobile-nav__overlay" id="ecombio-nav-overlay"></div>
+  /* ===========================================================================
+     1. CATEGORY DROPDOWNS
+     =========================================================================== */
 
-  <nav class="ecombio-mobile-nav__panel" role="navigation" aria-label="Mobile navigation">
+  function initCategoryDropdowns() {
+    document.querySelectorAll('.ecombio-search__cat-btn').forEach(function (btn) {
 
-    {%- comment -%}── Header row ──{%- endcomment -%}
-    <div class="ecombio-mobile-nav__header">
-      <span class="ecombio-mobile-nav__header-label">Menu</span>
-      <button class="ecombio-mobile-nav__close" id="ecombio-nav-close" aria-label="Close navigation">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
+      var suffix  = btn.id.replace('ecombio-cat-btn-', '');
+      var list    = document.getElementById('ecombio-cat-list-'  + suffix);
+      var label   = document.getElementById('ecombio-cat-label-' + suffix);
+      var hidden  = document.getElementById('ecombio-cat-value-' + suffix);
 
-    {%- comment -%}── Nav list ──{%- endcomment -%}
-    <ul class="ecombio-mobile-nav__list" role="list">
-      {%- for link in nav_menu.links -%}
+      if (!list) return;
 
-        {%- if link.links.size > 0 -%}
-          {%- comment -%}── Has children: render accordion ──{%- endcomment -%}
-          <li class="ecombio-mobile-nav__item ecombio-mobile-nav__item--has-children
-                     {%- if link.active %} is-active{%- endif %}">
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setDropdown(!isOpen(list), btn, list);
+      });
 
-            <div class="ecombio-mobile-nav__row">
-              <a href="{{ link.url }}"
-                 class="ecombio-mobile-nav__link"
-                 {% if link.current %}aria-current="page"{% endif %}>
-                {{ link.title }}
-              </a>
-              <button class="ecombio-mobile-nav__toggle"
-                      aria-expanded="false"
-                      aria-label="Expand {{ link.title }}">
-                <svg class="ecombio-mobile-nav__chevron" width="16" height="16"
-                     viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor"
-                        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </div>
+      list.addEventListener('click', function (e) {
+        var item = e.target.closest('li[role="option"]');
+        if (item) selectOption(item, btn, list, label, hidden);
+      });
 
-            <ul class="ecombio-mobile-nav__sub" role="list" hidden>
-              {%- for child in link.links -%}
+      list.addEventListener('keydown', function (e) {
+        var items   = Array.from(list.querySelectorAll('li[role="option"]'));
+        var current = document.activeElement;
+        var idx     = items.indexOf(current);
 
-                {%- if child.links.size > 0 -%}
-                  {%- comment -%}── Level 3: nested accordion ──{%- endcomment -%}
-                  <li class="ecombio-mobile-nav__item ecombio-mobile-nav__item--has-children
-                             ecombio-mobile-nav__item--l3">
-                    <div class="ecombio-mobile-nav__row">
-                      <a href="{{ child.url }}"
-                         class="ecombio-mobile-nav__link ecombio-mobile-nav__link--sub"
-                         {% if child.current %}aria-current="page"{% endif %}>
-                        {{ child.title }}
-                      </a>
-                      <button class="ecombio-mobile-nav__toggle"
-                              aria-expanded="false"
-                              aria-label="Expand {{ child.title }}">
-                        <svg class="ecombio-mobile-nav__chevron" width="14" height="14"
-                             viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                          <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor"
-                                stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <ul class="ecombio-mobile-nav__sub ecombio-mobile-nav__sub--l3" role="list" hidden>
-                      {%- for grandchild in child.links -%}
-                        <li>
-                          <a href="{{ grandchild.url }}"
-                             class="ecombio-mobile-nav__link ecombio-mobile-nav__link--deep"
-                             {% if grandchild.current %}aria-current="page"{% endif %}>
-                            {{ grandchild.title }}
-                          </a>
-                        </li>
-                      {%- endfor -%}
-                    </ul>
-                  </li>
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          (items[idx + 1] || items[0]).focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          (items[idx - 1] || items[items.length - 1]).focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (current.matches('li[role="option"]')) {
+            selectOption(current, btn, list, label, hidden);
+          }
+        } else if (e.key === 'Escape') {
+          setDropdown(false, btn, list);
+          btn.focus();
+        }
+      });
 
-                {%- else -%}
-                  {%- comment -%}── Level 2 leaf ──{%- endcomment -%}
-                  <li class="ecombio-mobile-nav__item">
-                    <a href="{{ child.url }}"
-                       class="ecombio-mobile-nav__link ecombio-mobile-nav__link--sub"
-                       {% if child.current %}aria-current="page"{% endif %}>
-                      {{ child.title }}
-                    </a>
-                  </li>
-                {%- endif -%}
+      btn.closest('.ecombio-search__category').addEventListener('focusout', function (e) {
+        var category = btn.closest('.ecombio-search__category');
+        if (!category.contains(e.relatedTarget)) {
+          setDropdown(false, btn, list);
+        }
+      });
+    });
 
-              {%- endfor -%}
-            </ul>
-          </li>
+    document.addEventListener('click', function () {
+      document.querySelectorAll('.ecombio-search__cat-list').forEach(function (list) {
+        if (!isOpen(list)) return;
+        var suffix = list.id.replace('ecombio-cat-list-', '');
+        var btn    = document.getElementById('ecombio-cat-btn-' + suffix);
+        setDropdown(false, btn, list);
+      });
+    });
+  }
 
-        {%- else -%}
-          {%- comment -%}── No children: simple link ──{%- endcomment -%}
-          <li class="ecombio-mobile-nav__item{% if link.active %} is-active{% endif %}">
-            <a href="{{ link.url }}"
-               class="ecombio-mobile-nav__link"
-               {% if link.current %}aria-current="page"{% endif %}>
-              {{ link.title }}
-            </a>
-          </li>
-        {%- endif -%}
+  function isOpen(list) {
+    return !list.hidden;
+  }
 
-      {%- endfor -%}
-    </ul>
+  function setDropdown(open, btn, list) {
+    list.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
 
-  </nav>
-</div>
+    if (open) {
+      list.querySelectorAll('li[role="option"]').forEach(function (li) {
+        li.setAttribute('tabindex', '0');
+      });
+      var selected = list.querySelector('li[aria-selected="true"]') || list.querySelector('li');
+      if (selected) selected.focus();
+    }
+  }
+
+  function selectOption(item, btn, list, label, hidden) {
+    list.querySelectorAll('li[role="option"]').forEach(function (li) {
+      li.setAttribute('aria-selected', 'false');
+    });
+
+    item.setAttribute('aria-selected', 'true');
+    if (label) label.textContent = item.textContent.trim();
+    if (hidden) hidden.value = item.dataset.value || '';
+
+    setDropdown(false, btn, list);
+    btn.focus();
+  }
+
+  /* ===========================================================================
+     2. MOBILE / TABLET DRAWER NAV
+     =========================================================================== */
+
+  function initDrawer() {
+    var toggle  = document.getElementById('ecombio-nav-toggle');
+    var close   = document.getElementById('ecombio-nav-close');
+    var overlay = document.getElementById('ecombio-nav-overlay');
+    var drawer  = document.getElementById('ecombio-mobile-nav');
+
+    if (!toggle || !drawer) return;
+
+    toggle.addEventListener('click', function () { openDrawer(); });
+    if (close)   close.addEventListener('click',   function () { closeDrawer(); });
+    if (overlay) overlay.addEventListener('click', function () { closeDrawer(); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+        closeDrawer();
+      }
+    });
+
+    // ── Accordion toggles ────────────────────────────────────────────────────
+    drawer.addEventListener('click', function (e) {
+      var btn = e.target.closest('.ecombio-mobile-nav__toggle');
+      if (!btn) return;
+
+      var item   = btn.closest('.ecombio-mobile-nav__item--has-children');
+      if (!item) return;
+
+      var sub    = item.querySelector(':scope > .ecombio-mobile-nav__sub');
+      var isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+      // Close siblings at the same level first
+      var parent = item.parentElement;
+      parent.querySelectorAll(':scope > .ecombio-mobile-nav__item--has-children').forEach(function (sibling) {
+        if (sibling === item) return;
+        var sibBtn = sibling.querySelector(':scope > .ecombio-mobile-nav__row > .ecombio-mobile-nav__toggle');
+        var sibSub = sibling.querySelector(':scope > .ecombio-mobile-nav__sub');
+        if (sibBtn) sibBtn.setAttribute('aria-expanded', 'false');
+        if (sibSub) sibSub.hidden = true;
+      });
+
+      // Toggle this item
+      btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      if (sub) sub.hidden = isOpen;
+    });
+
+    function openDrawer() {
+      drawer.classList.add('is-open');
+      drawer.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('is-open');
+      drawer.setAttribute('aria-hidden', 'true');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      toggle.focus();
+
+      // Collapse all open accordions on close
+      drawer.querySelectorAll('.ecombio-mobile-nav__toggle[aria-expanded="true"]').forEach(function (b) {
+        b.setAttribute('aria-expanded', 'false');
+        var s = b.closest('.ecombio-mobile-nav__item--has-children')
+                  .querySelector(':scope > .ecombio-mobile-nav__sub');
+        if (s) s.hidden = true;
+      });
+    }
+  }
+
+  /* ===========================================================================
+     3. HEADER HEIGHT CSS VARIABLE
+     =========================================================================== */
+
+  function initHeaderHeight() {
+    var headerGroup = document.querySelector('.shopify-section-group-header-group');
+    var header      = document.getElementById('ecombio-header');
+    var target      = headerGroup || header;
+    if (!target) return;
+
+    function update() {
+      var height = target.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--ecombio-header-height', height + 'px');
+    }
+
+    update();
+    window.addEventListener('resize', update);
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(update).observe(target);
+    }
+  }
+
+  /* ===========================================================================
+     4. FLYOUT NAV
+     -------------------------------------------------------------------------
+     The flyout <li> lives in .menu-bar__item--has-flyout.
+     Inside it: <a class="menu-bar__link--flyout"> (the trigger)
+                <div class="mega-menu mega-menu--flyout">  (the panel)
+
+     This section handles OPENING and CLOSING that outer panel.
+     FlyoutPanel (flyout-panel.js) handles the sidebar ↔ stage wiring
+     INSIDE the panel once it is already visible.
+
+     Open on:  mouseenter the <li>  |  click the <a>
+     Close on: mouseleave the <li>  |  Escape key  |  click outside
+     =========================================================================== */
+
+  function initFlyouts() {
+    var items = document.querySelectorAll('.menu-bar__item--has-flyout');
+    if (!items.length) return;
+
+    var leaveTimer = null;
+
+    items.forEach(function (item) {
+      var trigger = item.querySelector('.menu-bar__link--flyout');
+      var panel   = item.querySelector('.mega-menu--flyout');
+      if (!trigger || !panel) return;
+
+      // ── Mouse ──────────────────────────────────────────────────────────────
+      item.addEventListener('mouseenter', function () {
+        clearTimeout(leaveTimer);
+        openFlyout(item, trigger, panel);
+      });
+
+      item.addEventListener('mouseleave', function () {
+        // Small delay so cursor can travel from trigger into the panel
+        leaveTimer = setTimeout(function () {
+          closeFlyout(item, trigger, panel);
+        }, 120);
+      });
+
+      // ── Click (also covers keyboard Enter/Space on the link) ───────────────
+      trigger.addEventListener('click', function (e) {
+        var isOpen = item.classList.contains('is-flyout-open');
+        if (isOpen) {
+          // Second click navigates — let the href through
+          return;
+        }
+        // First click opens the flyout instead of navigating
+        e.preventDefault();
+        openFlyout(item, trigger, panel);
+      });
+
+      // ── Keyboard ───────────────────────────────────────────────────────────
+      trigger.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          if (!item.classList.contains('is-flyout-open')) {
+            e.preventDefault();
+            openFlyout(item, trigger, panel);
+            // Move focus into the first panel trigger
+            var firstTrigger = panel.querySelector('.flyout-panel__trigger');
+            if (firstTrigger) firstTrigger.focus();
+          }
+        } else if (e.key === 'Escape') {
+          closeFlyout(item, trigger, panel);
+          trigger.focus();
+        }
+      });
+
+      // Tab out of the panel → close
+      panel.addEventListener('focusout', function (e) {
+        if (!item.contains(e.relatedTarget)) {
+          closeFlyout(item, trigger, panel);
+        }
+      });
+    });
+
+    // Click outside closes all open flyouts
+    document.addEventListener('click', function (e) {
+      items.forEach(function (item) {
+        if (!item.contains(e.target) && item.classList.contains('is-flyout-open')) {
+          var trigger = item.querySelector('.menu-bar__link--flyout');
+          var panel   = item.querySelector('.mega-menu--flyout');
+          if (trigger && panel) closeFlyout(item, trigger, panel);
+        }
+      });
+    });
+
+    // Escape from anywhere closes all open flyouts
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      items.forEach(function (item) {
+        if (item.classList.contains('is-flyout-open')) {
+          var trigger = item.querySelector('.menu-bar__link--flyout');
+          var panel   = item.querySelector('.mega-menu--flyout');
+          if (trigger && panel) {
+            closeFlyout(item, trigger, panel);
+            trigger.focus();
+          }
+        }
+      });
+    });
+  }
+
+  function openFlyout(item, trigger, panel) {
+    item.classList.add('is-flyout-open');
+    panel.classList.add('mega-menu--open');
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeFlyout(item, trigger, panel) {
+    item.classList.remove('is-flyout-open');
+    panel.classList.remove('mega-menu--open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+
+  /* ===========================================================================
+     INIT
+     =========================================================================== */
+
+  function init() {
+    initCategoryDropdowns();
+    initDrawer();
+    initHeaderHeight();
+    initFlyouts();
+  }
+
+})();
