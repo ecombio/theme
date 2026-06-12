@@ -1,0 +1,187 @@
+{{ 'circle-collection-carousel.css' | asset_url | stylesheet_tag }}
+
+<div class="circle-carousel-section color-{{ section.settings.color_scheme }}" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+  <div class="circle-carousel-section__inner page-width">
+
+    {%- if section.settings.heading != blank -%}
+      <div class="circle-carousel-section__header">
+        <h2 class="circle-carousel-section__heading">{{ section.settings.heading }}</h2>
+        {%- if section.settings.subheading != blank -%}
+          <p class="circle-carousel-section__subheading">{{ section.settings.subheading }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="circle-carousel" data-circle-carousel>
+      <div class="circle-carousel__track" data-circle-carousel-track>
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign collection = block.settings.collection
+            assign label = block.settings.title
+            assign image = block.settings.image
+
+            if collection != blank
+              if label == blank
+                assign label = collection.title
+              endif
+              if image == blank
+                assign image = collection.featured_image
+              endif
+              assign link = collection.url
+            else
+              assign link = block.settings.link
+            endif
+
+            if label == blank
+              assign label = 'Collection'
+            endif
+          -%}
+
+          <div class="circle-carousel__item" {{ block.shopify_attributes }}>
+            <a href="{{ link | default: '#' }}" class="circle-carousel__link" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
+              <span class="circle-carousel__image-wrap">
+                {%- if image != blank -%}
+                  <img
+                    class="circle-carousel__image"
+                    src="{{ image | image_url: width: 400 }}"
+                    srcset="{{ image | image_url: width: 200 }} 200w, {{ image | image_url: width: 400 }} 400w, {{ image | image_url: width: 600 }} 600w"
+                    sizes="(min-width: 990px) 160px, (min-width: 750px) 130px, 100px"
+                    alt="{{ image.alt | default: label | escape }}"
+                    loading="lazy"
+                    width="{{ image.width }}"
+                    height="{{ image.height }}"
+                  >
+                {%- else -%}
+                  <span class="circle-carousel__placeholder">
+                    {{ 'collection-1' | placeholder_svg_tag: 'circle-carousel__placeholder-svg' }}
+                  </span>
+                {%- endif -%}
+              </span>
+              <span class="circle-carousel__label">{{ label }}</span>
+            </a>
+          </div>
+        {%- else -%}
+          {%- for i in (1..6) -%}
+            <div class="circle-carousel__item">
+              <a href="#" class="circle-carousel__link" tabindex="-1" aria-disabled="true">
+                <span class="circle-carousel__image-wrap">
+                  <span class="circle-carousel__placeholder">
+                    {{ 'collection-1' | placeholder_svg_tag: 'circle-carousel__placeholder-svg' }}
+                  </span>
+                </span>
+                <span class="circle-carousel__label">Collection</span>
+              </a>
+            </div>
+          {%- endfor -%}
+        {%- endfor -%}
+      </div>
+
+      {%- if section.blocks.size > 0 -%}
+        <button type="button" class="circle-carousel__btn circle-carousel__btn--prev" data-circle-carousel-prev aria-label="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button type="button" class="circle-carousel__btn circle-carousel__btn--next" data-circle-carousel-next aria-label="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      {%- endif -%}
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ 'circle-collection-carousel.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Circle carousel",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Shop by category"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 36
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collection",
+      "name": "Collection",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Custom title",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Custom image",
+          "info": "Leave blank to use the collection's featured image. A placeholder image is shown if neither is set."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Custom link",
+          "info": "Only used if no collection is selected"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Circle carousel",
+      "blocks": [
+        { "type": "collection" },
+        { "type": "collection" },
+        { "type": "collection" },
+        { "type": "collection" },
+        { "type": "collection" },
+        { "type": "collection" }
+      ]
+    }
+  ]
+}
+{% endschema %}
