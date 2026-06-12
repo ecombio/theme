@@ -1,44 +1,217 @@
-{% comment %}
+{%- comment -%}
   card-product.liquid
-  Fixed image version
-{% endcomment %}
+  ───────────────────────────────────────────────────────────────
+  Parameters (all optional – fall back to section settings):
+    product            – the product object
+    show_vendor        – boolean
+    show_compare_at_price – boolean
+
+  Section-level feature flags (read from section.settings):
+    enable_quickview   – show Quick View button
+    enable_atc         – show Add to Cart button
+    enable_compare     – show Compare checkbox
+    enable_wishlist    – show Wishlist heart
+    show_eta           – show Estimated Arrival badge
+    eta_days_min       – lower bound (e.g. 3)
+    eta_days_max       – upper bound (e.g. 7)
+    eta_label          – prefix text (e.g. "Est. arrival:")
+{%- endcomment -%}
 
 {%- liquid
-  assign product = product | default: card_product
-  assign show_vendor = show_vendor | default: false
-  assign show_compare_at_price = show_compare_at_price | default: true
+  assign p = product
+
+  assign _show_vendor        = show_vendor        | default: false
+  assign _show_compare_price = show_compare_at_price | default: false
+
+  assign _quickview  = section.settings.enable_quickview | default: false
+  assign _atc        = section.settings.enable_atc       | default: false
+  assign _compare    = section.settings.enable_compare   | default: false
+  assign _wishlist   = section.settings.enable_wishlist  | default: false
+  assign _eta        = section.settings.show_eta         | default: false
+  assign _eta_min    = section.settings.eta_days_min     | default: 3
+  assign _eta_max    = section.settings.eta_days_max     | default: 7
+  assign _eta_label  = section.settings.eta_label        | default: 'Est. arrival:'
+
+  assign on_sale = false
+  if p.compare_at_price > p.price
+    assign on_sale = true
+  endif
+
+  assign first_variant = p.variants.first
+  assign available = p.available
 -%}
 
-<div class="card-product">
-  <a href="{{ product.url }}" class="card-product__image-wrapper">
-    {%- if product.featured_image -%}
-      <img 
-        src="{{ product.featured_image | image_url: width: 800, crop: 'center' }}"
-        class="card-product__image"
-        alt="{{ product.title | escape }}"
-        loading="lazy"
-      >
+<div
+  class="card-product"
+  data-product-id="{{ p.id }}"
+  data-product-handle="{{ p.handle }}"
+>
+
+  {%- comment -%} ── Image wrapper ── {%- endcomment -%}
+  <a
+    href="{{ p.url }}"
+    class="card-product__image-wrapper"
+    aria-label="{{ p.title | escape }}"
+    tabindex="0"
+  >
+    {%- if p.featured_image -%}
+      {{
+        p.featured_image
+        | image_url: width: 800
+        | image_tag:
+          class: 'card-product__image card-product__image--primary',
+          loading: 'lazy',
+          widths: '300, 400, 600, 800',
+          sizes: '(max-width: 379px) 100vw, (max-width: 599px) 50vw, (max-width: 1023px) 33vw, 25vw',
+          alt: p.featured_image.alt | escape
+      }}
+
+      {%- if p.images[1] -%}
+        {{
+          p.images[1]
+          | image_url: width: 800
+          | image_tag:
+            class: 'card-product__image card-product__image--secondary',
+            loading: 'lazy',
+            widths: '300, 400, 600, 800',
+            sizes: '(max-width: 379px) 100vw, (max-width: 599px) 50vw, (max-width: 1023px) 33vw, 25vw',
+            alt: p.images[1].alt | escape
+        }}
+      {%- endif -%}
     {%- else -%}
-      <div class="card-product__image-placeholder"></div>
+      <div class="card-product__image-placeholder" aria-hidden="true"></div>
     {%- endif -%}
+
+    {%- comment -%} Sale badge {%- endcomment -%}
+    {%- if on_sale -%}
+      <span class="card-product__badge card-product__badge--sale" aria-label="On sale">Sale</span>
+    {%- endif -%}
+
+    {%- comment -%} Sold-out badge {%- endcomment -%}
+    {%- unless available -%}
+      <span class="card-product__badge card-product__badge--sold-out">Sold out</span>
+    {%- endunless -%}
   </a>
 
+  {%- comment -%} ── Action strip (wishlist + quickview) ── {%- endcomment -%}
+  {%- if _wishlist or _quickview -%}
+    <div class="card-product__actions" aria-label="Product actions">
+
+      {%- if _wishlist -%}
+        <button
+          class="card-product__action-btn card-product__wishlist-btn"
+          type="button"
+          aria-label="Add {{ p.title | escape }} to wishlist"
+          aria-pressed="false"
+          data-wishlist-btn
+          data-product-id="{{ p.id }}"
+        >
+          <svg class="card-product__action-icon card-product__wishlist-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M9 15.5S2 11 2 6a4 4 0 0 1 7-2.65A4 4 0 0 1 16 6c0 5-7 9.5-7 9.5z"
+                  stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      {%- endif -%}
+
+      {%- if _quickview -%}
+        <button
+          class="card-product__action-btn card-product__quickview-btn"
+          type="button"
+          aria-label="Quick view {{ p.title | escape }}"
+          data-quickview-btn
+          data-product-url="{{ p.url }}"
+          data-product-handle="{{ p.handle }}"
+        >
+          <svg class="card-product__action-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <ellipse cx="9" cy="9" rx="7" ry="5" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="9" cy="9" r="2.25" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span class="card-product__quickview-label">Quick view</span>
+        </button>
+      {%- endif -%}
+
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Card content ── {%- endcomment -%}
   <div class="card-product__content">
-    {%- if show_vendor and product.vendor != blank -%}
-      <div class="card-product__vendor">{{ product.vendor | escape }}</div>
+
+    {%- if _show_vendor and p.vendor != blank -%}
+      <span class="card-product__vendor">{{ p.vendor }}</span>
     {%- endif -%}
 
-    <a href="{{ product.url }}" class="card-product__title">
-      {{ product.title | escape }}
-    </a>
+    <a href="{{ p.url }}" class="card-product__title">{{ p.title }}</a>
 
-    <div class="card-product__price">
-      {%- if product.compare_at_price > product.price and show_compare_at_price -%}
-        <span class="card-product__price--sale">{{ product.price | money }}</span>
-        <span class="card-product__compare-price">{{ product.compare_at_price | money }}</span>
-      {%- else -%}
-        {{ product.price | money }}
+    {%- comment -%} ── Price row ── {%- endcomment -%}
+    <div class="card-product__price{% if on_sale %} card-product__price--sale{% endif %}">
+      {{ p.price | money }}
+      {%- if _show_compare_price and on_sale -%}
+        <s class="card-product__compare-price">{{ p.compare_at_price | money }}</s>
       {%- endif -%}
     </div>
+
+    {%- comment -%} ── ETA row ── {%- endcomment -%}
+    {%- if _eta and available -%}
+      <div class="card-product__eta" aria-label="Estimated delivery time">
+        <svg class="card-product__eta-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.25"/>
+          <path d="M6.5 3.5v3l2 1.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>{{ _eta_label }} {{ _eta_min }}–{{ _eta_max }} days</span>
+      </div>
+    {%- elsif _eta and available == false -%}
+      <div class="card-product__eta card-product__eta--unavailable">
+        <svg class="card-product__eta-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.25"/>
+          <path d="M6.5 3.5v3l2 1.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Currently unavailable</span>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} ── Add to cart ── {%- endcomment -%}
+    {%- if _atc -%}
+      <div class="card-product__atc-wrap">
+        {%- if available -%}
+          <button
+            class="card-product__atc-btn"
+            type="button"
+            aria-label="Add {{ p.title | escape }} to cart"
+            data-atc-btn
+            data-variant-id="{{ first_variant.id }}"
+            data-product-title="{{ p.title | escape }}"
+          >
+            <svg class="card-product__atc-icon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path d="M1 1.5h1.8l2.2 7h6.5l1.5-5H4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="6.5" cy="13" r="1" fill="currentColor"/>
+              <circle cx="11" cy="13" r="1" fill="currentColor"/>
+            </svg>
+            <span class="card-product__atc-label">Add to cart</span>
+          </button>
+        {%- else -%}
+          <button class="card-product__atc-btn card-product__atc-btn--disabled" type="button" disabled aria-disabled="true">
+            Sold out
+          </button>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} ── Compare checkbox ── {%- endcomment -%}
+    {%- if _compare -%}
+      <label class="card-product__compare-label">
+        <input
+          class="card-product__compare-checkbox"
+          type="checkbox"
+          data-compare-checkbox
+          data-product-id="{{ p.id }}"
+          data-product-title="{{ p.title | escape }}"
+          data-product-image="{{ p.featured_image | image_url: width: 120 }}"
+          data-product-price="{{ p.price | money }}"
+          aria-label="Compare {{ p.title | escape }}"
+        >
+        <span class="card-product__compare-text">Compare</span>
+      </label>
+    {%- endif -%}
+
   </div>
 </div>
