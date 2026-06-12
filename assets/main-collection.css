@@ -1384,3 +1384,270 @@
     animation: none;
   }
 }
+/* ============================================================
+   card-product — feature additions
+   Append these rules to main-collection.css
+   ============================================================ */
+
+/* ── Badges (Sale / Sold out) ──────────────────────────────── */
+.card-product__image-wrapper {
+  /* allow absolute-positioned badges */
+  position: relative;
+}
+
+.card-product__badge {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.card-product__badge--sale {
+  background: #c0392b;
+  color: #fff;
+}
+
+.card-product__badge--sold-out {
+  background: #555;
+  color: #fff;
+}
+
+/* Two badges side-by-side (unlikely but handled) */
+.card-product__badge + .card-product__badge {
+  left: calc(0.6rem + 56px);
+}
+
+/* ── Action strip (Wishlist + Quick View) ──────────────────── */
+.card-product__actions {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 3;
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+/* Image wrapper must be relative (already is) */
+.card-product:hover .card-product__actions,
+.card-product:focus-within .card-product__actions {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Always visible on touch devices */
+@media (hover: none) {
+  .card-product__actions {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
+.card-product__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #d0d0d0;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.card-product__action-btn:hover {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.card-product__action-icon {
+  flex-shrink: 0;
+}
+
+/* ── Wishlist state ── */
+.card-product__wishlist-btn[aria-pressed="true"] {
+  border-color: #c0392b;
+  background: #c0392b;
+  color: #fff;
+}
+
+.card-product__wishlist-btn[aria-pressed="true"] .card-product__wishlist-icon path {
+  fill: #fff;
+}
+
+/* ── Quick View – reveal label on hover ── */
+.card-product__quickview-btn {
+  width: auto;
+  border-radius: 20px;
+  padding: 0 0.65rem;
+  gap: 0.35rem;
+}
+
+.card-product__quickview-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── ETA row ──────────────────────────────────────────────── */
+.card-product__eta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: #2e7d32;      /* accessible green */
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: 0.1rem;
+}
+
+.card-product__eta--unavailable {
+  color: #888;
+}
+
+.card-product__eta-icon {
+  flex-shrink: 0;
+}
+
+/* ── Add to Cart button ───────────────────────────────────── */
+.card-product__atc-wrap {
+  margin-top: 0.65rem;
+}
+
+.card-product__atc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  line-height: 1.2;
+}
+
+.card-product__atc-btn:hover:not(:disabled) {
+  background: #333;
+}
+
+.card-product__atc-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Loading state – added by JS */
+.card-product__atc-btn.is-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Sold-out disabled state */
+.card-product__atc-btn--disabled,
+.card-product__atc-btn:disabled {
+  background: #d0d0d0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.card-product__atc-icon {
+  flex-shrink: 0;
+}
+
+/* ── Compare checkbox ─────────────────────────────────────── */
+.card-product__compare-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  margin-top: 0.55rem;
+  user-select: none;
+}
+
+.card-product__compare-checkbox {
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid #aaa;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  margin: 0;
+}
+
+.card-product__compare-checkbox:checked {
+  background: #111;
+  border-color: #111;
+}
+
+.card-product__compare-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 7px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.card-product__compare-checkbox:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+.card-product__compare-text {
+  font-size: 0.78rem;
+  color: #555;
+  font-weight: 500;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.card-product__compare-label:hover .card-product__compare-text {
+  color: #111;
+}
+
+/* Checked state label emphasis */
+.card-product__compare-label:has(.card-product__compare-checkbox:checked) .card-product__compare-text {
+  color: #111;
+  font-weight: 600;
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .card-product__actions,
+  .card-product__atc-btn,
+  .card-product__action-btn {
+    transition: none;
+  }
+}
