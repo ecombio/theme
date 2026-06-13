@@ -1,20 +1,3 @@
-{% comment %}
-  templates/cart.liquid — updated entry point
-  ─────────────────────────────────────────────────────────────────────────
-  When the cart is empty the page renders its own isolated shell:
-    cart-header  →  snippets/cart-header.liquid
-    cart-empty   →  snippets/cart-empty.liquid   (main body)
-    cart-footer  →  snippets/cart-footer.liquid
-
-  When the cart has items it falls through to the original cart page markup
-  (cart-page / cart.css / cart.js — unchanged from your existing files).
-
-  CSS load order:
-    cart-empty.css  — empty shell tokens + layout (loaded below)
-    cart.css        — full cart page tokens + layout  (loaded below)
-  Both are scoped to their own BEM roots so there is no collision.
-{% endcomment %}
-
 {{ 'cart-empty.css' | asset_url | stylesheet_tag }}
 {{ 'cart.css'       | asset_url | stylesheet_tag }}
 
@@ -30,17 +13,8 @@
 
 {%- if has_items -%}
 
-  {%- comment -%}
-    ── FULL CART PAGE ──────────────────────────────────────────────────────
-    Your existing cart-page markup lives here unchanged.
-    Replace this comment block with the original cart-page <div> tree,
-    or keep it in a separate snippet and render it:
-      {%- render 'cart-page' -%}
-  {%- endcomment -%}
-
   <div class="cart-page" data-cart-page>
 
-    {%- comment -%} Shipping banner {%- endcomment -%}
     <div class="cart-page__shipping-banner" data-cart-shipping-banner>
       <div class="cart-page__container">
         <div class="cart-page__shipping-inner">
@@ -66,8 +40,8 @@
     </div>
 
     {%- comment -%}
-      … rest of your original cart-page layout (items, summary, recommendations) …
-      Paste the remainder of your existing cart.liquid content here.
+      Paste the remainder of your existing cart-page layout here
+      (items list, order summary, recommendations, etc.)
     {%- endcomment -%}
 
   </div>
@@ -76,33 +50,6 @@
 
 {%- else -%}
 
-  {%- comment -%}
-    ── EMPTY CART SHELL ────────────────────────────────────────────────────
-    Renders the standalone three-part empty experience.
-    The global theme header / footer are still rendered by layout/theme.liquid
-    unless you suppress them — see the README note below.
-
-    To hide the global header/footer on an empty cart, add this at the very
-    top of this file (before the stylesheet tags):
-
-      {%- if cart.item_count == 0 -%}
-        {%- comment -%} Signal to theme.liquid to skip header/footer {%- endcomment -%}
-        {%- assign cart_empty_shell = true -%}
-      {%- endif -%}
-
-    Then in layout/theme.liquid wrap your header and footer:
-
-      {%- unless cart_empty_shell -%}
-        {%- section 'header' -%}
-      {%- endunless -%}
-      {{ content_for_layout }}
-      {%- unless cart_empty_shell -%}
-        {%- section 'footer' -%}
-      {%- endunless -%}
-  {%- endcomment -%}
-
-  {%- render 'cart-header' -%}
   {%- render 'cart-empty' -%}
-  {%- render 'cart-footer' -%}
 
 {%- endif -%}
