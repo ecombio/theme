@@ -24,7 +24,7 @@
   <body class="{{ settings.theme_preset }}">
 
     <div class="ecombio-sticky-header">
-      <div class="page-width">
+      <div class="page-width--header">
         {% section 'header' %}
       </div>
     </div>
@@ -36,7 +36,7 @@
     </main>
 
     <footer role="contentinfo">
-      <div class="page-width">
+      <div class="page-width--footer">
         {% sections 'footer-group' %}
       </div>
     </footer>
@@ -49,25 +49,32 @@
     {{ 'collection-filters.js' | asset_url | script_tag }}
 
     <style>
-      :root {
-        --page-width: {{ settings.max_page_width }};
-        --page-margin: {{ settings.min_page_margin }}px;
+      /* ── Page Width Constraints ── */
+      .page-width--header {
+        max-width: var(--header-width);
+        margin: 0 auto;
+        padding: 0 var(--header-margin);
       }
 
       .page-width {
         max-width: var(--page-width);
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: var(--page-margin);
-        padding-right: var(--page-margin);
+        margin: 0 auto;
+        padding: 0 var(--page-margin);
       }
 
+      .page-width--footer {
+        max-width: var(--footer-width);
+        margin: 0 auto;
+        padding: 0 var(--footer-margin);
+      }
+
+      /* Full-bleed escape hatch for hero banners etc. */
       .page-width--full {
         max-width: 100%;
-        padding-left: 0;
-        padding-right: 0;
+        padding: 0;
       }
 
+      /* ── Sticky Header Wrapper ── */
       .ecombio-sticky-header {
         position: sticky;
         top: 0;
@@ -75,7 +82,10 @@
         background-color: var(--color-background);
       }
 
-      html, body { height: 100%; }
+      /* ── Sticky Footer ── */
+      html, body {
+        height: 100%;
+      }
 
       body {
         display: flex !important;
@@ -83,7 +93,9 @@
         min-height: 100vh !important;
       }
 
-      main { flex: 1 0 auto !important; }
+      main {
+        flex: 1 0 auto !important;
+      }
     </style>
 
     <script>
