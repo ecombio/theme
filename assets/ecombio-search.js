@@ -4,33 +4,41 @@
  *
  * Architecture: Class per search instance — supports desktop + mobile simultaneously
  * API: Shopify Ajax Predictive Search (/search/suggest.json)
- * Dependencies: None (vanilla JS, native Fetch, AbortController)
+ * Dependencies: None (vanilla JS, native Fetch, AbortController, Web Speech API)
  *
  * Usage: Auto-initializes on DOMContentLoaded for all [data-search-instance] elements.
+ *
+ * New in this version:
+ *   - Voice search via Web Speech API (with graceful fallback)
+ *   - Animated placeholder that cycles through trending terms
+ *   - Staggered result row animations
+ *   - ⌘K / Ctrl+K global shortcut to focus the desktop instance
  */
 
 'use strict';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-// Defaults — every value can be overridden by window.ECOMBIO_SEARCH_SETTINGS,
-// which is injected by snippets/ecombio-search-form.liquid from Shopify Theme Settings.
 const ECOMBIO_SEARCH_CONFIG = Object.assign(
   {
-    MIN_QUERY_LENGTH:     2,
-    DEBOUNCE_MS:          200,
-    MAX_QUERIES:          3,
-    MAX_PRODUCTS:         5,
-    MAX_COLLECTIONS:      2,
-    RECENT_SEARCHES_KEY:  'ecombio_recent_searches',
-    RECENT_SEARCHES_LIMIT: 5,
-    TRENDING_SEARCHES:    ['sofa', 'dining table', 'accent chair', 'floor lamp', 'bookshelf'],
-    API_ENDPOINT:         '/search/suggest.json',
-    CACHE_TTL_MS:         90000, // 90 seconds
+    MIN_QUERY_LENGTH:       2,
+    DEBOUNCE_MS:            200,
+    MAX_QUERIES:            3,
+    MAX_PRODUCTS:           5,
+    MAX_COLLECTIONS:        2,
+    RECENT_SEARCHES_KEY:    'ecombio_recent_searches',
+    RECENT_SEARCHES_LIMIT:  5,
+    TRENDING_SEARCHES:      ['sofa', 'dining table', 'accent chair', 'floor lamp', 'bookshelf'],
+    API_ENDPOINT:           '/search/suggest.json',
+    CACHE_TTL_MS:           90000,
+    // Voice
+    VOICE_LANG:             'en-US',
+    VOICE_ENABLED:          true,
+    // Animated placeholder
+    PLACEHOLDER_ANIMATE:    true,
+    PLACEHOLDER_INTERVAL:   3200, // ms between terms
+    PLACEHOLDER_STATIC:     'What are you looking for?',
   },
-  // Theme-settings values injected by the Liquid snippet win over the defaults above.
-  // The snippet only sets behaviour keys; RECENT_SEARCHES_KEY, API_ENDPOINT, and
-  // CACHE_TTL_MS are intentionally not exposed in the theme editor.
   window.ECOMBIO_SEARCH_SETTINGS || {}
 );
 
@@ -73,10 +81,9 @@ function escapeHtml(str) {
 function formatMoney(cents, currency = 'USD') {
   const amount = parseFloat(cents);
   if (isNaN(amount)) return '';
-  // Shopify returns price as string like "199.00"
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency,
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -127,91 +134,375 @@ function clearAllRecentSearches() {
   } catch { /* ignore */ }
 }
 
+// ─── Animated Placeholder ─────────────────────────────────────────────────────
+
+class AnimatedPlaceholder {
+  /**
+   * Cycles the input placeholder through trending terms with a typewriter effect.
+   * Pauses automatically while the input has focus or a value.
+   *
+   * @param {HTMLInputElement} input
+   * @param {string[]} terms
+   */
+  constructor(input, terms) {
+    this.input       = input;
+    this.terms       = terms && terms.length ? terms : [ECOMBIO_SEARCH_CONFIG.PLACEHOLDER_STATIC];
+    this.termIndex   = 0;
+    this.charIndex   = 0;
+    this.deleting    = false;
+    this.paused      = false;
+    this.rafId       = null;
+    this.lastTick    = 0;
+    this.pauseUntil  = 0;
+
+    // Pause while focused or non-empty
+    this.input.addEventListener('focus', () => { this.paused = true; });
+    this.input.addEventListener('blur',  () => {
+      if (!this.input.value) {
+        this.paused = false;
+        this._tick(performance.now());
+      }
+    });
+
+    this._tick(performance.now());
+  }
+
+  _tick(now) {
+    if (this.paused || this.input.value) return;
+
+    const TYPING_SPEED  = 68;   // ms per character typed
+    const DELETE_SPEED  = 36;   // ms per character deleted
+    const PAUSE_AFTER   = ECOMBIO_SEARCH_CONFIG.PLACEHOLDER_INTERVAL;
+    const PAUSE_BEFORE  = 400;
+
+    if (now < this.pauseUntil) {
+      this.rafId = requestAnimationFrame(t => this._tick(t));
+      return;
+    }
+
+    const term = this.terms[this.termIndex];
+
+    if (!this.deleting) {
+      if (now - this.lastTick < TYPING_SPEED) {
+        this.rafId = requestAnimationFrame(t => this._tick(t));
+        return;
+      }
+      this.charIndex++;
+      this.input.placeholder = 'Try "' + term.slice(0, this.charIndex) + '"';
+      this.lastTick = now;
+
+      if (this.charIndex >= term.length) {
+        // Fully typed — pause before deleting
+        this.deleting   = true;
+        this.pauseUntil = now + PAUSE_AFTER;
+      }
+    } else {
+      if (now - this.lastTick < DELETE_SPEED) {
+        this.rafId = requestAnimationFrame(t => this._tick(t));
+        return;
+      }
+      this.charIndex--;
+      this.input.placeholder = this.charIndex > 0
+        ? 'Try "' + term.slice(0, this.charIndex) + '"'
+        : ECOMBIO_SEARCH_CONFIG.PLACEHOLDER_STATIC;
+      this.lastTick = now;
+
+      if (this.charIndex <= 0) {
+        this.deleting  = false;
+        this.termIndex = (this.termIndex + 1) % this.terms.length;
+        this.pauseUntil = now + PAUSE_BEFORE;
+      }
+    }
+
+    this.rafId = requestAnimationFrame(t => this._tick(t));
+  }
+
+  destroy() {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+  }
+}
+
+// ─── Voice Search ─────────────────────────────────────────────────────────────
+
+class VoiceSearch {
+  /**
+   * Wraps the Web Speech API SpeechRecognition.
+   * Emits callbacks rather than events to keep the coupling local.
+   *
+   * @param {object} opts
+   * @param {function} opts.onStart      — called when mic opens
+   * @param {function} opts.onResult     — called with (transcript: string)
+   * @param {function} opts.onEnd        — called when mic closes
+   * @param {function} opts.onError      — called with (errorCode: string)
+   */
+  constructor(opts = {}) {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      this.supported = false;
+      return;
+    }
+
+    this.supported  = true;
+    this.listening  = false;
+    this.onStart    = opts.onStart  || (() => {});
+    this.onResult   = opts.onResult || (() => {});
+    this.onEnd      = opts.onEnd    || (() => {});
+    this.onError    = opts.onError  || (() => {});
+
+    this._rec = new SpeechRecognition();
+    this._rec.lang           = ECOMBIO_SEARCH_CONFIG.VOICE_LANG;
+    this._rec.interimResults = true;   // stream partial results live
+    this._rec.maxAlternatives = 1;
+    this._rec.continuous     = false;  // stop automatically after a phrase
+
+    this._rec.onstart = () => {
+      this.listening = true;
+      this.onStart();
+    };
+
+    this._rec.onresult = (e) => {
+      let interim = '';
+      let final   = '';
+      for (const r of e.results) {
+        if (r.isFinal) {
+          final += r[0].transcript;
+        } else {
+          interim += r[0].transcript;
+        }
+      }
+      // Fire with interim text for live input feedback, then final
+      this.onResult(final || interim, !!final);
+    };
+
+    this._rec.onend = () => {
+      this.listening = false;
+      this.onEnd();
+    };
+
+    this._rec.onerror = (e) => {
+      this.listening = false;
+      this.onError(e.error);
+    };
+  }
+
+  toggle() {
+    if (!this.supported) return;
+    if (this.listening) {
+      this._rec.stop();
+    } else {
+      try {
+        this._rec.start();
+      } catch (err) {
+        // Catches "already started" in some browsers
+        this._rec.stop();
+      }
+    }
+  }
+
+  stop() {
+    if (this.supported && this.listening) this._rec.stop();
+  }
+}
+
 // ─── Main Class ───────────────────────────────────────────────────────────────
 
 class EcombioPredictiveSearch {
-  /**
-   * @param {HTMLElement} rootEl — the .ecombio-search wrapper element
-   */
   constructor(rootEl) {
-    this.root        = rootEl;
-    this.sfx         = rootEl.dataset.searchInstance || 'desktop';
-    this.input       = rootEl.querySelector('.ecombio-search__input');
-    this.form        = rootEl.querySelector('.ecombio-search__form');
-    this.dropdown    = rootEl.querySelector('.ecombio-search__dropdown');
-    this.clearBtn    = rootEl.querySelector('.ecombio-search__clear');
-    this.backdrop    = rootEl.querySelector('.ecombio-search__backdrop');
-    this.catBtn      = rootEl.querySelector('.ecombio-search__cat-btn');
-    this.catList     = rootEl.querySelector('.ecombio-search__cat-list');
-    this.catLabel    = rootEl.querySelector(`#ecombio-cat-label-${this.sfx}`);
-    this.catHidden   = rootEl.querySelector(`#ecombio-cat-value-${this.sfx}`);
+    this.root      = rootEl;
+    this.sfx       = rootEl.dataset.searchInstance || 'desktop';
+    this.input     = rootEl.querySelector('.ecombio-search__input');
+    this.form      = rootEl.querySelector('.ecombio-search__form');
+    this.dropdown  = rootEl.querySelector('.ecombio-search__dropdown');
+    this.clearBtn  = rootEl.querySelector('.ecombio-search__clear');
+    this.backdrop  = rootEl.querySelector('.ecombio-search__backdrop');
+    this.catBtn    = rootEl.querySelector('.ecombio-search__cat-btn');
+    this.catList   = rootEl.querySelector('.ecombio-search__cat-list');
+    this.catLabel  = rootEl.querySelector(`#ecombio-cat-label-${this.sfx}`);
+    this.catHidden = rootEl.querySelector(`#ecombio-cat-value-${this.sfx}`);
 
-    this.activeCategory      = { value: '', label: 'All' };
-    this.activeIndex         = -1;
-    this.isOpen              = false;
-    this.lastQuery           = '';
-    this.abortController     = null;
-    this.debouncedFetch      = debounce(this._executeFetch.bind(this), ECOMBIO_SEARCH_CONFIG.DEBOUNCE_MS);
+    this.activeCategory  = { value: '', label: 'All' };
+    this.activeIndex     = -1;
+    this.isOpen          = false;
+    this.lastQuery       = '';
+    this.abortController = null;
+    this.debouncedFetch  = debounce(this._executeFetch.bind(this), ECOMBIO_SEARCH_CONFIG.DEBOUNCE_MS);
 
     if (!this.input || !this.dropdown) {
       console.warn('[EcombioPredictiveSearch] Missing required elements in instance:', this.sfx);
       return;
     }
 
+    this._injectMicButton();
     this._bindEvents();
+    this._initPlaceholder();
+    this._initVoice();
   }
 
-  // ── Event Binding ──────────────────────────────────────────────────────────
+  // ── Inject mic button into the DOM ────────────────────────────────────────
+
+  _injectMicButton() {
+    // Insert between clear button and submit button
+    const submit = this.form.querySelector('.ecombio-search__submit');
+    if (!submit) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ecombio-search__mic';
+    btn.setAttribute('aria-label', 'Search by voice');
+    btn.setAttribute('title', 'Search by voice');
+    btn.innerHTML = `
+      <svg class="ecombio-search__mic-icon ecombio-search__mic-icon--idle"
+           width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8"  y1="23" x2="16" y2="23"/>
+      </svg>
+      <svg class="ecombio-search__mic-icon ecombio-search__mic-icon--listening"
+           width="16" height="16" viewBox="0 0 24 24" fill="currentColor"
+           aria-hidden="true" style="display:none">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path fill="none" stroke="currentColor" stroke-width="2"
+              d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line stroke="currentColor" stroke-width="2" x1="12" y1="19" x2="12" y2="23"/>
+        <line stroke="currentColor" stroke-width="2" x1="8"  y1="23" x2="16" y2="23"/>
+      </svg>`;
+
+    this.micBtn = btn;
+    submit.before(btn);
+  }
+
+  // ── Animated placeholder ──────────────────────────────────────────────────
+
+  _initPlaceholder() {
+    if (!ECOMBIO_SEARCH_CONFIG.PLACEHOLDER_ANIMATE) return;
+    const terms = ECOMBIO_SEARCH_CONFIG.TRENDING_SEARCHES;
+    if (!terms || terms.length === 0) return;
+
+    // Only animate on desktop to avoid distraction on mobile
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    this._placeholder = new AnimatedPlaceholder(this.input, terms);
+  }
+
+  // ── Voice ─────────────────────────────────────────────────────────────────
+
+  _initVoice() {
+    if (!ECOMBIO_SEARCH_CONFIG.VOICE_ENABLED) {
+      this.micBtn && (this.micBtn.hidden = true);
+      return;
+    }
+
+    this._voice = new VoiceSearch({
+      onStart: () => {
+        this.micBtn.classList.add('ecombio-search__mic--listening');
+        this.micBtn.setAttribute('aria-label', 'Listening… tap to stop');
+        this.micBtn.querySelector('.ecombio-search__mic-icon--idle').style.display = 'none';
+        this.micBtn.querySelector('.ecombio-search__mic-icon--listening').style.display = '';
+        // Pause placeholder while listening
+        if (this._placeholder) this._placeholder.paused = true;
+        this.input.placeholder = 'Listening…';
+      },
+
+      onResult: (transcript, isFinal) => {
+        this.input.value = transcript;
+        if (this.clearBtn) this.clearBtn.hidden = false;
+
+        if (isFinal) {
+          // Final result — fire search immediately (no debounce)
+          if (transcript.trim().length >= ECOMBIO_SEARCH_CONFIG.MIN_QUERY_LENGTH) {
+            this._showLoading();
+            this._executeFetch(transcript.trim());
+          }
+        } else {
+          // Interim — debounced so we don't hammer the API on every word
+          if (transcript.trim().length >= ECOMBIO_SEARCH_CONFIG.MIN_QUERY_LENGTH) {
+            this._showLoading();
+            this.debouncedFetch(transcript.trim());
+          }
+        }
+
+        dispatchSearchEvent('voice_result', {
+          transcript,
+          isFinal,
+          instance: this.sfx,
+        });
+      },
+
+      onEnd: () => {
+        this.micBtn.classList.remove('ecombio-search__mic--listening');
+        this.micBtn.setAttribute('aria-label', 'Search by voice');
+        this.micBtn.querySelector('.ecombio-search__mic-icon--idle').style.display = '';
+        this.micBtn.querySelector('.ecombio-search__mic-icon--listening').style.display = 'none';
+        // Resume placeholder if input is still empty
+        if (!this.input.value && this._placeholder) {
+          this._placeholder.paused = false;
+          this._placeholder._tick(performance.now());
+        }
+      },
+
+      onError: (code) => {
+        // 'not-allowed'   — user denied mic permission
+        // 'no-speech'     — silence timeout
+        // 'network'       — network error
+        if (code === 'not-allowed') {
+          this.micBtn.hidden = true; // hide permanently if permission denied
+        }
+        this._voice.onEnd(); // resets UI
+        dispatchSearchEvent('voice_error', { code, instance: this.sfx });
+      },
+    });
+
+    if (!this._voice.supported) {
+      // Browser doesn't support SpeechRecognition — hide the button cleanly
+      if (this.micBtn) this.micBtn.hidden = true;
+      return;
+    }
+
+    this.micBtn.addEventListener('click', () => this._voice.toggle());
+  }
+
+  // ── Event Binding ─────────────────────────────────────────────────────────
 
   _bindEvents() {
-    // Input events
-    this.input.addEventListener('input', this._onInput.bind(this));
-    this.input.addEventListener('focus', this._onFocus.bind(this));
+    this.input.addEventListener('input',   this._onInput.bind(this));
+    this.input.addEventListener('focus',   this._onFocus.bind(this));
     this.input.addEventListener('keydown', this._onKeydown.bind(this));
 
-    // Clear button
     if (this.clearBtn) {
       this.clearBtn.addEventListener('click', this._onClear.bind(this));
     }
 
-    // Form submit — save to recent
     this.form.addEventListener('submit', this._onFormSubmit.bind(this));
 
-    // Category pill
     if (this.catBtn && this.catList) {
-      this.catBtn.addEventListener('click', this._toggleCatList.bind(this));
-      this.catList.addEventListener('click', this._onCatSelect.bind(this));
+      this.catBtn.addEventListener('click',   this._toggleCatList.bind(this));
+      this.catList.addEventListener('click',  this._onCatSelect.bind(this));
       this.catList.addEventListener('keydown', this._onCatKeydown.bind(this));
     }
 
-    // Outside click — close dropdown
     document.addEventListener('click', this._onDocumentClick.bind(this));
 
-    // Backdrop tap (mobile)
     if (this.backdrop) {
       this.backdrop.addEventListener('click', () => this.closeDropdown());
     }
 
-    // Dropdown click delegation
     this.dropdown.addEventListener('click', this._onDropdownClick.bind(this));
   }
 
-  // ── Input Handlers ─────────────────────────────────────────────────────────
+  // ── Input handlers ────────────────────────────────────────────────────────
 
   _onInput(e) {
     const query = e.target.value.trim();
-
-    // Toggle clear button visibility
-    if (this.clearBtn) {
-      this.clearBtn.hidden = query.length === 0;
-    }
+    if (this.clearBtn) this.clearBtn.hidden = query.length === 0;
 
     if (query.length < ECOMBIO_SEARCH_CONFIG.MIN_QUERY_LENGTH) {
-      if (query.length === 0) {
-        this._showEmptyFocus();
-      } else {
-        this.closeDropdown();
-      }
+      if (query.length === 0) this._showEmptyFocus();
+      else this.closeDropdown();
       return;
     }
 
@@ -222,7 +513,6 @@ class EcombioPredictiveSearch {
   _onFocus() {
     const query = this.input.value.trim();
     if (query.length >= ECOMBIO_SEARCH_CONFIG.MIN_QUERY_LENGTH) {
-      // Re-show last results if same query
       if (query === this.lastQuery && this.isOpen) return;
       this._showLoading();
       this.debouncedFetch(query);
@@ -235,11 +525,12 @@ class EcombioPredictiveSearch {
     this.input.value = '';
     this.input.focus();
     if (this.clearBtn) this.clearBtn.hidden = true;
+    this._voice && this._voice.stop();
     this._showEmptyFocus();
     dispatchSearchEvent('search_cleared', { instance: this.sfx });
   }
 
-  _onFormSubmit(e) {
+  _onFormSubmit() {
     const query = this.input.value.trim();
     if (query.length > 0) {
       saveRecentSearch(query);
@@ -252,7 +543,7 @@ class EcombioPredictiveSearch {
     this.closeDropdown();
   }
 
-  // ── Fetch & Render ─────────────────────────────────────────────────────────
+  // ── Fetch & render ────────────────────────────────────────────────────────
 
   async _executeFetch(query) {
     const cacheKey = `${query}|${this.activeCategory.value}`;
@@ -263,31 +554,21 @@ class EcombioPredictiveSearch {
       return;
     }
 
-    // Abort previous in-flight request
-    if (this.abortController) {
-      this.abortController.abort();
-    }
+    if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
 
     const params = new URLSearchParams({
-      q: query,
+      q: this.activeCategory.value ? `${query} tag:${this.activeCategory.value}` : query,
       'resources[type]': 'product,collection,query',
       'resources[limit]': '6',
       'resources[options][unavailable_products]': 'hide',
       'resources[options][fields]': 'title,product_type,variants.title,vendor,tag',
     });
 
-    // Category scoping via tag filter
-    if (this.activeCategory.value) {
-      params.set('q', `${query} tag:${this.activeCategory.value}`);
-    }
-
     try {
       const root = window.Shopify?.routes?.root || '/';
-      const url = `${root}search/suggest.json?${params.toString()}`;
-
-      const res = await fetch(url, {
-        signal: this.abortController.signal,
+      const res  = await fetch(`${root}search/suggest.json?${params}`, {
+        signal:  this.abortController.signal,
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -299,27 +580,25 @@ class EcombioPredictiveSearch {
 
       dispatchSearchEvent('search_results_loaded', {
         query,
-        category: this.activeCategory.value,
-        productCount: data?.resources?.results?.products?.length || 0,
+        category:        this.activeCategory.value,
+        productCount:    data?.resources?.results?.products?.length    || 0,
         collectionCount: data?.resources?.results?.collections?.length || 0,
-        suggestionCount: data?.resources?.results?.queries?.length || 0,
+        suggestionCount: data?.resources?.results?.queries?.length     || 0,
         instance: this.sfx,
       });
-
     } catch (err) {
-      if (err.name === 'AbortError') return; // Expected — new request cancelled this one
+      if (err.name === 'AbortError') return;
       console.error('[EcombioPredictiveSearch] Fetch error:', err);
       this._renderNetworkError();
     }
   }
 
   _renderResults(data, query) {
-    const results = data?.resources?.results || {};
+    const results     = data?.resources?.results || {};
     const queries     = (results.queries     || []).slice(0, ECOMBIO_SEARCH_CONFIG.MAX_QUERIES);
     const products    = (results.products    || []).slice(0, ECOMBIO_SEARCH_CONFIG.MAX_PRODUCTS);
     const collections = (results.collections || []).slice(0, ECOMBIO_SEARCH_CONFIG.MAX_COLLECTIONS);
-
-    const hasResults = queries.length > 0 || products.length > 0 || collections.length > 0;
+    const hasResults  = queries.length > 0 || products.length > 0 || collections.length > 0;
 
     if (!hasResults) {
       this._renderEmpty(query);
@@ -337,18 +616,16 @@ class EcombioPredictiveSearch {
       </span>
     </div>`;
 
-    // ── Query suggestions ──
+    // Query suggestions
     if (queries.length > 0) {
       html += `<div class="ecombio-search__section ecombio-search__section--queries">`;
       queries.forEach((item, i) => {
         const label = escapeHtml(item.styled_text || item.text);
         html += `
           <a href="/search?q=${encodeURIComponent(item.text)}&type=product"
-             class="ecombio-search__item ecombio-search__item--query"
-             role="option"
-             data-type="query"
-             data-query="${escapeHtml(item.text)}"
-             data-position="${i}">
+             class="ecombio-search__item ecombio-search__item--query ecombio-search__item--animate"
+             style="--es-row-index:${i}"
+             role="option" data-type="query" data-query="${escapeHtml(item.text)}" data-position="${i}">
             <span class="ecombio-search__item-icon" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -362,7 +639,7 @@ class EcombioPredictiveSearch {
       html += `</div>`;
     }
 
-    // ── Products ──
+    // Products
     if (products.length > 0) {
       const sectionLabel = this.activeCategory.value
         ? `Products in ${this.activeCategory.label}`
@@ -371,6 +648,7 @@ class EcombioPredictiveSearch {
       html += `<div class="ecombio-search__section ecombio-search__section--products">
         <p class="ecombio-search__section-label">${escapeHtml(sectionLabel)}</p>`;
 
+      const queryOffset = queries.length;
       products.forEach((product, i) => {
         const price = product.price
           ? formatMoney(product.price)
@@ -381,7 +659,8 @@ class EcombioPredictiveSearch {
           : null;
 
         const imgHtml = imgSrc
-          ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(product.title)}" width="48" height="48" loading="lazy" class="ecombio-search__product-img">`
+          ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(product.title)}"
+                  width="48" height="48" loading="lazy" class="ecombio-search__product-img">`
           : `<span class="ecombio-search__product-img ecombio-search__product-img--placeholder" aria-hidden="true">
                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-4 4 4"/>
@@ -394,11 +673,9 @@ class EcombioPredictiveSearch {
 
         html += `
           <a href="/products/${escapeHtml(product.handle)}"
-             class="ecombio-search__item ecombio-search__item--product"
-             role="option"
-             data-type="product"
-             data-id="${escapeHtml(product.id)}"
-             data-position="${i}">
+             class="ecombio-search__item ecombio-search__item--product ecombio-search__item--animate"
+             style="--es-row-index:${queryOffset + i}"
+             role="option" data-type="product" data-id="${escapeHtml(product.id)}" data-position="${i}">
             <span class="ecombio-search__product-media">${imgHtml}</span>
             <span class="ecombio-search__product-info">
               <span class="ecombio-search__product-title">${highlightMatch(product.title, query)}</span>
@@ -413,19 +690,18 @@ class EcombioPredictiveSearch {
       html += `</div>`;
     }
 
-    // ── Collections ── (hidden when category filter is active)
+    // Collections (hidden when category filter is active)
     if (collections.length > 0 && !this.activeCategory.value) {
+      const collOffset = queries.length + products.length;
       html += `<div class="ecombio-search__section ecombio-search__section--collections">
         <p class="ecombio-search__section-label">Collections</p>`;
 
       collections.forEach((col, i) => {
         html += `
           <a href="/collections/${escapeHtml(col.handle)}"
-             class="ecombio-search__item ecombio-search__item--collection"
-             role="option"
-             data-type="collection"
-             data-id="${escapeHtml(col.id)}"
-             data-position="${i}">
+             class="ecombio-search__item ecombio-search__item--collection ecombio-search__item--animate"
+             style="--es-row-index:${collOffset + i}"
+             role="option" data-type="collection" data-id="${escapeHtml(col.id)}" data-position="${i}">
             <span class="ecombio-search__item-icon ecombio-search__item-icon--folder" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -442,14 +718,15 @@ class EcombioPredictiveSearch {
       html += `</div>`;
     }
 
-    // ── View all ──
-    const viewAllHref = `/search?q=${encodeURIComponent(query)}&type=product${this.activeCategory.value ? `&tag=${encodeURIComponent(this.activeCategory.value)}` : ''}`;
+    // View all
+    const viewAllHref = `/search?q=${encodeURIComponent(query)}&type=product${
+      this.activeCategory.value ? `&tag=${encodeURIComponent(this.activeCategory.value)}` : ''}`;
+
     html += `
       <div class="ecombio-search__section ecombio-search__section--footer">
         <a href="${viewAllHref}"
            class="ecombio-search__view-all"
-           role="option"
-           data-type="view_all">
+           role="option" data-type="view_all">
           View all results for <strong>"${escapeHtml(query)}"</strong>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -464,11 +741,11 @@ class EcombioPredictiveSearch {
     this.activeIndex = -1;
   }
 
-  // ── Loading skeleton ───────────────────────────────────────────────────────
+  // ── Loading skeleton ──────────────────────────────────────────────────────
 
   _showLoading() {
-    const skeletonRow = () => `
-      <div class="ecombio-search__skeleton-row" aria-hidden="true">
+    const skeletonRow = (delay = 0) => `
+      <div class="ecombio-search__skeleton-row" aria-hidden="true" style="animation-delay:${delay}ms">
         <div class="ecombio-search__skeleton ecombio-search__skeleton--icon"></div>
         <div class="ecombio-search__skeleton-content">
           <div class="ecombio-search__skeleton ecombio-search__skeleton--title"></div>
@@ -478,16 +755,16 @@ class EcombioPredictiveSearch {
 
     this.dropdown.innerHTML = `
       <div class="ecombio-search__loading" aria-label="Loading results" role="status">
-        ${skeletonRow()}${skeletonRow()}${skeletonRow()}
+        ${skeletonRow(0)}${skeletonRow(80)}${skeletonRow(160)}
       </div>`;
 
     this.openDropdown();
   }
 
-  // ── Empty focus (recent + trending) ───────────────────────────────────────
+  // ── Empty focus (recent + trending) ──────────────────────────────────────
 
   _showEmptyFocus() {
-    const recent = getRecentSearches();
+    const recent   = getRecentSearches();
     const trending = ECOMBIO_SEARCH_CONFIG.TRENDING_SEARCHES;
     let html = '';
 
@@ -503,7 +780,8 @@ class EcombioPredictiveSearch {
 
       recent.forEach((term, i) => {
         html += `
-          <div class="ecombio-search__item ecombio-search__item--recent"
+          <div class="ecombio-search__item ecombio-search__item--recent ecombio-search__item--animate"
+               style="--es-row-index:${i}"
                role="option" data-type="recent" data-query="${escapeHtml(term)}" data-position="${i}">
             <span class="ecombio-search__item-icon" aria-hidden="true">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -551,7 +829,7 @@ class EcombioPredictiveSearch {
     }
   }
 
-  // ── Empty / error states ───────────────────────────────────────────────────
+  // ── Empty / error states ──────────────────────────────────────────────────
 
   _renderEmpty(query) {
     const suggestions = ECOMBIO_SEARCH_CONFIG.TRENDING_SEARCHES.slice(0, 3);
@@ -590,15 +868,14 @@ class EcombioPredictiveSearch {
     this.openDropdown();
   }
 
-  // ── Dropdown open/close ────────────────────────────────────────────────────
+  // ── Dropdown open/close ───────────────────────────────────────────────────
 
   openDropdown() {
     this.dropdown.hidden = false;
-    this.isOpen = true;
+    this.isOpen          = true;
     this.input.setAttribute('aria-expanded', 'true');
     this.root.classList.add('ecombio-search--open');
 
-    // Mobile bottom sheet
     if (this.backdrop && window.innerWidth < 768) {
       this.backdrop.hidden = false;
       document.body.classList.add('ecombio-search-lock');
@@ -607,26 +884,21 @@ class EcombioPredictiveSearch {
 
   closeDropdown() {
     this.dropdown.hidden = true;
-    this.isOpen = false;
-    this.activeIndex = -1;
+    this.isOpen          = false;
+    this.activeIndex     = -1;
     this.input.setAttribute('aria-expanded', 'false');
     this.input.removeAttribute('aria-activedescendant');
     this.root.classList.remove('ecombio-search--open');
 
-    if (this.backdrop) {
-      this.backdrop.hidden = true;
-    }
+    if (this.backdrop) this.backdrop.hidden = true;
     document.body.classList.remove('ecombio-search-lock');
   }
 
-  // ── Keyboard navigation ────────────────────────────────────────────────────
+  // ── Keyboard navigation ───────────────────────────────────────────────────
 
   _onKeydown(e) {
     if (!this.isOpen) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        this._onFocus();
-      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); this._onFocus(); }
       return;
     }
 
@@ -640,7 +912,6 @@ class EcombioPredictiveSearch {
         this.activeIndex = Math.min(this.activeIndex + 1, items.length - 1);
         this._updateActiveItem(items);
         break;
-
       case 'ArrowUp':
         e.preventDefault();
         if (this.activeIndex <= 0) {
@@ -648,24 +919,21 @@ class EcombioPredictiveSearch {
           this.input.removeAttribute('aria-activedescendant');
           items.forEach(el => el.classList.remove('ecombio-search__item--active'));
         } else {
-          this.activeIndex = this.activeIndex - 1;
+          this.activeIndex--;
           this._updateActiveItem(items);
         }
         break;
-
       case 'Enter':
         if (this.activeIndex >= 0 && items[this.activeIndex]) {
           e.preventDefault();
           items[this.activeIndex].click();
         }
         break;
-
       case 'Escape':
         e.preventDefault();
         this.closeDropdown();
         this.input.blur();
         break;
-
       case 'Tab':
         this.closeDropdown();
         break;
@@ -674,20 +942,19 @@ class EcombioPredictiveSearch {
 
   _updateActiveItem(items) {
     items.forEach((el, i) => {
-      const isActive = i === this.activeIndex;
-      el.classList.toggle('ecombio-search__item--active', isActive);
+      const active = i === this.activeIndex;
+      el.classList.toggle('ecombio-search__item--active', active);
       el.id = el.id || `ecombio-option-${this.sfx}-${i}`;
-      if (isActive) {
+      if (active) {
         this.input.setAttribute('aria-activedescendant', el.id);
         el.scrollIntoView({ block: 'nearest' });
       }
     });
   }
 
-  // ── Dropdown click delegation ──────────────────────────────────────────────
+  // ── Dropdown click delegation ─────────────────────────────────────────────
 
   _onDropdownClick(e) {
-    // Recent search row click → populate input
     const recentItem = e.target.closest('[data-type="recent"]');
     if (recentItem) {
       const removeBtn = e.target.closest('[data-action="remove-recent"]');
@@ -707,15 +974,9 @@ class EcombioPredictiveSearch {
       return;
     }
 
-    // Clear all recent
     const clearAll = e.target.closest('[data-action="clear-all"]');
-    if (clearAll) {
-      clearAllRecentSearches();
-      this._showEmptyFocus();
-      return;
-    }
+    if (clearAll) { clearAllRecentSearches(); this._showEmptyFocus(); return; }
 
-    // Trending pill
     const trendingBtn = e.target.closest('[data-action="trending"]');
     if (trendingBtn) {
       const term = trendingBtn.dataset.query;
@@ -726,31 +987,22 @@ class EcombioPredictiveSearch {
       return;
     }
 
-    // Query suggestion → populate input, re-search
     const queryItem = e.target.closest('[data-type="query"]');
     if (queryItem) {
       const q = queryItem.dataset.query;
-      if (q) {
-        this.input.value = q;
-        saveRecentSearch(q);
-      }
+      if (q) { this.input.value = q; saveRecentSearch(q); }
       dispatchSearchEvent('search_result_clicked', {
-        query: this.input.value,
-        resultType: 'query',
-        position: parseInt(queryItem.dataset.position || '0', 10),
-        instance: this.sfx,
+        query: this.input.value, resultType: 'query',
+        position: parseInt(queryItem.dataset.position || '0', 10), instance: this.sfx,
       });
     }
 
-    // Product / collection clicks
     const productItem = e.target.closest('[data-type="product"]');
     if (productItem) {
       dispatchSearchEvent('search_result_clicked', {
-        query: this.input.value,
-        resultType: 'product',
+        query: this.input.value, resultType: 'product',
         productId: productItem.dataset.id,
-        position: parseInt(productItem.dataset.position || '0', 10),
-        instance: this.sfx,
+        position: parseInt(productItem.dataset.position || '0', 10), instance: this.sfx,
       });
       saveRecentSearch(this.input.value);
     }
@@ -758,19 +1010,17 @@ class EcombioPredictiveSearch {
     const colItem = e.target.closest('[data-type="collection"]');
     if (colItem) {
       dispatchSearchEvent('search_result_clicked', {
-        query: this.input.value,
-        resultType: 'collection',
+        query: this.input.value, resultType: 'collection',
         collectionId: colItem.dataset.id,
-        position: parseInt(colItem.dataset.position || '0', 10),
-        instance: this.sfx,
+        position: parseInt(colItem.dataset.position || '0', 10), instance: this.sfx,
       });
       saveRecentSearch(this.input.value);
     }
   }
 
-  // ── Category pill ──────────────────────────────────────────────────────────
+  // ── Category pill ─────────────────────────────────────────────────────────
 
-  _toggleCatList(e) {
+  _toggleCatList() {
     const expanded = this.catBtn.getAttribute('aria-expanded') === 'true';
     this.catBtn.setAttribute('aria-expanded', String(!expanded));
     this.catList.hidden = expanded;
@@ -780,7 +1030,6 @@ class EcombioPredictiveSearch {
     const option = e.target.closest('[role="option"]');
     if (!option) return;
 
-    // Update selected state
     this.catList.querySelectorAll('[role="option"]').forEach(el => {
       el.setAttribute('aria-selected', 'false');
     });
@@ -791,14 +1040,12 @@ class EcombioPredictiveSearch {
       label: option.dataset.label || 'All',
     };
 
-    if (this.catLabel) this.catLabel.textContent = this.activeCategory.label;
-    if (this.catHidden) this.catHidden.value = this.activeCategory.value;
+    if (this.catLabel)  this.catLabel.textContent = this.activeCategory.label;
+    if (this.catHidden) this.catHidden.value       = this.activeCategory.value;
 
-    // Close pill list
     this.catBtn.setAttribute('aria-expanded', 'false');
     this.catList.hidden = true;
 
-    // Re-fire search if query is active
     const query = this.input.value.trim();
     if (query.length >= ECOMBIO_SEARCH_CONFIG.MIN_QUERY_LENGTH) {
       this._showLoading();
@@ -814,12 +1061,11 @@ class EcombioPredictiveSearch {
     }
   }
 
-  // ── Outside click ──────────────────────────────────────────────────────────
+  // ── Outside click ─────────────────────────────────────────────────────────
 
   _onDocumentClick(e) {
     if (!this.root.contains(e.target)) {
       this.closeDropdown();
-      // Also close category list
       if (this.catBtn && this.catList) {
         this.catBtn.setAttribute('aria-expanded', 'false');
         this.catList.hidden = true;
@@ -828,11 +1074,25 @@ class EcombioPredictiveSearch {
   }
 }
 
+// ─── Global keyboard shortcut (⌘K / Ctrl+K) ──────────────────────────────────
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    // Target desktop instance first, fall back to whichever is visible
+    const desktopInput = document.querySelector(
+      '[data-search-instance="desktop"] .ecombio-search__input'
+    );
+    const anyInput = document.querySelector('.ecombio-search__input');
+    const target   = desktopInput || anyInput;
+    if (target) target.focus();
+  }
+});
+
 // ─── Auto-init ────────────────────────────────────────────────────────────────
 
 function initEcombioPredictiveSearch() {
-  const instances = document.querySelectorAll('[data-search-instance]');
-  instances.forEach(el => {
+  document.querySelectorAll('[data-search-instance]').forEach(el => {
     if (!el._ecombioSearch) {
       el._ecombioSearch = new EcombioPredictiveSearch(el);
     }
@@ -845,13 +1105,12 @@ if (document.readyState === 'loading') {
   initEcombioPredictiveSearch();
 }
 
-// Re-init after Shopify section renders (theme editor live preview)
 document.addEventListener('shopify:section:load', initEcombioPredictiveSearch);
 
-// ─── Analytics bridge (hook into your analytics stack) ───────────────────────
-// Listen for events dispatched by EcombioPredictiveSearch and forward to GA4 / Klaviyo etc.
-//
-// Example:
+// ─── Analytics bridge ─────────────────────────────────────────────────────────
 // document.addEventListener('ecombio:search_result_clicked', (e) => {
 //   gtag('event', 'select_content', { content_type: e.detail.resultType, item_id: e.detail.productId });
+// });
+// document.addEventListener('ecombio:voice_result', (e) => {
+//   gtag('event', 'voice_search', { search_term: e.detail.transcript });
 // });

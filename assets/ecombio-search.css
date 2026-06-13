@@ -6,6 +6,11 @@
  * Theming: CSS custom properties — override in your theme's base variables
  * Motion: Respects prefers-reduced-motion
  * Breakpoints: 768px (desktop/mobile split)
+ *
+ * New in this version:
+ *   - Mic button + listening state (pulse ring, active fill)
+ *   - Staggered result row fade-in via --es-row-index
+ *   - Voice transcript live-preview cursor blink
  */
 
 /* ─── Custom Properties ──────────────────────────────────────────────────────── */
@@ -24,6 +29,7 @@
   --es-highlight-text:  #1a1a1a;
   --es-price-color:     #1a1a1a;
   --es-oos-color:       #b04040;
+  --es-mic-active:      #d94040;   /* red while listening */
   --es-radius-sm:       6px;
   --es-radius-md:       10px;
   --es-radius-lg:       14px;
@@ -113,7 +119,6 @@
   flex-shrink: 0;
 }
 
-/* Category dropdown list */
 .ecombio-search__cat-list {
   position: absolute;
   top: calc(100% + 6px);
@@ -169,9 +174,15 @@
 
 .ecombio-search__input::placeholder {
   color: var(--es-text-muted);
+  transition: color var(--es-transition);
 }
 
-/* Remove native search cancel button */
+/* Dimmer placeholder while voice is listening */
+.ecombio-search--listening .ecombio-search__input::placeholder {
+  color: var(--es-mic-active);
+  opacity: 0.7;
+}
+
 .ecombio-search__input::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;
@@ -204,6 +215,71 @@
   display: none;
 }
 
+/* ─── Mic button ─────────────────────────────────────────────────────────────── */
+
+.ecombio-search__mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 2px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--es-text-muted);
+  flex-shrink: 0;
+  position: relative;
+  transition: color var(--es-transition), background var(--es-transition);
+}
+
+.ecombio-search__mic:hover {
+  color: var(--es-text-primary);
+  background: var(--es-accent-soft);
+}
+
+.ecombio-search__mic[hidden] {
+  display: none;
+}
+
+/* Listening state — button turns red */
+.ecombio-search__mic--listening {
+  color: var(--es-mic-active);
+  background: rgba(217, 64, 64, 0.08);
+}
+
+.ecombio-search__mic--listening:hover {
+  background: rgba(217, 64, 64, 0.14);
+  color: var(--es-mic-active);
+}
+
+/* Pulsing ring around mic while listening */
+.ecombio-search__mic--listening::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--es-mic-active);
+  opacity: 0;
+  animation: es-mic-pulse 1.4s ease-out infinite;
+}
+
+.ecombio-search__mic--listening::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--es-mic-active);
+  opacity: 0;
+  animation: es-mic-pulse 1.4s ease-out infinite 0.7s;
+}
+
+@keyframes es-mic-pulse {
+  0%   { transform: scale(0.85); opacity: 0.6; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
 /* ─── Submit button ──────────────────────────────────────────────────────────── */
 
 .ecombio-search__submit {
@@ -222,13 +298,8 @@
   transition: opacity var(--es-transition), transform var(--es-transition);
 }
 
-.ecombio-search__submit:hover {
-  opacity: 0.88;
-}
-
-.ecombio-search__submit:active {
-  transform: scale(0.96);
-}
+.ecombio-search__submit:hover  { opacity: 0.88; }
+.ecombio-search__submit:active { transform: scale(0.96); }
 
 /* ─── Dropdown ───────────────────────────────────────────────────────────────── */
 
@@ -247,7 +318,6 @@
   max-height: var(--es-dropdown-max-h);
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* Animate in */
   animation: es-dropdown-in 140ms ease both;
 }
 
@@ -256,23 +326,12 @@
 }
 
 @keyframes es-dropdown-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Scrollbar styling */
-.ecombio-search__dropdown::-webkit-scrollbar {
-  width: 4px;
-}
-.ecombio-search__dropdown::-webkit-scrollbar-track {
-  background: transparent;
-}
+.ecombio-search__dropdown::-webkit-scrollbar       { width: 4px; }
+.ecombio-search__dropdown::-webkit-scrollbar-track { background: transparent; }
 .ecombio-search__dropdown::-webkit-scrollbar-thumb {
   background: var(--es-border);
   border-radius: 4px;
@@ -330,6 +389,18 @@
   background: var(--es-bg-hover);
 }
 
+/* Staggered fade-in for result rows
+   JS sets --es-row-index on each item. */
+.ecombio-search__item--animate {
+  animation: es-row-in 200ms ease both;
+  animation-delay: calc(var(--es-row-index, 0) * 35ms);
+}
+
+@keyframes es-row-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── Query suggestion items ─────────────────────────────────────────────────── */
 
 .ecombio-search__item--query .ecombio-search__item-text {
@@ -356,9 +427,7 @@
   padding: 8px 16px;
 }
 
-.ecombio-search__product-media {
-  flex-shrink: 0;
-}
+.ecombio-search__product-media { flex-shrink: 0; }
 
 .ecombio-search__product-img {
   display: block;
@@ -447,9 +516,7 @@
 
 /* ─── Recent searches ────────────────────────────────────────────────────────── */
 
-.ecombio-search__item--recent {
-  padding: 7px 16px;
-}
+.ecombio-search__item--recent { padding: 7px 16px; }
 
 .ecombio-search__remove-recent {
   display: flex;
@@ -488,9 +555,7 @@
   text-underline-offset: 2px;
 }
 
-.ecombio-search__clear-recent:hover {
-  color: var(--es-text-primary);
-}
+.ecombio-search__clear-recent:hover { color: var(--es-text-primary); }
 
 /* ─── Trending pills ─────────────────────────────────────────────────────────── */
 
@@ -522,9 +587,7 @@
 
 /* ─── View all ───────────────────────────────────────────────────────────────── */
 
-.ecombio-search__section--footer {
-  padding: 4px;
-}
+.ecombio-search__section--footer { padding: 4px; }
 
 .ecombio-search__view-all {
   display: flex;
@@ -545,9 +608,7 @@
   background: var(--es-accent-soft);
 }
 
-.ecombio-search__view-all strong {
-  font-weight: 700;
-}
+.ecombio-search__view-all strong { font-weight: 700; }
 
 /* ─── Highlight (matched text) ───────────────────────────────────────────────── */
 
@@ -561,16 +622,18 @@
 
 /* ─── Skeleton loaders ───────────────────────────────────────────────────────── */
 
-.ecombio-search__loading {
-  padding: 8px 0;
-}
+.ecombio-search__loading { padding: 8px 0; }
 
 .ecombio-search__skeleton-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
+  animation: es-row-in 180ms ease both;
 }
+
+.ecombio-search__skeleton-row:nth-child(2) { animation-delay: 60ms; }
+.ecombio-search__skeleton-row:nth-child(3) { animation-delay: 120ms; }
 
 .ecombio-search__skeleton {
   background: linear-gradient(
@@ -603,23 +666,8 @@
   gap: 6px;
 }
 
-.ecombio-search__skeleton--title {
-  height: 13px;
-  width: 60%;
-}
-
-.ecombio-search__skeleton--subtitle {
-  height: 11px;
-  width: 35%;
-}
-
-/* Staggered shimmer delay */
-.ecombio-search__skeleton-row:nth-child(2) .ecombio-search__skeleton {
-  animation-delay: 0.2s;
-}
-.ecombio-search__skeleton-row:nth-child(3) .ecombio-search__skeleton {
-  animation-delay: 0.4s;
-}
+.ecombio-search__skeleton--title    { height: 13px; width: 60%; }
+.ecombio-search__skeleton--subtitle { height: 11px; width: 35%; }
 
 /* ─── Empty / error states ───────────────────────────────────────────────────── */
 
@@ -633,10 +681,7 @@
   color: var(--es-text-muted);
 }
 
-.ecombio-search__empty svg {
-  margin-bottom: 4px;
-  opacity: 0.45;
-}
+.ecombio-search__empty svg { margin-bottom: 4px; opacity: 0.45; }
 
 .ecombio-search__empty-title {
   font-size: var(--es-font-size-base);
@@ -645,20 +690,11 @@
   margin: 0;
 }
 
-.ecombio-search__empty-title em {
-  font-style: normal;
-  color: var(--es-text-secondary);
-}
+.ecombio-search__empty-title em { font-style: normal; color: var(--es-text-secondary); }
 
-.ecombio-search__empty-hint {
-  font-size: var(--es-font-size-sm);
-  margin: 2px 0 6px;
-}
+.ecombio-search__empty-hint { font-size: var(--es-font-size-sm); margin: 2px 0 6px; }
 
-.ecombio-search__empty--error svg {
-  color: #b04040;
-  opacity: 0.7;
-}
+.ecombio-search__empty--error svg { color: #b04040; opacity: 0.7; }
 
 /* SR-only announcer */
 .ecombio-search__sr-announce {
@@ -693,17 +729,10 @@
   }
 
   @keyframes es-sheet-in {
-    from {
-      transform: translateY(100%);
-      opacity: 0.6;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    from { transform: translateY(100%); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
   }
 
-  /* Handle bar */
   .ecombio-search__dropdown::before {
     content: '';
     display: block;
@@ -715,23 +744,27 @@
     flex-shrink: 0;
   }
 
-  /* Larger touch targets */
   .ecombio-search__item {
     min-height: 48px;
     padding: 12px 16px;
   }
 
   .ecombio-search__remove-recent {
-    opacity: 1; /* always visible on touch */
+    opacity: 1;
     width: 32px;
     height: 32px;
   }
 
-  /* Backdrop */
+  /* Mic button larger on touch */
+  .ecombio-search__mic {
+    width: 38px;
+    height: 38px;
+  }
+
   .ecombio-search__backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0,0,0,0.35);
     z-index: var(--es-z-backdrop);
     animation: es-fade-in 200ms ease both;
   }
@@ -741,26 +774,25 @@
     to   { opacity: 1; }
   }
 
-  .ecombio-search__backdrop[hidden] {
-    display: none;
-  }
+  .ecombio-search__backdrop[hidden] { display: none; }
 }
 
 /* ─── Body scroll lock ───────────────────────────────────────────────────────── */
 
-body.ecombio-search-lock {
-  overflow: hidden;
-}
+body.ecombio-search-lock { overflow: hidden; }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .ecombio-search__dropdown,
   .ecombio-search__item,
+  .ecombio-search__item--animate,
+  .ecombio-search__skeleton-row,
   .ecombio-search__trending-pill,
   .ecombio-search__cat-btn,
   .ecombio-search__submit,
-  .ecombio-search__clear {
+  .ecombio-search__clear,
+  .ecombio-search__mic {
     transition: none;
     animation: none;
   }
@@ -770,7 +802,10 @@ body.ecombio-search-lock {
     background: var(--es-accent-soft);
   }
 
-  .ecombio-search__dropdown {
+  /* Keep the mic listening state visually clear even without animation */
+  .ecombio-search__mic--listening::before,
+  .ecombio-search__mic--listening::after {
     animation: none;
+    opacity: 0;
   }
 }
