@@ -631,15 +631,15 @@
   document.body.appendChild(dropdown);
 
   // ── Position dropdown anchored below the trigger button ──
+  // position:fixed uses viewport coords — no scroll offset needed
   function positionDropdown() {
-    var rect = trigger.getBoundingClientRect();
-    var scrollY = window.scrollY || window.pageYOffset;
-    var scrollX = window.scrollX || window.pageXOffset;
+    var rect  = trigger.getBoundingClientRect();
     var dropW = 320;
-    var left = rect.right + scrollX - dropW;
-    // Keep on screen
+    var left  = rect.right - dropW;
+    // Keep within viewport
     if (left < 8) left = 8;
-    dropdown.style.top  = (rect.bottom + scrollY + 6) + 'px';
+    if (left + dropW > window.innerWidth - 8) left = window.innerWidth - dropW - 8;
+    dropdown.style.top  = (rect.bottom + 6) + 'px';
     dropdown.style.left = left + 'px';
   }
 
