@@ -4,7 +4,7 @@
   Responsive: mobile / tablet / desktop
 
   Snippets used:
-    - snippets/ecombio-header-utility-bar.liquid   ← NEW
+    - snippets/ecombio-header-utility-bar.liquid
     - snippets/ecombio-header-logo.liquid
     - snippets/ecombio-header-icons.liquid
         - snippets/ecombio-header-icon-store.liquid
@@ -13,6 +13,10 @@
     - snippets/ecombio-search-form.liquid
     - snippets/ecombio-mobile-nav.liquid
     - snippets/ecombio-header-menu-bar.liquid
+
+  Logo & Favicon are managed via Theme Settings → Logo & Favicon
+  (config/settings_schema.json) so they apply globally across all
+  layout files without needing to be set per-section.
 {% endcomment %}
 
 {%- assign show_category   = section.settings.show_category_filter -%}
@@ -22,6 +26,10 @@
 {%- assign enable_bar      = section.settings.enable_free_shipping_bar | default: true -%}
 {%- assign free_ship_min   = section.settings.free_shipping_threshold | default: 75 -%}
 {%- assign upsell_page     = section.settings.enable_upsell_page | default: true -%}
+
+{%- comment -%} ── Logo from Theme Settings (global) ── {%- endcomment -%}
+{%- assign logo       = settings.logo -%}
+{%- assign logo_width = settings.logo_width | default: 140 -%}
 
 {%- comment -%} ── UTILITY BAR (above header) ── {%- endcomment -%}
 {%- render 'ecombio-header-utility-bar',
@@ -43,7 +51,7 @@
         <span></span><span></span><span></span>
       </button>
 
-      {%- render 'ecombio-header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width -%}
+      {%- render 'ecombio-header-logo', logo: logo, logo_width: logo_width -%}
 
       {%- comment -%} ── SEARCH (inline on desktop) ── {%- endcomment -%}
       <div class="ecombio-header__search ecombio-header__search--inline">
@@ -84,25 +92,6 @@
   "class": "section-header",
   "max_blocks": 20,
   "settings": [
-    {
-      "type": "header",
-      "content": "Logo"
-    },
-    {
-      "type": "image_picker",
-      "id": "logo",
-      "label": "Logo image"
-    },
-    {
-      "type": "range",
-      "id": "logo_width",
-      "min": 80,
-      "max": 300,
-      "step": 10,
-      "default": 140,
-      "unit": "px",
-      "label": "Logo width"
-    },
     {
       "type": "header",
       "content": "Utility Bar"
@@ -326,7 +315,6 @@
       "settings": {
         "header_style": "hyper",
         "show_category_filter": true,
-        "logo_width": 140,
         "utility_links": "Track My Order|/apps/tracking, Store Finder|/pages/stores, Help Centre|/pages/faq",
         "show_currency_switcher": true,
         "show_locale_switcher": true
@@ -343,7 +331,6 @@
       "settings": {
         "header_style": "focus",
         "show_category_filter": false,
-        "logo_width": 180,
         "utility_links": "Track My Order|/apps/tracking, Help Centre|/pages/faq",
         "show_currency_switcher": true,
         "show_locale_switcher": true
