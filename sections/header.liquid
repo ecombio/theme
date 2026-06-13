@@ -4,6 +4,7 @@
   Responsive: mobile / tablet / desktop
 
   Snippets used:
+    - snippets/ecombio-header-utility-bar.liquid   ← NEW
     - snippets/ecombio-header-logo.liquid
     - snippets/ecombio-header-icons.liquid
         - snippets/ecombio-header-icon-store.liquid
@@ -21,6 +22,14 @@
 {%- assign enable_bar      = section.settings.enable_free_shipping_bar | default: true -%}
 {%- assign free_ship_min   = section.settings.free_shipping_threshold | default: 75 -%}
 {%- assign upsell_page     = section.settings.enable_upsell_page | default: true -%}
+
+{%- comment -%} ── UTILITY BAR (above header) ── {%- endcomment -%}
+{%- render 'ecombio-header-utility-bar',
+      header_style:    header_style,
+      links:           section.settings.utility_links,
+      show_currency:   section.settings.show_currency_switcher,
+      show_locale:     section.settings.show_locale_switcher
+-%}
 
 <header class="ecombio-header ecombio-header--{{ header_style }}" id="ecombio-header">
 
@@ -93,6 +102,31 @@
       "default": 140,
       "unit": "px",
       "label": "Logo width"
+    },
+    {
+      "type": "header",
+      "content": "Utility Bar"
+    },
+    {
+      "type": "textarea",
+      "id": "utility_links",
+      "label": "Utility links",
+      "default": "Track My Order|/apps/tracking, Store Finder|/pages/stores, Help Centre|/pages/faq",
+      "info": "Comma-separated pairs: Label|/url, Label 2|/url-2. Leave blank to show no links."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency_switcher",
+      "label": "Show currency switcher",
+      "default": true,
+      "info": "Only appears when the store has more than one enabled currency."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale_switcher",
+      "label": "Show language switcher",
+      "default": true,
+      "info": "Only appears when the store has more than one published language."
     },
     {
       "type": "header",
@@ -266,7 +300,7 @@
     },
     {
       "type": "flyout",
-      "name": "Flyout Menau",
+      "name": "Flyout Menu",
       "settings": [
         { "type": "text", "id": "label", "label": "Label", "default": "Browse all categories" },
         {
@@ -289,7 +323,14 @@
   "presets": [
     {
       "name": "Hyper Header",
-      "settings": { "header_style": "hyper", "show_category_filter": true, "logo_width": 140 },
+      "settings": {
+        "header_style": "hyper",
+        "show_category_filter": true,
+        "logo_width": 140,
+        "utility_links": "Track My Order|/apps/tracking, Store Finder|/pages/stores, Help Centre|/pages/faq",
+        "show_currency_switcher": true,
+        "show_locale_switcher": true
+      },
       "blocks": [
         { "type": "flyout",    "settings": { "label": "Browse all categories", "icon": "hamburger" } },
         { "type": "dropdown",  "settings": { "label": "Shop by Room" } },
@@ -299,7 +340,14 @@
     },
     {
       "name": "Focus Header",
-      "settings": { "header_style": "focus", "show_category_filter": false, "logo_width": 180 }
+      "settings": {
+        "header_style": "focus",
+        "show_category_filter": false,
+        "logo_width": 180,
+        "utility_links": "Track My Order|/apps/tracking, Help Centre|/pages/faq",
+        "show_currency_switcher": true,
+        "show_locale_switcher": true
+      }
     }
   ]
 }
