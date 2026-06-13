@@ -1,0 +1,252 @@
+{% comment %}
+  ECOMBIO Header Utility Bar
+  File: snippets/ecombio-header-utility-bar.liquid
+
+  Renders a slim top bar above the main header with:
+    - Left:  configurable utility links (section settings)
+    - Right: currency selector + language/locale selector
+
+  Adapts colour to header_style:
+    - hyper  → dark bar, bold accent on hover
+    - focus  → light bar, subdued tones
+
+  Usage (in sections/header.liquid, before <header>):
+    {%- render 'ecombio-header-utility-bar',
+          header_style: header_style,
+          links: section.settings.utility_links,
+          show_currency: section.settings.show_currency_switcher,
+          show_locale:   section.settings.show_locale_switcher
+    -%}
+{% endcomment %}
+
+{%- liquid
+  assign bar_style    = header_style | default: 'hyper'
+  assign show_curr    = show_currency | default: true
+  assign show_loc     = show_locale   | default: true
+
+  comment
+    Build a small link array from the pipe-delimited setting value.
+    Format expected from section setting:  "Label|/url, Label 2|/url-2"
+  endcomment
+  assign link_pairs = links | split: ','
+-%}
+
+<div class="ecombio-utility-bar ecombio-utility-bar--{{ bar_style }}" role="navigation" aria-label="Utility bar">
+  <div class="ecombio-utility-bar__inner">
+
+    {%- comment -%} ── LEFT: utility links ── {%- endcomment -%}
+    <ul class="ecombio-utility-bar__links" role="list">
+      {%- for pair in link_pairs -%}
+        {%- assign parts = pair | strip | split: '|' -%}
+        {%- if parts.size == 2 -%}
+          <li>
+            <a href="{{ parts[1] | strip | escape }}" class="ecombio-utility-bar__link">
+              {{- parts[0] | strip | escape -}}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+
+    {%- comment -%} ── RIGHT: switchers ── {%- endcomment -%}
+    <div class="ecombio-utility-bar__switchers">
+
+      {%- if show_curr and shop.enabled_currencies.size > 1 -%}
+        <div class="ecombio-utility-bar__switcher ecombio-utility-bar__switcher--currency">
+          {%- form 'currency', id: 'ecombio-currency-form' -%}
+            <label for="ecombio-currency-select" class="visually-hidden">Currency</label>
+            <select id="ecombio-currency-select"
+                    name="currency"
+                    class="ecombio-utility-bar__select"
+                    aria-label="Select currency"
+                    onchange="this.form.submit()">
+              {%- for currency in shop.enabled_currencies -%}
+                <option value="{{ currency.iso_code }}"
+                  {%- if currency == cart.currency %} selected{% endif -%}>
+                  {{ currency.iso_code }} &ndash; {{ currency.symbol }}
+                </option>
+              {%- endfor -%}
+            </select>
+            <span class="ecombio-utility-bar__select-icon" aria-hidden="true">
+              {%- render 'ecombio-icon', icon: 'chevron-down', size: 10 -%}
+            </span>
+          {%- endform -%}
+        </div>
+      {%- endif -%}
+
+      {%- if show_loc and localization.available_languages.size > 1 -%}
+        <div class="ecombio-utility-bar__switcher ecombio-utility-bar__switcher--locale">
+          {%- form 'localization', id: 'ecombio-locale-form' -%}
+            <label for="ecombio-locale-select" class="visually-hidden">Language</label>
+            <select id="ecombio-locale-select"
+                    name="locale_code"
+                    class="ecombio-utility-bar__select"
+                    aria-label="Select language"
+                    onchange="this.form.submit()">
+              {%- for language in localization.available_languages -%}
+                <option value="{{ language.iso_code }}"
+                  {%- if language.iso_code == localization.language.iso_code %} selected{% endif -%}>
+                  {{ language.endonym_name | capitalize }}
+                </option>
+              {%- endfor -%}
+            </select>
+            <span class="ecombio-utility-bar__select-icon" aria-hidden="true">
+              {%- render 'ecombio-icon', icon: 'chevron-down', size: 10 -%}
+            </span>
+          {%- endform -%}
+        </div>
+      {%- endif -%}
+
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+/* ─────────────────────────────────────────────
+   ECOMBIO UTILITY BAR
+   ───────────────────────────────────────────── */
+.ecombio-utility-bar {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.ecombio-utility-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--ecombio-page-width, 1440px);
+  margin: 0 auto;
+  padding: 0 var(--ecombio-gutter, 20px);
+  height: 34px;
+  gap: 16px;
+}
+
+/* ── Links ── */
+.ecombio-utility-bar__links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.ecombio-utility-bar__link {
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+.ecombio-utility-bar__link:hover { opacity: 0.65; }
+
+/* ── Switchers ── */
+.ecombio-utility-bar__switchers {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ecombio-utility-bar__switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ecombio-utility-bar__select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  padding: 4px 18px 4px 4px;
+  border-radius: 3px;
+  outline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+.ecombio-utility-bar__select:hover { opacity: 0.65; }
+
+/* chevron icon sits over the right side of the select */
+.ecombio-utility-bar__select-icon {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+/* divider between switchers */
+.ecombio-utility-bar__switcher + .ecombio-utility-bar__switcher::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 12px;
+  margin-right: 10px;
+  opacity: 0.3;
+}
+
+/* ──────────────────────────────────────────────
+   STYLE VARIANTS
+   ────────────────────────────────────────────── */
+
+/* HYPER — dark charcoal, accent-on-hover */
+.ecombio-utility-bar--hyper {
+  background-color: var(--ecombio-color-utility-bg, #1a1a1a);
+  color: var(--ecombio-color-utility-text, #c8c8c8);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.ecombio-utility-bar--hyper .ecombio-utility-bar__link:hover {
+  color: var(--ecombio-color-accent, #f0c040);
+  opacity: 1;
+}
+.ecombio-utility-bar--hyper .ecombio-utility-bar__select {
+  color: var(--ecombio-color-utility-text, #c8c8c8);
+}
+.ecombio-utility-bar--hyper .ecombio-utility-bar__select-icon {
+  color: var(--ecombio-color-utility-text, #c8c8c8);
+}
+.ecombio-utility-bar--hyper .ecombio-utility-bar__switcher + .ecombio-utility-bar__switcher::before {
+  background-color: #c8c8c8;
+}
+
+/* FOCUS — light warm grey, minimal */
+.ecombio-utility-bar--focus {
+  background-color: var(--ecombio-color-utility-bg-focus, #f5f4f2);
+  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.ecombio-utility-bar--focus .ecombio-utility-bar__link {
+  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
+}
+.ecombio-utility-bar--focus .ecombio-utility-bar__select {
+  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
+}
+.ecombio-utility-bar--focus .ecombio-utility-bar__select-icon {
+  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
+}
+.ecombio-utility-bar--focus .ecombio-utility-bar__switcher + .ecombio-utility-bar__switcher::before {
+  background-color: #5a5a5a;
+}
+
+/* ── Mobile: collapse links at narrow viewport ── */
+@media (max-width: 749px) {
+  .ecombio-utility-bar__links {
+    display: none;
+  }
+  .ecombio-utility-bar__inner {
+    justify-content: flex-end;
+  }
+}
+{% endstylesheet %}
