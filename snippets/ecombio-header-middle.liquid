@@ -1,0 +1,48 @@
+{% comment %}
+  ECOMBIO Header — Middle Bar
+  File: snippets/ecombio-header-middle.liquid
+
+  Renders the main header row (hamburger · logo · search · icons)
+  and the tablet/mobile search row beneath it.
+
+  Parameters:
+    logo          {image}   — settings.logo
+    logo_width    {integer} — settings.logo_width
+    show_category {boolean} — section.settings.show_category_filter
+    show_store    {boolean} — section.settings.show_icon_store
+    show_account  {boolean} — section.settings.show_icon_account
+    show_cart     {boolean} — section.settings.show_icon_cart
+{% endcomment %}
+
+{%- comment -%} ── TOP ROW ── Logo · Search · Icons {%- endcomment -%}
+<div class="ecombio-header__bar">
+  <div class="ecombio-header__inner">
+
+    {%- comment -%} Hamburger (mobile + tablet only) {%- endcomment -%}
+    <button class="ecombio-header__hamburger" id="ecombio-nav-toggle"
+            aria-label="Open navigation" aria-expanded="false" aria-controls="ecombio-mobile-nav">
+      <span></span><span></span><span></span>
+    </button>
+
+    {%- render 'ecombio-header-logo', logo: logo, logo_width: logo_width -%}
+
+    {%- comment -%} ── SEARCH (inline on desktop) ── {%- endcomment -%}
+    <div class="ecombio-header__search ecombio-header__search--inline">
+      {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'desktop' -%}
+    </div>
+
+    {%- render 'ecombio-header-icons',
+          show_store:   show_store,
+          show_account: show_account,
+          show_cart:    show_cart
+    -%}
+
+  </div>
+</div>
+
+{%- comment -%} ── SEARCH ROW (tablet + mobile) ── {%- endcomment -%}
+<div class="ecombio-header__search-row">
+  <div class="ecombio-header__search-row-inner">
+    {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'mobile' -%}
+  </div>
+</div>

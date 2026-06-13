@@ -5,14 +5,15 @@
 
   Snippets used:
     - snippets/ecombio-header-utility-bar.liquid
-    - snippets/ecombio-header-logo.liquid
-    - snippets/ecombio-header-icons.liquid
-        - snippets/ecombio-header-icon-store.liquid
-        - snippets/ecombio-header-icon-account.liquid
-        - snippets/ecombio-header-icon-cart.liquid
-    - snippets/ecombio-search-form.liquid
-    - snippets/ecombio-mobile-nav.liquid
+    - snippets/ecombio-header-middle.liquid
+        - snippets/ecombio-header-logo.liquid
+        - snippets/ecombio-search-form.liquid
+        - snippets/ecombio-header-icons.liquid
+            - snippets/ecombio-header-icon-store.liquid
+            - snippets/ecombio-header-icon-account.liquid
+            - snippets/ecombio-header-icon-cart.liquid
     - snippets/ecombio-header-menu-bar.liquid
+    - snippets/ecombio-mobile-nav.liquid
 
   Logo & Favicon are managed via Theme Settings → Logo & Favicon
   (config/settings_schema.json) so they apply globally across all
@@ -41,38 +42,15 @@
 
 <header class="ecombio-header ecombio-header--{{ header_style }}" id="ecombio-header">
 
-  {%- comment -%} ── TOP ROW ── Logo · Search · Icons {%- endcomment -%}
-  <div class="ecombio-header__bar">
-    <div class="ecombio-header__inner">
-
-      {%- comment -%} Hamburger (mobile + tablet only) {%- endcomment -%}
-      <button class="ecombio-header__hamburger" id="ecombio-nav-toggle"
-              aria-label="Open navigation" aria-expanded="false" aria-controls="ecombio-mobile-nav">
-        <span></span><span></span><span></span>
-      </button>
-
-      {%- render 'ecombio-header-logo', logo: logo, logo_width: logo_width -%}
-
-      {%- comment -%} ── SEARCH (inline on desktop) ── {%- endcomment -%}
-      <div class="ecombio-header__search ecombio-header__search--inline">
-        {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'desktop' -%}
-      </div>
-
-      {%- render 'ecombio-header-icons',
-            show_store:   section.settings.show_icon_store,
-            show_account: section.settings.show_icon_account,
-            show_cart:    section.settings.show_icon_cart
-      -%}
-
-    </div>
-  </div>
-
-  {%- comment -%} ── SEARCH ROW (tablet + mobile) ── {%- endcomment -%}
-  <div class="ecombio-header__search-row">
-    <div class="ecombio-header__search-row-inner">
-      {%- render 'ecombio-search-form', show_category: show_category, id_suffix: 'mobile' -%}
-    </div>
-  </div>
+  {%- comment -%} ── MIDDLE BAR ── Hamburger · Logo · Search · Icons {%- endcomment -%}
+  {%- render 'ecombio-header-middle',
+        logo:          logo,
+        logo_width:    logo_width,
+        show_category: show_category,
+        show_store:    section.settings.show_icon_store,
+        show_account:  section.settings.show_icon_account,
+        show_cart:     section.settings.show_icon_cart
+  -%}
 
   {%- comment -%}
     ── MENU BAR ──
@@ -350,6 +328,7 @@
         "header_style": "hyper",
         "show_category_filter": true,
         "utility_links": "Track My Order|/apps/tracking, Store Finder|/pages/stores, Help Centre|/pages/faq",
+        "show_currency_switcher": true,
         "show_currency_switcher": true,
         "show_locale_switcher": true,
         "show_icon_store": true,
