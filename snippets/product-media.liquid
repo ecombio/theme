@@ -7,7 +7,7 @@
           <div
             class="thumbnail-item{% if forloop.first %} active{% endif %}"
             data-index="{{ forloop.index0 }}"
-            data-image-src="{{ image | image_url: width: 787, height: 787 }}"
+            data-image-src="{{ image | image_url: width: 787 }}"
             data-image-alt="{{ image.alt | default: product.title | escape }}"
             tabindex="0"
             role="button"
@@ -35,7 +35,7 @@
       <div class="main-image-container" id="MainImage">
         {%- assign featured = product.selected_or_first_available_variant.featured_image | default: product.featured_image -%}
         <img
-          src="{{ featured | image_url: width: 787, height: 787 }}"
+          src="{{ featured | image_url: width: 787 }}"
           alt="{{ featured.alt | default: product.title | escape }}"
           width="787"
           height="787"
@@ -80,7 +80,6 @@
     });
   });
 
-  // Swap main image when variant changes
   document.addEventListener('variant:changed', function (e) {
     var variant = e.detail && e.detail.variant;
     if (!variant || !variant.featured_image) return;
@@ -89,7 +88,6 @@
     if (target) selectThumbnail(target);
   });
 
-  // Keep thumbnail column height in sync with main viewer
   var viewer   = document.getElementById('GalleryViewer');
   var thumbCol = gallery.querySelector('.product-thumbnails');
 
