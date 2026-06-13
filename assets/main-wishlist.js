@@ -155,7 +155,8 @@
           setTimeout(function () { btn.textContent = 'Add to cart'; btn.disabled = false; }, 1500);
         } else {
           btn.textContent = 'Added!';
-          document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
+          document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
           setTimeout(function () { btn.textContent = 'Add to cart'; btn.disabled = false; }, 1500);
         }
       })

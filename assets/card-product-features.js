@@ -35,7 +35,8 @@
         .then(function () {
           if (label) label.textContent = 'Added!';
           btn.classList.remove('is-loading');
-          document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
+          document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
           setTimeout(function () { btn.innerHTML = originalHTML; }, 1800);
         })
         .catch(function () {
