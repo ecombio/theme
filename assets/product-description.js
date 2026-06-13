@@ -9,6 +9,9 @@
 
     if (!trigger || !panel || !overlay || !closeBtn) return;
 
+    document.body.appendChild(overlay);
+    document.body.appendChild(panel);
+
     var lastFocus = null;
 
     function open() {
