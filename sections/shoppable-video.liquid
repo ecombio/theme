@@ -1,9 +1,9 @@
 {% comment %}
   Section: Shoppable Video
-  - Carousel of portrait (9:16) video cards
-  - Glassmorphism floating product chip pinned to bottom of each card
-  - Chip click → two-column modal: video left, full product card right
-  - Namespace: "shv-" scoped to section.id
+  - Carousel of portrait (9:16) cards — entire card is clickable → opens modal
+  - Glass chip pinned to card bottom (also opens modal)
+  - Modal: video left | full product form right (swatches, size pills, qty, ATC, Buy Now)
+  - Namespace: "shv-" + section.id
 {% endcomment %}
 
 {%- liquid
@@ -22,12 +22,8 @@
   {%- if heading != blank or subheading != blank -%}
     <div class="shv-head">
       <div class="shv-head__text">
-        {%- if heading != blank -%}
-          <h2 class="shv-head__title">{{ heading }}</h2>
-        {%- endif -%}
-        {%- if subheading != blank -%}
-          <p class="shv-head__sub">{{ subheading }}</p>
-        {%- endif -%}
+        {%- if heading != blank -%}<h2 class="shv-head__title">{{ heading }}</h2>{%- endif -%}
+        {%- if subheading != blank -%}<p class="shv-head__sub">{{ subheading }}</p>{%- endif -%}
       </div>
       <div class="shv-head__nav">
         <button class="shv-arrow" data-shv-prev aria-label="Previous">
@@ -61,14 +57,18 @@
           -%}
 
           <li class="shv-card" {{ block.shopify_attributes }}>
-            <div
+
+            {%- comment %} Entire frame is a button that opens the modal {%- endcomment %}
+            <button
               class="shv-card__frame"
               data-shv-card
               data-has-hosted="{{ has_hosted }}"
               {%- if product != blank -%}data-product-handle="{{ product.handle }}"{%- endif -%}
+              aria-haspopup="dialog"
+              aria-label="Shop {{ product.title | default: 'this video' }}"
             >
 
-              {%- comment %} ── Poster ── {%- endcomment %}
+              {%- comment %} Poster {%- endcomment %}
               {%- if poster != blank -%}
                 {{
                   poster
@@ -84,10 +84,7 @@
                 {{
                   hosted_video.preview_image
                   | image_url: width: 760
-                  | image_tag:
-                    class: 'shv-card__poster',
-                    loading: 'lazy',
-                    alt: product.title | default: 'Video'
+                  | image_tag: class: 'shv-card__poster', loading: 'lazy', alt: product.title | default: 'Video'
                 }}
               {%- else -%}
                 <div class="shv-card__poster shv-card__poster--placeholder">
@@ -95,43 +92,25 @@
                 </div>
               {%- endif -%}
 
-              {%- comment %} ── Hosted video (lazy) ── {%- endcomment %}
+              {%- comment %} Hosted video (lazy-loaded on hover) {%- endcomment %}
               {%- if has_hosted -%}
-                <video
-                  class="shv-card__video"
-                  muted
-                  loop
-                  playsinline
-                  preload="none"
-                  data-shv-video
-                >
+                <video class="shv-card__video" muted loop playsinline preload="none" data-shv-video>
                   {%- for source in hosted_video.sources -%}
                     {%- if source.format == 'mp4' -%}
                       <source data-src="{{ source.url }}" type="video/mp4">
                     {%- endif -%}
                   {%- endfor -%}
-                  {%- comment %} Fallback: first available source {%- endcomment %}
-                  {%- unless hosted_video.sources.first.format == 'mp4' -%}
-                    {%- for source in hosted_video.sources -%}
-                      {%- unless forloop.first == false and source.format == 'mp4' -%}
-                        <source data-src="{{ source.url }}" type="video/{{ source.format }}">
-                      {%- endunless -%}
-                    {%- endfor -%}
-                  {%- endunless -%}
+                  {%- if hosted_video.sources.first.format != 'mp4' -%}
+                    <source data-src="{{ hosted_video.sources.first.url }}" type="video/{{ hosted_video.sources.first.format }}">
+                  {%- endif -%}
                 </video>
               {%- elsif video_url != blank -%}
                 <div class="shv-card__embed" data-embed-url="{{ video_url }}" data-shv-embed></div>
               {%- endif -%}
 
-              {%- comment %} ── Play overlay (taps on mobile) ── {%- endcomment %}
+              {%- comment %} Sound toggle — stops propagation so it doesn't open modal {%- endcomment %}
               {%- if has_hosted -%}
-                <button class="shv-play-btn" data-shv-play aria-label="Play">
-                  <svg class="shv-play-icon" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.22)"/>
-                    <path d="M16 13l12 7-12 7V13z" fill="#fff"/>
-                  </svg>
-                </button>
-                <button class="shv-sound-btn" data-shv-sound data-on="false" aria-label="Unmute">
+                <span class="shv-sound-btn" data-shv-sound data-on="false" role="button" aria-label="Unmute" tabindex="0">
                   <svg class="shv-icon shv-icon--off" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                     <path d="M3 7.5v5h3.33L11 17V3L6.33 7.5H3Z" fill="currentColor"/>
                     <path d="M14 7l3.5 6M17.5 7L14 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -140,15 +119,15 @@
                     <path d="M3 7.5v5h3.33L11 17V3L6.33 7.5H3Z" fill="currentColor"/>
                     <path d="M13.5 6.5a5 5 0 0 1 0 7M15.5 4.5a8 8 0 0 1 0 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                   </svg>
-                </button>
+                </span>
               {%- endif -%}
 
-              {%- comment %} ── Gradient shade ── {%- endcomment %}
+              {%- comment %} Gradient shade {%- endcomment %}
               <div class="shv-shade" aria-hidden="true"></div>
 
-              {%- comment %} ── Glass product chip ── {%- endcomment %}
+              {%- comment %} Glass product chip — sits inside the button frame {%- endcomment %}
               {%- if product != blank -%}
-                <button class="shv-chip" data-shv-chip aria-haspopup="dialog">
+                <span class="shv-chip">
                   <span class="shv-chip__media">
                     {%- if product.featured_image -%}
                       {{ product.featured_image | image_url: width: 100 | image_tag: loading: 'lazy', alt: '' }}
@@ -157,7 +136,7 @@
                     {%- endif -%}
                   </span>
                   <span class="shv-chip__body">
-                    <span class="shv-chip__name">{{ product.title | truncate: 28 }}</span>
+                    <span class="shv-chip__name">{{ product.title | truncate: 26 }}</span>
                     <span class="shv-chip__prices">
                       <span class="shv-chip__price">{{ product.price | money }}</span>
                       {%- if product.compare_at_price > product.price -%}
@@ -167,57 +146,177 @@
                   </span>
                   <span class="shv-chip__arrow" aria-hidden="true">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="7" fill="rgba(255,255,255,0.25)"/>
-                      <path d="M5 4l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </span>
-                </button>
+                </span>
               {%- endif -%}
 
-            </div>
+            </button>
           </li>
 
-          {%- comment %} ── Hidden product template ── {%- endcomment %}
+          {%- comment %} Hidden product template — cloned into modal right column {%- endcomment %}
           {%- if product != blank -%}
             <template class="shv-product-data" data-product-handle="{{ product.handle }}">
-              <div class="shv-modal__pcard">
-                <div class="shv-modal__gallery">
-                  {%- if product.featured_image -%}
-                    {{ product.featured_image | image_url: width: 640 | image_tag: loading: 'eager', alt: product.title, class: 'shv-modal__gallery-img' }}
+              <script>
+                window.__shvProduct_{{ product.id }} = {
+                  variants: {{ product.variants | json }},
+                  options:  {{ product.options_with_values | json }}
+                };
+              </script>
+              <div class="shv-pform" data-shv-pform data-product-id="{{ product.id }}">
+
+                {%- comment %} Image gallery {%- endcomment %}
+                <div class="shv-pform__gallery">
+                  {%- if product.images.size > 1 -%}
+                    <div class="shv-pform__gallery-main">
+                      {%- for image in product.images limit: 1 -%}
+                        {{ image | image_url: width: 700 | image_tag: loading: 'eager', alt: product.title, class: 'shv-pform__gallery-img', data-shv-main-img: '' }}
+                      {%- endfor -%}
+                    </div>
+                    <div class="shv-pform__thumbs">
+                      {%- for image in product.images limit: 5 -%}
+                        <button class="shv-pform__thumb {% if forloop.first %}is-active{% endif %}" data-src="{{ image | image_url: width: 700 }}" type="button">
+                          {{ image | image_url: width: 120 | image_tag: loading: 'lazy', alt: '' }}
+                        </button>
+                      {%- endfor -%}
+                    </div>
+                  {%- elsif product.featured_image -%}
+                    <div class="shv-pform__gallery-main">
+                      {{ product.featured_image | image_url: width: 700 | image_tag: loading: 'eager', alt: product.title, class: 'shv-pform__gallery-img' }}
+                    </div>
                   {%- else -%}
-                    {{ 'product-1' | placeholder_svg_tag: 'shv-modal__gallery-img shv-modal__gallery-img--ph' }}
+                    <div class="shv-pform__gallery-main shv-pform__gallery-main--ph">
+                      {{ 'product-1' | placeholder_svg_tag: 'shv-pform__gallery-img' }}
+                    </div>
                   {%- endif -%}
                 </div>
-                <div class="shv-modal__info">
-                  {%- if product.vendor != blank -%}
-                    <p class="shv-modal__vendor">{{ product.vendor | upcase }}</p>
-                  {%- endif -%}
-                  <h3 class="shv-modal__title">{{ product.title }}</h3>
-                  <p class="shv-modal__price-row">
-                    <span class="shv-modal__price">{{ product.price | money }}</span>
-                    {%- if product.compare_at_price > product.price -%}
-                      <s class="shv-modal__compare">{{ product.compare_at_price | money }}</s>
+
+                {%- comment %} Info + form {%- endcomment %}
+                <div class="shv-pform__info">
+
+                  {%- comment %} Header {%- endcomment %}
+                  <div class="shv-pform__header">
+                    {%- assign cv = product.selected_or_first_available_variant -%}
+                    {%- if cv.compare_at_price > cv.price -%}
+                      {%- assign savings_pct = cv.compare_at_price | minus: cv.price | times: 100.0 | divided_by: cv.compare_at_price | round -%}
+                      <span class="shv-pform__badge">Save {{ savings_pct }}%</span>
                     {%- endif -%}
-                  </p>
+                    {%- if product.vendor != blank -%}
+                      <p class="shv-pform__vendor">{{ product.vendor | upcase }}</p>
+                    {%- endif -%}
+                    <h3 class="shv-pform__title">{{ product.title }}</h3>
+                  </div>
+
+                  {%- comment %} Pricing {%- endcomment %}
+                  <div class="shv-pform__pricing">
+                    <span class="shv-pform__price {% if cv.compare_at_price > cv.price %}is-sale{% endif %}" data-shv-price>
+                      {{ cv.price | money }}
+                    </span>
+                    {%- if cv.compare_at_price > cv.price -%}
+                      <s class="shv-pform__compare" data-shv-compare>{{ cv.compare_at_price | money }}</s>
+                    {%- endif -%}
+                  </div>
+
+                  {%- comment %} Variant options {%- endcomment %}
+                  <div class="shv-pform__variants">
+
+                    {%- comment %} Color swatches {%- endcomment %}
+                    {%- assign color_opt = product.options_with_values | where: 'name', 'Color' | first -%}
+                    {%- if color_opt -%}
+                      {%- assign color_idx = color_opt.position | minus: 1 -%}
+                      <div class="shv-pform__option">
+                        <div class="shv-pform__option-label">
+                          Color: <span class="shv-pform__option-val" data-shv-selected-color>{{ cv.options[color_idx] }}</span>
+                        </div>
+                        <div class="shv-pform__swatches">
+                          {%- for value in color_opt.values -%}
+                            <label class="shv-pform__swatch-label" title="{{ value | escape }}">
+                              <input
+                                type="radio"
+                                name="shv-Color-{{ product.id }}"
+                                value="{{ value | escape }}"
+                                class="shv-pform__swatch-radio"
+                                data-shv-option="Color"
+                                {% if cv.options[color_idx] == value %}checked{% endif %}
+                                aria-label="{{ value | escape }}"
+                              >
+                              <span
+                                class="shv-pform__swatch"
+                                style="background-color: var(--swatch-{{ value | handle }}, #ccc);"
+                              ></span>
+                            </label>
+                          {%- endfor -%}
+                        </div>
+                      </div>
+                    {%- endif -%}
+
+                    {%- comment %} Other options (Size, etc.) as pills {%- endcomment %}
+                    {%- for option in product.options_with_values -%}
+                      {%- if option.name == 'Color' -%}{%- continue -%}{%- endif -%}
+                      {%- assign opt_idx = option.position | minus: 1 -%}
+                      <div class="shv-pform__option">
+                        <div class="shv-pform__option-label">
+                          {{ option.name }}: <span class="shv-pform__option-val" data-shv-selected-opt="{{ option.name }}">{{ cv.options[opt_idx] }}</span>
+                        </div>
+                        <div class="shv-pform__pills">
+                          {%- for value in option.values -%}
+                            <label class="shv-pform__pill-label">
+                              <input
+                                type="radio"
+                                name="shv-{{ option.name }}-{{ product.id }}"
+                                value="{{ value | escape }}"
+                                class="shv-pform__pill-radio"
+                                data-shv-option="{{ option.name }}"
+                                {% if cv.options[opt_idx] == value %}checked{% endif %}
+                                aria-label="{{ value | escape }}"
+                              >
+                              <span class="shv-pform__pill">{{ value }}</span>
+                            </label>
+                          {%- endfor -%}
+                        </div>
+                      </div>
+                    {%- endfor -%}
+
+                  </div>
+
+                  {%- comment %} Description snippet {%- endcomment %}
                   {%- if product.description != blank -%}
-                    <p class="shv-modal__desc">{{ product.description | strip_html | truncatewords: 36 }}</p>
+                    <p class="shv-pform__desc">{{ product.description | strip_html | truncatewords: 30 }}</p>
                   {%- endif -%}
 
-                  {%- if product.variants.size > 1 -%}
-                    <label class="shv-modal__label">Options</label>
-                    <select class="shv-modal__select" data-shv-variant>
-                      {%- for variant in product.variants -%}
-                        <option value="{{ variant.id }}"{% unless variant.available %} disabled{% endunless %}>
-                          {{ variant.title }}{% unless variant.available %} — Sold out{% endunless %}
-                        </option>
-                      {%- endfor -%}
-                    </select>
-                  {%- else -%}
-                    <input type="hidden" data-shv-variant value="{{ product.selected_or_first_available_variant.id }}">
-                  {%- endif -%}
+                  {%- comment %} Quantity + Add to cart {%- endcomment %}
+                  <div class="shv-pform__actions">
+                    <div class="shv-pform__qty">
+                      <button class="shv-pform__qty-btn" type="button" data-shv-qty-minus aria-label="Decrease">
+                        <svg width="14" height="2" viewBox="0 0 14 2" fill="none" aria-hidden="true">
+                          <path d="M1 1h12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                      <input class="shv-pform__qty-input" type="number" value="1" min="1" max="99" data-shv-qty aria-label="Quantity">
+                      <button class="shv-pform__qty-btn" type="button" data-shv-qty-plus aria-label="Increase">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <button class="shv-pform__atc" type="button" data-shv-atc data-variant-id="{{ cv.id }}">
+                      {%- if cv.available -%}Add to cart{%- else -%}Sold out{%- endif -%}
+                    </button>
+                  </div>
 
-                  <button class="shv-modal__add" data-shv-add>Add to cart</button>
-                  <a class="shv-modal__full-link" href="{{ product.url }}">View full details</a>
+                  {%- comment %} Buy now {%- endcomment %}
+                  <form action="/cart" method="post" class="shv-pform__buynow-form">
+                    <input type="hidden" name="id" data-shv-buy-variant value="{{ cv.id }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button class="shv-pform__buynow" type="submit" name="checkout"
+                      {% unless cv.available %}disabled{% endunless %}>
+                      Buy it now
+                    </button>
+                  </form>
+
+                  <a class="shv-pform__full-link" href="{{ product.url }}">View full details →</a>
+
                 </div>
               </div>
             </template>
@@ -227,21 +326,19 @@
       {%- else -%}
         {%- for i in (1..4) -%}
           <li class="shv-card">
-            <div class="shv-card__frame">
-              <div class="shv-card__poster shv-card__poster--placeholder">
-                {{ 'lifestyle-1' | placeholder_svg_tag: 'shv-ph-svg' }}
-              </div>
+            <div class="shv-card__frame shv-card__frame--ph">
+              <div class="shv-card__poster shv-card__poster--placeholder">{{ 'lifestyle-1' | placeholder_svg_tag: 'shv-ph-svg' }}</div>
               <div class="shv-shade" aria-hidden="true"></div>
-              <div class="shv-chip shv-chip--ph">
+              <span class="shv-chip">
                 <span class="shv-chip__media">{{ 'product-1' | placeholder_svg_tag: 'shv-chip__ph' }}</span>
                 <span class="shv-chip__body">
                   <span class="shv-chip__name">Example Product</span>
                   <span class="shv-chip__prices"><span class="shv-chip__price">$209.00</span><s class="shv-chip__compare">$299.00</s></span>
                 </span>
                 <span class="shv-chip__arrow" aria-hidden="true">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="7" fill="rgba(255,255,255,0.25)"/><path d="M5 4l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </span>
-              </div>
+              </span>
             </div>
           </li>
         {%- endfor -%}
@@ -250,7 +347,7 @@
     </ul>
   </div>
 
-  {%- comment %} ── Modal ── {%- endcomment %}
+  {%- comment %} Modal {%- endcomment %}
   <div class="shv-modal" data-shv-modal hidden role="dialog" aria-modal="true" aria-label="Shop this video">
     <div class="shv-modal__backdrop" data-shv-close></div>
     <div class="shv-modal__panel">
@@ -279,45 +376,26 @@
     --shv-px:        {{ section.settings.section_padding_x | default: 36 }}px;
   }
 
-  /* ── Root ── */
   .shv-root {
     background: var(--shv-bg);
     color: var(--shv-fg);
     padding: {{ section.settings.section_padding_top | default: 52 }}px 0 {{ section.settings.section_padding_bottom | default: 52 }}px;
   }
 
-  /* ── Header ── */
+  /* ── Head ── */
   .shv-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 0 var(--shv-px);
-    margin-bottom: 20px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; padding: 0 var(--shv-px); margin-bottom: 20px;
   }
-  .shv-head__title {
-    margin: 0 0 3px;
-    font-size: clamp(1.25rem, 2.2vw, 1.8rem);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-  }
-  .shv-head__sub {
-    margin: 0;
-    font-size: 0.88rem;
-    opacity: 0.5;
-  }
+  .shv-head__title { margin: 0 0 3px; font-size: clamp(1.25rem, 2.2vw, 1.8rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+  .shv-head__sub { margin: 0; font-size: 0.88rem; opacity: 0.5; }
   .shv-head__nav { display: flex; gap: 8px; flex-shrink: 0; }
   .shv-arrow {
-    width: 36px; height: 36px;
-    border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     border: 1px solid rgba(255,255,255,0.14);
     background: rgba(255,255,255,0.05);
-    color: var(--shv-fg);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    transition: background 0.15s;
+    color: var(--shv-fg); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; backdrop-filter: blur(6px); transition: background 0.15s;
   }
   .shv-arrow:hover { background: rgba(255,255,255,0.12); }
   .shv-arrow:disabled { opacity: 0.2; pointer-events: none; }
@@ -325,325 +403,290 @@
   /* ── Rail ── */
   .shv-rail-wrap { padding: 0 var(--shv-px); }
   .shv-rail {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: calc(
-      (100% - (var(--shv-visible) - 1) * var(--shv-gap)) / var(--shv-visible)
-    );
-    gap: var(--shv-gap);
-    list-style: none;
-    margin: 0; padding: 4px 0 12px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: grid; grid-auto-flow: column;
+    grid-auto-columns: calc((100% - (var(--shv-visible) - 1) * var(--shv-gap)) / var(--shv-visible));
+    gap: var(--shv-gap); list-style: none; margin: 0; padding: 4px 0 12px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   .shv-rail::-webkit-scrollbar { display: none; }
   .shv-card { scroll-snap-align: start; }
 
-  /* ── Card ── */
+  /* ── Card frame — now a <button> ── */
   .shv-card__frame {
-    position: relative;
-    aspect-ratio: 9 / 16;
-    border-radius: var(--shv-radius);
-    overflow: hidden;
-    background: #1c1c22;
+    position: relative; aspect-ratio: 9 / 16;
+    border-radius: var(--shv-radius); overflow: hidden;
+    background: #1c1c22; display: block; width: 100%;
+    border: none; padding: 0; cursor: pointer;
+    outline-offset: 3px;
   }
+  .shv-card__frame:focus-visible { outline: 2px solid rgba(255,255,255,0.5); }
+  .shv-card__frame--ph { cursor: default; }
 
-  .shv-card__poster,
-  .shv-card__video {
-    position: absolute;
-    inset: 0; width: 100%; height: 100%;
+  .shv-card__poster, .shv-card__video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
     object-fit: cover; display: block;
   }
-  .shv-card__video {
-    z-index: 1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    background: #000;
-  }
+  .shv-card__video { z-index: 1; opacity: 0; transition: opacity 0.3s; background: #000; }
   .shv-card__poster--placeholder { background: #222228; }
   .shv-card__poster--placeholder .shv-ph-svg { width: 100%; height: 100%; opacity: 0.1; }
 
   .shv-card__frame.is-playing .shv-card__video { opacity: 1; }
-  .shv-card__frame.is-playing .shv-card__poster { opacity: 0; transition: opacity 0.3s ease; }
-  .shv-card__frame.is-playing .shv-play-btn { opacity: 0; pointer-events: none; }
+  .shv-card__frame.is-playing .shv-card__poster { opacity: 0; transition: opacity 0.3s; }
 
   .shv-card__embed { position: absolute; inset: 0; z-index: 1; }
   .shv-card__embed iframe { width: 100%; height: 100%; border: none; }
 
-  /* ── Play btn ── */
-  .shv-play-btn {
-    position: absolute; inset: 0; z-index: 3;
-    display: flex; align-items: center; justify-content: center;
-    background: transparent; border: none; cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  .shv-play-icon { width: 48px; height: 48px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
-
   /* ── Sound btn ── */
   .shv-sound-btn {
-    position: absolute; top: 12px; right: 12px; z-index: 4;
-    width: 32px; height: 32px; border-radius: 50%; border: none;
-    background: rgba(0,0,0,0.35);
-    backdrop-filter: blur(8px);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    position: absolute; top: 12px; right: 12px; z-index: 5;
+    width: 32px; height: 32px; border-radius: 50;
+    background: rgba(0,0,0,0.38); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 50%;
   }
-  .shv-icon { width: 15px; height: 15px; }
+  .shv-icon { width: 14px; height: 14px; }
   .shv-icon--on { display: none; }
   .shv-sound-btn[data-on="true"] .shv-icon--off { display: none; }
   .shv-sound-btn[data-on="true"] .shv-icon--on  { display: block; }
 
-  /* ── Shade ── */
+  /* ── Shade + chip ── */
   .shv-shade {
-    position: absolute; left: 0; right: 0; bottom: 0;
-    height: 52%;
-    background: linear-gradient(to top,
-      rgba(0,0,0,0.62) 0%,
-      rgba(0,0,0,0.18) 55%,
-      rgba(0,0,0,0) 100%);
+    position: absolute; left: 0; right: 0; bottom: 0; height: 55%;
+    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 50%, transparent 100%);
     z-index: 2; pointer-events: none;
   }
-
-  /* ── Glass chip ── */
   .shv-chip {
-    position: absolute;
-    left: 10px; right: 10px; bottom: 10px;
-    z-index: 4;
-    display: flex; align-items: center; gap: 9px;
-    padding: 8px 8px 8px 8px;
-    border-radius: 14px; border: none;
-    background: rgba(255,255,255,0.14);
-    backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 4;
+    display: flex; align-items: center; gap: 9px; padding: 8px 10px 8px 8px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.13);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
     border: 1px solid rgba(255,255,255,0.22);
-    color: #fff;
-    cursor: pointer; text-align: left;
-    transition: background 0.2s, transform 0.18s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+    color: #fff; text-align: left;
+    transition: background 0.2s;
   }
-  .shv-chip:hover { background: rgba(255,255,255,0.22); transform: translateY(-2px); }
-  .shv-chip--ph { cursor: default; }
+  .shv-card__frame:hover .shv-chip { background: rgba(255,255,255,0.2); }
 
   .shv-chip__media {
-    width: 36px; height: 36px; border-radius: 8px;
-    overflow: hidden; flex-shrink: 0;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.18);
+    width: 38px; height: 38px; border-radius: 9px; overflow: hidden; flex-shrink: 0;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
   }
-  .shv-chip__media img,
-  .shv-chip__ph { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shv-chip__media img, .shv-chip__ph { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  .shv-chip__body {
-    display: flex; flex-direction: column;
-    flex: 1; min-width: 0; gap: 1px;
-  }
-  .shv-chip__name {
-    font-size: 0.77rem; font-weight: 600;
-    line-height: 1.25; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
-  }
+  .shv-chip__body { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+  .shv-chip__name { font-size: 0.78rem; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .shv-chip__prices { display: flex; align-items: baseline; gap: 5px; }
-  .shv-chip__price  { font-size: 0.75rem; font-weight: 500; }
-  .shv-chip__compare { font-size: 0.72rem; opacity: 0.55; font-weight: 400; }
+  .shv-chip__price { font-size: 0.76rem; font-weight: 500; }
+  .shv-chip__compare { font-size: 0.72rem; opacity: 0.5; }
 
   .shv-chip__arrow {
-    flex-shrink: 0; width: 26px; height: 26px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.22);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.3);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff;
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.28);
+    display: flex; align-items: center; justify-content: center; color: #fff;
   }
 
   /* ── Modal ── */
   .shv-modal {
     position: fixed; inset: 0; z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
   }
   .shv-modal[hidden] { display: none; }
 
   .shv-modal__backdrop {
     position: absolute; inset: 0;
-    background: rgba(8,8,12,0.75);
-    backdrop-filter: blur(4px);
+    background: rgba(8,8,12,0.78);
+    backdrop-filter: blur(6px);
     cursor: pointer;
   }
 
   .shv-modal__panel {
     position: relative; z-index: 1;
-    width: min(860px, 100%);
-    max-height: min(680px, 92vh);
-    display: grid;
-    grid-template-columns: 0.78fr 1fr;
-    border-radius: 22px;
-    overflow: hidden;
-    /* Glass panel */
-    background: rgba(22,22,28,0.72);
-    backdrop-filter: blur(28px) saturate(1.5);
-    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+    width: min(920px, 100%); max-height: min(700px, 94vh);
+    display: grid; grid-template-columns: 0.72fr 1fr;
+    border-radius: 24px; overflow: hidden;
+    background: rgba(18,18,22,0.7);
+    backdrop-filter: blur(32px) saturate(1.6);
+    -webkit-backdrop-filter: blur(32px) saturate(1.6);
     border: 1px solid rgba(255,255,255,0.1);
-    box-shadow:
-      0 32px 64px rgba(0,0,0,0.55),
-      inset 0 1px 0 rgba(255,255,255,0.08);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
     color: #f0f0ee;
   }
 
   .shv-modal__close {
-    position: absolute; top: 14px; right: 14px; z-index: 5;
+    position: absolute; top: 14px; right: 14px; z-index: 10;
     width: 32px; height: 32px; border-radius: 50%; border: none;
-    background: rgba(255,255,255,0.12);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.18);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.16); color: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: background 0.15s;
   }
-  .shv-modal__close:hover { background: rgba(255,255,255,0.22); }
+  .shv-modal__close:hover { background: rgba(255,255,255,0.2); }
 
-  /* ── Modal video column ── */
-  .shv-modal__video-col {
-    position: relative;
-    background: #000;
-    min-height: 0;
-  }
+  /* ── Video column ── */
+  .shv-modal__video-col { position: relative; background: #000; min-height: 0; }
   .shv-modal__video-col video,
   .shv-modal__video-col iframe,
   .shv-modal__video-col img {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
+    position: absolute; inset: 0; width: 100%; height: 100%;
     object-fit: cover; border: none; display: block;
   }
 
-  /* ── Modal product column ── */
+  /* ── Product column ── */
   .shv-modal__product-col {
-    overflow-y: auto;
-    display: flex; flex-direction: column;
-    border-left: 1px solid rgba(255,255,255,0.07);
+    overflow-y: auto; display: flex; flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,0.06);
   }
+  .shv-modal__product-col::-webkit-scrollbar { width: 4px; }
+  .shv-modal__product-col::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
-  .shv-modal__pcard {
-    display: flex; flex-direction: column; flex: 1;
+  /* ── Product form layout ── */
+  .shv-pform { display: flex; flex-direction: column; }
+
+  .shv-pform__gallery { position: relative; background: rgba(255,255,255,0.04); }
+  .shv-pform__gallery-main { aspect-ratio: 4 / 3; overflow: hidden; }
+  .shv-pform__gallery-main--ph { background: rgba(255,255,255,0.05); }
+  .shv-pform__gallery-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s; }
+
+  .shv-pform__thumbs {
+    display: flex; gap: 6px; padding: 8px 10px; overflow-x: auto;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    scrollbar-width: none;
   }
-
-  .shv-modal__gallery {
-    width: 100%;
-    background: rgba(255,255,255,0.05);
-    aspect-ratio: 4 / 3;
-    position: relative;
+  .shv-pform__thumbs::-webkit-scrollbar { display: none; }
+  .shv-pform__thumb {
+    flex-shrink: 0; width: 52px; height: 52px; border-radius: 8px; overflow: hidden;
+    border: 2px solid transparent; padding: 0; cursor: pointer; background: none;
+    transition: border-color 0.15s;
   }
-  .shv-modal__gallery-img {
-    width: 100%; height: 100%;
-    object-fit: cover; display: block;
-  }
-  .shv-modal__gallery-img--ph { opacity: 0.15; }
+  .shv-pform__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shv-pform__thumb.is-active { border-color: rgba(255,255,255,0.6); }
+  .shv-pform__thumb:hover { border-color: rgba(255,255,255,0.3); }
 
-  .shv-modal__info {
-    padding: 20px 22px 24px;
-    display: flex; flex-direction: column; gap: 9px;
-    flex: 1;
-  }
+  /* ── Info area ── */
+  .shv-pform__info { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 12px; }
 
-  .shv-modal__vendor {
-    margin: 0;
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    opacity: 0.45;
-  }
-
-  .shv-modal__title {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-  }
-
-  .shv-modal__price-row { margin: 0; display: flex; align-items: baseline; gap: 8px; }
-  .shv-modal__price { font-size: 1rem; font-weight: 600; }
-  .shv-modal__compare { font-size: 0.85rem; opacity: 0.42; font-weight: 400; }
-
-  .shv-modal__desc {
-    margin: 0;
-    font-size: 0.82rem;
-    line-height: 1.6;
-    opacity: 0.6;
-  }
-
-  .shv-modal__label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    opacity: 0.5;
-    margin-bottom: -4px;
-  }
-
-  .shv-modal__select {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 0.85rem;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
+  .shv-pform__header { display: flex; flex-direction: column; gap: 4px; }
+  .shv-pform__badge {
+    display: inline-block; align-self: flex-start;
+    padding: 3px 9px; border-radius: 6px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em;
     color: #f0f0ee;
-    cursor: pointer;
-    appearance: auto;
   }
+  .shv-pform__vendor { margin: 0; font-size: 0.66rem; letter-spacing: 0.1em; opacity: 0.4; }
+  .shv-pform__title { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
 
-  .shv-modal__add {
-    width: 100%; margin-top: 4px;
-    padding: 13px;
-    border: none; border-radius: 12px;
-    background: var(--shv-accent);
-    color: var(--shv-accent-fg);
-    font-size: 0.9rem; font-weight: 700;
-    cursor: pointer;
+  .shv-pform__pricing { display: flex; align-items: baseline; gap: 8px; }
+  .shv-pform__price { font-size: 1.1rem; font-weight: 700; }
+  .shv-pform__price.is-sale { color: #ff6b6b; }
+  .shv-pform__compare { font-size: 0.88rem; opacity: 0.4; }
+
+  /* ── Variants ── */
+  .shv-pform__variants { display: flex; flex-direction: column; gap: 12px; }
+  .shv-pform__option { display: flex; flex-direction: column; gap: 7px; }
+  .shv-pform__option-label { font-size: 0.78rem; font-weight: 600; opacity: 0.7; }
+  .shv-pform__option-val { font-weight: 500; opacity: 1; }
+
+  /* Swatches */
+  .shv-pform__swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .shv-pform__swatch-label { cursor: pointer; }
+  .shv-pform__swatch-radio { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+  .shv-pform__swatch {
+    display: block; width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid transparent; outline: 2px solid transparent;
+    outline-offset: 2px; transition: outline-color 0.15s;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .shv-pform__swatch-radio:checked + .shv-pform__swatch { outline-color: rgba(255,255,255,0.7); }
+  .shv-pform__swatch-label:hover .shv-pform__swatch { outline-color: rgba(255,255,255,0.35); }
+
+  /* Pills */
+  .shv-pform__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .shv-pform__pill-label { cursor: pointer; }
+  .shv-pform__pill-radio { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+  .shv-pform__pill {
+    display: block; padding: 5px 13px; border-radius: 8px; font-size: 0.8rem; font-weight: 500;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .shv-pform__pill-radio:checked + .shv-pform__pill {
+    background: rgba(255,255,255,0.9); color: #111; border-color: transparent;
+  }
+  .shv-pform__pill-label:hover .shv-pform__pill { background: rgba(255,255,255,0.15); }
+
+  /* Description */
+  .shv-pform__desc { margin: 0; font-size: 0.8rem; line-height: 1.6; opacity: 0.55; }
+
+  /* Actions */
+  .shv-pform__actions { display: flex; gap: 10px; align-items: stretch; }
+
+  .shv-pform__qty {
+    display: flex; align-items: center;
+    border: 1px solid rgba(255,255,255,0.16); border-radius: 10px;
+    background: rgba(255,255,255,0.06); overflow: hidden; flex-shrink: 0;
+  }
+  .shv-pform__qty-btn {
+    width: 36px; height: 44px; border: none; background: transparent;
+    color: #f0f0ee; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .shv-pform__qty-btn:hover { background: rgba(255,255,255,0.1); }
+  .shv-pform__qty-input {
+    width: 38px; text-align: center; border: none; background: transparent;
+    color: #f0f0ee; font-size: 0.9rem; font-weight: 600;
+    -moz-appearance: textfield;
+  }
+  .shv-pform__qty-input::-webkit-outer-spin-button,
+  .shv-pform__qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .shv-pform__atc {
+    flex: 1; padding: 0 16px; height: 44px; border: none; border-radius: 10px;
+    background: var(--shv-accent); color: var(--shv-accent-fg);
+    font-size: 0.88rem; font-weight: 700; cursor: pointer; letter-spacing: 0.01em;
     transition: opacity 0.2s, background 0.2s;
-    letter-spacing: 0.01em;
   }
-  .shv-modal__add:hover { opacity: 0.88; }
-  .shv-modal__add[data-state="loading"] { opacity: 0.5; cursor: wait; }
-  .shv-modal__add[data-state="added"] { background: #2a9d5c; color: #fff; }
-  .shv-modal__add[data-state="error"]  { background: #c0392b; color: #fff; }
+  .shv-pform__atc:hover { opacity: 0.88; }
+  .shv-pform__atc:disabled { opacity: 0.4; cursor: not-allowed; }
+  .shv-pform__atc[data-state="loading"] { opacity: 0.5; }
+  .shv-pform__atc[data-state="added"] { background: #2a9d5c; color: #fff; }
+  .shv-pform__atc[data-state="error"]  { background: #c0392b; color: #fff; }
 
-  .shv-modal__full-link {
-    text-align: center;
-    font-size: 0.76rem;
-    text-decoration: underline;
-    color: inherit; opacity: 0.5;
-    margin-top: 2px;
+  .shv-pform__buynow-form { width: 100%; }
+  .shv-pform__buynow {
+    width: 100%; height: 44px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.07);
+    color: #f0f0ee; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
   }
+  .shv-pform__buynow:hover { background: rgba(255,255,255,0.14); }
+  .shv-pform__buynow:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  .shv-product-data { display: none; }
+  .shv-pform__full-link {
+    display: block; text-align: center; font-size: 0.76rem;
+    text-decoration: underline; color: inherit; opacity: 0.45;
+  }
 
   /* ── Responsive ── */
   @media (max-width: 1100px) { #{{ s }} { --shv-visible: 3; } }
   @media (max-width: 768px) {
     #{{ s }} { --shv-visible: 2.2; --shv-px: 20px; }
-    .shv-modal__panel {
-      grid-template-columns: 1fr;
-      grid-template-rows: 42vh 1fr;
-      max-height: 92vh;
-    }
+    .shv-modal__panel { grid-template-columns: 1fr; grid-template-rows: 42vh 1fr; max-height: 92vh; }
   }
   @media (max-width: 480px) {
     #{{ s }} { --shv-visible: 1.25; }
     .shv-modal { padding: 0; }
-    .shv-modal__panel {
-      border-radius: 0; width: 100%; height: 100%;
-      max-height: 100%;
-      grid-template-rows: 40vh 1fr;
-    }
+    .shv-modal__panel { border-radius: 0; width: 100%; height: 100%; max-height: 100%; grid-template-rows: 38vh 1fr; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .shv-card__video, .shv-card__poster, .shv-chip { transition: none; }
+    .shv-card__video, .shv-card__poster { transition: none; }
   }
+
+  .shv-product-data { display: none; }
 </style>
 
 {% comment %} =================== JS =================== {% endcomment %}
@@ -652,114 +695,98 @@
   'use strict';
 
   function init(root) {
-    var rail          = root.querySelector('[data-shv-rail]');
-    var modal         = root.querySelector('[data-shv-modal]');
-    var modalVideoCol = modal.querySelector('[data-shv-modal-video]');
-    var modalProdCol  = modal.querySelector('[data-shv-modal-product]');
+    var rail       = root.querySelector('[data-shv-rail]');
+    var modal      = root.querySelector('[data-shv-modal]');
+    var videoCol   = modal.querySelector('[data-shv-modal-video]');
+    var productCol = modal.querySelector('[data-shv-modal-product]');
 
     if (!rail) return;
 
-    // ── Arrow scroll ─────────────────────────────────────────────
-    root.querySelector('[data-shv-prev]').addEventListener('click', function () { scrollCards(-1); });
-    root.querySelector('[data-shv-next]').addEventListener('click', function () { scrollCards(1); });
-
-    function scrollCards(dir) {
-      var card = rail.querySelector('.shv-card');
-      if (!card) return;
-      rail.scrollBy({ left: dir * (card.offsetWidth + parseInt(getComputedStyle(rail).gap)), behavior: 'smooth' });
+    // ── Arrow nav ────────────────────────────────────────────────
+    root.querySelector('[data-shv-prev]').addEventListener('click', function () { scroll(-1); });
+    root.querySelector('[data-shv-next]').addEventListener('click', function () { scroll(1); });
+    function scroll(dir) {
+      var c = rail.querySelector('.shv-card');
+      if (!c) return;
+      rail.scrollBy({ left: dir * (c.offsetWidth + parseInt(getComputedStyle(rail).gap || 0)), behavior: 'smooth' });
     }
 
-    // ── Hover-to-play ────────────────────────────────────────────
+    // ── Hover-to-play + sound ───────────────────────────────────
     root.querySelectorAll('[data-shv-card]').forEach(function (frame) {
-      var videoEl   = frame.querySelector('[data-shv-video]');
-      var soundBtn  = frame.querySelector('[data-shv-sound]');
-      var playBtn   = frame.querySelector('[data-shv-play]');
-      var loaded    = false;
+      var vid      = frame.querySelector('[data-shv-video]');
+      var soundBtn = frame.querySelector('[data-shv-sound]');
+      var loaded   = false;
 
       function loadSrc() {
-        if (loaded || !videoEl) return;
-        videoEl.querySelectorAll('source[data-src]').forEach(function (s) { s.src = s.dataset.src; });
-        videoEl.load();
+        if (loaded || !vid) return;
+        vid.querySelectorAll('source[data-src]').forEach(function (s) { s.src = s.dataset.src; });
+        vid.load();
         loaded = true;
       }
+      function play()  { if (!vid) return; loadSrc(); frame.classList.add('is-playing'); vid.play().catch(function(){}); }
+      function pause() { frame.classList.remove('is-playing'); if (vid) { vid.pause(); vid.currentTime = 0; } }
 
-      function play() {
-        if (!videoEl) return;
-        loadSrc();
-        frame.classList.add('is-playing');
-        videoEl.play().catch(function () {});
-      }
-
-      function pause() {
-        frame.classList.remove('is-playing');
-        if (videoEl) { videoEl.pause(); videoEl.currentTime = 0; }
-      }
-
-      // Desktop: hover
       frame.addEventListener('mouseenter', play);
       frame.addEventListener('mouseleave', pause);
 
-      // Mobile: play button tap
-      if (playBtn) {
-        playBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          if (frame.classList.contains('is-playing')) { pause(); } else { play(); }
-        });
-      }
-
-      if (soundBtn && videoEl) {
+      // Sound toggle — stop propagation to avoid triggering modal open
+      if (soundBtn) {
         soundBtn.addEventListener('click', function (e) {
           e.stopPropagation();
-          videoEl.muted = !videoEl.muted;
-          soundBtn.dataset.on = videoEl.muted ? 'false' : 'true';
+          if (!vid) return;
+          vid.muted = !vid.muted;
+          soundBtn.dataset.on = vid.muted ? 'false' : 'true';
+          soundBtn.setAttribute('aria-label', vid.muted ? 'Unmute' : 'Mute');
         });
       }
-    });
 
-    // ── Chip → modal ──────────────────────────────────────────────
-    root.querySelectorAll('[data-shv-chip]').forEach(function (chip) {
-      chip.addEventListener('click', function (e) {
-        e.stopPropagation();
-        openModal(chip.closest('[data-shv-card]'));
+      // ── Click anywhere on card → open modal ──────────────────
+      frame.addEventListener('click', function (e) {
+        // Don't open if click came from the sound button
+        if (e.target.closest('[data-shv-sound]')) return;
+        openModal(frame);
       });
     });
 
+    // ── Modal ────────────────────────────────────────────────────
     function openModal(frame) {
       var handle    = frame.dataset.productHandle;
       var hasHosted = frame.dataset.hasHosted === 'true';
-      var videoEl   = frame.querySelector('[data-shv-video]');
+      var vid       = frame.querySelector('[data-shv-video]');
       var embedEl   = frame.querySelector('[data-shv-embed]');
 
       // Video column
-      modalVideoCol.innerHTML = '';
-      if (hasHosted && videoEl) {
+      videoCol.innerHTML = '';
+      if (hasHosted && vid) {
         var v = document.createElement('video');
-        v.autoplay = true; v.loop = true; v.playsInline = true; v.controls = true; v.muted = false;
-        videoEl.querySelectorAll('source').forEach(function (s) {
+        v.autoplay = true; v.loop = true; v.playsInline = true; v.controls = true;
+        vid.querySelectorAll('source').forEach(function (s) {
           var ns = document.createElement('source');
           ns.src = s.src || s.dataset.src;
           ns.type = s.type;
           v.appendChild(ns);
         });
-        modalVideoCol.appendChild(v);
-        v.play().catch(function () {});
+        videoCol.appendChild(v);
+        v.play().catch(function(){});
       } else if (embedEl) {
         var iframe = document.createElement('iframe');
         iframe.src = resolveEmbed(embedEl.dataset.embedUrl);
         iframe.allow = 'autoplay; encrypted-media; fullscreen';
         iframe.allowFullscreen = true;
-        modalVideoCol.appendChild(iframe);
+        videoCol.appendChild(iframe);
       } else {
         var poster = frame.querySelector('.shv-card__poster');
-        if (poster) modalVideoCol.appendChild(poster.cloneNode(true));
+        if (poster) videoCol.appendChild(poster.cloneNode(true));
       }
 
       // Product column
-      modalProdCol.innerHTML = '';
-      var tpl = root.querySelector('.shv-product-data[data-product-handle="' + handle + '"]');
-      if (tpl) {
-        modalProdCol.appendChild(tpl.content.cloneNode(true));
-        bindCart(modalProdCol);
+      productCol.innerHTML = '';
+      if (handle) {
+        var tpl = root.querySelector('.shv-product-data[data-product-handle="' + handle + '"]');
+        if (tpl) {
+          productCol.appendChild(tpl.content.cloneNode(true));
+          bindProductForm(productCol);
+        }
       }
 
       modal.hidden = false;
@@ -769,48 +796,138 @@
     function closeModal() {
       modal.hidden = true;
       document.body.style.overflow = '';
-      modalVideoCol.innerHTML = '';
-      modalProdCol.innerHTML = '';
+      videoCol.innerHTML = '';
+      productCol.innerHTML = '';
     }
 
-    modal.querySelectorAll('[data-shv-close]').forEach(function (el) {
-      el.addEventListener('click', closeModal);
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !modal.hidden) closeModal();
-    });
+    modal.querySelectorAll('[data-shv-close]').forEach(function (el) { el.addEventListener('click', closeModal); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
 
-    // ── Add to cart ───────────────────────────────────────────────
-    function bindCart(scope) {
-      var btn = scope.querySelector('[data-shv-add]');
-      if (!btn) return;
-      btn.addEventListener('click', function () {
-        var varEl = scope.querySelector('[data-shv-variant]');
-        var id = varEl ? varEl.value : null;
-        if (!id) return;
+    // ── Product form logic ────────────────────────────────────────
+    function bindProductForm(scope) {
+      var pform     = scope.querySelector('[data-shv-pform]');
+      if (!pform) return;
+      var productId = pform.dataset.productId;
+      var pdata     = window['__shvProduct_' + productId];
+      if (!pdata) return;
 
-        var orig = btn.textContent;
-        btn.disabled = true; btn.dataset.state = 'loading'; btn.textContent = '...';
+      var variants  = pdata.variants;
+      var selected  = {};       // { OptionName: value }
 
-        fetch('/cart/add.js', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: [{ id: Number(id), quantity: 1 }] })
-        })
-          .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-          .then(function () {
-            btn.dataset.state = 'added'; btn.textContent = 'Added ✓';
-            document.dispatchEvent(new CustomEvent('cart:refresh'));
-            setTimeout(function () { btn.dataset.state = ''; btn.textContent = orig; btn.disabled = false; }, 2000);
-          })
-          .catch(function () {
-            btn.dataset.state = 'error'; btn.textContent = 'Try again';
-            setTimeout(function () { btn.dataset.state = ''; btn.textContent = orig; btn.disabled = false; }, 2000);
-          });
+      // Initialise selected from checked radios
+      pform.querySelectorAll('[data-shv-option]:checked').forEach(function (r) {
+        selected[r.dataset.shvOption] = r.value;
       });
+
+      // Find matching variant
+      function findVariant() {
+        return variants.find(function (v) {
+          return pdata.options.every(function (opt, i) {
+            return !selected[opt.name] || v.options[i] === selected[opt.name];
+          });
+        }) || variants[0];
+      }
+
+      // Update UI for active variant
+      function updateVariant(variant) {
+        // Price
+        var priceEl   = pform.querySelector('[data-shv-price]');
+        var compareEl = pform.querySelector('[data-shv-compare]');
+        if (priceEl) {
+          priceEl.textContent = formatMoney(variant.price);
+          priceEl.classList.toggle('is-sale', variant.compare_at_price > variant.price);
+        }
+        if (compareEl) {
+          if (variant.compare_at_price > variant.price) {
+            compareEl.textContent = formatMoney(variant.compare_at_price);
+            compareEl.hidden = false;
+          } else {
+            compareEl.hidden = true;
+          }
+        }
+        // ATC button
+        var atcBtn = pform.querySelector('[data-shv-atc]');
+        if (atcBtn) {
+          atcBtn.dataset.variantId = variant.id;
+          atcBtn.disabled = !variant.available;
+          atcBtn.textContent = variant.available ? 'Add to cart' : 'Sold out';
+        }
+        // Buy now
+        var buyVariant = pform.querySelector('[data-shv-buy-variant]');
+        if (buyVariant) buyVariant.value = variant.id;
+        // Gallery image swap (if variant has image)
+        if (variant.featured_image) {
+          var mainImg = pform.querySelector('[data-shv-main-img]');
+          if (mainImg) mainImg.src = variant.featured_image.src;
+        }
+      }
+
+      // Option radio change
+      pform.querySelectorAll('[data-shv-option]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          selected[radio.dataset.shvOption] = radio.value;
+          // Update label display
+          var lbl = pform.querySelector('[data-shv-selected-' + radio.dataset.shvOption.toLowerCase() + ']')
+                 || pform.querySelector('[data-shv-selected-opt="' + radio.dataset.shvOption + '"]');
+          if (lbl) lbl.textContent = radio.value;
+          updateVariant(findVariant());
+        });
+      });
+
+      // Thumbnail click
+      pform.querySelectorAll('.shv-pform__thumb').forEach(function (thumb) {
+        thumb.addEventListener('click', function () {
+          var mainImg = pform.querySelector('[data-shv-main-img]');
+          if (mainImg && thumb.dataset.src) mainImg.src = thumb.dataset.src;
+          pform.querySelectorAll('.shv-pform__thumb').forEach(function (t) { t.classList.remove('is-active'); });
+          thumb.classList.add('is-active');
+        });
+      });
+
+      // Qty stepper
+      var qtyInput = pform.querySelector('[data-shv-qty]');
+      pform.querySelector('[data-shv-qty-minus]').addEventListener('click', function () {
+        if (qtyInput.value > 1) qtyInput.value = parseInt(qtyInput.value) - 1;
+      });
+      pform.querySelector('[data-shv-qty-plus]').addEventListener('click', function () {
+        qtyInput.value = parseInt(qtyInput.value) + 1;
+      });
+
+      // Add to cart
+      var atcBtn = pform.querySelector('[data-shv-atc]');
+      if (atcBtn) {
+        atcBtn.addEventListener('click', function () {
+          var variantId = atcBtn.dataset.variantId;
+          var qty       = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+          if (!variantId) return;
+
+          var orig = atcBtn.textContent;
+          atcBtn.disabled = true; atcBtn.dataset.state = 'loading'; atcBtn.textContent = '...';
+
+          fetch('/cart/add.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: [{ id: Number(variantId), quantity: qty }] })
+          })
+            .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+            .then(function () {
+              atcBtn.dataset.state = 'added'; atcBtn.textContent = 'Added ✓';
+              document.dispatchEvent(new CustomEvent('cart:refresh'));
+              setTimeout(function () {
+                atcBtn.dataset.state = ''; atcBtn.textContent = orig; atcBtn.disabled = false;
+              }, 2200);
+            })
+            .catch(function () {
+              atcBtn.dataset.state = 'error'; atcBtn.textContent = 'Try again';
+              setTimeout(function () {
+                atcBtn.dataset.state = ''; atcBtn.textContent = orig; atcBtn.disabled = false;
+              }, 2200);
+            });
+        });
+      }
     }
 
-    // ── Embed URL helper ──────────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────────────────
     function resolveEmbed(url) {
       try {
         var u = new URL(url);
@@ -821,8 +938,12 @@
         if (u.hostname.includes('vimeo')) {
           return 'https://player.vimeo.com/video/' + u.pathname.split('/').filter(Boolean).pop() + '?autoplay=1';
         }
-      } catch(e) {}
+      } catch(e){}
       return url;
+    }
+
+    function formatMoney(cents) {
+      return '$' + (cents / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
   }
 
@@ -851,140 +972,35 @@
   "class": "section-shoppable-video",
   "max_blocks": 12,
   "settings": [
-    {
-      "type": "header",
-      "content": "Header"
-    },
-    {
-      "type": "text",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Watch & shop"
-    },
-    {
-      "type": "text",
-      "id": "subheading",
-      "label": "Subheading"
-    },
-    {
-      "type": "color",
-      "id": "heading_color",
-      "label": "Text color",
-      "default": "#f0f0ee"
-    },
-    {
-      "type": "header",
-      "content": "Layout"
-    },
-    {
-      "type": "range",
-      "id": "cards_per_row",
-      "label": "Cards visible (desktop)",
-      "min": 2, "max": 6, "step": 1,
-      "default": 4
-    },
-    {
-      "type": "range",
-      "id": "card_gap",
-      "label": "Gap between cards",
-      "min": 4, "max": 28, "step": 2, "unit": "px",
-      "default": 12
-    },
-    {
-      "type": "range",
-      "id": "card_radius",
-      "label": "Card corner radius",
-      "min": 0, "max": 32, "step": 2, "unit": "px",
-      "default": 20
-    },
-    {
-      "type": "header",
-      "content": "Colors"
-    },
-    {
-      "type": "color",
-      "id": "section_bg",
-      "label": "Section background",
-      "default": "#111114"
-    },
-    {
-      "type": "color",
-      "id": "accent_color",
-      "label": "Button / accent",
-      "default": "#ffffff"
-    },
-    {
-      "type": "color",
-      "id": "accent_text_color",
-      "label": "Button text",
-      "default": "#111111"
-    },
-    {
-      "type": "header",
-      "content": "Spacing"
-    },
-    {
-      "type": "range",
-      "id": "section_padding_top",
-      "label": "Padding top",
-      "min": 0, "max": 120, "step": 4, "unit": "px",
-      "default": 52
-    },
-    {
-      "type": "range",
-      "id": "section_padding_bottom",
-      "label": "Padding bottom",
-      "min": 0, "max": 120, "step": 4, "unit": "px",
-      "default": 52
-    },
-    {
-      "type": "range",
-      "id": "section_padding_x",
-      "label": "Side padding",
-      "min": 0, "max": 80, "step": 4, "unit": "px",
-      "default": 36
-    }
+    { "type": "header", "content": "Header" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Watch & shop" },
+    { "type": "text", "id": "subheading", "label": "Subheading" },
+    { "type": "color", "id": "heading_color", "label": "Text color", "default": "#f0f0ee" },
+    { "type": "header", "content": "Layout" },
+    { "type": "range", "id": "cards_per_row", "label": "Cards visible (desktop)", "min": 2, "max": 6, "step": 1, "default": 4 },
+    { "type": "range", "id": "card_gap", "label": "Gap between cards", "min": 4, "max": 28, "step": 2, "unit": "px", "default": 12 },
+    { "type": "range", "id": "card_radius", "label": "Card corner radius", "min": 0, "max": 32, "step": 2, "unit": "px", "default": 20 },
+    { "type": "header", "content": "Colors" },
+    { "type": "color", "id": "section_bg", "label": "Section background", "default": "#111114" },
+    { "type": "color", "id": "accent_color", "label": "Add to cart button", "default": "#ffffff" },
+    { "type": "color", "id": "accent_text_color", "label": "Button text", "default": "#111111" },
+    { "type": "header", "content": "Spacing" },
+    { "type": "range", "id": "section_padding_top", "label": "Padding top", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 52 },
+    { "type": "range", "id": "section_padding_bottom", "label": "Padding bottom", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 52 },
+    { "type": "range", "id": "section_padding_x", "label": "Side padding", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 36 }
   ],
   "blocks": [
     {
       "type": "video_card",
       "name": "Video card",
       "settings": [
-        {
-          "type": "header",
-          "content": "Video — choose one"
-        },
-        {
-          "type": "video",
-          "id": "video",
-          "label": "Shopify-hosted video"
-        },
-        {
-          "type": "url",
-          "id": "video_url",
-          "label": "YouTube / Vimeo URL",
-          "info": "Fallback if no hosted video is set. Hover preview requires a hosted video."
-        },
-        {
-          "type": "header",
-          "content": "Poster"
-        },
-        {
-          "type": "image_picker",
-          "id": "poster",
-          "label": "Poster / thumbnail image",
-          "info": "Optional. Auto-detected from hosted video if left blank."
-        },
-        {
-          "type": "header",
-          "content": "Product"
-        },
-        {
-          "type": "product",
-          "id": "product",
-          "label": "Featured product",
-          "info": "Shown in the floating chip. Opens a full product card in the modal."
-        }
+        { "type": "header", "content": "Video — choose one" },
+        { "type": "video", "id": "video", "label": "Shopify-hosted video" },
+        { "type": "url", "id": "video_url", "label": "YouTube / Vimeo URL", "info": "Fallback if no hosted video. Hover-preview requires hosted video." },
+        { "type": "header", "content": "Poster" },
+        { "type": "image_picker", "id": "poster", "label": "Poster / thumbnail", "info": "Optional — auto-detected from hosted video." },
+        { "type": "header", "content": "Product" },
+        { "type": "product", "id": "product", "label": "Featured product", "info": "Shows as floating chip. Click video or chip to open full product form." }
       ]
     }
   ],
