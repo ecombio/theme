@@ -1,8 +1,8 @@
 {% comment %}
   ╔══════════════════════════════════════════════════════════╗
-  ║  sections/product-recommendations.liquid                 ║
-  ║  Mode: Shopify AI — /recommendations/products.json       ║
-  ║  Best placed: directly below the product form/buy box    ║
+  ║  sections/product-recently-viewed.liquid                 ║
+  ║  Mode: localStorage browser history — no server needed   ║
+  ║  Best placed: bottom of product page                     ║
   ╚══════════════════════════════════════════════════════════╝
 {% endcomment %}
 
@@ -22,7 +22,7 @@
 
 <section
   class="pr-section cs-{{ cs }}"
-  id="pr-recs-section-{{ section.id }}"
+  id="pr-rv-section-{{ section.id }}"
   style="
     --pr-cols: {{ cols_d }};
     --pr-cols-mob: {{ cols_m }};
@@ -31,37 +31,53 @@
     --pr-pad-bottom: {{ pad_bottom }}px;
   "
   aria-label="{{ section.settings.heading | escape }}"
+  hidden
 >
   <div class="pr-inner">
     <div class="pr-header">
       <h2 class="pr-heading">{{ section.settings.heading }}</h2>
     </div>
-
-    <div class="pr-grid" id="pr-recs-grid-{{ section.id }}">
-      {% comment %} Skeleton placeholders shown while JS loads {% endcomment %}
-      {% for i in (1..limit) %}
-        <div class="pr-card pr-skeleton s-{{ card_style }}">
-          <div class="pr-card__media"></div>
-          <div class="pr-card__body"></div>
-        </div>
-      {% endfor %}
+    <div class="pr-grid" id="pr-rv-grid-{{ section.id }}">
+      {% comment %} Filled entirely by JS {% endcomment %}
     </div>
   </div>
 </section>
 
 <script>
 (function () {
-  const grid      = document.getElementById('pr-recs-grid-{{ section.id }}');
-  const productId = {{ product.id | json }};
-  const limit     = {{ limit | json }};
-  const cardStyle = {{ card_style | json }};
-  const btnStyle  = {{ btn_style | json }};
-  const showVendor = {{ section.settings.show_vendor | json }};
-  const showPrice  = {{ section.settings.show_price | json }};
-  const showBadge  = {{ section.settings.show_sale_badge | json }};
+  const STORAGE_KEY = 'pr_recently_viewed';
+  const MAX_STORED  = 20;
+  const section     = document.getElementById('pr-rv-section-{{ section.id }}');
+  const grid        = document.getElementById('pr-rv-grid-{{ section.id }}');
+  const currentId   = {{ product.id | json }};
+  const currentHandle = {{ product.handle | json }};
+  const limit       = {{ limit | json }};
+  const cardStyle   = {{ card_style | json }};
+  const btnStyle    = {{ btn_style | json }};
+  const showVendor  = {{ section.settings.show_vendor | json }};
+  const showPrice   = {{ section.settings.show_price | json }};
+  const showBadge   = {{ section.settings.show_sale_badge | json }};
+  const hideIfEmpty = {{ section.settings.hide_if_empty | json }};
 
-  if (!grid || !productId) return;
+  /* ── Storage helpers ── */
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
 
+  function save(arr) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+    catch (e) {}
+  }
+
+  /* ── Track current product visit ── */
+  (function track() {
+    const list = load().filter(item => item.id !== currentId);
+    list.unshift({ id: currentId, handle: currentHandle });
+    save(list.slice(0, MAX_STORED));
+  })();
+
+  /* ── Utility ── */
   function money(cents) {
     return new Intl.NumberFormat(document.documentElement.lang || 'en', {
       style: 'currency',
@@ -82,14 +98,15 @@
          : 'pr-btn--filled';
   }
 
-  function buildCard(p) {
+  function buildCard(p, isFirst) {
     const onSale = p.compare_at_price && p.compare_at_price > p.price;
     const img = p.featured_image
       ? `<img src="${p.featured_image}?width=600" alt="${esc(p.title)}" class="pr-card__img" loading="lazy" width="600" height="600">`
       : '';
 
-    const badge = showBadge && onSale
-      ? `<div class="pr-badges"><span class="pr-badge pr-badge--sale">Sale</span></div>` : '';
+    const badges = [];
+    if (showBadge && onSale) badges.push(`<span class="pr-badge pr-badge--sale">Sale</span>`);
+    if (isFirst)             badges.push(`<span class="pr-badge pr-badge--viewed">Just Viewed</span>`);
 
     const vendor = showVendor && p.vendor
       ? `<span class="pr-card__vendor">${esc(p.vendor)}</span>` : '';
@@ -103,7 +120,10 @@
 
     return `
       <a href="${esc(p.url)}" class="pr-card s-${esc(cardStyle)}" aria-label="${esc(p.title)}">
-        <div class="pr-card__media">${img}${badge}</div>
+        <div class="pr-card__media">
+          ${img}
+          ${badges.length ? `<div class="pr-badges">${badges.join('')}</div>` : ''}
+        </div>
         <div class="pr-card__body">
           ${vendor}
           <p class="pr-card__title">${esc(p.title)}</p>
@@ -115,26 +135,48 @@
       </a>`;
   }
 
-  fetch(`/recommendations/products.json?product_id=${productId}&limit=${limit}&intent=related`)
-    .then(r => r.json())
-    .then(({ products }) => {
-      if (!products || products.length === 0) {
-        grid.innerHTML = '<p class="pr-empty">No recommendations yet — check back soon.</p>';
-        return;
+  /* ── Main: load history and fetch product data ── */
+  const history = load()
+    .filter(item => item.id !== currentId)
+    .slice(0, limit);
+
+  if (history.length === 0) {
+    if (!hideIfEmpty) {
+      section.removeAttribute('hidden');
+      grid.innerHTML = '<p class="pr-empty">No recently viewed products yet.</p>';
+    }
+    return;
+  }
+
+  /* Fetch each product's JSON in parallel */
+  Promise.all(
+    history.map(item =>
+      fetch(`/products/${item.handle}.js`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+    )
+  ).then(products => {
+    const valid = products.filter(Boolean);
+
+    if (valid.length === 0) {
+      if (!hideIfEmpty) {
+        section.removeAttribute('hidden');
+        grid.innerHTML = '<p class="pr-empty">No recently viewed products yet.</p>';
       }
-      grid.innerHTML = products.slice(0, limit).map(buildCard).join('');
-    })
-    .catch(() => {
-      grid.innerHTML = '<p class="pr-empty">Could not load recommendations.</p>';
-    });
+      return;
+    }
+
+    grid.innerHTML = valid.map((p, i) => buildCard(p, i === 0)).join('');
+    section.removeAttribute('hidden');
+  });
 })();
 </script>
 
 {% schema %}
 {
-  "name": "AI Recommendations",
+  "name": "Recently Viewed",
   "tag": "section",
-  "class": "section-pr-recommendations",
+  "class": "section-pr-recently-viewed",
   "limit": 1,
   "settings": [
     {
@@ -145,7 +187,7 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "You May Also Like"
+      "default": "Recently Viewed"
     },
     {
       "type": "range",
@@ -154,7 +196,14 @@
       "max": 10,
       "step": 1,
       "default": 4,
-      "label": "Number of Products"
+      "label": "Max products to show"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_if_empty",
+      "label": "Hide section if no history",
+      "default": true,
+      "info": "Recommended — avoids showing an empty section to first-time visitors."
     },
     {
       "type": "header",
@@ -180,7 +229,7 @@
         { "value": "outline", "label": "Outline" },
         { "value": "ghost",   "label": "Ghost" }
       ],
-      "default": "filled"
+      "default": "outline"
     },
     {
       "type": "checkbox",
@@ -207,28 +256,19 @@
     {
       "type": "range",
       "id": "columns_desktop",
-      "min": 2,
-      "max": 6,
-      "step": 1,
-      "default": 4,
+      "min": 2, "max": 6, "step": 1, "default": 4,
       "label": "Columns (desktop)"
     },
     {
       "type": "range",
       "id": "columns_mobile",
-      "min": 1,
-      "max": 3,
-      "step": 1,
-      "default": 2,
+      "min": 1, "max": 3, "step": 1, "default": 2,
       "label": "Columns (mobile)"
     },
     {
       "type": "range",
       "id": "card_gap",
-      "min": 8,
-      "max": 40,
-      "step": 2,
-      "default": 16,
+      "min": 8, "max": 40, "step": 2, "default": 16,
       "label": "Card gap (px)"
     },
     {
@@ -262,10 +302,11 @@
   ],
   "presets": [
     {
-      "name": "AI Recommendations",
+      "name": "Recently Viewed",
       "settings": {
-        "heading": "You May Also Like",
-        "products_to_show": 4
+        "heading": "Recently Viewed",
+        "products_to_show": 4,
+        "hide_if_empty": true
       }
     }
   ]
