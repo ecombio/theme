@@ -24,15 +24,21 @@
   <body class="{{ settings.theme_preset }}">
 
     <div class="ecombio-sticky-header">
-      {% section 'header' %}
+      <div class="page-width">
+        {% section 'header' %}
+      </div>
     </div>
 
     <main role="main">
-      {{ content_for_layout }}
+      <div class="page-width">
+        {{ content_for_layout }}
+      </div>
     </main>
 
     <footer role="contentinfo">
-      {% sections 'footer-group' %}
+      <div class="page-width">
+        {% sections 'footer-group' %}
+      </div>
     </footer>
 
     {{ 'header.css' | asset_url | stylesheet_tag }}
@@ -43,7 +49,25 @@
     {{ 'collection-filters.js' | asset_url | script_tag }}
 
     <style>
-      /* ── Sticky Header Wrapper ── */
+      :root {
+        --page-width: {{ settings.max_page_width }};
+        --page-margin: {{ settings.min_page_margin }}px;
+      }
+
+      .page-width {
+        max-width: var(--page-width);
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: var(--page-margin);
+        padding-right: var(--page-margin);
+      }
+
+      .page-width--full {
+        max-width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
       .ecombio-sticky-header {
         position: sticky;
         top: 0;
@@ -51,10 +75,7 @@
         background-color: var(--color-background);
       }
 
-      /* ── Sticky Footer ── */
-      html, body {
-        height: 100%;
-      }
+      html, body { height: 100%; }
 
       body {
         display: flex !important;
@@ -62,9 +83,7 @@
         min-height: 100vh !important;
       }
 
-      main {
-        flex: 1 0 auto !important;
-      }
+      main { flex: 1 0 auto !important; }
     </style>
 
     <script>
