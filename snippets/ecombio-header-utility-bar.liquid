@@ -36,21 +36,29 @@
   <div class="ecombio-utility-bar__inner">
 
     {%- comment -%} ── LEFT: links ── {%- endcomment -%}
-    <ul class="ecombio-utility-bar__links" role="list">
-      {%- for pair in link_pairs -%}
-        {%- assign parts = pair | strip | split: '|' -%}
-        {%- if parts.size == 2 -%}
-          <li>
-            <a href="{{ parts[1] | strip | escape }}" class="ecombio-utility-bar__link">
-              {{- parts[0] | strip | escape -}}
-            </a>
-          </li>
-        {%- endif -%}
-      {%- endfor -%}
-    </ul>
+    <div class="ecombio-utility-bar__col ecombio-utility-bar__col--left">
+      <ul class="ecombio-utility-bar__links" role="list">
+        {%- for pair in link_pairs -%}
+          {%- assign parts = pair | strip | split: '|' -%}
+          {%- if parts.size == 2 -%}
+            <li>
+              <a href="{{ parts[1] | strip | escape }}" class="ecombio-utility-bar__link">
+                {{- parts[0] | strip | escape -}}
+              </a>
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    </div>
+
+    {%- comment -%} ── MIDDLE: static region ── {%- endcomment -%}
+    <div class="ecombio-utility-bar__col ecombio-utility-bar__col--middle">
+      <span class="ecombio-utility-bar__region">🇺🇸 United States</span>
+    </div>
 
     {%- comment -%} ── RIGHT: currency + locale ── {%- endcomment -%}
-    <div class="ecombio-utility-bar__switchers">
+    <div class="ecombio-utility-bar__col ecombio-utility-bar__col--right">
+      <div class="ecombio-utility-bar__switchers">
 
       {%- if show_curr and shop.enabled_currencies.size > 1 -%}
         <div class="ecombio-utility-bar__switcher">
@@ -106,6 +114,7 @@
         </div>
       {%- endif -%}
 
+      </div>
     </div>
   </div>
 </div>
@@ -124,13 +133,40 @@
 }
 
 .ecombio-utility-bar__inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
   max-width: 1184px;
   margin: 0 auto;
   padding: 0 24px;
+}
+
+
+.ecombio-utility-bar__col--left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.ecombio-utility-bar__col--middle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ecombio-utility-bar__col--right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ecombio-utility-bar__region {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* ── Links ── */
