@@ -4,13 +4,10 @@
 
   Renders a slim 32px bar above the main header.
     Left  — utility links (pipe-delimited setting: "Label|/url, Label 2|/url-2")
-    Right — region picker (opens dropdown modal) + currency + language selectors
+    Right — region picker (opens dropdown) + currency + language selectors
 
-  Region picker:
-    - Clicking the flag/label button opens a dropdown panel
-    - Panel shows current country & language, searchable country list
-    - Submits via Shopify localization form
-    - Closes on: × button, click outside, after selection
+  Region picker dropdown is teleported to <body> via JS to avoid
+  stacking context / overflow:hidden clipping from the header.
 
   Usage (snippets/ecombio-header-top.liquid):
     {%- render 'ecombio-header-utility-bar',
@@ -22,9 +19,9 @@
 {% endcomment %}
 
 {%- liquid
-  assign bar_style = header_style | default: 'hyper'
-  assign show_curr = show_currency | default: true
-  assign show_loc  = show_locale   | default: true
+  assign bar_style  = header_style | default: 'hyper'
+  assign show_curr  = show_currency | default: true
+  assign show_loc   = show_locale   | default: true
   assign link_pairs = links | split: ','
 -%}
 
@@ -110,146 +107,142 @@
         {%- endif -%}
 
         {%- comment -%} ── Region picker trigger ── {%- endcomment -%}
-        <div class="ecombio-region-picker" id="ecombio-region-picker">
-
-          <button type="button"
-                  class="ecombio-utility-bar__region-btn"
-                  aria-label="Choose location: {{ localization.country.name }}"
-                  aria-expanded="false"
-                  aria-controls="ecombio-region-dropdown"
-                  id="ecombio-region-trigger">
-            <img src="{{ localization.country.flag }}"
-                 alt="{{ localization.country.name }} flag"
-                 width="16" height="11"
-                 class="ecombio-utility-bar__flag"
-                 loading="eager">
-            <span class="ecombio-utility-bar__region-label">
-              {{ localization.language.endonym_name | capitalize }} ({{ localization.country.iso_code }})
-            </span>
-            <svg class="ecombio-utility-bar__chevron ecombio-region-picker__chevron"
-                 width="9" height="9" viewBox="0 0 20 20"
-                 fill="none" stroke="currentColor" stroke-width="2.5"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M5 8l5 5 5-5"/>
-            </svg>
-          </button>
-
-          {%- comment -%} ── Dropdown panel ── {%- endcomment -%}
-          <div class="ecombio-region-dropdown"
-               id="ecombio-region-dropdown"
-               role="dialog"
-               aria-modal="true"
-               aria-label="Choose location"
-               hidden>
-
-            <div class="ecombio-region-dropdown__header">
-              <p class="ecombio-region-dropdown__title">Choose location</p>
-              <button type="button"
-                      class="ecombio-region-dropdown__close"
-                      aria-label="Close location picker"
-                      id="ecombio-region-close">
-                <svg width="14" height="14" viewBox="0 0 20 20" fill="none"
-                     stroke="currentColor" stroke-width="2.5"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M4 4l12 12M16 4L4 16"/>
-                </svg>
-              </button>
-            </div>
-
-            <p class="ecombio-region-dropdown__subtitle">
-              Changing your location might affect your delivery address options, price, product availability, and currency.
-            </p>
-
-            <div class="ecombio-region-dropdown__search-wrap">
-              <input type="text"
-                     class="ecombio-region-dropdown__search"
-                     placeholder="Search your country"
-                     aria-label="Search countries"
-                     id="ecombio-region-search"
-                     autocomplete="off">
-              <svg class="ecombio-region-dropdown__search-icon" width="14" height="14"
-                   viewBox="0 0 20 20" fill="none" stroke="currentColor"
-                   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3"/>
-              </svg>
-            </div>
-
-            {%- comment -%} ── Current selection ── {%- endcomment -%}
-            <div class="ecombio-region-dropdown__section-label">Current country &amp; language</div>
-
-            <div class="ecombio-region-dropdown__current">
-              <img src="{{ localization.country.flag }}"
-                   alt="{{ localization.country.name }}"
-                   width="20" height="14"
-                   class="ecombio-region-dropdown__flag">
-              <span class="ecombio-region-dropdown__current-country">{{ localization.country.name }}</span>
-
-              {%- comment -%} Language selector for current country ── {%- endcomment -%}
-              {%- if localization.available_languages.size > 1 -%}
-                {%- form 'localization', id: 'ecombio-region-locale-form', return_to: request.path -%}
-                  <div class="ecombio-region-dropdown__lang-wrap">
-                    <select name="locale_code"
-                            class="ecombio-region-dropdown__lang-select"
-                            aria-label="Select language for {{ localization.country.name }}"
-                            onchange="this.form.submit()">
-                      {%- for language in localization.available_languages -%}
-                        <option value="{{ language.iso_code }}"
-                          {%- if language.iso_code == localization.language.iso_code %} selected{% endif -%}>
-                          {{ language.endonym_name | capitalize }} ({{ localization.country.iso_code }})
-                        </option>
-                      {%- endfor -%}
-                    </select>
-                    <svg width="10" height="10" viewBox="0 0 20 20" fill="none"
-                         stroke="currentColor" stroke-width="2.5"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M5 8l5 5 5-5"/>
-                    </svg>
-                  </div>
-                {%- endform -%}
-              {%- else -%}
-                <span class="ecombio-region-dropdown__lang-static">
-                  {{ localization.language.endonym_name | capitalize }} ({{ localization.country.iso_code }})
-                </span>
-              {%- endif -%}
-            </div>
-
-            <div class="ecombio-region-dropdown__divider"></div>
-
-            {%- comment -%} ── Country list ── {%- endcomment -%}
-            {%- form 'localization', id: 'ecombio-region-country-form', return_to: request.path -%}
-              <input type="hidden" name="locale_code" value="{{ localization.language.iso_code }}">
-              <ul class="ecombio-region-dropdown__list" id="ecombio-region-list" role="list">
-                {%- for country in localization.available_countries -%}
-                  {%- unless country.iso_code == localization.country.iso_code -%}
-                    <li class="ecombio-region-dropdown__item"
-                        data-country="{{ country.name | downcase }}">
-                      <button type="submit"
-                              name="country_code"
-                              value="{{ country.iso_code }}"
-                              class="ecombio-region-dropdown__country-btn"
-                              form="ecombio-region-country-form">
-                        <img src="{{ country.flag }}"
-                             alt="{{ country.name }}"
-                             width="20" height="14"
-                             class="ecombio-region-dropdown__flag"
-                             loading="lazy">
-                        <span class="ecombio-region-dropdown__country-name">{{ country.name }}</span>
-                        <span class="ecombio-region-dropdown__country-lang">
-                          {{ localization.language.endonym_name | capitalize }} ({{ country.iso_code }})
-                        </span>
-                      </button>
-                    </li>
-                  {%- endunless -%}
-                {%- endfor -%}
-              </ul>
-            {%- endform -%}
-
-          </div>{%- comment -%} /ecombio-region-dropdown {%- endcomment -%}
-        </div>{%- comment -%} /ecombio-region-picker {%- endcomment -%}
+        <button type="button"
+                class="ecombio-utility-bar__region-btn"
+                aria-label="Choose location: {{ localization.country.name }}"
+                aria-expanded="false"
+                aria-controls="ecombio-region-dropdown"
+                id="ecombio-region-trigger">
+          <img src="{{ localization.country.flag }}"
+               alt="{{ localization.country.name }} flag"
+               width="16" height="11"
+               class="ecombio-utility-bar__flag"
+               loading="eager">
+          <span class="ecombio-utility-bar__region-label">
+            {{ localization.language.endonym_name | capitalize }} ({{ localization.country.iso_code }})
+          </span>
+          <svg class="ecombio-utility-bar__chevron ecombio-region-trigger__chevron"
+               width="9" height="9" viewBox="0 0 20 20"
+               fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 8l5 5 5-5"/>
+          </svg>
+        </button>
 
       </div>
     </div>
   </div>
+</div>
+
+{%- comment -%}
+  Dropdown is placed here in DOM but immediately teleported to <body> by JS.
+  This escapes every stacking context in the header chain.
+{%- endcomment -%}
+<div class="ecombio-region-dropdown"
+     id="ecombio-region-dropdown"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Choose location"
+     hidden>
+
+  <div class="ecombio-region-dropdown__header">
+    <p class="ecombio-region-dropdown__title">Choose location</p>
+    <button type="button"
+            class="ecombio-region-dropdown__close"
+            aria-label="Close location picker"
+            id="ecombio-region-close">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"
+           stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 4l12 12M16 4L4 16"/>
+      </svg>
+    </button>
+  </div>
+
+  <p class="ecombio-region-dropdown__subtitle">
+    Changing your location might affect your delivery address options, price, product availability, and currency.
+  </p>
+
+  <div class="ecombio-region-dropdown__search-wrap">
+    <input type="text"
+           class="ecombio-region-dropdown__search"
+           placeholder="Search your country"
+           aria-label="Search countries"
+           id="ecombio-region-search"
+           autocomplete="off">
+    <svg class="ecombio-region-dropdown__search-icon" width="14" height="14"
+         viewBox="0 0 20 20" fill="none" stroke="currentColor"
+         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3"/>
+    </svg>
+  </div>
+
+  <div class="ecombio-region-dropdown__section-label">Current country &amp; language</div>
+
+  <div class="ecombio-region-dropdown__current">
+    <img src="{{ localization.country.flag }}"
+         alt="{{ localization.country.name }}"
+         width="20" height="14"
+         class="ecombio-region-dropdown__flag">
+    <span class="ecombio-region-dropdown__current-country">{{ localization.country.name }}</span>
+
+    {%- if localization.available_languages.size > 1 -%}
+      {%- form 'localization', id: 'ecombio-region-locale-form', return_to: request.path -%}
+        <div class="ecombio-region-dropdown__lang-wrap">
+          <select name="locale_code"
+                  class="ecombio-region-dropdown__lang-select"
+                  aria-label="Select language for {{ localization.country.name }}"
+                  onchange="this.form.submit()">
+            {%- for language in localization.available_languages -%}
+              <option value="{{ language.iso_code }}"
+                {%- if language.iso_code == localization.language.iso_code %} selected{% endif -%}>
+                {{ language.endonym_name | capitalize }} ({{ localization.country.iso_code }})
+              </option>
+            {%- endfor -%}
+          </select>
+          <svg width="10" height="10" viewBox="0 0 20 20" fill="none"
+               stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 8l5 5 5-5"/>
+          </svg>
+        </div>
+      {%- endform -%}
+    {%- else -%}
+      <span class="ecombio-region-dropdown__lang-static">
+        {{ localization.language.endonym_name | capitalize }} ({{ localization.country.iso_code }})
+      </span>
+    {%- endif -%}
+  </div>
+
+  <div class="ecombio-region-dropdown__divider"></div>
+
+  {%- form 'localization', id: 'ecombio-region-country-form', return_to: request.path -%}
+    <input type="hidden" name="locale_code" value="{{ localization.language.iso_code }}">
+    <ul class="ecombio-region-dropdown__list" id="ecombio-region-list" role="list">
+      {%- for country in localization.available_countries -%}
+        {%- unless country.iso_code == localization.country.iso_code -%}
+          <li class="ecombio-region-dropdown__item" data-country="{{ country.name | downcase }}">
+            <button type="submit"
+                    name="country_code"
+                    value="{{ country.iso_code }}"
+                    class="ecombio-region-dropdown__country-btn"
+                    form="ecombio-region-country-form">
+              <img src="{{ country.flag }}"
+                   alt="{{ country.name }}"
+                   width="20" height="14"
+                   class="ecombio-region-dropdown__flag"
+                   loading="lazy">
+              <span class="ecombio-region-dropdown__country-name">{{ country.name }}</span>
+              <span class="ecombio-region-dropdown__country-lang">
+                {{ localization.language.endonym_name | capitalize }} ({{ country.iso_code }})
+              </span>
+            </button>
+          </li>
+        {%- endunless -%}
+      {%- endfor -%}
+    </ul>
+  {%- endform -%}
+
 </div>
 
 {% stylesheet %}
@@ -262,8 +255,6 @@
   height: 32px;
   display: none;
   align-items: center;
-  position: relative;
-  z-index: 200;
 }
 @media (min-width: 768px) {
   .ecombio-utility-bar {
@@ -300,7 +291,6 @@
   margin: 0;
   padding: 0;
 }
-
 .ecombio-utility-bar__link {
   display: flex;
   align-items: center;
@@ -357,9 +347,6 @@
 }
 
 /* ── Region trigger button ── */
-.ecombio-region-picker {
-  position: relative;
-}
 .ecombio-utility-bar__region-btn {
   display: flex;
   align-items: center;
@@ -375,12 +362,13 @@
   text-transform: uppercase;
   transition: color 0.15s ease;
 }
-.ecombio-region-picker__chevron {
+.ecombio-region-trigger__chevron {
   position: static;
   transform: none;
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
-.ecombio-region-picker--open .ecombio-region-picker__chevron {
+.ecombio-region-trigger--open .ecombio-region-trigger__chevron {
   transform: rotate(180deg);
 }
 .ecombio-utility-bar__flag {
@@ -393,18 +381,17 @@
 }
 
 /* ─────────────────────────────────────────────
-   REGION DROPDOWN PANEL
+   REGION DROPDOWN
+   Teleported to <body> — positioned via JS
    ───────────────────────────────────────────── */
 .ecombio-region-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
   width: 320px;
   background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  z-index: 2147483647; /* max z-index — sits above everything */
   padding: 20px 20px 8px;
   animation: ecombio-dropdown-in 0.18s ease;
 }
@@ -471,9 +458,7 @@
   box-sizing: border-box;
   transition: border-color 0.15s ease;
 }
-.ecombio-region-dropdown__search::placeholder {
-  color: #aaa;
-}
+.ecombio-region-dropdown__search::placeholder { color: #aaa; }
 .ecombio-region-dropdown__search:focus {
   border-color: #1a1a1a;
   background: #fff;
@@ -562,17 +547,12 @@
   scrollbar-width: thin;
   scrollbar-color: #e0e0e0 transparent;
 }
-.ecombio-region-dropdown__list::-webkit-scrollbar {
-  width: 4px;
-}
+.ecombio-region-dropdown__list::-webkit-scrollbar { width: 4px; }
 .ecombio-region-dropdown__list::-webkit-scrollbar-thumb {
   background: #e0e0e0;
   border-radius: 4px;
 }
-
-.ecombio-region-dropdown__item[hidden] {
-  display: none;
-}
+.ecombio-region-dropdown__item[hidden] { display: none; }
 
 .ecombio-region-dropdown__country-btn {
   display: flex;
@@ -587,9 +567,7 @@
   text-align: left;
   transition: background 0.12s ease;
 }
-.ecombio-region-dropdown__country-btn:hover {
-  background: #f5f5f5;
-}
+.ecombio-region-dropdown__country-btn:hover { background: #f5f5f5; }
 .ecombio-region-dropdown__country-name {
   font-size: 13px;
   color: #1a1a1a;
@@ -604,12 +582,10 @@
 /* ─────────────────────────────────────────────
    HYPER variant
    ───────────────────────────────────────────── */
-.ecombio-utility-bar--hyper {
-  background-color: #ffffff;
-}
+.ecombio-utility-bar--hyper { background-color: #ffffff; }
 .ecombio-utility-bar--hyper .ecombio-utility-bar__link { color: #1a1a1a; }
 .ecombio-utility-bar--hyper .ecombio-utility-bar__link:hover { color: #c4301c; }
-.ecombio-utility-bar--hyper .ecombio-utility-bar__select { color: #1a1a1a; border: none; }
+.ecombio-utility-bar--hyper .ecombio-utility-bar__select { color: #1a1a1a; }
 .ecombio-utility-bar--hyper .ecombio-utility-bar__select:hover { color: #c4301c; }
 .ecombio-utility-bar--hyper .ecombio-utility-bar__select option { background: #fff; color: #1a1a1a; }
 .ecombio-utility-bar--hyper .ecombio-utility-bar__region-btn { color: #1a1a1a; }
@@ -619,12 +595,10 @@
 /* ─────────────────────────────────────────────
    FOCUS variant
    ───────────────────────────────────────────── */
-.ecombio-utility-bar--focus {
-  background-color: #f5f4f2;
-}
+.ecombio-utility-bar--focus { background-color: #f5f4f2; }
 .ecombio-utility-bar--focus .ecombio-utility-bar__link { color: #6a6a6a; }
 .ecombio-utility-bar--focus .ecombio-utility-bar__link:hover { color: #1a1a1a; }
-.ecombio-utility-bar--focus .ecombio-utility-bar__select { color: #6a6a6a; border: none; }
+.ecombio-utility-bar--focus .ecombio-utility-bar__select { color: #6a6a6a; }
 .ecombio-utility-bar--focus .ecombio-utility-bar__select:hover { color: #1a1a1a; }
 .ecombio-utility-bar--focus .ecombio-utility-bar__region-btn { color: #6a6a6a; }
 .ecombio-utility-bar--focus .ecombio-utility-bar__region-btn:hover { color: #1a1a1a; }
@@ -639,35 +613,49 @@
 
 {% javascript %}
 (function () {
-  var PICKER_ID   = 'ecombio-region-picker';
   var TRIGGER_ID  = 'ecombio-region-trigger';
   var DROPDOWN_ID = 'ecombio-region-dropdown';
   var CLOSE_ID    = 'ecombio-region-close';
   var SEARCH_ID   = 'ecombio-region-search';
   var LIST_ID     = 'ecombio-region-list';
 
-  var picker   = document.getElementById(PICKER_ID);
   var trigger  = document.getElementById(TRIGGER_ID);
   var dropdown = document.getElementById(DROPDOWN_ID);
   var closeBtn = document.getElementById(CLOSE_ID);
   var search   = document.getElementById(SEARCH_ID);
   var list     = document.getElementById(LIST_ID);
 
-  if (!picker || !trigger || !dropdown) return;
+  if (!trigger || !dropdown) return;
+
+  // ── Teleport dropdown to <body> to escape all stacking contexts ──
+  document.body.appendChild(dropdown);
+
+  // ── Position dropdown anchored below the trigger button ──
+  function positionDropdown() {
+    var rect = trigger.getBoundingClientRect();
+    var scrollY = window.scrollY || window.pageYOffset;
+    var scrollX = window.scrollX || window.pageXOffset;
+    var dropW = 320;
+    var left = rect.right + scrollX - dropW;
+    // Keep on screen
+    if (left < 8) left = 8;
+    dropdown.style.top  = (rect.bottom + scrollY + 6) + 'px';
+    dropdown.style.left = left + 'px';
+  }
 
   function openPicker() {
+    positionDropdown();
     dropdown.hidden = false;
     trigger.setAttribute('aria-expanded', 'true');
-    picker.classList.add('ecombio-region-picker--open');
-    search && search.focus();
+    trigger.classList.add('ecombio-region-trigger--open');
+    if (search) search.focus();
   }
 
   function closePicker() {
     dropdown.hidden = true;
     trigger.setAttribute('aria-expanded', 'false');
-    picker.classList.remove('ecombio-region-picker--open');
-    search && (search.value = '');
-    filterList('');
+    trigger.classList.remove('ecombio-region-trigger--open');
+    if (search) { search.value = ''; filterList(''); }
   }
 
   function filterList(query) {
@@ -680,18 +668,18 @@
     });
   }
 
-  // Toggle on trigger click
+  // Toggle
   trigger.addEventListener('click', function (e) {
     e.stopPropagation();
     dropdown.hidden ? openPicker() : closePicker();
   });
 
   // Close button
-  closeBtn && closeBtn.addEventListener('click', closePicker);
+  if (closeBtn) closeBtn.addEventListener('click', closePicker);
 
   // Click outside
   document.addEventListener('click', function (e) {
-    if (!dropdown.hidden && !picker.contains(e.target)) {
+    if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== trigger) {
       closePicker();
     }
   });
@@ -704,15 +692,26 @@
     }
   });
 
-  // Search filter
-  search && search.addEventListener('input', function () {
-    filterList(this.value);
-  });
+  // Reposition on scroll/resize while open
+  window.addEventListener('scroll', function () {
+    if (!dropdown.hidden) positionDropdown();
+  }, { passive: true });
+  window.addEventListener('resize', function () {
+    if (!dropdown.hidden) positionDropdown();
+  }, { passive: true });
 
-  // Close after country selection (form submit fires navigation, but handle SPA edge cases)
-  list && list.addEventListener('click', function (e) {
-    var btn = e.target.closest('.ecombio-region-dropdown__country-btn');
-    if (btn) closePicker();
-  });
+  // Search filter
+  if (search) {
+    search.addEventListener('input', function () {
+      filterList(this.value);
+    });
+  }
+
+  // Close after country selection
+  if (list) {
+    list.addEventListener('click', function (e) {
+      if (e.target.closest('.ecombio-region-dropdown__country-btn')) closePicker();
+    });
+  }
 })();
 {% endjavascript %}
