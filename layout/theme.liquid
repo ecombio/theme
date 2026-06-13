@@ -3,7 +3,6 @@
   <head> 
     {{ 'base.css' | asset_url | stylesheet_tag }}
     {{ 'theme.css' | asset_url | stylesheet_tag }}
-    {{ 'header.css' | asset_url | stylesheet_tag }}
     {{ 'section-accordion.css' | asset_url | stylesheet_tag }}
     {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
     {{ 'related-products.css' | asset_url | stylesheet_tag }}
@@ -21,24 +20,17 @@
 
     {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
     {% render 'meta-tags' %}
-
-    {% if settings.favicon %}
-      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32 }}">
-    {% endif %}
-
     {{ content_for_header }}
   </head>
 
   <body class="{{ settings.theme_preset }}" data-header-layout="{{ settings.header_layout }}">
 
-    {%- unless cart_empty_shell -%}
-      <div class="ecombio-sticky-header">
-        <div class="page-width--header">
-          {% section 'announcement-bar' %}
-          {% section 'header' %}
-        </div>
+    <div class="ecombio-sticky-header">
+      <div class="page-width--header">
+        {% section 'announcement-bar' %}
+        {% section 'header' %}
       </div>
-    {%- endunless -%}
+    </div>
 
     <main role="main">
       <div class="page-width">
@@ -46,14 +38,13 @@
       </div>
     </main>
 
-    {%- unless cart_empty_shell -%}
-      <footer role="contentinfo">
-        <div class="page-width--footer">
-          {% sections 'footer-group' %}
-        </div>
-      </footer>
-    {%- endunless -%}
+    <footer role="contentinfo">
+      <div class="page-width--footer">
+        {% sections 'footer-group' %}
+      </div>
+    </footer>
 
+    {{ 'header.css' | asset_url | stylesheet_tag }}
     {{ 'base.js' | asset_url | script_tag }}
     {{ 'theme.js' | asset_url | script_tag }}
     {{ 'header.js' | asset_url | script_tag }}
@@ -119,5 +110,6 @@
     </script>
     {% render 'cart-drawer' %}
     {{ 'cart-drawer.js' | asset_url | script_tag }}
+    {{ 'theme.js' | asset_url | script_tag }}
   </body>
 </html>
