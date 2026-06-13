@@ -1,13 +1,13 @@
 {% comment %}
   Section: Shoppable Video
-  - Carousel of portrait video cards
-  - Each card has a floating product chip pinned to the bottom
-  - Clicking the chip opens a modal: video (left) + full product card (right)
-  - Namespace: "shv-" to avoid collisions with other sections
+  - Carousel of portrait (9:16) video cards
+  - Glassmorphism floating product chip pinned to bottom of each card
+  - Chip click → two-column modal: video left, full product card right
+  - Namespace: "shv-" scoped to section.id
 {% endcomment %}
 
 {%- liquid
-  assign s = 'shv-' | append: section.id
+  assign s          = 'shv-' | append: section.id
   assign heading    = section.settings.heading
   assign subheading = section.settings.subheading
 -%}
@@ -30,14 +30,14 @@
         {%- endif -%}
       </div>
       <div class="shv-head__nav">
-        <button class="shv-arrow shv-arrow--prev" data-shv-prev aria-label="Previous">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-            <path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <button class="shv-arrow" data-shv-prev aria-label="Previous">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 12.5L5.5 8L10 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <button class="shv-arrow shv-arrow--next" data-shv-next aria-label="Next">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-            <path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <button class="shv-arrow" data-shv-next aria-label="Next">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
@@ -46,6 +46,7 @@
 
   <div class="shv-rail-wrap">
     <ul class="shv-rail" data-shv-rail role="list">
+
       {%- for block in section.blocks -%}
         {%- if block.type == 'video_card' -%}
           {%- liquid
@@ -53,9 +54,9 @@
             assign video_url    = block.settings.video_url
             assign poster       = block.settings.poster
             assign product      = block.settings.product
-            assign video_type   = 'hosted'
-            if hosted_video == blank
-              assign video_type = 'embed'
+            assign has_hosted   = false
+            if hosted_video != blank
+              assign has_hosted = true
             endif
           -%}
 
@@ -63,13 +64,11 @@
             <div
               class="shv-card__frame"
               data-shv-card
-              data-video-type="{{ video_type }}"
-              {%- if product != blank -%}
-                data-product-handle="{{ product.handle }}"
-              {%- endif -%}
+              data-has-hosted="{{ has_hosted }}"
+              {%- if product != blank -%}data-product-handle="{{ product.handle }}"{%- endif -%}
             >
 
-              {%- comment %} Poster {%- endcomment %}
+              {%- comment %} ── Poster ── {%- endcomment %}
               {%- if poster != blank -%}
                 {{
                   poster
@@ -77,25 +76,27 @@
                   | image_tag:
                     class: 'shv-card__poster',
                     loading: 'lazy',
-                    sizes: '(min-width: 990px) 320px, (min-width: 750px) 45vw, 80vw',
-                    widths: '320, 480, 640, 760',
-                    alt: block.settings.title | default: 'Video'
+                    sizes: '(min-width: 990px) 280px, 45vw',
+                    widths: '280, 480, 640, 760',
+                    alt: product.title | default: 'Video'
                 }}
-              {%- elsif hosted_video != blank -%}
-                <img
-                  class="shv-card__poster"
-                  loading="lazy"
-                  src="{{ hosted_video | video_tag: image_size: '760x' | extract: 'poster' }}"
-                  alt="{{ block.settings.title | default: 'Video' }}"
-                />
+              {%- elsif hosted_video != blank and hosted_video.preview_image != blank -%}
+                {{
+                  hosted_video.preview_image
+                  | image_url: width: 760
+                  | image_tag:
+                    class: 'shv-card__poster',
+                    loading: 'lazy',
+                    alt: product.title | default: 'Video'
+                }}
               {%- else -%}
                 <div class="shv-card__poster shv-card__poster--placeholder">
-                  {{ 'lifestyle-1' | placeholder_svg_tag: 'shv-placeholder-svg' }}
+                  {{ 'lifestyle-1' | placeholder_svg_tag: 'shv-ph-svg' }}
                 </div>
               {%- endif -%}
 
-              {%- comment %} Inline video {%- endcomment %}
-              {%- if video_type == 'hosted' -%}
+              {%- comment %} ── Hosted video (lazy) ── {%- endcomment %}
+              {%- if has_hosted -%}
                 <video
                   class="shv-card__video"
                   muted
@@ -106,101 +107,117 @@
                 >
                   {%- for source in hosted_video.sources -%}
                     {%- if source.format == 'mp4' -%}
-                      <source data-src="{{ source.url }}" type="video/{{ source.format }}">
+                      <source data-src="{{ source.url }}" type="video/mp4">
                     {%- endif -%}
                   {%- endfor -%}
+                  {%- comment %} Fallback: first available source {%- endcomment %}
+                  {%- unless hosted_video.sources.first.format == 'mp4' -%}
+                    {%- for source in hosted_video.sources -%}
+                      {%- unless forloop.first == false and source.format == 'mp4' -%}
+                        <source data-src="{{ source.url }}" type="video/{{ source.format }}">
+                      {%- endunless -%}
+                    {%- endfor -%}
+                  {%- endunless -%}
                 </video>
               {%- elsif video_url != blank -%}
-                <div class="shv-card__video shv-card__video--embed" data-embed-url="{{ video_url }}" data-shv-embed></div>
+                <div class="shv-card__embed" data-embed-url="{{ video_url }}" data-shv-embed></div>
               {%- endif -%}
 
-              {%- comment %} Sound toggle {%- endcomment %}
-              {%- if video_type == 'hosted' -%}
-                <button class="shv-sound" data-shv-sound data-on="false" aria-label="Unmute video">
-                  <svg class="shv-icon shv-icon--off" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M3 9v6h4l5 5V4L7 9H3Z" fill="currentColor"/>
-                    <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              {%- comment %} ── Play overlay (taps on mobile) ── {%- endcomment %}
+              {%- if has_hosted -%}
+                <button class="shv-play-btn" data-shv-play aria-label="Play">
+                  <svg class="shv-play-icon" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.22)"/>
+                    <path d="M16 13l12 7-12 7V13z" fill="#fff"/>
                   </svg>
-                  <svg class="shv-icon shv-icon--on" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M3 9v6h4l5 5V4L7 9H3Z" fill="currentColor"/>
-                    <path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8 8 0 0 1 0 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </button>
+                <button class="shv-sound-btn" data-shv-sound data-on="false" aria-label="Unmute">
+                  <svg class="shv-icon shv-icon--off" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M3 7.5v5h3.33L11 17V3L6.33 7.5H3Z" fill="currentColor"/>
+                    <path d="M14 7l3.5 6M17.5 7L14 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg class="shv-icon shv-icon--on" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M3 7.5v5h3.33L11 17V3L6.33 7.5H3Z" fill="currentColor"/>
+                    <path d="M13.5 6.5a5 5 0 0 1 0 7M15.5 4.5a8 8 0 0 1 0 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                   </svg>
                 </button>
               {%- endif -%}
 
-              {%- comment %} Gradient for legibility under the chip {%- endcomment %}
-              <div class="shv-card__shade" aria-hidden="true"></div>
+              {%- comment %} ── Gradient shade ── {%- endcomment %}
+              <div class="shv-shade" aria-hidden="true"></div>
 
-              {%- comment %} Floating product chip {%- endcomment %}
+              {%- comment %} ── Glass product chip ── {%- endcomment %}
               {%- if product != blank -%}
                 <button class="shv-chip" data-shv-chip aria-haspopup="dialog">
                   <span class="shv-chip__media">
                     {%- if product.featured_image -%}
-                      {{ product.featured_image | image_url: width: 96 | image_tag: loading: 'lazy', alt: '' }}
+                      {{ product.featured_image | image_url: width: 100 | image_tag: loading: 'lazy', alt: '' }}
                     {%- else -%}
-                      {{ 'product-1' | placeholder_svg_tag: 'shv-chip__placeholder' }}
+                      {{ 'product-1' | placeholder_svg_tag: 'shv-chip__ph' }}
                     {%- endif -%}
                   </span>
-                  <span class="shv-chip__text">
-                    <span class="shv-chip__title">{{ product.title }}</span>
-                    <span class="shv-chip__price">{{ product.price | money }}</span>
+                  <span class="shv-chip__body">
+                    <span class="shv-chip__name">{{ product.title | truncate: 28 }}</span>
+                    <span class="shv-chip__prices">
+                      <span class="shv-chip__price">{{ product.price | money }}</span>
+                      {%- if product.compare_at_price > product.price -%}
+                        <s class="shv-chip__compare">{{ product.compare_at_price | money }}</s>
+                      {%- endif -%}
+                    </span>
                   </span>
-                  <span class="shv-chip__cta" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <span class="shv-chip__arrow" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="7" fill="rgba(255,255,255,0.25)"/>
+                      <path d="M5 4l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </span>
                 </button>
               {%- endif -%}
+
             </div>
           </li>
 
-          {%- comment %} Hidden product data, cloned into modal by JS {%- endcomment %}
+          {%- comment %} ── Hidden product template ── {%- endcomment %}
           {%- if product != blank -%}
-            <template class="shv-data" data-shv-data data-product-handle="{{ product.handle }}">
-              <div class="shv-modal__product">
+            <template class="shv-product-data" data-product-handle="{{ product.handle }}">
+              <div class="shv-modal__pcard">
                 <div class="shv-modal__gallery">
                   {%- if product.featured_image -%}
-                    {{ product.featured_image | image_url: width: 600 | image_tag: loading: 'lazy', alt: product.title, class: 'shv-modal__image' }}
+                    {{ product.featured_image | image_url: width: 640 | image_tag: loading: 'eager', alt: product.title, class: 'shv-modal__gallery-img' }}
                   {%- else -%}
-                    {{ 'product-1' | placeholder_svg_tag: 'shv-modal__image shv-modal__image--placeholder' }}
+                    {{ 'product-1' | placeholder_svg_tag: 'shv-modal__gallery-img shv-modal__gallery-img--ph' }}
                   {%- endif -%}
                 </div>
                 <div class="shv-modal__info">
-                  <p class="shv-modal__vendor">{{ product.vendor }}</p>
+                  {%- if product.vendor != blank -%}
+                    <p class="shv-modal__vendor">{{ product.vendor | upcase }}</p>
+                  {%- endif -%}
                   <h3 class="shv-modal__title">{{ product.title }}</h3>
-                  <p class="shv-modal__price">
-                    {{ product.price | money }}
+                  <p class="shv-modal__price-row">
+                    <span class="shv-modal__price">{{ product.price | money }}</span>
                     {%- if product.compare_at_price > product.price -%}
                       <s class="shv-modal__compare">{{ product.compare_at_price | money }}</s>
                     {%- endif -%}
                   </p>
-
                   {%- if product.description != blank -%}
-                    <div class="shv-modal__desc">{{ product.description | strip_html | truncatewords: 40 }}</div>
+                    <p class="shv-modal__desc">{{ product.description | strip_html | truncatewords: 36 }}</p>
                   {%- endif -%}
 
                   {%- if product.variants.size > 1 -%}
-                    <label class="shv-modal__label" for="shv-variant-{{ product.id }}">
-                      {{ 'products.product.choose_options' | t | default: 'Options' }}
-                    </label>
-                    <select class="shv-modal__variant" id="shv-variant-{{ product.id }}" data-product-id="{{ product.id }}">
+                    <label class="shv-modal__label">Options</label>
+                    <select class="shv-modal__select" data-shv-variant>
                       {%- for variant in product.variants -%}
-                        <option value="{{ variant.id }}" {% unless variant.available %}disabled{% endunless %}>
-                          {{ variant.title }}{% unless variant.available %} — {{ 'products.product.sold_out' | t | default: 'Sold out' }}{% endunless %}
+                        <option value="{{ variant.id }}"{% unless variant.available %} disabled{% endunless %}>
+                          {{ variant.title }}{% unless variant.available %} — Sold out{% endunless %}
                         </option>
                       {%- endfor -%}
                     </select>
                   {%- else -%}
-                    <input type="hidden" class="shv-modal__variant" value="{{ product.selected_or_first_available_variant.id }}">
+                    <input type="hidden" data-shv-variant value="{{ product.selected_or_first_available_variant.id }}">
                   {%- endif -%}
 
-                  <button class="shv-modal__add" data-product-id="{{ product.id }}">
-                    {{ 'products.product.add_to_cart' | t | default: 'Add to cart' }}
-                  </button>
-                  <a href="{{ product.url }}" class="shv-modal__link">
-                    {{ 'products.product.view_details' | t | default: 'View full details' }}
-                  </a>
+                  <button class="shv-modal__add" data-shv-add>Add to cart</button>
+                  <a class="shv-modal__full-link" href="{{ product.url }}">View full details</a>
                 </div>
               </div>
             </template>
@@ -208,40 +225,42 @@
 
         {%- endif -%}
       {%- else -%}
-        {%- for i in (1..3) -%}
+        {%- for i in (1..4) -%}
           <li class="shv-card">
             <div class="shv-card__frame">
               <div class="shv-card__poster shv-card__poster--placeholder">
-                {{ 'lifestyle-' | append: i | placeholder_svg_tag: 'shv-placeholder-svg' }}
+                {{ 'lifestyle-1' | placeholder_svg_tag: 'shv-ph-svg' }}
               </div>
-              <div class="shv-card__shade" aria-hidden="true"></div>
-              <div class="shv-chip shv-chip--placeholder">
-                <span class="shv-chip__media">
-                  {{ 'product-1' | placeholder_svg_tag: 'shv-chip__placeholder' }}
+              <div class="shv-shade" aria-hidden="true"></div>
+              <div class="shv-chip shv-chip--ph">
+                <span class="shv-chip__media">{{ 'product-1' | placeholder_svg_tag: 'shv-chip__ph' }}</span>
+                <span class="shv-chip__body">
+                  <span class="shv-chip__name">Example Product</span>
+                  <span class="shv-chip__prices"><span class="shv-chip__price">$209.00</span><s class="shv-chip__compare">$299.00</s></span>
                 </span>
-                <span class="shv-chip__text">
-                  <span class="shv-chip__title">Product name</span>
-                  <span class="shv-chip__price">$00.00</span>
+                <span class="shv-chip__arrow" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="7" fill="rgba(255,255,255,0.25)"/><path d="M5 4l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </span>
               </div>
             </div>
           </li>
         {%- endfor -%}
       {%- endfor -%}
+
     </ul>
   </div>
 
-  {%- comment %} Modal: video (left) + product (right) {%- endcomment %}
-  <div class="shv-modal" data-shv-modal hidden role="dialog" aria-modal="true" aria-label="Product video">
-    <div class="shv-modal__backdrop" data-shv-modal-close></div>
+  {%- comment %} ── Modal ── {%- endcomment %}
+  <div class="shv-modal" data-shv-modal hidden role="dialog" aria-modal="true" aria-label="Shop this video">
+    <div class="shv-modal__backdrop" data-shv-close></div>
     <div class="shv-modal__panel">
-      <button class="shv-modal__close" data-shv-modal-close aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+      <button class="shv-modal__close" data-shv-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M14 4L4 14M4 4l10 10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
         </svg>
       </button>
-      <div class="shv-modal__media" data-shv-modal-media></div>
-      <div class="shv-modal__product-slot" data-shv-modal-product></div>
+      <div class="shv-modal__video-col" data-shv-modal-video></div>
+      <div class="shv-modal__product-col" data-shv-modal-product></div>
     </div>
   </div>
 
@@ -250,72 +269,61 @@
 {% comment %} =================== STYLES =================== {% endcomment %}
 <style>
   #{{ s }} {
-    --shv-gap:        {{ section.settings.card_gap | default: 14 }}px;
-    --shv-radius:     {{ section.settings.card_radius | default: 18 }}px;
-    --shv-bg:         {{ section.settings.section_bg | default: '#0c0c0f' }};
-    --shv-fg:         {{ section.settings.heading_color | default: '#f5f5f0' }};
-    --shv-card-bg:    {{ section.settings.card_bg | default: '#1c1c22' }};
-    --shv-accent:     {{ section.settings.accent_color | default: '#f5f5f0' }};
-    --shv-accent-fg:  {{ section.settings.accent_text_color | default: '#0c0c0f' }};
-    --shv-visible:    {{ section.settings.cards_per_row | default: 4 }};
+    --shv-accent:    {{ section.settings.accent_color | default: '#ffffff' }};
+    --shv-accent-fg: {{ section.settings.accent_text_color | default: '#111111' }};
+    --shv-bg:        {{ section.settings.section_bg | default: '#111114' }};
+    --shv-fg:        {{ section.settings.heading_color | default: '#f0f0ee' }};
+    --shv-gap:       {{ section.settings.card_gap | default: 12 }}px;
+    --shv-radius:    {{ section.settings.card_radius | default: 20 }}px;
+    --shv-visible:   {{ section.settings.cards_per_row | default: 4 }};
+    --shv-px:        {{ section.settings.section_padding_x | default: 36 }}px;
   }
 
+  /* ── Root ── */
   .shv-root {
     background: var(--shv-bg);
     color: var(--shv-fg);
-    padding: {{ section.settings.section_padding_top | default: 56 }}px 0 {{ section.settings.section_padding_bottom | default: 56 }}px;
+    padding: {{ section.settings.section_padding_top | default: 52 }}px 0 {{ section.settings.section_padding_bottom | default: 52 }}px;
   }
 
+  /* ── Header ── */
   .shv-head {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: 16px;
-    padding: 0 {{ section.settings.section_padding_x | default: 40 }}px;
-    margin-bottom: 22px;
+    padding: 0 var(--shv-px);
+    margin-bottom: 20px;
   }
-
   .shv-head__title {
-    margin: 0 0 4px;
-    font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+    margin: 0 0 3px;
+    font-size: clamp(1.25rem, 2.2vw, 1.8rem);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     line-height: 1.15;
   }
-
   .shv-head__sub {
     margin: 0;
-    font-size: 0.92rem;
-    opacity: 0.6;
+    font-size: 0.88rem;
+    opacity: 0.5;
   }
-
-  .shv-head__nav {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
+  .shv-head__nav { display: flex; gap: 8px; flex-shrink: 0; }
   .shv-arrow {
-    width: 38px;
-    height: 38px;
+    width: 36px; height: 36px;
     border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: transparent;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.05);
     color: var(--shv-fg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: background 0.18s, opacity 0.18s;
+    backdrop-filter: blur(6px);
+    transition: background 0.15s;
   }
-  .shv-arrow:hover { background: rgba(255,255,255,0.08); }
-  .shv-arrow:disabled { opacity: 0.25; pointer-events: none; }
+  .shv-arrow:hover { background: rgba(255,255,255,0.12); }
+  .shv-arrow:disabled { opacity: 0.2; pointer-events: none; }
 
-  /* ---- Rail ---- */
-  .shv-rail-wrap {
-    padding: 0 {{ section.settings.section_padding_x | default: 40 }}px;
-  }
-
+  /* ── Rail ── */
+  .shv-rail-wrap { padding: 0 var(--shv-px); }
   .shv-rail {
     display: grid;
     grid-auto-flow: column;
@@ -324,8 +332,7 @@
     );
     gap: var(--shv-gap);
     list-style: none;
-    margin: 0;
-    padding: 4px 0 8px;
+    margin: 0; padding: 4px 0 12px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
@@ -333,483 +340,426 @@
     scrollbar-width: none;
   }
   .shv-rail::-webkit-scrollbar { display: none; }
+  .shv-card { scroll-snap-align: start; }
 
-  .shv-card {
-    scroll-snap-align: start;
-  }
-
+  /* ── Card ── */
   .shv-card__frame {
     position: relative;
     aspect-ratio: 9 / 16;
     border-radius: var(--shv-radius);
     overflow: hidden;
-    background: var(--shv-card-bg);
+    background: #1c1c22;
   }
 
   .shv-card__poster,
   .shv-card__video {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+    inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block;
   }
-
-  .shv-card__poster--placeholder { background: #232329; }
-  .shv-card__poster--placeholder .shv-placeholder-svg { width: 100%; height: 100%; opacity: 0.18; }
-
   .shv-card__video {
     z-index: 1;
     opacity: 0;
-    transition: opacity 0.35s ease;
+    transition: opacity 0.3s ease;
     background: #000;
   }
-  .shv-card__video--embed iframe { width: 100%; height: 100%; border: none; }
+  .shv-card__poster--placeholder { background: #222228; }
+  .shv-card__poster--placeholder .shv-ph-svg { width: 100%; height: 100%; opacity: 0.1; }
+
   .shv-card__frame.is-playing .shv-card__video { opacity: 1; }
-  .shv-card__frame.is-playing .shv-card__poster { opacity: 0; transition: opacity 0.35s ease; }
+  .shv-card__frame.is-playing .shv-card__poster { opacity: 0; transition: opacity 0.3s ease; }
+  .shv-card__frame.is-playing .shv-play-btn { opacity: 0; pointer-events: none; }
 
-  /* ---- Shade for chip legibility ---- */
-  .shv-card__shade {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 46%;
-    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%);
-    z-index: 2;
-    pointer-events: none;
+  .shv-card__embed { position: absolute; inset: 0; z-index: 1; }
+  .shv-card__embed iframe { width: 100%; height: 100%; border: none; }
+
+  /* ── Play btn ── */
+  .shv-play-btn {
+    position: absolute; inset: 0; z-index: 3;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer;
+    transition: opacity 0.2s;
   }
+  .shv-play-icon { width: 48px; height: 48px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
 
-  /* ---- Sound toggle ---- */
-  .shv-sound {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 4;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0,0,0,0.4);
+  /* ── Sound btn ── */
+  .shv-sound-btn {
+    position: absolute; top: 12px; right: 12px; z-index: 4;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(8px);
     color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    backdrop-filter: blur(4px);
   }
-  .shv-icon { width: 16px; height: 16px; }
+  .shv-icon { width: 15px; height: 15px; }
   .shv-icon--on { display: none; }
-  .shv-sound[data-on="true"] .shv-icon--off { display: none; }
-  .shv-sound[data-on="true"] .shv-icon--on { display: block; }
+  .shv-sound-btn[data-on="true"] .shv-icon--off { display: none; }
+  .shv-sound-btn[data-on="true"] .shv-icon--on  { display: block; }
 
-  /* ---- Floating product chip ---- */
+  /* ── Shade ── */
+  .shv-shade {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 52%;
+    background: linear-gradient(to top,
+      rgba(0,0,0,0.62) 0%,
+      rgba(0,0,0,0.18) 55%,
+      rgba(0,0,0,0) 100%);
+    z-index: 2; pointer-events: none;
+  }
+
+  /* ── Glass chip ── */
   .shv-chip {
     position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: calc(var(--shv-radius) - 8px);
-    border: none;
-    background: rgba(255,255,255,0.94);
-    color: #111;
-    cursor: pointer;
-    text-align: left;
-    backdrop-filter: blur(6px);
-    transition: transform 0.18s ease, background 0.18s ease;
+    left: 10px; right: 10px; bottom: 10px;
+    z-index: 4;
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 8px 8px 8px;
+    border-radius: 14px; border: none;
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: #fff;
+    cursor: pointer; text-align: left;
+    transition: background 0.2s, transform 0.18s;
   }
-  .shv-chip:hover { transform: translateY(-2px); background: #fff; }
+  .shv-chip:hover { background: rgba(255,255,255,0.22); transform: translateY(-2px); }
+  .shv-chip--ph { cursor: default; }
 
   .shv-chip__media {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #eee;
+    width: 36px; height: 36px; border-radius: 8px;
+    overflow: hidden; flex-shrink: 0;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.18);
   }
   .shv-chip__media img,
-  .shv-chip__placeholder {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
+  .shv-chip__ph { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  .shv-chip__text {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-    gap: 1px;
+  .shv-chip__body {
+    display: flex; flex-direction: column;
+    flex: 1; min-width: 0; gap: 1px;
   }
-  .shv-chip__title {
-    font-size: 0.78rem;
-    font-weight: 600;
-    line-height: 1.25;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .shv-chip__name {
+    font-size: 0.77rem; font-weight: 600;
+    line-height: 1.25; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
   }
-  .shv-chip__price {
-    font-size: 0.76rem;
-    opacity: 0.6;
-  }
-  .shv-chip__cta {
-    width: 26px;
-    height: 26px;
+  .shv-chip__prices { display: flex; align-items: baseline; gap: 5px; }
+  .shv-chip__price  { font-size: 0.75rem; font-weight: 500; }
+  .shv-chip__compare { font-size: 0.72rem; opacity: 0.55; font-weight: 400; }
+
+  .shv-chip__arrow {
+    flex-shrink: 0; width: 26px; height: 26px;
     border-radius: 50%;
-    background: var(--shv-accent);
-    color: var(--shv-accent-fg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
   }
 
-  .shv-chip--placeholder { cursor: default; }
-
-  /* ---- Modal ---- */
+  /* ── Modal ── */
   .shv-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
   }
   .shv-modal[hidden] { display: none; }
 
   .shv-modal__backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(10,10,12,0.78);
+    position: absolute; inset: 0;
+    background: rgba(8,8,12,0.75);
+    backdrop-filter: blur(4px);
     cursor: pointer;
   }
 
   .shv-modal__panel {
-    position: relative;
-    z-index: 1;
-    width: min(880px, 100%);
-    max-height: min(640px, 92vh);
-    background: #fff;
-    color: #111;
-    border-radius: 20px;
-    overflow: hidden;
+    position: relative; z-index: 1;
+    width: min(860px, 100%);
+    max-height: min(680px, 92vh);
     display: grid;
-    grid-template-columns: 0.85fr 1fr;
+    grid-template-columns: 0.78fr 1fr;
+    border-radius: 22px;
+    overflow: hidden;
+    /* Glass panel */
+    background: rgba(22,22,28,0.72);
+    backdrop-filter: blur(28px) saturate(1.5);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow:
+      0 32px 64px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+    color: #f0f0ee;
   }
 
   .shv-modal__close {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 3;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255,255,255,0.9);
-    color: #111;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: absolute; top: 14px; right: 14px; z-index: 5;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
+    transition: background 0.15s;
   }
+  .shv-modal__close:hover { background: rgba(255,255,255,0.22); }
 
-  .shv-modal__media {
+  /* ── Modal video column ── */
+  .shv-modal__video-col {
     position: relative;
-    background: #0c0c0f;
-    aspect-ratio: 9 / 16;
-    max-height: min(640px, 92vh);
+    background: #000;
+    min-height: 0;
   }
-  .shv-modal__media video,
-  .shv-modal__media iframe,
-  .shv-modal__media img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border: none;
-    display: block;
+  .shv-modal__video-col video,
+  .shv-modal__video-col iframe,
+  .shv-modal__video-col img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; border: none; display: block;
   }
 
-  /* ---- Modal product card ---- */
-  .shv-modal__product-slot {
+  /* ── Modal product column ── */
+  .shv-modal__product-col {
     overflow-y: auto;
+    display: flex; flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,0.07);
   }
 
-  .shv-modal__product {
-    display: flex;
-    flex-direction: column;
+  .shv-modal__pcard {
+    display: flex; flex-direction: column; flex: 1;
   }
 
   .shv-modal__gallery {
     width: 100%;
+    background: rgba(255,255,255,0.05);
     aspect-ratio: 4 / 3;
-    background: #f5f5f5;
+    position: relative;
   }
-  .shv-modal__image,
-  .shv-modal__image--placeholder {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    opacity: 1;
+  .shv-modal__gallery-img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
   }
-  .shv-modal__image--placeholder { opacity: 0.2; }
+  .shv-modal__gallery-img--ph { opacity: 0.15; }
 
   .shv-modal__info {
-    padding: 22px 24px 26px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding: 20px 22px 24px;
+    display: flex; flex-direction: column; gap: 9px;
+    flex: 1;
   }
 
   .shv-modal__vendor {
     margin: 0;
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.5;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    opacity: 0.45;
   }
 
   .shv-modal__title {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 600;
     line-height: 1.3;
+    letter-spacing: -0.01em;
   }
 
-  .shv-modal__price {
-    margin: 2px 0 6px;
-    font-size: 1rem;
-    font-weight: 500;
-  }
-  .shv-modal__compare {
-    opacity: 0.45;
-    margin-left: 8px;
-    font-weight: 400;
-  }
+  .shv-modal__price-row { margin: 0; display: flex; align-items: baseline; gap: 8px; }
+  .shv-modal__price { font-size: 1rem; font-weight: 600; }
+  .shv-modal__compare { font-size: 0.85rem; opacity: 0.42; font-weight: 400; }
 
   .shv-modal__desc {
-    font-size: 0.85rem;
-    line-height: 1.55;
-    opacity: 0.7;
-    margin-bottom: 6px;
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    opacity: 0.6;
   }
 
   .shv-modal__label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    opacity: 0.6;
+    letter-spacing: 0.04em;
+    opacity: 0.5;
     margin-bottom: -4px;
   }
 
-  .shv-modal__variant {
+  .shv-modal__select {
     width: 100%;
     padding: 10px 12px;
-    font-size: 0.88rem;
-    border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.15);
-    background: #fff;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #f0f0ee;
+    cursor: pointer;
+    appearance: auto;
   }
 
   .shv-modal__add {
-    width: 100%;
+    width: 100%; margin-top: 4px;
     padding: 13px;
-    margin-top: 6px;
-    border: none;
-    border-radius: 10px;
+    border: none; border-radius: 12px;
     background: var(--shv-accent);
     color: var(--shv-accent-fg);
-    font-size: 0.92rem;
-    font-weight: 600;
+    font-size: 0.9rem; font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s, background 0.2s;
+    letter-spacing: 0.01em;
   }
-  .shv-modal__add:hover { opacity: 0.9; }
+  .shv-modal__add:hover { opacity: 0.88; }
+  .shv-modal__add[data-state="loading"] { opacity: 0.5; cursor: wait; }
   .shv-modal__add[data-state="added"] { background: #2a9d5c; color: #fff; }
-  .shv-modal__add[data-state="error"] { background: #c0392b; color: #fff; }
+  .shv-modal__add[data-state="error"]  { background: #c0392b; color: #fff; }
 
-  .shv-modal__link {
+  .shv-modal__full-link {
     text-align: center;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     text-decoration: underline;
-    color: inherit;
-    opacity: 0.6;
+    color: inherit; opacity: 0.5;
     margin-top: 2px;
   }
 
-  .shv-data { display: none; }
+  .shv-product-data { display: none; }
 
-  /* ---- Responsive ---- */
-  @media (max-width: 1100px) {
-    #{{ s }} { --shv-visible: 3; }
-  }
+  /* ── Responsive ── */
+  @media (max-width: 1100px) { #{{ s }} { --shv-visible: 3; } }
   @media (max-width: 768px) {
-    #{{ s }} { --shv-visible: 2.2; }
-    .shv-head,
-    .shv-rail-wrap { padding: 0 20px; }
+    #{{ s }} { --shv-visible: 2.2; --shv-px: 20px; }
     .shv-modal__panel {
       grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
-      max-height: 90vh;
+      grid-template-rows: 42vh 1fr;
+      max-height: 92vh;
     }
-    .shv-modal__media { aspect-ratio: 16 / 10; max-height: 38vh; }
   }
   @media (max-width: 480px) {
-    #{{ s }} { --shv-visible: 1.5; }
-    .shv-chip__title { font-size: 0.74rem; }
+    #{{ s }} { --shv-visible: 1.25; }
     .shv-modal { padding: 0; }
-    .shv-modal__panel { border-radius: 0; width: 100%; height: 100%; max-height: 100%; }
-    .shv-modal__media { aspect-ratio: 16 / 11; max-height: 34vh; }
+    .shv-modal__panel {
+      border-radius: 0; width: 100%; height: 100%;
+      max-height: 100%;
+      grid-template-rows: 40vh 1fr;
+    }
   }
-
   @media (prefers-reduced-motion: reduce) {
     .shv-card__video, .shv-card__poster, .shv-chip { transition: none; }
   }
 </style>
 
-{% comment %} =================== JAVASCRIPT =================== {% endcomment %}
+{% comment %} =================== JS =================== {% endcomment %}
 <script>
 (function () {
   'use strict';
 
-  function initShoppableVideo(root) {
-    const rail      = root.querySelector('[data-shv-rail]');
-    const prevBtn   = root.querySelector('[data-shv-prev]');
-    const nextBtn   = root.querySelector('[data-shv-next]');
-    const modal     = root.querySelector('[data-shv-modal]');
-    const modalMedia   = modal.querySelector('[data-shv-modal-media]');
-    const modalProduct = modal.querySelector('[data-shv-modal-product]');
-    const modalCloseEls = modal.querySelectorAll('[data-shv-modal-close]');
+  function init(root) {
+    var rail          = root.querySelector('[data-shv-rail]');
+    var modal         = root.querySelector('[data-shv-modal]');
+    var modalVideoCol = modal.querySelector('[data-shv-modal-video]');
+    var modalProdCol  = modal.querySelector('[data-shv-modal-product]');
 
     if (!rail) return;
 
-    // ── Carousel arrows ──────────────────────────────────────────
-    function scrollByCard(dir) {
-      const card = rail.querySelector('.shv-card');
+    // ── Arrow scroll ─────────────────────────────────────────────
+    root.querySelector('[data-shv-prev]').addEventListener('click', function () { scrollCards(-1); });
+    root.querySelector('[data-shv-next]').addEventListener('click', function () { scrollCards(1); });
+
+    function scrollCards(dir) {
+      var card = rail.querySelector('.shv-card');
       if (!card) return;
-      const width = card.offsetWidth;
-      const gap = parseInt(getComputedStyle(rail).gap) || 0;
-      rail.scrollBy({ left: dir * (width + gap), behavior: 'smooth' });
+      rail.scrollBy({ left: dir * (card.offsetWidth + parseInt(getComputedStyle(rail).gap)), behavior: 'smooth' });
     }
-    if (prevBtn) prevBtn.addEventListener('click', () => scrollByCard(-1));
-    if (nextBtn) nextBtn.addEventListener('click', () => scrollByCard(1));
 
-    function syncArrows() {
-      if (!prevBtn || !nextBtn) return;
-      prevBtn.disabled = rail.scrollLeft <= 2;
-      nextBtn.disabled = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2;
-    }
-    rail.addEventListener('scroll', syncArrows, { passive: true });
-    syncArrows();
-
-    // ── Hover-to-preview on each card ────────────────────────────
+    // ── Hover-to-play ────────────────────────────────────────────
     root.querySelectorAll('[data-shv-card]').forEach(function (frame) {
-      const video   = frame.querySelector('[data-shv-video]');
-      const sources = video ? video.querySelectorAll('source[data-src]') : [];
-      const soundBtn = frame.querySelector('[data-shv-sound]');
-      let loaded = false;
+      var videoEl   = frame.querySelector('[data-shv-video]');
+      var soundBtn  = frame.querySelector('[data-shv-sound]');
+      var playBtn   = frame.querySelector('[data-shv-play]');
+      var loaded    = false;
 
-      function loadSources() {
-        if (loaded || !sources.length) return;
-        sources.forEach(function (src) { src.src = src.dataset.src; });
-        video.load();
+      function loadSrc() {
+        if (loaded || !videoEl) return;
+        videoEl.querySelectorAll('source[data-src]').forEach(function (s) { s.src = s.dataset.src; });
+        videoEl.load();
         loaded = true;
       }
 
-      function start() {
-        if (!video) return;
-        loadSources();
+      function play() {
+        if (!videoEl) return;
+        loadSrc();
         frame.classList.add('is-playing');
-        video.play().catch(function () {});
+        videoEl.play().catch(function () {});
       }
-      function stop() {
+
+      function pause() {
         frame.classList.remove('is-playing');
-        if (video) {
-          video.pause();
-          video.currentTime = 0;
-        }
+        if (videoEl) { videoEl.pause(); videoEl.currentTime = 0; }
       }
 
-      frame.addEventListener('mouseenter', start);
-      frame.addEventListener('mouseleave', stop);
-      frame.addEventListener('focusin', start);
-      frame.addEventListener('focusout', stop);
+      // Desktop: hover
+      frame.addEventListener('mouseenter', play);
+      frame.addEventListener('mouseleave', pause);
 
-      if (soundBtn) {
+      // Mobile: play button tap
+      if (playBtn) {
+        playBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (frame.classList.contains('is-playing')) { pause(); } else { play(); }
+        });
+      }
+
+      if (soundBtn && videoEl) {
         soundBtn.addEventListener('click', function (e) {
           e.stopPropagation();
-          if (!video) return;
-          video.muted = !video.muted;
-          soundBtn.dataset.on = video.muted ? 'false' : 'true';
+          videoEl.muted = !videoEl.muted;
+          soundBtn.dataset.on = videoEl.muted ? 'false' : 'true';
         });
       }
     });
 
-    // ── Chip click → open modal ──────────────────────────────────
+    // ── Chip → modal ──────────────────────────────────────────────
     root.querySelectorAll('[data-shv-chip]').forEach(function (chip) {
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
-        const frame = chip.closest('[data-shv-card]');
-        if (!frame) return;
-        openModal(frame);
+        openModal(chip.closest('[data-shv-card]'));
       });
     });
 
     function openModal(frame) {
-      const handle = frame.dataset.productHandle;
-      const videoType = frame.dataset.videoType;
+      var handle    = frame.dataset.productHandle;
+      var hasHosted = frame.dataset.hasHosted === 'true';
+      var videoEl   = frame.querySelector('[data-shv-video]');
+      var embedEl   = frame.querySelector('[data-shv-embed]');
 
-      // ---- Media (left column) ----
-      modalMedia.innerHTML = '';
-
-      if (videoType === 'hosted') {
-        const srcVideo = frame.querySelector('[data-shv-video]');
-        const v = document.createElement('video');
-        v.autoplay = true;
-        v.loop = true;
-        v.playsInline = true;
-        v.controls = true;
-        if (srcVideo) {
-          srcVideo.querySelectorAll('source').forEach(function (s) {
-            const src = document.createElement('source');
-            src.src = s.src || s.dataset.src;
-            src.type = s.type;
-            v.appendChild(src);
-          });
-        }
-        modalMedia.appendChild(v);
+      // Video column
+      modalVideoCol.innerHTML = '';
+      if (hasHosted && videoEl) {
+        var v = document.createElement('video');
+        v.autoplay = true; v.loop = true; v.playsInline = true; v.controls = true; v.muted = false;
+        videoEl.querySelectorAll('source').forEach(function (s) {
+          var ns = document.createElement('source');
+          ns.src = s.src || s.dataset.src;
+          ns.type = s.type;
+          v.appendChild(ns);
+        });
+        modalVideoCol.appendChild(v);
         v.play().catch(function () {});
+      } else if (embedEl) {
+        var iframe = document.createElement('iframe');
+        iframe.src = resolveEmbed(embedEl.dataset.embedUrl);
+        iframe.allow = 'autoplay; encrypted-media; fullscreen';
+        iframe.allowFullscreen = true;
+        modalVideoCol.appendChild(iframe);
       } else {
-        const embedEl = frame.querySelector('[data-shv-embed]');
-        const url = embedEl ? embedEl.dataset.embedUrl : null;
-        if (url) {
-          const iframe = document.createElement('iframe');
-          iframe.src = embedUrl(url);
-          iframe.allow = 'autoplay; encrypted-media; fullscreen';
-          iframe.allowFullscreen = true;
-          modalMedia.appendChild(iframe);
-        } else {
-          const poster = frame.querySelector('.shv-card__poster');
-          if (poster) modalMedia.appendChild(poster.cloneNode());
-        }
+        var poster = frame.querySelector('.shv-card__poster');
+        if (poster) modalVideoCol.appendChild(poster.cloneNode(true));
       }
 
-      // ---- Product (right column) ----
-      modalProduct.innerHTML = '';
-      const dataTpl = root.querySelector('[data-shv-data][data-product-handle="' + handle + '"]');
-      if (dataTpl) {
-        modalProduct.appendChild(dataTpl.content.cloneNode(true));
-        bindAddToCart(modalProduct);
+      // Product column
+      modalProdCol.innerHTML = '';
+      var tpl = root.querySelector('.shv-product-data[data-product-handle="' + handle + '"]');
+      if (tpl) {
+        modalProdCol.appendChild(tpl.content.cloneNode(true));
+        bindCart(modalProdCol);
       }
 
       modal.hidden = false;
@@ -819,11 +769,11 @@
     function closeModal() {
       modal.hidden = true;
       document.body.style.overflow = '';
-      modalMedia.innerHTML = '';
-      modalProduct.innerHTML = '';
+      modalVideoCol.innerHTML = '';
+      modalProdCol.innerHTML = '';
     }
 
-    modalCloseEls.forEach(function (el) {
+    modal.querySelectorAll('[data-shv-close]').forEach(function (el) {
       el.addEventListener('click', closeModal);
     });
     document.addEventListener('keydown', function (e) {
@@ -831,70 +781,53 @@
     });
 
     // ── Add to cart ───────────────────────────────────────────────
-    function bindAddToCart(scope) {
-      const addBtn = scope.querySelector('.shv-modal__add');
-      if (!addBtn) return;
+    function bindCart(scope) {
+      var btn = scope.querySelector('[data-shv-add]');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var varEl = scope.querySelector('[data-shv-variant]');
+        var id = varEl ? varEl.value : null;
+        if (!id) return;
 
-      addBtn.addEventListener('click', function () {
-        const variantEl = scope.querySelector('.shv-modal__variant');
-        const variantId = variantEl ? variantEl.value : null;
-        if (!variantId) return;
-
-        const originalText = addBtn.textContent;
-        addBtn.disabled = true;
-        addBtn.dataset.state = 'loading';
-        addBtn.textContent = '...';
+        var orig = btn.textContent;
+        btn.disabled = true; btn.dataset.state = 'loading'; btn.textContent = '...';
 
         fetch('/cart/add.js', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: [{ id: variantId, quantity: 1 }] })
+          body: JSON.stringify({ items: [{ id: Number(id), quantity: 1 }] })
         })
-          .then(function (res) {
-            if (!res.ok) throw new Error('Add to cart failed');
-            return res.json();
-          })
+          .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
           .then(function () {
-            addBtn.dataset.state = 'added';
-            addBtn.textContent = 'Added';
+            btn.dataset.state = 'added'; btn.textContent = 'Added ✓';
             document.dispatchEvent(new CustomEvent('cart:refresh'));
-            setTimeout(function () {
-              addBtn.dataset.state = '';
-              addBtn.textContent = originalText;
-              addBtn.disabled = false;
-            }, 1800);
+            setTimeout(function () { btn.dataset.state = ''; btn.textContent = orig; btn.disabled = false; }, 2000);
           })
           .catch(function () {
-            addBtn.dataset.state = 'error';
-            addBtn.textContent = 'Try again';
-            setTimeout(function () {
-              addBtn.dataset.state = '';
-              addBtn.textContent = originalText;
-              addBtn.disabled = false;
-            }, 1800);
+            btn.dataset.state = 'error'; btn.textContent = 'Try again';
+            setTimeout(function () { btn.dataset.state = ''; btn.textContent = orig; btn.disabled = false; }, 2000);
           });
       });
     }
 
-    // ── Embed URL helper ─────────────────────────────────────────
-    function embedUrl(url) {
+    // ── Embed URL helper ──────────────────────────────────────────
+    function resolveEmbed(url) {
       try {
-        const u = new URL(url);
+        var u = new URL(url);
         if (u.hostname.includes('youtu')) {
-          const id = u.searchParams.get('v') || u.pathname.split('/').pop();
+          var id = u.searchParams.get('v') || u.pathname.split('/').pop();
           return 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
         }
         if (u.hostname.includes('vimeo')) {
-          const id = u.pathname.split('/').filter(Boolean).pop();
-          return 'https://player.vimeo.com/video/' + id + '?autoplay=1';
+          return 'https://player.vimeo.com/video/' + u.pathname.split('/').filter(Boolean).pop() + '?autoplay=1';
         }
-      } catch (err) {}
+      } catch(e) {}
       return url;
     }
   }
 
   function boot() {
-    document.querySelectorAll('[data-section-type="shoppable-video"]').forEach(initShoppableVideo);
+    document.querySelectorAll('[data-section-type="shoppable-video"]').forEach(init);
   }
 
   if (document.readyState === 'loading') {
@@ -904,8 +837,8 @@
   }
 
   document.addEventListener('shopify:section:load', function (e) {
-    const s = e.target.querySelector('[data-section-type="shoppable-video"]');
-    if (s) initShoppableVideo(s);
+    var s = e.target.querySelector('[data-section-type="shoppable-video"]');
+    if (s) init(s);
   });
 })();
 </script>
@@ -920,7 +853,7 @@
   "settings": [
     {
       "type": "header",
-      "content": "Section header"
+      "content": "Header"
     },
     {
       "type": "text",
@@ -936,8 +869,8 @@
     {
       "type": "color",
       "id": "heading_color",
-      "label": "Heading & text color",
-      "default": "#f5f5f0"
+      "label": "Text color",
+      "default": "#f0f0ee"
     },
     {
       "type": "header",
@@ -946,31 +879,23 @@
     {
       "type": "range",
       "id": "cards_per_row",
-      "min": 2,
-      "max": 6,
-      "step": 1,
       "label": "Cards visible (desktop)",
+      "min": 2, "max": 6, "step": 1,
       "default": 4
     },
     {
       "type": "range",
       "id": "card_gap",
-      "min": 4,
-      "max": 32,
-      "step": 2,
-      "unit": "px",
       "label": "Gap between cards",
-      "default": 14
+      "min": 4, "max": 28, "step": 2, "unit": "px",
+      "default": 12
     },
     {
       "type": "range",
       "id": "card_radius",
-      "min": 0,
-      "max": 32,
-      "step": 2,
-      "unit": "px",
       "label": "Card corner radius",
-      "default": 18
+      "min": 0, "max": 32, "step": 2, "unit": "px",
+      "default": 20
     },
     {
       "type": "header",
@@ -980,25 +905,19 @@
       "type": "color",
       "id": "section_bg",
       "label": "Section background",
-      "default": "#0c0c0f"
-    },
-    {
-      "type": "color",
-      "id": "card_bg",
-      "label": "Card background",
-      "default": "#1c1c22"
+      "default": "#111114"
     },
     {
       "type": "color",
       "id": "accent_color",
-      "label": "Accent (chip arrow / add to cart)",
-      "default": "#f5f5f0"
+      "label": "Button / accent",
+      "default": "#ffffff"
     },
     {
       "type": "color",
       "id": "accent_text_color",
-      "label": "Accent text color",
-      "default": "#0c0c0f"
+      "label": "Button text",
+      "default": "#111111"
     },
     {
       "type": "header",
@@ -1007,32 +926,23 @@
     {
       "type": "range",
       "id": "section_padding_top",
-      "min": 0,
-      "max": 120,
-      "step": 4,
-      "unit": "px",
       "label": "Padding top",
-      "default": 56
+      "min": 0, "max": 120, "step": 4, "unit": "px",
+      "default": 52
     },
     {
       "type": "range",
       "id": "section_padding_bottom",
-      "min": 0,
-      "max": 120,
-      "step": 4,
-      "unit": "px",
       "label": "Padding bottom",
-      "default": 56
+      "min": 0, "max": 120, "step": 4, "unit": "px",
+      "default": 52
     },
     {
       "type": "range",
       "id": "section_padding_x",
-      "min": 0,
-      "max": 80,
-      "step": 4,
-      "unit": "px",
       "label": "Side padding",
-      "default": 40
+      "min": 0, "max": 80, "step": 4, "unit": "px",
+      "default": 36
     }
   ],
   "blocks": [
@@ -1042,7 +952,7 @@
       "settings": [
         {
           "type": "header",
-          "content": "Video source — choose one"
+          "content": "Video — choose one"
         },
         {
           "type": "video",
@@ -1053,7 +963,7 @@
           "type": "url",
           "id": "video_url",
           "label": "YouTube / Vimeo URL",
-          "info": "Used if no hosted video is set. Hover preview is hosted-video only."
+          "info": "Fallback if no hosted video is set. Hover preview requires a hosted video."
         },
         {
           "type": "header",
@@ -1062,14 +972,8 @@
         {
           "type": "image_picker",
           "id": "poster",
-          "label": "Poster image",
-          "info": "Optional. Falls back to the hosted video's poster frame."
-        },
-        {
-          "type": "text",
-          "id": "title",
-          "label": "Alt text",
-          "info": "Used for accessibility only."
+          "label": "Poster / thumbnail image",
+          "info": "Optional. Auto-detected from hosted video if left blank."
         },
         {
           "type": "header",
@@ -1079,7 +983,7 @@
           "type": "product",
           "id": "product",
           "label": "Featured product",
-          "info": "Shown as a floating chip; tapping it opens the product alongside the video."
+          "info": "Shown in the floating chip. Opens a full product card in the modal."
         }
       ]
     }
