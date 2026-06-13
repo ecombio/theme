@@ -1,31 +1,21 @@
-{% comment %}
-  cart.liquid — Full cart page template
-  Mirrors the design tokens and BEM structure of cart-drawer.liquid.
-
-  Assets loaded here:
-    {{ 'cart.css' | asset_url | stylesheet_tag }}
-    {{ 'cart.js'  | asset_url | script_tag }}
-
-  Free shipping threshold is set in cart.js → FREE_SHIPPING_THRESHOLD (cents).
-{% endcomment %}
-
-{{ 'cart.css' | asset_url | stylesheet_tag }}
+{{ 'cart-empty.css' | asset_url | stylesheet_tag }}
+{{ 'cart.css'       | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign free_shipping_threshold = 500
-  assign free_shipping_cents = free_shipping_threshold | times: 100
-  assign item_count = cart.item_count
-  assign has_items = false
+  assign free_shipping_cents     = free_shipping_threshold | times: 100
+  assign item_count              = cart.item_count
+  assign has_items               = false
   if item_count > 0
     assign has_items = true
   endif
 -%}
 
-<div class="cart-page" data-cart-page>
+{%- if has_items -%}
 
-  {%- if has_items -%}
+  <div class="cart-page" data-cart-page>
 
-    {%- comment -%} ── Shipping banner ──────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Shipping banner ── {%- endcomment -%}
     <div class="cart-page__shipping-banner" data-cart-shipping-banner>
       <div class="cart-page__container">
         <div class="cart-page__shipping-inner">
@@ -50,11 +40,11 @@
       </div>
     </div>
 
-    {%- comment -%} ── Main layout ──────────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Main layout ── {%- endcomment -%}
     <div class="cart-page__container">
       <div class="cart-page__layout">
 
-        {%- comment -%} ── Left col: items ───────────────────────────── {%- endcomment -%}
+        {%- comment -%} ── Left col: items ── {%- endcomment -%}
         <div class="cart-page__main" data-cart-main>
 
           <div class="cart-page__header-row">
@@ -64,12 +54,9 @@
                 ({{ item_count }} {{ item_count | pluralize: 'item', 'items' }})
               </span>
             </h1>
-            <a href="/collections/all" class="cart-page__continue-link">
-              ← Continue shopping
-            </a>
+            <a href="/collections/all" class="cart-page__continue-link">← Continue shopping</a>
           </div>
 
-          {%- comment -%} Column headings — desktop only {%- endcomment -%}
           <div class="cart-page__col-headings" aria-hidden="true">
             <span class="cart-page__col-heading cart-page__col-heading--product">Product</span>
             <span class="cart-page__col-heading cart-page__col-heading--price">Price</span>
@@ -77,7 +64,6 @@
             <span class="cart-page__col-heading cart-page__col-heading--total">Total</span>
           </div>
 
-          {%- comment -%} Item list {%- endcomment -%}
           <ul
             class="cart-page__items"
             data-cart-items
@@ -92,7 +78,6 @@
                 data-line="{{ forloop.index }}"
                 data-variant-id="{{ item.variant_id }}"
               >
-                {%- comment -%} Image {%- endcomment -%}
                 <a href="{{ item.url }}" class="cart-page__item-img-link" tabindex="-1" aria-hidden="true">
                   <div class="cart-page__item-img-wrap">
                     {%- if item.image -%}
@@ -110,7 +95,6 @@
                   </div>
                 </a>
 
-                {%- comment -%} Info {%- endcomment -%}
                 <div class="cart-page__item-info">
                   <a href="{{ item.url }}" class="cart-page__item-title">{{ item.product_title }}</a>
                   {%- unless item.variant_title == 'Default Title' or item.variant_title == blank -%}
@@ -119,14 +103,9 @@
                   {%- if item.selling_plan_allocation -%}
                     <p class="cart-page__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
                   {%- endif -%}
-
-                  {%- comment -%} Mobile price (visible below md) {%- endcomment -%}
-                  <p class="cart-page__item-unit-price--mobile">
-                    {{ item.original_price | money }}
-                  </p>
+                  <p class="cart-page__item-unit-price--mobile">{{ item.original_price | money }}</p>
                 </div>
 
-                {%- comment -%} Unit price — desktop column {%- endcomment -%}
                 <div class="cart-page__item-col cart-page__item-col--price" aria-label="Unit price">
                   {%- if item.original_price > item.final_price -%}
                     <span class="cart-page__item-compare">{{ item.original_price | money }}</span>
@@ -136,89 +115,40 @@
                   {%- endif -%}
                 </div>
 
-                {%- comment -%} Qty stepper {%- endcomment -%}
                 <div class="cart-page__item-col cart-page__item-col--qty">
                   <div class="cart-page__qty-stepper" role="group" aria-label="Quantity for {{ item.product_title | escape }}">
-                    <button
-                      type="button"
-                      class="cart-page__qty-btn cart-page__qty-btn--minus"
-                      aria-label="Decrease quantity"
-                      data-qty-minus
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                           stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                           aria-hidden="true" focusable="false">
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                      </svg>
+                    <button type="button" class="cart-page__qty-btn cart-page__qty-btn--minus" aria-label="Decrease quantity" data-qty-minus>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
-                    <span
-                      class="cart-page__qty-value"
-                      data-qty-value
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >{{ item.quantity }}</span>
-                    <button
-                      type="button"
-                      class="cart-page__qty-btn cart-page__qty-btn--plus"
-                      aria-label="Increase quantity"
-                      data-qty-plus
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                           stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                           aria-hidden="true" focusable="false">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                      </svg>
+                    <span class="cart-page__qty-value" data-qty-value aria-live="polite" aria-atomic="true">{{ item.quantity }}</span>
+                    <button type="button" class="cart-page__qty-btn cart-page__qty-btn--plus" aria-label="Increase quantity" data-qty-plus>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
                   </div>
                 </div>
 
-                {%- comment -%} Line total {%- endcomment -%}
                 <div class="cart-page__item-col cart-page__item-col--total">
-                  <span class="cart-page__item-line-price" data-line-price>
-                    {{ item.line_price | money }}
-                  </span>
+                  <span class="cart-page__item-line-price" data-line-price>{{ item.line_price | money }}</span>
                 </div>
 
-                {%- comment -%} Remove {%- endcomment -%}
                 <button
                   type="button"
                   class="cart-page__item-remove"
                   aria-label="Remove {{ item.product_title | escape }} from cart"
                   data-remove-item
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                       stroke-linejoin="round" aria-hidden="true" focusable="false">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </li>
             {%- endfor -%}
           </ul>
 
-          {%- comment -%} Order note {%- endcomment -%}
           <div class="cart-page__note-section">
             <button type="button" class="cart-page__note-toggle" data-note-toggle aria-expanded="false" aria-controls="cart-page-note">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                   stroke-linejoin="round" aria-hidden="true" focusable="false">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
               Add an order note
-              <svg class="cart-page__note-toggle-chevron" width="14" height="14"
-                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                   aria-hidden="true" focusable="false">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
+              <svg class="cart-page__note-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-
             <div class="cart-page__note-body" id="cart-page-note" hidden>
               <label class="cart-page__note-label" for="cart-note-input">Order note</label>
               <textarea
@@ -233,182 +163,180 @@
             </div>
           </div>
 
-        </div>{%- comment -%} /main {%- endcomment -%}
+        </div>
 
-        {%- comment -%} ── Right col: order summary ──────────────────── {%- endcomment -%}
+        {%- comment -%} ── Right col: summary ── {%- endcomment -%}
         <aside class="cart-page__summary" aria-label="Order summary" data-cart-summary>
 
-          <h2 class="cart-page__summary-title">Order summary</h2>
+          <h2 class="cart-page__summary-title">Summary</h2>
 
           <div class="cart-page__summary-rows">
             <div class="cart-page__summary-row">
               <span class="cart-page__summary-label">
                 Subtotal
-                <span class="cart-page__summary-count" data-cart-item-count-summary>
-                  ({{ item_count }} {{ item_count | pluralize: 'item', 'items' }})
-                </span>
+                <span class="cart-page__summary-count" data-cart-item-count-summary>({{ item_count }} {{ item_count | pluralize: 'item', 'items' }})</span>
               </span>
-              <span class="cart-page__summary-value" data-cart-subtotal>
-                {{ cart.total_price | money }}
-              </span>
+              <span class="cart-page__summary-value" data-cart-subtotal>{{ cart.total_price | money }}</span>
             </div>
 
             <div class="cart-page__summary-row cart-page__summary-row--shipping">
               <span class="cart-page__summary-label">Shipping</span>
-              <span class="cart-page__summary-value cart-page__summary-value--muted">
-                Calculated at checkout
-              </span>
+              <span class="cart-page__summary-value cart-page__summary-value--muted">Calculated at checkout</span>
             </div>
 
             {%- if cart.cart_level_discount_applications.size > 0 -%}
               {%- for discount in cart.cart_level_discount_applications -%}
                 <div class="cart-page__summary-row cart-page__summary-row--discount">
                   <span class="cart-page__summary-label cart-page__summary-label--discount">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" aria-hidden="true">
-                      <polyline points="20 12 20 22 4 22 4 12"/>
-                      <rect x="2" y="7" width="20" height="5"/>
-                      <line x1="12" y1="22" x2="12" y2="7"/>
-                      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-                      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-                    </svg>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
                     {{ discount.title }}
                   </span>
-                  <span class="cart-page__summary-value cart-page__summary-value--discount">
-                    −{{ discount.total_allocated_amount | money }}
-                  </span>
+                  <span class="cart-page__summary-value cart-page__summary-value--discount">−{{ discount.total_allocated_amount | money }}</span>
                 </div>
               {%- endfor -%}
             {%- endif -%}
           </div>
 
           <div class="cart-page__summary-total-row">
-            <span class="cart-page__summary-total-label">Estimated total</span>
-            <span class="cart-page__summary-total-value" data-cart-total>
-              {{ cart.total_price | money }} <small>{{ cart.currency }}</small>
-            </span>
+            <span class="cart-page__summary-total-label">Total</span>
+            <span class="cart-page__summary-total-value" data-cart-total>{{ cart.total_price | money }} <small>{{ cart.currency }}</small></span>
           </div>
           <p class="cart-page__summary-tax-note">Taxes and shipping calculated at checkout</p>
 
-          <a
-            href="/checkout"
-            class="cart-page__checkout-btn"
-            data-checkout-btn
-          >
-            Proceed to checkout
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                 stroke-linejoin="round" aria-hidden="true" focusable="false">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-              <polyline points="12 5 19 12 12 19"/>
-            </svg>
+          <a href="/checkout" class="cart-page__checkout-btn" data-checkout-btn>
+            Go to shipping
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </a>
 
           <div class="cart-page__trust-badges">
             <div class="cart-page__trust-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               Secure checkout
             </div>
             <div class="cart-page__trust-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               Free returns
             </div>
             <div class="cart-page__trust-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="1" y="3" width="15" height="13" rx="1"/>
-                <path d="M16 8h4l3 5v3h-7V8z"/>
-                <circle cx="5.5" cy="18.5" r="2.5"/>
-                <circle cx="18.5" cy="18.5" r="2.5"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
               Fast shipping
             </div>
           </div>
 
         </aside>
 
-      </div>{%- comment -%} /layout {%- endcomment -%}
+      </div>
 
-      {%- comment -%} ── Recommendations ──────────────────────────────── {%- endcomment -%}
       <section class="cart-page__recommendations" data-cart-recommendations aria-label="Product recommendations" hidden>
         <h2 class="cart-page__recommendations-title">You might also like</h2>
-        <ul class="cart-page__recommendations-list" data-cart-recommendations-list>
-          {%- comment -%} Populated by JS {%- endcomment -%}
-        </ul>
+        <ul class="cart-page__recommendations-list" data-cart-recommendations-list></ul>
       </section>
 
-    </div>{%- comment -%} /container {%- endcomment -%}
-
-  {%- else -%}
-
-    {%- comment -%} ── Empty state ────────────────────────────────────── {%- endcomment -%}
-    <div class="cart-page__container">
-      <div class="cart-page__empty">
-        <div class="cart-page__empty-icon" aria-hidden="true">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.25" stroke-linecap="round"
-               stroke-linejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <path d="M16 10a4 4 0 0 1-8 0"/>
-          </svg>
-        </div>
-        <h1 class="cart-page__empty-heading">Your cart is empty</h1>
-        <p class="cart-page__empty-sub">Looks like you haven't added anything yet. Browse our collections to find something you'll love.</p>
-        <a href="/collections/all" class="cart-page__empty-cta">Start shopping</a>
-
-        {%- comment -%} Collection tiles {%- endcomment -%}
-        {%- assign collections_to_show = collections | where: 'published', true -%}
-        {%- if collections_to_show.size > 0 -%}
-          <div class="cart-page__empty-collections">
-            <p class="cart-page__empty-collections-label">Browse collections</p>
-            <ul class="cart-page__empty-collections-grid">
-              {%- for collection in collections_to_show limit: 4 -%}
-                {%- if collection.featured_image -%}
-                  <li>
-                    <a href="{{ collection.url }}" class="cart-page__empty-collection-link">
-                      <div class="cart-page__empty-collection-img-wrap">
-                        <img
-                          src="{{ collection.featured_image | image_url: width: 400 }}"
-                          alt="{{ collection.title | escape }}"
-                          width="200"
-                          height="160"
-                          loading="lazy"
-                          class="cart-page__empty-collection-img"
-                        >
-                      </div>
-                      <span class="cart-page__empty-collection-name">
-                        {{ collection.title }}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                             stroke-linejoin="round" aria-hidden="true">
-                          <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                      </span>
-                    </a>
-                  </li>
-                {%- endif -%}
-              {%- endfor -%}
-            </ul>
-          </div>
-        {%- endif -%}
-
-      </div>
     </div>
 
-  {%- endif -%}
+  </div>
 
-</div>{%- comment -%} /cart-page {%- endcomment -%}
+  {{ 'cart.js' | asset_url | script_tag }}
 
-{%- comment -%} Recommendation item template (cloned by JS) {%- endcomment -%}
+{%- else -%}
+
+  {%- comment -%} ── Empty state ── {%- endcomment -%}
+  <div class="cart-empty-bm">
+    <div class="cart-empty-bm__left">
+      <p class="cart-empty-bm__eyebrow">Buzzkill alert</p>
+      <h1 class="cart-empty-bm__heading">There's nothing in your cart.</h1>
+      <p class="cart-empty-bm__sub">All this stellar merch isn't gonna shop itself!</p>
+      <a href="{{ routes.all_products_collection_url }}" class="cart-empty-bm__cta">Browse sweet deals</a>
+    </div>
+    <div class="cart-empty-bm__right" aria-hidden="true">
+      {{ 'cart-empty-illustration.svg' | asset_url | img_tag: '', 'cart-empty-bm__illustration' }}
+    </div>
+  </div>
+
+  <style>
+    .cart-empty-bm {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 60vh;
+      padding: 64px 0;
+      gap: 40px;
+      background: #f4f4f6;
+    }
+
+    .cart-empty-bm__left {
+      flex: 0 0 auto;
+      max-width: 420px;
+    }
+
+    .cart-empty-bm__eyebrow {
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b6b6b;
+      margin: 0 0 12px;
+    }
+
+    .cart-empty-bm__heading {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      color: #111;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin: 0 0 16px;
+    }
+
+    .cart-empty-bm__sub {
+      font-size: 15px;
+      color: #444;
+      line-height: 1.6;
+      margin: 0 0 32px;
+    }
+
+    .cart-empty-bm__cta {
+      display: inline-block;
+      background: #111;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .cart-empty-bm__cta:hover {
+      opacity: 0.82;
+    }
+
+    .cart-empty-bm__right {
+      flex: 0 0 auto;
+    }
+
+    .cart-empty-bm__illustration {
+      width: clamp(280px, 38vw, 480px);
+      height: auto;
+      display: block;
+    }
+
+    @media (max-width: 640px) {
+      .cart-empty-bm {
+        flex-direction: column-reverse;
+        padding: 40px 0;
+        text-align: center;
+      }
+
+      .cart-empty-bm__left {
+        max-width: 100%;
+      }
+
+      .cart-empty-bm__illustration {
+        width: 240px;
+      }
+    }
+  </style>
+
+{%- endif -%}
+
 <template id="cart-rec-item-tpl">
   <li class="cart-page__rec-item">
     <a class="cart-page__rec-link" href="">
@@ -423,5 +351,3 @@
     </a>
   </li>
 </template>
-
-{{ 'cart.js' | asset_url | script_tag }}
