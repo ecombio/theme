@@ -4,30 +4,30 @@
     product               – product object (required)
     show_vendor           – boolean
     show_compare_at_price – boolean
-
-  Section-level feature flags (section.settings.*):
-    enable_quickview   enable_atc   enable_compare
-    enable_wishlist    show_eta
-    eta_days_min  eta_days_max  eta_label
+    enable_quickview      – boolean
+    enable_atc            – boolean
+    enable_compare        – boolean
+    enable_wishlist       – boolean
+    show_eta              – boolean
+    eta_days_max          – integer (default 7)
+    eta_label             – string  (default 'Est. arrival:')
 {%- endcomment -%}
 
 {%- liquid
   assign p = product
 
-  assign _show_vendor        = show_vendor           | default: false
+  assign _show_vendor        = show_vendor        | default: false
   assign _show_compare_price = show_compare_at_price | default: false
+  assign _quickview          = enable_quickview   | default: false
+  assign _atc                = enable_atc         | default: false
+  assign _compare            = enable_compare     | default: false
+  assign _wishlist           = enable_wishlist    | default: false
+  assign _eta                = show_eta           | default: false
+  assign _eta_max            = eta_days_max       | default: 7
+  assign _eta_label          = eta_label          | default: 'Est. arrival:'
 
-  assign _quickview = section.settings.enable_quickview | default: false
-  assign _atc       = section.settings.enable_atc       | default: false
-  assign _compare   = section.settings.enable_compare   | default: false
-  assign _wishlist  = section.settings.enable_wishlist  | default: false
-  assign _eta       = section.settings.show_eta         | default: false
-  assign _eta_min   = section.settings.eta_days_min     | default: 3
-  assign _eta_max   = section.settings.eta_days_max     | default: 7
-  assign _eta_label = section.settings.eta_label        | default: 'Est. arrival:'
-
-  assign on_sale       = false
-  assign savings_amt   = 0
+  assign on_sale     = false
+  assign savings_amt = 0
   if p.compare_at_price > p.price
     assign on_sale     = true
     assign savings_amt = p.compare_at_price | minus: p.price
@@ -43,7 +43,6 @@
   data-product-handle="{{ p.handle }}"
 >
 
-  {%- comment -%} ══ IMAGE ZONE ══ {%- endcomment -%}
   <div class="card-product__img-zone">
 
     <a href="{{ p.url }}" class="card-product__image-wrapper" aria-label="{{ p.title | escape }}" tabindex="0">
@@ -115,7 +114,6 @@
 
   </div>
 
-  {%- comment -%} ══ CONTENT ══ {%- endcomment -%}
   <div class="card-product__content">
 
     {%- if _show_vendor and p.vendor != blank -%}
