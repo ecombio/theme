@@ -1,0 +1,95 @@
+{% comment %}
+  snippets/cart-empty.liquid
+  The main body content rendered when cart.item_count == 0.
+  Usage: {%- render 'cart-empty' -%}
+{% endcomment %}
+
+<main class="cart-empty" id="cart-empty-body" role="main">
+
+  {%- comment -%} ── Hero empty moment ─────────────────────────────── {%- endcomment -%}
+  <div class="cart-empty__hero">
+
+    <p class="cart-empty__eyebrow">Your cart</p>
+
+    <div class="cart-empty__bag" aria-hidden="true">
+      <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg"
+           width="96" height="96" role="img">
+        <title>Empty shopping bag</title>
+        <rect x="14" y="34" width="68" height="52" rx="10" fill="#e8e4df"/>
+        <rect x="14" y="34" width="68" height="18" rx="0" fill="#dedad4"
+              style="clip-path:inset(0 0 0 0 round 10px 10px 0 0)"/>
+        <path d="M34 34 C34 18 62 18 62 34"
+              stroke="#c5c0b8" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+        <circle cx="48" cy="34" r="5" fill="#c5c0b8"/>
+        <circle cx="48" cy="34" r="2.5" fill="#e8e4df"/>
+        <line x1="35" y1="60" x2="61" y2="60"
+              stroke="#c5c0b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 4"/>
+        <line x1="40" y1="70" x2="56" y2="70"
+              stroke="#c5c0b8" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 4"/>
+      </svg>
+    </div>
+
+    <h1 class="cart-empty__heading">Nothing in here yet.</h1>
+    <p class="cart-empty__sub">
+      Your cart is wide open. Head back to the shop and find something worth carrying.
+    </p>
+
+    <a href="{{ routes.all_products_collection_url }}" class="cart-empty__cta">
+      Browse the shop
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+           stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </a>
+
+  </div>
+
+  {%- comment -%} ── Collection tiles ──────────────────────────────── {%- endcomment -%}
+  {%- assign published_collections = collections | where: 'published', true -%}
+  {%- if published_collections.size > 0 -%}
+    <nav class="cart-empty__collections" aria-label="Browse collections">
+      <p class="cart-empty__collections-label">Or jump to a collection</p>
+      <ul class="cart-empty__collections-grid">
+        {%- for collection in published_collections limit: 4 -%}
+          <li>
+            <a href="{{ collection.url }}" class="cart-empty__coll-tile">
+              <div class="cart-empty__coll-img-wrap">
+                {%- if collection.featured_image -%}
+                  <img
+                    src="{{ collection.featured_image | image_url: width: 400 }}"
+                    alt="{{ collection.title | escape }}"
+                    width="200"
+                    height="200"
+                    loading="lazy"
+                    class="cart-empty__coll-img"
+                  >
+                {%- else -%}
+                  <div class="cart-empty__coll-img-placeholder" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                         aria-hidden="true" focusable="false">
+                      <rect x="3" y="3" width="18" height="18" rx="3"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                  </div>
+                {%- endif -%}
+              </div>
+              <div class="cart-empty__coll-name">
+                {{ collection.title }}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                     aria-hidden="true" focusable="false">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </nav>
+  {%- endif -%}
+
+</main>
