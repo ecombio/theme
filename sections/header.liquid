@@ -3,46 +3,49 @@
   File: sections/header.liquid
   Responsive: mobile / tablet / desktop
 
-  Snippets used:
-    - snippets/ecombio-header-utility-bar.liquid
-    - snippets/ecombio-header-middle.liquid
-        - snippets/ecombio-header-logo.liquid
-        - snippets/ecombio-search-form.liquid
-        - snippets/ecombio-header-icons.liquid
-            - snippets/ecombio-header-icon-store.liquid
-            - snippets/ecombio-header-icon-account.liquid
-            - snippets/ecombio-header-icon-cart.liquid
-    - snippets/ecombio-header-menu-bar.liquid
-    - snippets/ecombio-mobile-nav.liquid
+  Snippet tree:
+    ecombio-header-top
+      └── ecombio-header-utility-bar
+    ecombio-header-middle
+      ├── ecombio-header-logo
+      ├── ecombio-search-form (desktop)
+      ├── ecombio-search-form (mobile)
+      └── ecombio-header-icons
+            ├── ecombio-header-icon-store
+            ├── ecombio-header-icon-account
+            └── ecombio-header-icon-cart
+    ecombio-header-bottom
+      ├── ecombio-header-menu-bar
+      └── ecombio-mobile-nav
 
   Logo & Favicon are managed via Theme Settings → Logo & Favicon
   (config/settings_schema.json) so they apply globally across all
   layout files without needing to be set per-section.
 {% endcomment %}
 
-{%- assign show_category   = section.settings.show_category_filter -%}
-{%- assign header_style    = section.settings.header_style | default: 'hyper' -%}
-{%- assign enable_drawer   = section.settings.enable_cart_drawer | default: true -%}
-{%- assign enable_upsells  = section.settings.enable_upsells | default: true -%}
-{%- assign enable_bar      = section.settings.enable_free_shipping_bar | default: true -%}
-{%- assign free_ship_min   = section.settings.free_shipping_threshold | default: 75 -%}
-{%- assign upsell_page     = section.settings.enable_upsell_page | default: true -%}
+{%- assign show_category  = section.settings.show_category_filter -%}
+{%- assign header_style   = section.settings.header_style | default: 'hyper' -%}
+{%- assign enable_drawer  = section.settings.enable_cart_drawer | default: true -%}
+{%- assign enable_upsells = section.settings.enable_upsells | default: true -%}
+{%- assign enable_bar     = section.settings.enable_free_shipping_bar | default: true -%}
+{%- assign free_ship_min  = section.settings.free_shipping_threshold | default: 75 -%}
+{%- assign upsell_page    = section.settings.enable_upsell_page | default: true -%}
 
 {%- comment -%} ── Logo from Theme Settings (global) ── {%- endcomment -%}
 {%- assign logo       = settings.logo -%}
 {%- assign logo_width = settings.logo_width | default: 140 -%}
 
-{%- comment -%} ── UTILITY BAR (above header) ── {%- endcomment -%}
-{%- render 'ecombio-header-utility-bar',
-      header_style:    header_style,
-      links:           section.settings.utility_links,
-      show_currency:   section.settings.show_currency_switcher,
-      show_locale:     section.settings.show_locale_switcher
+{%- comment -%} ── TOP — Utility bar ── {%- endcomment -%}
+{%- render 'ecombio-header-top',
+      header_style:  header_style,
+      links:         section.settings.utility_links,
+      show_currency: section.settings.show_currency_switcher,
+      show_locale:   section.settings.show_locale_switcher
 -%}
 
 <header class="ecombio-header ecombio-header--{{ header_style }}" id="ecombio-header">
 
-  {%- comment -%} ── MIDDLE BAR ── Hamburger · Logo · Search · Icons {%- endcomment -%}
+  {%- comment -%} ── MIDDLE — Hamburger · Logo · Search · Icons ── {%- endcomment -%}
   {%- render 'ecombio-header-middle',
         logo:          logo,
         logo_width:    logo_width,
@@ -52,24 +55,15 @@
         show_cart:     section.settings.show_icon_cart
   -%}
 
-  {%- comment -%}
-    ── MENU BAR ──
-    section.blocks passed explicitly — snippets are isolated in Shopify
-    and cannot access `section` or `block` from parent scope on their own.
-  {%- endcomment -%}
-  {%- render 'ecombio-header-menu-bar', blocks: section.blocks -%}
+  {%- comment -%} ── BOTTOM — Menu bar · Mobile nav ── {%- endcomment -%}
+  {%- render 'ecombio-header-bottom',
+        blocks:       section.blocks,
+        show_store:   section.settings.show_icon_store,
+        show_account: section.settings.show_icon_account,
+        show_cart:    section.settings.show_icon_cart
+  -%}
 
 </header>
-
-{%- comment -%}
-  Icon settings passed explicitly — render creates an isolated scope so
-  section.settings is not available inside the snippet without being passed in.
-{%- endcomment -%}
-{%- render 'ecombio-mobile-nav',
-      show_store:   section.settings.show_icon_store,
-      show_account: section.settings.show_icon_account,
-      show_cart:    section.settings.show_icon_cart
--%}
 
 {%- if enable_drawer -%}
   {%- comment -%} Cart drawer rendered here when built {%- endcomment -%}
@@ -328,7 +322,6 @@
         "header_style": "hyper",
         "show_category_filter": true,
         "utility_links": "Track My Order|/apps/tracking, Store Finder|/pages/stores, Help Centre|/pages/faq",
-        "show_currency_switcher": true,
         "show_currency_switcher": true,
         "show_locale_switcher": true,
         "show_icon_store": true,
