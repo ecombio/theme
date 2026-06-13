@@ -2,39 +2,40 @@
   ECOMBIO Header Utility Bar
   File: snippets/ecombio-header-utility-bar.liquid
 
-  Renders a slim top bar above the main header with:
-    - Left:  configurable utility links (section settings)
-    - Right: currency selector + language/locale selector
+  Renders a slim 32px bar above the main header.
+    Left  — utility links (pipe-delimited setting: "Label|/url, Label 2|/url-2")
+    Right — currency selector + language/locale selector
 
-  Adapts colour to header_style:
-    - hyper  → dark bar, bold accent on hover
-    - focus  → light bar, subdued tones
+  Colours pulled directly from the live --hyper token set:
+    bg           #111111  (one step darker than the header's #1a1a1a)
+    text         #a0a0a0
+    hover        #FFF3CD  (same amber used across the header)
+    dividers     rgba(255,255,255,0.08)
 
-  Usage (in sections/header.liquid, before <header>):
+  Adapts to header_style:
+    hyper  → dark bar (default, matches live site)
+    focus  → light warm-grey bar (#f5f4f2) with subdued text
+
+  Usage (sections/header.liquid, immediately before <header>):
     {%- render 'ecombio-header-utility-bar',
-          header_style: header_style,
-          links: section.settings.utility_links,
+          header_style:  header_style,
+          links:         section.settings.utility_links,
           show_currency: section.settings.show_currency_switcher,
           show_locale:   section.settings.show_locale_switcher
     -%}
 {% endcomment %}
 
 {%- liquid
-  assign bar_style    = header_style | default: 'hyper'
-  assign show_curr    = show_currency | default: true
-  assign show_loc     = show_locale   | default: true
-
-  comment
-    Build a small link array from the pipe-delimited setting value.
-    Format expected from section setting:  "Label|/url, Label 2|/url-2"
-  endcomment
+  assign bar_style = header_style | default: 'hyper'
+  assign show_curr = show_currency | default: true
+  assign show_loc  = show_locale   | default: true
   assign link_pairs = links | split: ','
 -%}
 
 <div class="ecombio-utility-bar ecombio-utility-bar--{{ bar_style }}" role="navigation" aria-label="Utility bar">
   <div class="ecombio-utility-bar__inner">
 
-    {%- comment -%} ── LEFT: utility links ── {%- endcomment -%}
+    {%- comment -%} ── LEFT: links ── {%- endcomment -%}
     <ul class="ecombio-utility-bar__links" role="list">
       {%- for pair in link_pairs -%}
         {%- assign parts = pair | strip | split: '|' -%}
@@ -48,28 +49,32 @@
       {%- endfor -%}
     </ul>
 
-    {%- comment -%} ── RIGHT: switchers ── {%- endcomment -%}
+    {%- comment -%} ── RIGHT: currency + locale ── {%- endcomment -%}
     <div class="ecombio-utility-bar__switchers">
 
       {%- if show_curr and shop.enabled_currencies.size > 1 -%}
-        <div class="ecombio-utility-bar__switcher ecombio-utility-bar__switcher--currency">
+        <div class="ecombio-utility-bar__switcher">
           {%- form 'currency', id: 'ecombio-currency-form' -%}
             <label for="ecombio-currency-select" class="visually-hidden">Currency</label>
-            <select id="ecombio-currency-select"
-                    name="currency"
-                    class="ecombio-utility-bar__select"
-                    aria-label="Select currency"
-                    onchange="this.form.submit()">
-              {%- for currency in shop.enabled_currencies -%}
-                <option value="{{ currency.iso_code }}"
-                  {%- if currency == cart.currency %} selected{% endif -%}>
-                  {{ currency.iso_code }} &ndash; {{ currency.symbol }}
-                </option>
-              {%- endfor -%}
-            </select>
-            <span class="ecombio-utility-bar__select-icon" aria-hidden="true">
-              {%- render 'ecombio-icon', icon: 'chevron-down', size: 10 -%}
-            </span>
+            <div class="ecombio-utility-bar__select-wrap">
+              <select id="ecombio-currency-select"
+                      name="currency"
+                      class="ecombio-utility-bar__select"
+                      aria-label="Select currency"
+                      onchange="this.form.submit()">
+                {%- for currency in shop.enabled_currencies -%}
+                  <option value="{{ currency.iso_code }}"
+                    {%- if currency == cart.currency %} selected{% endif -%}>
+                    {{ currency.iso_code }} &ndash; {{ currency.symbol }}
+                  </option>
+                {%- endfor -%}
+              </select>
+              <svg class="ecombio-utility-bar__chevron" width="9" height="9" viewBox="0 0 20 20"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 8l5 5 5-5"/>
+              </svg>
+            </div>
           {%- endform -%}
         </div>
       {%- endif -%}
@@ -78,21 +83,25 @@
         <div class="ecombio-utility-bar__switcher ecombio-utility-bar__switcher--locale">
           {%- form 'localization', id: 'ecombio-locale-form' -%}
             <label for="ecombio-locale-select" class="visually-hidden">Language</label>
-            <select id="ecombio-locale-select"
-                    name="locale_code"
-                    class="ecombio-utility-bar__select"
-                    aria-label="Select language"
-                    onchange="this.form.submit()">
-              {%- for language in localization.available_languages -%}
-                <option value="{{ language.iso_code }}"
-                  {%- if language.iso_code == localization.language.iso_code %} selected{% endif -%}>
-                  {{ language.endonym_name | capitalize }}
-                </option>
-              {%- endfor -%}
-            </select>
-            <span class="ecombio-utility-bar__select-icon" aria-hidden="true">
-              {%- render 'ecombio-icon', icon: 'chevron-down', size: 10 -%}
-            </span>
+            <div class="ecombio-utility-bar__select-wrap">
+              <select id="ecombio-locale-select"
+                      name="locale_code"
+                      class="ecombio-utility-bar__select"
+                      aria-label="Select language"
+                      onchange="this.form.submit()">
+                {%- for language in localization.available_languages -%}
+                  <option value="{{ language.iso_code }}"
+                    {%- if language.iso_code == localization.language.iso_code %} selected{% endif -%}>
+                    {{ language.endonym_name | capitalize }}
+                  </option>
+                {%- endfor -%}
+              </select>
+              <svg class="ecombio-utility-bar__chevron" width="9" height="9" viewBox="0 0 20 20"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 8l5 5 5-5"/>
+              </svg>
+            </div>
           {%- endform -%}
         </div>
       {%- endif -%}
@@ -104,55 +113,76 @@
 {% stylesheet %}
 /* ─────────────────────────────────────────────
    ECOMBIO UTILITY BAR
+   Tokens matched to live ecombio-header--hyper
    ───────────────────────────────────────────── */
+
 .ecombio-utility-bar {
   width: 100%;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  line-height: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
 }
 
 .ecombio-utility-bar__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   max-width: var(--ecombio-page-width, 1440px);
   margin: 0 auto;
   padding: 0 var(--ecombio-gutter, 20px);
-  height: 34px;
-  gap: 16px;
 }
 
 /* ── Links ── */
 .ecombio-utility-bar__links {
   display: flex;
   align-items: center;
-  gap: 20px;
   list-style: none;
   margin: 0;
   padding: 0;
-  flex-wrap: nowrap;
-  overflow: hidden;
 }
 
 .ecombio-utility-bar__link {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
-  transition: opacity 0.15s ease;
+  transition: color 0.15s ease;
 }
-.ecombio-utility-bar__link:hover { opacity: 0.65; }
+
+.ecombio-utility-bar__links li:first-child .ecombio-utility-bar__link {
+  padding-left: 0;
+}
+
+.ecombio-utility-bar__links li + li .ecombio-utility-bar__link {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
 
 /* ── Switchers ── */
 .ecombio-utility-bar__switchers {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex-shrink: 0;
 }
 
 .ecombio-utility-bar__switcher {
+  display: flex;
+  align-items: center;
+}
+
+/* vertical rule between switchers */
+.ecombio-utility-bar__switcher--locale {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 4px;
+}
+
+.ecombio-utility-bar__select-wrap {
   position: relative;
   display: flex;
   align-items: center;
@@ -161,86 +191,105 @@
 .ecombio-utility-bar__select {
   appearance: none;
   -webkit-appearance: none;
-  border: none;
   background: transparent;
-  font-size: inherit;
-  font-family: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
+  border: none;
+  outline: none;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
-  padding: 4px 18px 4px 4px;
-  border-radius: 3px;
-  outline-offset: 2px;
-  transition: opacity 0.15s ease;
+  padding: 0 22px 0 8px;
+  height: 32px;
+  transition: color 0.15s ease;
 }
-.ecombio-utility-bar__select:hover { opacity: 0.65; }
 
-/* chevron icon sits over the right side of the select */
-.ecombio-utility-bar__select-icon {
+.ecombio-utility-bar__chevron {
   position: absolute;
-  right: 2px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  display: flex;
-  align-items: center;
 }
 
-/* divider between switchers */
-.ecombio-utility-bar__switcher + .ecombio-utility-bar__switcher::before {
-  content: '';
-  display: block;
-  width: 1px;
-  height: 12px;
-  margin-right: 10px;
-  opacity: 0.3;
-}
-
-/* ──────────────────────────────────────────────
-   STYLE VARIANTS
-   ────────────────────────────────────────────── */
-
-/* HYPER — dark charcoal, accent-on-hover */
+/* ─────────────────────────────────────────────
+   HYPER variant — dark, matches #1a1a1a header
+   ───────────────────────────────────────────── */
 .ecombio-utility-bar--hyper {
-  background-color: var(--ecombio-color-utility-bg, #1a1a1a);
-  color: var(--ecombio-color-utility-text, #c8c8c8);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background-color: #111111;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
+
+.ecombio-utility-bar--hyper .ecombio-utility-bar__link {
+  color: #a0a0a0;
+}
+
 .ecombio-utility-bar--hyper .ecombio-utility-bar__link:hover {
-  color: var(--ecombio-color-accent, #f0c040);
-  opacity: 1;
+  color: #FFF3CD;
 }
+
+.ecombio-utility-bar--hyper .ecombio-utility-bar__switcher--locale {
+  border-left-color: rgba(255, 255, 255, 0.1);
+}
+
+.ecombio-utility-bar--hyper .ecombio-utility-bar__links li + li .ecombio-utility-bar__link {
+  border-left-color: rgba(255, 255, 255, 0.08);
+}
+
 .ecombio-utility-bar--hyper .ecombio-utility-bar__select {
-  color: var(--ecombio-color-utility-text, #c8c8c8);
-}
-.ecombio-utility-bar--hyper .ecombio-utility-bar__select-icon {
-  color: var(--ecombio-color-utility-text, #c8c8c8);
-}
-.ecombio-utility-bar--hyper .ecombio-utility-bar__switcher + .ecombio-utility-bar__switcher::before {
-  background-color: #c8c8c8;
+  color: #a0a0a0;
 }
 
-/* FOCUS — light warm grey, minimal */
+.ecombio-utility-bar--hyper .ecombio-utility-bar__select:hover {
+  color: #FFF3CD;
+}
+
+.ecombio-utility-bar--hyper .ecombio-utility-bar__select option {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.ecombio-utility-bar--hyper .ecombio-utility-bar__chevron {
+  color: #555555;
+}
+
+/* ─────────────────────────────────────────────
+   FOCUS variant — light warm-grey
+   ───────────────────────────────────────────── */
 .ecombio-utility-bar--focus {
-  background-color: var(--ecombio-color-utility-bg-focus, #f5f4f2);
-  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-}
-.ecombio-utility-bar--focus .ecombio-utility-bar__link {
-  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
-}
-.ecombio-utility-bar--focus .ecombio-utility-bar__select {
-  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
-}
-.ecombio-utility-bar--focus .ecombio-utility-bar__select-icon {
-  color: var(--ecombio-color-utility-text-focus, #5a5a5a);
-}
-.ecombio-utility-bar--focus .ecombio-utility-bar__switcher + .ecombio-utility-bar__switcher::before {
-  background-color: #5a5a5a;
+  background-color: #f5f4f2;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* ── Mobile: collapse links at narrow viewport ── */
+.ecombio-utility-bar--focus .ecombio-utility-bar__link {
+  color: #6a6a6a;
+}
+
+.ecombio-utility-bar--focus .ecombio-utility-bar__link:hover {
+  color: #1a1a1a;
+}
+
+.ecombio-utility-bar--focus .ecombio-utility-bar__links li + li .ecombio-utility-bar__link {
+  border-left-color: rgba(0, 0, 0, 0.1);
+}
+
+.ecombio-utility-bar--focus .ecombio-utility-bar__switcher--locale {
+  border-left-color: rgba(0, 0, 0, 0.1);
+}
+
+.ecombio-utility-bar--focus .ecombio-utility-bar__select {
+  color: #6a6a6a;
+}
+
+.ecombio-utility-bar--focus .ecombio-utility-bar__select:hover {
+  color: #1a1a1a;
+}
+
+.ecombio-utility-bar--focus .ecombio-utility-bar__chevron {
+  color: #aaaaaa;
+}
+
+/* ── Mobile: hide links, right-align switchers ── */
 @media (max-width: 749px) {
   .ecombio-utility-bar__links {
     display: none;
