@@ -31,12 +31,14 @@
 
   <body class="{{ settings.theme_preset }}" data-header-layout="{{ settings.header_layout }}">
 
-    <div class="ecombio-sticky-header">
-      <div class="page-width--header">
-        {% section 'announcement-bar' %}
-        {% section 'header' %}
+    {%- unless cart_empty_shell -%}
+      <div class="ecombio-sticky-header">
+        <div class="page-width--header">
+          {% section 'announcement-bar' %}
+          {% section 'header' %}
+        </div>
       </div>
-    </div>
+    {%- endunless -%}
 
     <main role="main">
       <div class="page-width">
@@ -44,11 +46,13 @@
       </div>
     </main>
 
-    <footer role="contentinfo">
-      <div class="page-width--footer">
-        {% sections 'footer-group' %}
-      </div>
-    </footer>
+    {%- unless cart_empty_shell -%}
+      <footer role="contentinfo">
+        <div class="page-width--footer">
+          {% sections 'footer-group' %}
+        </div>
+      </footer>
+    {%- endunless -%}
 
     {{ 'base.js' | asset_url | script_tag }}
     {{ 'theme.js' | asset_url | script_tag }}
