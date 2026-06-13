@@ -306,16 +306,41 @@
           {% for p in related_collection.products %}
             {% if p.id != product.id and shown < products_to_show %}
               {% assign shown = shown | plus: 1 %}
-              {% render 'pr-card',
-                p: p,
-                card_style: card_style,
-                show_vendor: show_vendor,
-                show_price: show_price,
-                show_badge: show_badge,
-                show_rating: show_rating,
-                btn_style: btn_style,
-                badge_label: nil
-              %}
+              {% assign p_on_sale = false %}
+              {% if p.compare_at_price > p.price %}{% assign p_on_sale = true %}{% endif %}
+              <a href="{{ p.url }}" class="pr-card style--{{ card_style }}" aria-label="{{ p.title | escape }}">
+                <div class="pr-card__img-wrap">
+                  {% if p.featured_image %}
+                    <img src="{{ p.featured_image | image_url: width: 600 }}" alt="{{ p.featured_image.alt | escape }}" class="pr-card__img" loading="lazy" width="600" height="600">
+                  {% else %}
+                    {{ 'product-1' | placeholder_svg_tag: 'pr-card__img' }}
+                  {% endif %}
+                  {% if show_badge and p_on_sale %}
+                    <div class="pr-badges">
+                      <span class="pr-badge pr-badge--sale">Sale</span>
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="pr-card__body">
+                  {% if show_vendor %}<span class="pr-card__vendor">{{ p.vendor }}</span>{% endif %}
+                  <p class="pr-card__title">{{ p.title }}</p>
+                  {% if show_price %}
+                    <div class="pr-card__price">
+                      {% if p_on_sale %}
+                        <span class="pr-price pr-price--sale">{{ p.price | money }}</span>
+                        <span class="pr-price pr-price--compare">{{ p.compare_at_price | money }}</span>
+                      {% else %}
+                        <span class="pr-price">{{ p.price | money }}</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="pr-card__btn-wrap">
+                  <span class="pr-card__btn {% if btn_style == 'outline' %}btn--outline{% elsif btn_style == 'ghost' %}btn--ghost{% else %}btn--filled{% endif %}">
+                    View Product
+                  </span>
+                </div>
+              </a>
             {% endif %}
           {% endfor %}
           {% if shown == 0 %}
@@ -352,16 +377,7 @@
   </div>
 </div>
 
-{% comment %}
-  ─────────────────────────────────────
-  Inline card snippet (avoids snippet file dependency).
-  In production you can extract to snippets/pr-card.liquid
-  ─────────────────────────────────────
-{% endcomment %}
 
-{% if section_mode == 'related' %}
-  {%- comment -%} Cards rendered inline above via loop {%- endcomment -%}
-{% endif %}
 
 <script>
 (function() {
