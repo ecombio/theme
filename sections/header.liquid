@@ -83,7 +83,15 @@
 
 </header>
 
-{%- render 'ecombio-mobile-nav' -%}
+{%- comment -%}
+  Icon settings passed explicitly — render creates an isolated scope so
+  section.settings is not available inside the snippet without being passed in.
+{%- endcomment -%}
+{%- render 'ecombio-mobile-nav',
+      show_store:   section.settings.show_icon_store,
+      show_account: section.settings.show_icon_account,
+      show_cart:    section.settings.show_icon_cart
+-%}
 
 {%- if enable_drawer -%}
   {%- comment -%} Cart drawer rendered here when built {%- endcomment -%}
@@ -287,7 +295,7 @@
           ],
           "default": ""
         },
-        { "type": "url",       "id": "link", "label": "Top-level link URL", "info": "Where clicking the label itself goes" },
+        { "type": "url", "id": "link", "label": "Top-level link URL", "info": "Where clicking the label itself goes" },
         { "type": "link_list", "id": "menu", "label": "Dropdown menu" }
       ]
     },
