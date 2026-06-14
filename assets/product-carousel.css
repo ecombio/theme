@@ -1,0 +1,277 @@
+/* ============================================================
+   product-carousel.css
+   Pairs with sections/product-carousel.liquid
+   ============================================================ */
+
+/* ── Custom properties ── */
+.product-carousel {
+  --carousel-gap:          16px;
+  --carousel-card-min:     200px;
+  --carousel-arrow-size:   40px;
+  --carousel-dot-size:     8px;
+  --carousel-dot-gap:      6px;
+  --carousel-dot-color:    rgba(0,0,0,.2);
+  --carousel-dot-active:   #111;
+  --carousel-arrow-bg:     #fff;
+  --carousel-arrow-border: #ddd;
+  --carousel-arrow-hover:  #f4f4f4;
+
+  --_cols-desktop: 4;
+  --_cols-mobile:  2;
+}
+
+/* ── Section wrapper ── */
+.product-carousel {
+  padding-block: 48px;
+  padding-inline: 16px;
+  box-sizing: border-box;
+}
+
+/* ── Side-by-side layout ── */
+.product-carousel__layout {
+  display: block;
+}
+.product-carousel__layout--has-banner {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+}
+.product-carousel__carousel-col {
+  flex: 1;
+  min-width: 0; /* prevent flex blowout */
+}
+
+/* ── Banner ── */
+.product-carousel__banner {
+  flex-shrink: 0;
+  width: 260px;
+  min-width: 180px;
+  max-width: 320px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.product-carousel__banner-link {
+  display: block;
+  height: 100%;
+}
+.product-carousel__banner-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.product-carousel__banner-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.product-carousel__banner-placeholder-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.product-carousel__banner-placeholder svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Stack banner above carousel on mobile */
+@media (max-width: 767px) {
+  .product-carousel__layout--has-banner {
+    flex-direction: column;
+  }
+  .product-carousel__banner {
+    width: 100%;
+    max-width: 100%;
+    min-height: 200px;
+  }
+  .product-carousel__banner-placeholder {
+    min-height: 200px;
+  }
+}
+
+/* ── Header ── */
+.product-carousel__header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.product-carousel__heading {
+  margin: 0 0 8px;
+  font-size: clamp(1.2rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.product-carousel__subheading {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* ── Stage ── */
+.product-carousel__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Track wrapper ── */
+.product-carousel__track-wrapper {
+  flex: 1;
+  overflow: hidden;
+  padding-block: 4px; /* lets card box-shadows breathe */
+}
+
+/* ── Track ── */
+.product-carousel__track {
+  display: flex;
+  gap: var(--carousel-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.product-carousel__track.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+/* ── Slides ── */
+.product-carousel__slide {
+  flex: 0 0 calc(
+    (100% - var(--carousel-gap) * (var(--_cols-mobile) - 1)) / var(--_cols-mobile)
+  );
+  min-width: var(--carousel-card-min);
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .product-carousel__slide {
+    flex: 0 0 calc(
+      (100% - var(--carousel-gap) * (var(--_cols-desktop) - 1)) / var(--_cols-desktop)
+    );
+  }
+}
+
+/* ── Arrows ── */
+.product-carousel__arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--carousel-arrow-size);
+  height: var(--carousel-arrow-size);
+  border-radius: 50%;
+  border: 1px solid var(--carousel-arrow-border);
+  background: var(--carousel-arrow-bg);
+  color: #222;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  z-index: 2;
+}
+.product-carousel__arrow:hover { background: var(--carousel-arrow-hover); }
+.product-carousel__arrow:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+.product-carousel__arrow[disabled],
+.product-carousel__arrow.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Dots ── */
+.product-carousel__dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--carousel-dot-gap);
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.product-carousel__dot {
+  width: var(--carousel-dot-size);
+  height: var(--carousel-dot-size);
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--carousel-dot-color);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.product-carousel__dot.is-active {
+  background: var(--carousel-dot-active);
+  transform: scale(1.35);
+}
+
+/* ============================================================
+   PLACEHOLDER CARD
+   Fully self-contained — no dependency on card-product styles.
+   ============================================================ */
+.pc-placeholder-card {
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* Image area */
+.pc-placeholder-card__image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #f0f0f0;
+  overflow: hidden;
+}
+.pc-placeholder-card__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Shopify placeholder SVGs render inline — make them fill the box */
+.pc-placeholder-card__image svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Shimmer animation */
+@keyframes pc-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.pc-placeholder-card__body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pc-placeholder-card__line {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e8e8e8 25%, #d4d4d4 50%, #e8e8e8 75%);
+  background-size: 400px 100%;
+  animation: pc-shimmer 1.4s ease-in-out infinite;
+}
+.pc-placeholder-card__line--vendor  { width: 40%; height: 10px; opacity: .7; }
+.pc-placeholder-card__line--title   { width: 85%; height: 14px; }
+.pc-placeholder-card__line--title-short { width: 60%; }
+.pc-placeholder-card__line--price   { width: 35%; height: 14px; margin-top: 4px; }
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .product-carousel__track { transition: none; }
+  .pc-placeholder-card__line { animation: none; }
+}
