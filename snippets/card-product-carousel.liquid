@@ -1,0 +1,72 @@
+{%- comment -%}
+  snippets/card-product-carousel.liquid
+  Lightweight homepage carousel card.
+  Whole card is a link — no ATC, no quickview, no compare.
+  Accepts: product
+{%- endcomment -%}
+
+{%- liquid
+  assign card_product = product
+  assign card_image   = card_product.featured_image
+  assign card_image2  = card_product.images[1]
+  assign card_url     = card_product.url
+  assign card_title   = card_product.title
+  assign card_price   = card_product.price
+  assign card_comp    = card_product.compare_at_price
+  assign on_sale      = false
+  if card_comp > card_price
+    assign on_sale = true
+  endif
+-%}
+
+<a href="{{ card_url }}" class="cpc" aria-label="{{ card_title | escape }}">
+
+  <div class="cpc__img-zone">
+    {%- if card_image != blank -%}
+      {{
+        card_image
+        | image_url: width: 600
+        | image_tag:
+          class: 'cpc__img cpc__img--primary',
+          loading: 'lazy',
+          widths: '200, 300, 400, 600',
+          sizes: '(max-width: 767px) 50vw, 25vw',
+          alt: card_image.alt | default: card_title | escape
+      }}
+      {%- if card_image2 != blank -%}
+        {{
+          card_image2
+          | image_url: width: 600
+          | image_tag:
+            class: 'cpc__img cpc__img--secondary',
+            loading: 'lazy',
+            widths: '200, 300, 400, 600',
+            sizes: '(max-width: 767px) 50vw, 25vw',
+            alt: card_image2.alt | default: card_title | escape
+        }}
+      {%- endif -%}
+    {%- else -%}
+      <div class="cpc__img-placeholder" aria-hidden="true">
+        {{ 'product-1' | placeholder_svg_tag: 'cpc__placeholder-svg' }}
+      </div>
+    {%- endif -%}
+
+    {%- if on_sale -%}
+      {%- assign save_amount = card_comp | minus: card_price -%}
+      <span class="cpc__badge">Save {{ save_amount | money_without_trailing_zeros }}</span>
+    {%- endif -%}
+  </div>
+
+  <div class="cpc__body">
+    <p class="cpc__title">{{ card_title }}</p>
+    <div class="cpc__pricing">
+      {%- if on_sale -%}
+        <span class="cpc__price cpc__price--sale">{{ card_price | money }}</span>
+        <s class="cpc__price cpc__price--was">{{ card_comp | money }}</s>
+      {%- else -%}
+        <span class="cpc__price">{{ card_price | money }}</span>
+      {%- endif -%}
+    </div>
+  </div>
+
+</a>
