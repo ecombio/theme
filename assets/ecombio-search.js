@@ -13,6 +13,15 @@
  *   - Animated placeholder that cycles through trending terms
  *   - Staggered result row animations
  *   - ⌘K / Ctrl+K global shortcut to focus the desktop instance
+ *
+ * Fixes in this revision:
+ *   - Query suggestions now reuse highlightMatch() (same as products /
+ *     collections) instead of Shopify's raw styled_text, which was being
+ *     HTML-escaped and showing literal <mark>/<span> tags to users.
+ *   - Removed the category-pill open/close/select logic that duplicated
+ *     (and fought with) assets/header.js's implementation on the same
+ *     elements. header.js now owns that UI; this file just listens for
+ *     the "ecombio:category_change" event it dispatches.
  */
 
 'use strict';
@@ -317,8 +326,10 @@ class EcombioPredictiveSearch {
     this.dropdown  = rootEl.querySelector('.ecombio-search__dropdown');
     this.clearBtn  = rootEl.querySelector('.ecombio-search__clear');
     this.backdrop  = rootEl.querySelector('.ecombio-search__backdrop');
-    this.catBtn    = rootEl.querySelector('.ecombio-search__cat-btn');
-    this.catList   = rootEl.querySelector('.ecombio-search__cat-list');
+    // Category pill open/close/selection UI is owned by header.js (shared
+    // with non-search dropdowns elsewhere in the header). We only need the
+    // label/value elements to read the active category, plus catHidden to
+    // listen for changes — see _bindEvents / _onCategoryChange.
     this.catLabel  = rootEl.querySelector(`#ecombio-cat-label-${this.sfx}`);
     this.catHidden = rootEl.querySelector(`#ecombio-cat-value-${this.sfx}`);
 
@@ -479,10 +490,12 @@ class EcombioPredictiveSearch {
 
     this.form.addEventListener('submit', this._onFormSubmit.bind(this));
 
-    if (this.catBtn && this.catList) {
-      this.catBtn.addEventListener('click',   this._toggleCatList.bind(this));
-      this.catList.addEventListener('click',  this._onCatSelect.bind(this));
-      this.catList.addEventListener('keydown', this._onCatKeydown.bind(this));
+    // header.js owns opening/closing/selecting the category pill (it wires
+    // up the same elements for the non-search dropdowns too). We just
+    // listen for the change it announces so our AJAX requests stay
+    // filtered by whichever category is currently selected.
+    if (this.catHidden) {
+      this.catHidden.addEventListener('ecombio:category_change', this._onCategoryChange.bind(this));
     }
 
     document.addEventListener('click', this._onDocumentClick.bind(this));
@@ -620,7 +633,7 @@ class EcombioPredictiveSearch {
     if (queries.length > 0) {
       html += `<div class="ecombio-search__section ecombio-search__section--queries">`;
       queries.forEach((item, i) => {
-        const label = escapeHtml(item.styled_text || item.text);
+        const label = highlightMatch(item.text, query);
         html += `
           <a href="/search?q=${encodeURIComponent(item.text)}&type=product"
              class="ecombio-search__item ecombio-search__item--query ecombio-search__item--animate"
@@ -1019,32 +1032,14 @@ class EcombioPredictiveSearch {
   }
 
   // ── Category pill ─────────────────────────────────────────────────────────
+  // Open/close, keyboard nav, and ARIA state for the pill live in header.js.
+  // This just keeps our local state + AJAX requests in sync with it.
 
-  _toggleCatList() {
-    const expanded = this.catBtn.getAttribute('aria-expanded') === 'true';
-    this.catBtn.setAttribute('aria-expanded', String(!expanded));
-    this.catList.hidden = expanded;
-  }
-
-  _onCatSelect(e) {
-    const option = e.target.closest('[role="option"]');
-    if (!option) return;
-
-    this.catList.querySelectorAll('[role="option"]').forEach(el => {
-      el.setAttribute('aria-selected', 'false');
-    });
-    option.setAttribute('aria-selected', 'true');
-
+  _onCategoryChange(e) {
     this.activeCategory = {
-      value: option.dataset.value || '',
-      label: option.dataset.label || 'All',
+      value: (e.detail && e.detail.value) || '',
+      label: (e.detail && e.detail.label) || 'All',
     };
-
-    if (this.catLabel)  this.catLabel.textContent = this.activeCategory.label;
-    if (this.catHidden) this.catHidden.value       = this.activeCategory.value;
-
-    this.catBtn.setAttribute('aria-expanded', 'false');
-    this.catList.hidden = true;
 
     const query = this.input.value.trim();
     if (query.length >= ECOMBIO_SEARCH_CONFIG.MIN_QUERY_LENGTH) {
@@ -1053,23 +1048,11 @@ class EcombioPredictiveSearch {
     }
   }
 
-  _onCatKeydown(e) {
-    if (e.key === 'Escape') {
-      this.catBtn.setAttribute('aria-expanded', 'false');
-      this.catList.hidden = true;
-      this.catBtn.focus();
-    }
-  }
-
   // ── Outside click ─────────────────────────────────────────────────────────
 
   _onDocumentClick(e) {
     if (!this.root.contains(e.target)) {
       this.closeDropdown();
-      if (this.catBtn && this.catList) {
-        this.catBtn.setAttribute('aria-expanded', 'false');
-        this.catList.hidden = true;
-      }
     }
   }
 }
