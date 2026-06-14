@@ -7,6 +7,15 @@
      4. Flyout nav — open/close the .mega-menu--flyout container
         (FlyoutPanel handles the sidebar ↔ stage wiring inside the flyout;
          this section handles showing/hiding the flyout itself)
+
+   Fix in this revision:
+     - selectOption() now dispatches an "ecombio:category_change" custom
+       event on the hidden category input whenever a category is chosen.
+       assets/ecombio-search.js listens for this so the predictive search
+       results stay filtered by category, without this file and the search
+       script both trying to own the dropdown's open/close/select behavior
+       (that double-handling was causing the dropdown to silently
+       open-then-close on a single click).
    ============================================================================= */
 
 (function () {
@@ -106,6 +115,18 @@
 
     setDropdown(false, btn, list);
     btn.focus();
+
+    // Let ecombio-search.js know the category changed so it can re-filter
+    // any results currently being shown for this search instance.
+    if (hidden) {
+      hidden.dispatchEvent(new CustomEvent('ecombio:category_change', {
+        bubbles: true,
+        detail: {
+          value: item.dataset.value || '',
+          label: item.textContent.trim()
+        }
+      }));
+    }
   }
 
   /* ===========================================================================
