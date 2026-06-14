@@ -7,8 +7,6 @@
 {%- liquid
   assign heading       = section.settings.heading
   assign subheading    = section.settings.subheading
-  assign show_vendor   = section.settings.show_vendor
-  assign show_compare  = section.settings.show_compare_at_price
   assign cards_desk    = section.settings.cards_per_row_desktop | default: 3
   assign cards_mob     = section.settings.cards_per_row_mobile  | default: 1
   assign show_arrows   = section.settings.show_arrows
@@ -22,6 +20,7 @@
 -%}
 
 {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
+{{ 'card-product-carousel.css' | asset_url | stylesheet_tag }}
 
 <section
   class="product-carousel"
@@ -87,12 +86,7 @@
                 {%- assign p = block.settings.product -%}
                 <li class="product-carousel__slide" data-carousel-slide {{ block.shopify_attributes }}>
                   {%- if p != blank -%}
-                    {%- render 'card-product',
-                      product:               p,
-                      show_vendor:           show_vendor,
-                      show_compare_at_price: show_compare,
-                      section:               section
-                    -%}
+                    {%- render 'card-product-carousel', product: p -%}
                   {%- else -%}
                     <div class="pc-placeholder-card">
                       <div class="pc-placeholder-card__image">
@@ -191,71 +185,6 @@
       "type": "text",
       "id": "subheading",
       "label": "Subheading"
-    },
-    {
-      "type": "header",
-      "content": "Card options"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_vendor",
-      "label": "Show vendor",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_compare_at_price",
-      "label": "Show compare-at price",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_quickview",
-      "label": "Enable quick view",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_wishlist",
-      "label": "Enable wishlist",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_atc",
-      "label": "Show Add to cart button",
-      "default": false,
-      "info": "Disabled by default for browse-focused carousels"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_compare",
-      "label": "Enable compare",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "show_eta",
-      "label": "Show estimated arrival",
-      "default": false
-    },
-    {
-      "type": "number",
-      "id": "eta_days_min",
-      "label": "ETA min days",
-      "default": 3
-    },
-    {
-      "type": "number",
-      "id": "eta_days_max",
-      "label": "ETA max days",
-      "default": 7
-    },
-    {
-      "type": "text",
-      "id": "eta_label",
-      "label": "ETA label",
-      "default": "Est. arrival:"
     },
     {
       "type": "header",
