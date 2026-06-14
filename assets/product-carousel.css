@@ -1,210 +1,181 @@
-.product-carousel-section {
-  overflow: hidden;
+/* ============================================================
+   product-carousel.css
+   Pairs with sections/product-carousel.liquid
+   ============================================================ */
+
+/* ── Custom properties (override in your theme.css if needed) ── */
+.product-carousel {
+  --carousel-gap:          16px;
+  --carousel-card-min:     220px;
+  --carousel-arrow-size:   40px;
+  --carousel-dot-size:     8px;
+  --carousel-dot-gap:      6px;
+  --carousel-dot-color:    rgba(0,0,0,.22);
+  --carousel-dot-active:   #000;
+  --carousel-arrow-bg:     #fff;
+  --carousel-arrow-border: #e0e0e0;
+  --carousel-arrow-hover:  #f5f5f5;
+  --carousel-radius:       4px;
+  --carousel-padding-x:    0px; /* set via theme section padding */
+
+  --_cols-desktop: 4;
+  --_cols-mobile:  2;
 }
 
-.product-carousel-section__inner {
-  display: block;
+/* ── Section wrapper ── */
+.product-carousel {
+  padding-block: 48px;
 }
 
-.product-carousel-section__header {
-  margin-bottom: 20px;
+/* ── Header ── */
+.product-carousel__header {
+  text-align: center;
+  margin-bottom: 28px;
 }
-
-.product-carousel-section__header-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.product-carousel-section__heading {
-  margin: 0;
-  font-size: 2.4rem;
-}
-
-.product-carousel-section__subheading {
-  margin: 8px 0 0;
-  opacity: 0.7;
-}
-
-.product-carousel-section__view-all {
-  flex-shrink: 0;
-  font-size: 1.4rem;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  color: inherit;
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
-  white-space: nowrap;
-}
-
-.product-carousel-section__view-all:hover {
-  opacity: 1;
-}
-
-/* Banner */
-.product-carousel-banner {
-  margin-bottom: 24px;
-}
-
-.product-carousel-banner__link {
-  position: relative;
-  display: block;
-  border-radius: 12px;
-  overflow: hidden;
-  text-decoration: none;
-  color: #fff;
-}
-
-.product-carousel-banner__image {
-  display: block;
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-}
-
-.product-carousel-banner__overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 20px;
-  background: linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
-}
-
-.product-carousel-banner__heading {
-  font-size: 2rem;
+.product-carousel__heading {
+  margin: 0 0 8px;
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
   font-weight: 700;
   line-height: 1.2;
 }
-
-.product-carousel-banner__subheading {
-  margin-top: 6px;
-  font-size: 1.4rem;
-  opacity: 0.9;
+.product-carousel__subheading {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
 }
 
-/* Carousel */
-.product-carousel {
+/* ── Stage: arrows + track ── */
+.product-carousel__stage {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+/* ── Track wrapper (clips overflow) ── */
+.product-carousel__track-wrapper {
+  flex: 1;
+  overflow: hidden;
+  /* allow box-shadow on cards to show at edges */
+  padding-block: 4px;
+}
+
+/* ── Scrolling track ── */
 .product-carousel__track {
   display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  padding: 4px 4px 12px;
+  gap: var(--carousel-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* smooth JS scroll */
+  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  /* touch drag */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.product-carousel__track.is-dragging {
+  cursor: grabbing;
+  transition: none;
 }
 
-.product-carousel__track::-webkit-scrollbar {
-  display: none;
-}
-
-/* ✅ was __item — must match the Liquid output */
+/* ── Individual slide ── */
 .product-carousel__slide {
-  flex: 0 0 70%;
-  scroll-snap-align: start;
-  min-width: 0;
+  flex: 0 0 calc(
+    (100% - var(--carousel-gap) * (var(--_cols-mobile) - 1)) / var(--_cols-mobile)
+  );
+  min-width: var(--carousel-card-min);
 }
 
-.product-carousel__btn {
-  display: none;
-  position: absolute;
-  top: 35%;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.9);
+@media (min-width: 768px) {
+  .product-carousel__slide {
+    flex: 0 0 calc(
+      (100% - var(--carousel-gap) * (var(--_cols-desktop) - 1)) / var(--_cols-desktop)
+    );
+  }
+}
+
+/* ── Arrows ── */
+.product-carousel__arrow {
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--carousel-arrow-size);
+  height: var(--carousel-arrow-size);
+  border-radius: 50%;
+  border: 1px solid var(--carousel-arrow-border);
+  background: var(--carousel-arrow-bg);
+  color: #222;
   cursor: pointer;
+  transition: background 0.18s, opacity 0.18s;
   z-index: 2;
-  transition: background 0.15s ease;
+}
+.product-carousel__arrow:hover {
+  background: var(--carousel-arrow-hover);
+}
+.product-carousel__arrow:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.product-carousel__arrow[disabled],
+.product-carousel__arrow.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.product-carousel__btn:hover {
-  background: #fff;
+/* ── Dot indicators ── */
+.product-carousel__dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--carousel-dot-gap);
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.product-carousel__dot {
+  width: var(--carousel-dot-size);
+  height: var(--carousel-dot-size);
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--carousel-dot-color);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.product-carousel__dot.is-active {
+  background: var(--carousel-dot-active);
+  transform: scale(1.3);
 }
 
-.product-carousel__btn svg {
-  width: 18px;
-  height: 18px;
+/* ── Placeholder card (editor only) ── */
+.card-product--placeholder .card-product__image-placeholder {
+  aspect-ratio: 1 / 1;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.product-carousel__btn--prev { left: -8px; }
-.product-carousel__btn--next { right: -8px; }
-
-.product-carousel__btn[disabled] {
+.card-product--placeholder .card-product__placeholder-svg {
+  width: 60%;
+  height: 60%;
   opacity: 0.3;
-  cursor: default;
 }
-
-/* Tablet */
-@media screen and (min-width: 750px) {
-  .product-carousel-section__heading {
-    font-size: 2.8rem;
-  }
-
-  .product-carousel__slide {
-    flex: 0 0 45%;
-  }
-
-  .product-carousel-banner__image {
-    height: 220px;
-  }
-
-  .product-carousel__btn {
-    display: flex;
-  }
+.card-product--placeholder .card-product__title,
+.card-product--placeholder .card-product__vendor,
+.card-product--placeholder .card-product__price {
+  display: block;
+  background: #e8e8e8;
+  border-radius: 3px;
+  height: 14px;
+  width: 70%;
+  margin-block: 6px;
+  color: transparent;
 }
+.card-product--placeholder .card-product__price { width: 40%; }
 
-/* Desktop */
-@media screen and (min-width: 990px) {
-  .product-carousel-section__heading {
-    font-size: 3.2rem;
-  }
-
-  .product-carousel__slide {
-    flex: 0 0 260px;
-  }
-
-  .product-carousel__track {
-    gap: 24px;
-  }
-
-  .product-carousel-section__inner--with-banner {
-    display: flex;
-    gap: 32px;
-    align-items: stretch;
-  }
-
-  .product-carousel-section__inner--with-banner .product-carousel-banner {
-    flex: 0 0 320px;
-    margin-bottom: 0;
-  }
-
-  .product-carousel-section__inner--with-banner .product-carousel-banner__link,
-  .product-carousel-section__inner--with-banner .product-carousel-banner__image {
-    height: 100%;
-  }
-
-  .product-carousel-section__inner--with-banner .product-carousel-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .product-carousel__btn--prev { left: -20px; }
-  .product-carousel__btn--next { right: -20px; }
-}
-
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .product-carousel__track {
-    scroll-behavior: auto;
-  }
+  .product-carousel__track { transition: none; }
 }
