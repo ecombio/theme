@@ -19,8 +19,17 @@
     {% endunless %}
 
     {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
-    {% render 'meta-tags' %}
-    {{ content_for_header }}
+{% render 'meta-tags' %}
+
+{% if settings.favicon != blank %}
+  <link
+    rel="icon"
+    type="image/png"
+    href="{{ settings.favicon | image_url: width: 32, height: 32 }}"
+  >
+{% endif %}
+
+{{ content_for_header }}
   </head>
 
   <body class="{{ settings.theme_preset }}" data-header-layout="{{ settings.header_layout }}">
