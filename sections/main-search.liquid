@@ -6,172 +6,286 @@
   assign per_page     = section.settings.products_per_page | default: 20
   assign show_filters = section.settings.show_filters | default: true
   assign search_term  = search.terms | escape
+
+  comment
+    Determine active tab from URL param ?tab=products|articles|pages
+    Falls back to 'products' if not set or if the type isn't enabled.
+  endcomment
+  assign active_tab = request.parameters.tab | default: 'products'
+  if active_tab == 'articles' and section.settings.show_articles == false
+    assign active_tab = 'products'
+  endif
+  if active_tab == 'pages' and section.settings.show_pages == false
+    assign active_tab = 'products'
+  endif
+
+  comment
+    Split search.results into three arrays by object_type.
+    Liquid can't natively split arrays, so we count each type
+    and render each panel in its own scoped loop.
+  endcomment
+  assign product_count = 0
+  assign article_count = 0
+  assign page_count    = 0
+  for item in search.results
+    if item.object_type == 'product'
+      assign product_count = product_count | plus: 1
+    elsif item.object_type == 'article'
+      assign article_count = article_count | plus: 1
+    elsif item.object_type == 'page'
+      assign page_count = page_count | plus: 1
+    endif
+  endfor
 -%}
 
 <div class="collection-products-section">
 
-  {%- comment -%} ── Search header (mirrors Gymshark "Search results for …") ── {%- endcomment -%}
+  {%- comment -%} ── Search header ── {%- endcomment -%}
   <div class="search-results-header">
     {%- if search.performed -%}
       <p class="search-results-header__label">Search results for</p>
       <h1 class="search-results-header__term">&ldquo;{{ search_term }}&rdquo;</h1>
-      <span class="search-results-header__count">
-        {{ search.results_count }}
-        {%- if search.results_count == 1 -%} Product{%- else -%} Products{%- endif -%}
-      </span>
     {%- else -%}
       <h1 class="search-results-header__term">Search</h1>
     {%- endif -%}
   </div>
 
-  {%- comment -%} ── Sticky toolbar (sort + active filters) ── {%- endcomment -%}
-  <div class="collection-sticky-bar">
-    <div class="collection-toolbar">
-      {%- if show_filters -%}
-        <button
-          class="collection-toolbar__filter-btn"
-          type="button"
-          id="filters-open-btn"
-          aria-expanded="true"
-          aria-controls="collection-filters"
+  {%- if search.performed -%}
+
+    {%- comment -%} ── Tab nav ── {%- endcomment -%}
+    <div class="search-tabs" role="tablist" aria-label="Result types">
+
+      <a
+        href="/search?q={{ search_term | url_encode }}&tab=products"
+        class="search-tab {% if active_tab == 'products' %}search-tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+        aria-controls="panel-products"
+      >
+        Products
+        <span class="search-tab__count">({{ product_count }})</span>
+      </a>
+
+      {%- if section.settings.show_articles -%}
+        <a
+          href="/search?q={{ search_term | url_encode }}&tab=articles"
+          class="search-tab {% if active_tab == 'articles' %}search-tab--active{% endif %}"
+          role="tab"
+          aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+          aria-controls="panel-articles"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Filters
-          <span class="collection-toolbar__active-count" id="active-filter-count" aria-live="polite"></span>
-        </button>
+          Articles
+          <span class="search-tab__count">({{ article_count }})</span>
+        </a>
       {%- endif -%}
 
-      <span class="collection-toolbar__count">
-        {{ search.results_count }}
-        {%- if search.results_count == 1 -%} product{%- else -%} products{%- endif -%}
-      </span>
+      {%- if section.settings.show_pages -%}
+        <a
+          href="/search?q={{ search_term | url_encode }}&tab=pages"
+          class="search-tab {% if active_tab == 'pages' %}search-tab--active{% endif %}"
+          role="tab"
+          aria-selected="{% if active_tab == 'pages' %}true{% else %}false{% endif %}"
+          aria-controls="panel-pages"
+        >
+          Pages
+          <span class="search-tab__count">({{ page_count }})</span>
+        </a>
+      {%- endif -%}
 
-      <div class="collection-toolbar__sort">
-        <label class="collection-toolbar__sort-label" for="sort-select">Sort</label>
-        <select id="sort-select" class="collection-toolbar__sort-select" data-sort-select>
-          <option value="relevance"         {% if search.sort_by == 'relevance'         %}selected{% endif %}>Relevancy</option>
-          <option value="price-ascending"   {% if search.sort_by == 'price-ascending'   %}selected{% endif %}>Price: Low to High</option>
-          <option value="price-descending"  {% if search.sort_by == 'price-descending'  %}selected{% endif %}>Price: High to Low</option>
-          <option value="created-descending"{% if search.sort_by == 'created-descending'%}selected{% endif %}>Newest</option>
-        </select>
-      </div>
     </div>
 
-    <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
-  </div>
+    {%- comment -%} ── Body: sidebar + active panel ── {%- endcomment -%}
+    <div class="collection-layout">
 
-  <div id="filters-backdrop" class="filters-backdrop"></div>
-
-  <div class="collection-layout">
-
-    {%- comment -%}
-      Pass `search: search` so the filters snippet can build predictive-search
-      URLs using `search.terms` instead of `collection.url`.
-    {%- endcomment -%}
-    {%- if show_filters and search.performed -%}
-      {% render 'collection-filters',
-        open:   true,
-        search: search
-      %}
-    {%- endif -%}
-
-    <div class="collection-main">
-
-      {%- if search.performed -%}
-        {% paginate search.results by per_page %}
-
-          {%- liquid
-            assign active_filter_count = 0
-            for filter in search.filters
-              assign active_filter_count = active_filter_count | plus: filter.active_values.size
-            endfor
-          -%}
-
-          <div class="collection-products" id="collection-grid">
-            {%- for item in search.results -%}
-
-              {%- if item.object_type == 'product' -%}
-                <div class="collection-product-wrapper">
-                  {% render 'card-product',
-                    product:              item,
-                    show_vendor:          true,
-                    show_compare_at_price: true
-                  %}
-                </div>
-
-              {%- elsif item.object_type == 'article' and section.settings.show_articles -%}
-                <div class="collection-product-wrapper collection-product-wrapper--article">
-                  {% render 'card-article', article: item %}
-                </div>
-
-              {%- elsif item.object_type == 'page' and section.settings.show_pages -%}
-                <div class="collection-product-wrapper collection-product-wrapper--page">
-                  {% render 'card-page', page: item %}
-                </div>
-              {%- endif -%}
-
-            {%- else -%}
-              <p class="collection-empty">
-                No results for &ldquo;{{ search_term }}&rdquo;.
-                {%- if active_filter_count > 0 -%}
-                  Try clearing some filters, or
-                {%- else -%}
-                  Try
-                {%- endif -%}
-                a different search term.
-              </p>
-            {%- endfor -%}
-          </div>
-
-          {%- if paginate.pages > 1 -%}
-            <div class="collection-pagination">
-              {{ paginate | default_pagination }}
-            </div>
-          {%- endif -%}
-
-        {% endpaginate %}
-
-      {%- else -%}
-        {%- comment -%} Pre-search state: show a search form {%- endcomment -%}
-        <div class="search-results-empty">
-          <form action="{{ routes.search_url }}" method="get" role="search" class="search-results-empty__form">
-            <input type="hidden" name="type" value="product">
-            <input
-              type="search"
-              name="q"
-              placeholder="Search products…"
-              class="search-results-empty__input"
-              aria-label="Search"
-              autofocus
-            >
-            <button type="submit" class="search-results-empty__btn">Search</button>
-          </form>
+      {%- comment -%} Sidebar — only shown on Products tab {%- endcomment -%}
+      {%- if show_filters and active_tab == 'products' -%}
+        {% render 'collection-filters', open: true, search: search %}
+      {%- elsif active_tab == 'articles' -%}
+        <div class="collection-sidebar collection-sidebar--articles">
+          <p class="collection-sidebar__heading">Article type</p>
+          {%- comment -%}
+            Shopify doesn't expose article metafield filters on search results
+            out of the box. Render static filter links as a starting point;
+            replace with dynamic filter values once metafield filters are set up
+            in the Shopify Search & Discovery app.
+          {%- endcomment -%}
+          <ul class="collection-sidebar__list">
+            <li><a href="/search?q={{ search_term | url_encode }}&tab=articles&article_type=buying-advice" class="collection-sidebar__filter-link">Buying advice</a></li>
+            <li><a href="/search?q={{ search_term | url_encode }}&tab=articles&article_type=gear-guides" class="collection-sidebar__filter-link">Gear guides</a></li>
+            <li><a href="/search?q={{ search_term | url_encode }}&tab=articles&article_type=how-to" class="collection-sidebar__filter-link">How-to</a></li>
+          </ul>
         </div>
       {%- endif -%}
 
-    </div>{%- comment -%}/.collection-main{%- endcomment -%}
-  </div>{%- comment -%}/.collection-layout{%- endcomment -%}
+      <div class="collection-main">
+
+        {%- comment -%} ══ PRODUCTS PANEL ══ {%- endcomment -%}
+        {%- if active_tab == 'products' -%}
+          <div id="panel-products" role="tabpanel" aria-labelledby="tab-products">
+
+            {%- comment -%} Toolbar {%- endcomment -%}
+            <div class="collection-sticky-bar">
+              {% render 'collection-toolbar',
+                show_filters:  show_filters,
+                active_tab:    active_tab,
+                product_count: product_count,
+                article_count: article_count,
+                page_count:    page_count
+              %}
+              <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
+            </div>
+
+            {% paginate search.results by per_page %}
+              <div class="collection-products" id="collection-grid">
+                {%- assign found_products = false -%}
+                {%- for item in search.results -%}
+                  {%- if item.object_type == 'product' -%}
+                    {%- assign found_products = true -%}
+                    <div class="collection-product-wrapper">
+                      {% render 'card-product',
+                        product:               item,
+                        show_vendor:           true,
+                        show_compare_at_price: true
+                      %}
+                    </div>
+                  {%- endif -%}
+                {%- endfor -%}
+
+                {%- unless found_products -%}
+                  <p class="collection-empty">
+                    No products found for &ldquo;{{ search_term }}&rdquo;. Try a different search term.
+                  </p>
+                {%- endunless -%}
+              </div>
+
+              {%- if paginate.pages > 1 -%}
+                <div class="collection-pagination">
+                  {{ paginate | default_pagination }}
+                </div>
+              {%- endif -%}
+            {% endpaginate %}
+
+          </div>
+        {%- endif -%}
+
+        {%- comment -%} ══ ARTICLES PANEL ══ {%- endcomment -%}
+        {%- if active_tab == 'articles' and section.settings.show_articles -%}
+          <div id="panel-articles" role="tabpanel" aria-labelledby="tab-articles">
+
+            {% render 'collection-toolbar',
+              show_filters:  false,
+              active_tab:    active_tab,
+              product_count: product_count,
+              article_count: article_count,
+              page_count:    page_count
+            %}
+
+            <div class="search-article-grid">
+              {%- assign found_articles = false -%}
+              {%- for item in search.results -%}
+                {%- if item.object_type == 'article' -%}
+                  {%- assign found_articles = true -%}
+                  {% render 'card-article', article: item %}
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- unless found_articles -%}
+                <p class="collection-empty">
+                  No articles found for &ldquo;{{ search_term }}&rdquo;.
+                </p>
+              {%- endunless -%}
+            </div>
+
+          </div>
+        {%- endif -%}
+
+        {%- comment -%} ══ PAGES PANEL ══ {%- endcomment -%}
+        {%- if active_tab == 'pages' and section.settings.show_pages -%}
+          <div id="panel-pages" role="tabpanel" aria-labelledby="tab-pages">
+
+            {% render 'collection-toolbar',
+              show_filters:  false,
+              active_tab:    active_tab,
+              product_count: product_count,
+              article_count: article_count,
+              page_count:    page_count
+            %}
+
+            <div class="search-pages-list">
+              {%- assign found_pages = false -%}
+              {%- for item in search.results -%}
+                {%- if item.object_type == 'page' -%}
+                  {%- assign found_pages = true -%}
+                  <a href="{{ item.url }}" class="search-page-row">
+                    <div class="search-page-row__icon">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                    </div>
+                    <div class="search-page-row__body">
+                      <span class="search-page-row__title">{{ item.title }}</span>
+                      <span class="search-page-row__url">{{ item.url }}</span>
+                    </div>
+                    <svg class="search-page-row__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </a>
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- unless found_pages -%}
+                <p class="collection-empty">
+                  No pages found for &ldquo;{{ search_term }}&rdquo;.
+                </p>
+              {%- endunless -%}
+            </div>
+
+          </div>
+        {%- endif -%}
+
+      </div>{%- comment -%}/.collection-main{%- endcomment -%}
+    </div>{%- comment -%}/.collection-layout{%- endcomment -%}
+
+  {%- else -%}
+
+    {%- comment -%} ── Pre-search state ── {%- endcomment -%}
+    <div class="search-results-empty">
+      <form action="{{ routes.search_url }}" method="get" role="search" class="search-results-empty__form">
+        {%- comment -%}
+          No hidden type=product here — let results come back as all types
+          and the tab system will sort them out.
+        {%- endcomment -%}
+        <input
+          type="search"
+          name="q"
+          placeholder="Search…"
+          class="search-results-empty__input"
+          aria-label="Search"
+          autofocus
+        >
+        <button type="submit" class="search-results-empty__btn">Search</button>
+      </form>
+    </div>
+
+  {%- endif -%}
 
 </div>{%- comment -%}/.collection-products-section{%- endcomment -%}
 
 <style>
-  /* ── Search results header ───────────────────────────────────────────── */
+  /* ── Search header ───────────────────────────────────────────────────── */
   .search-results-header {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
     gap: 0.25em 0.5em;
-    padding: 1.5rem var(--page-gutter, 1.5rem) 0.75rem;
+    padding: 1.5rem var(--page-gutter, 1.5rem) 0;
   }
-
   .search-results-header__label {
     font-size: 0.875rem;
     color: var(--color-foreground-secondary, #6b7280);
     margin: 0;
   }
-
   .search-results-header__term {
     font-size: 1.125rem;
     font-weight: 700;
@@ -179,10 +293,129 @@
     color: var(--color-foreground, #111);
   }
 
-  .search-results-header__count {
+  /* ── Tabs ────────────────────────────────────────────────────────────── */
+  .search-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 var(--page-gutter, 1.5rem);
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+    margin-top: 1rem;
+  }
+  .search-tab {
+    display: inline-block;
+    padding: 0.625rem 1rem;
     font-size: 0.875rem;
     color: var(--color-foreground-secondary, #6b7280);
-    margin-left: 0.25em;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .search-tab:hover {
+    color: var(--color-foreground, #111);
+  }
+  .search-tab--active {
+    color: var(--color-foreground, #111);
+    font-weight: 600;
+    border-bottom-color: var(--color-foreground, #111);
+  }
+  .search-tab__count {
+    font-size: 0.75rem;
+    color: var(--color-foreground-tertiary, #9ca3af);
+    margin-left: 0.25rem;
+  }
+  .search-tab--active .search-tab__count {
+    color: var(--color-foreground-secondary, #6b7280);
+  }
+
+  /* ── Article grid ────────────────────────────────────────────────────── */
+  .search-article-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  /* ── Pages list ──────────────────────────────────────────────────────── */
+  .search-pages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .search-page-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius, 6px);
+    text-decoration: none;
+    color: var(--color-foreground, #111);
+    transition: background 0.1s;
+  }
+  .search-page-row:hover {
+    background: var(--color-surface-hover, #f9fafb);
+  }
+  .search-page-row__icon {
+    color: var(--color-foreground-tertiary, #9ca3af);
+    flex-shrink: 0;
+  }
+  .search-page-row__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .search-page-row__title {
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+  .search-page-row__url {
+    font-size: 0.75rem;
+    color: var(--color-foreground-tertiary, #9ca3af);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .search-page-row__arrow {
+    color: var(--color-foreground-tertiary, #9ca3af);
+    flex-shrink: 0;
+  }
+
+  /* ── Articles sidebar ────────────────────────────────────────────────── */
+  .collection-sidebar--articles {
+    padding: 1rem;
+    border-right: 1px solid var(--color-border, #e5e7eb);
+    min-width: 180px;
+  }
+  .collection-sidebar__heading {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-foreground-tertiary, #9ca3af);
+    margin: 0 0 0.75rem;
+  }
+  .collection-sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .collection-sidebar__filter-link {
+    font-size: 0.875rem;
+    color: var(--color-foreground-secondary, #6b7280);
+    text-decoration: none;
+    display: block;
+    padding: 0.25rem 0;
+  }
+  .collection-sidebar__filter-link:hover {
+    color: var(--color-foreground, #111);
   }
 
   /* ── Pre-search form ─────────────────────────────────────────────────── */
@@ -191,14 +424,12 @@
     justify-content: center;
     padding: 4rem 1rem;
   }
-
   .search-results-empty__form {
     display: flex;
     gap: 0.5rem;
     width: 100%;
     max-width: 480px;
   }
-
   .search-results-empty__input {
     flex: 1;
     padding: 0.625rem 1rem;
@@ -206,7 +437,6 @@
     border-radius: var(--radius-sm, 4px);
     font-size: 1rem;
   }
-
   .search-results-empty__btn {
     padding: 0.625rem 1.25rem;
     background: var(--color-button-bg, #111);
@@ -215,6 +445,15 @@
     border-radius: var(--radius-sm, 4px);
     font-size: 1rem;
     cursor: pointer;
+  }
+
+  /* ── Empty state ─────────────────────────────────────────────────────── */
+  .collection-empty {
+    grid-column: 1 / -1;
+    padding: 3rem 0;
+    text-align: center;
+    color: var(--color-foreground-secondary, #6b7280);
+    font-size: 0.9375rem;
   }
 </style>
 
@@ -245,13 +484,13 @@
       "type": "checkbox",
       "id": "show_articles",
       "label": "Show article results",
-      "default": false
+      "default": true
     },
     {
       "type": "checkbox",
       "id": "show_pages",
       "label": "Show page results",
-      "default": false
+      "default": true
     },
     {
       "type": "header",
