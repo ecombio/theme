@@ -1,7 +1,7 @@
 /* ============================================================
    card-product-carousel.css
-   Matches collection card-product style.
-   Scoped entirely to .cpc
+   Scoped to .cpc — mirrors collection card visual style,
+   wired to card-product-features.js
    ============================================================ */
 
 /* ── Card wrapper ── */
@@ -11,64 +11,52 @@
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
-  border: 0.5px solid #eee;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #ebebeb;
+  transition: box-shadow 0.2s ease;
 }
 .cpc:hover {
-  border-color: #ddd;
-  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  box-shadow: 0 4px 20px rgba(0,0,0,.09);
 }
 
 /* ── Image zone ── */
 .cpc__img-zone {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  background: #f5f5f5;
   border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  background: #f7f7f7;
 }
-
 .cpc__image-wrapper {
   display: block;
-  width: 100%;
-  height: 100%;
+  position: relative;
+  padding-top: 85%;
+  overflow: hidden;
 }
 
-/* Primary image */
+/* Primary / secondary images */
 .cpc__img {
-  display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center;
+  display: block;
+  padding: 0.5rem;
   transition: opacity 0.3s ease;
 }
-.cpc__img--primary {
-  position: relative;
-  z-index: 1;
-}
-
-/* Secondary image (hover swap) */
-.cpc__img--secondary {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  opacity: 0;
-}
-.cpc:hover .cpc__img--secondary {
-  opacity: 1;
-}
-.cpc:hover .cpc__img--primary {
-  opacity: 0;
-}
+.cpc__img--primary  { opacity: 1; z-index: 1; }
+.cpc__img--secondary { opacity: 0; z-index: 2; }
+.cpc__image-wrapper:hover .cpc__img--primary   { opacity: 0; }
+.cpc__image-wrapper:hover .cpc__img--secondary { opacity: 1; }
 
 /* Placeholder */
 .cpc__img-placeholder {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #efefef;
 }
 .cpc__placeholder-svg,
 .cpc__img-placeholder svg {
@@ -78,39 +66,41 @@
   opacity: 0.2;
 }
 
-/* ── Wishlist button ── */
+/* ── Wishlist button — top-right ── */
 .cpc__wishlist-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 4;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #888;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.12);
-  cursor: pointer;
-  color: #999;
   padding: 0;
-  transition: color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 .cpc__wishlist-btn:hover {
-  color: #e0334c;
-  box-shadow: 0 2px 8px rgba(0,0,0,.16);
+  border-color: #c0392b;
+  color: #c0392b;
 }
 .cpc__wishlist-btn[aria-pressed="true"] {
-  color: #e0334c;
+  border-color: #c0392b;
+  background: #c0392b;
+  color: #fff;
 }
 .cpc__wishlist-btn[aria-pressed="true"] .cpc__wishlist-path {
-  fill: #e0334c;
-  stroke: #e0334c;
+  fill: #fff;
+  stroke: #c0392b;
 }
 
-/* ── Sale badge ── */
+/* ── Sale badge — top-left ── */
 .cpc__badge {
   position: absolute;
   top: 8px;
@@ -119,7 +109,7 @@
   background: #111;
   color: #fff;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.03em;
   padding: 2px 8px;
   border-radius: 20px;
@@ -128,20 +118,20 @@
 
 /* ── Card body ── */
 .cpc__body {
-  padding: 10px 12px 12px;
+  padding: 0.9rem 1rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.3rem;
   flex: 1;
 }
 
 /* Vendor */
 .cpc__vendor {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #555;
+  letter-spacing: 0.05em;
+  color: #888;
 }
 
 /* Title */
@@ -150,95 +140,95 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 700;
   line-height: 1.35;
   color: #111;
   text-decoration: none;
+  margin-top: 0.1rem;
 }
 .cpc__title:hover {
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-/* ── Reviews (Judge.me passthrough) ── */
+/* ── Judge.me reviews ── */
 .cpc__reviews {
-  min-height: 18px; /* reserve space while widget loads */
+  min-height: 1.4rem;
+  margin: 0.15rem 0 0.05rem;
+  font-size: 0.82rem;
+  line-height: 1;
 }
-.cpc__reviews .jdgm-prev-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.cpc__reviews .jdgm-prev-badge__text {
-  font-size: 10px;
-  color: #888;
-}
+/* Nudge Judge.me colours to match amber reference */
+.cpc__reviews .jdgm-prev-badge__stars,
+.cpc__reviews .jdgm-star { color: #f5a623 !important; }
+.cpc__reviews .jdgm-prev-badge__text { font-size: 0.78rem; color: #555; }
 
 /* ── Pricing ── */
 .cpc__pricing {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-top: 2px;
+  gap: 0.2rem;
+  margin-top: 0.25rem;
 }
 .cpc__price {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.45rem;
+  font-weight: 800;
   color: #111;
-  line-height: 1.2;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
-.cpc__price--sale {
-  color: #111;
-}
+.cpc__price--sale { color: #111; }
 .cpc__savings-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
   flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin-top: 0.1rem;
 }
 .cpc__save-badge {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: #c0392b;
 }
 .cpc__comp-value {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: #888;
 }
 .cpc__comp-value s {
-  text-decoration: line-through;
+  color: #aaa;
+  font-weight: 400;
 }
 
 /* ── ETA row ── */
 .cpc__eta {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.78rem;
   color: #444;
-  background: #f7f7f7;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+  padding: 0.4rem 0.6rem;
+  background: #f5f9f5;
   border-radius: 6px;
-  padding: 5px 8px;
-  margin-top: 2px;
+  border: 1px solid #d4ecd4;
 }
 .cpc__eta-icon {
   flex-shrink: 0;
-  color: #444;
+  margin-top: 1px;
+  color: #2e7d32;
 }
-.cpc__eta strong {
-  font-weight: 600;
-  color: #111;
-}
-.cpc__eta-free {
-  color: #1a7a3c;
-}
+.cpc__eta strong { font-weight: 700; color: #111; }
+.cpc__eta-free { color: #2e7d32; }
 
 /* ── Bottom row ── */
 .cpc__bottom-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
 }
 
 /* ATC button — yellow, matches collection card */
@@ -247,27 +237,84 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 9px 12px;
+  padding: 0.65rem 0.75rem;
   background: #f5c518;
   color: #111;
-  font-size: 0.82rem;
-  font-weight: 600;
   border: none;
   border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   font-family: inherit;
   white-space: nowrap;
+  line-height: 1.2;
 }
-.cpc__atc-btn:hover {
-  background: #e6b800;
+.cpc__atc-btn:hover:not(:disabled)  { background: #e6b800; }
+.cpc__atc-btn:active:not(:disabled) { transform: scale(0.98); }
+.cpc__atc-btn.is-loading            { pointer-events: none; opacity: 0.7; }
+.cpc__atc-btn:focus-visible         { outline: 2px solid #111; outline-offset: 2px; }
+
+/* Compare */
+.cpc__compare-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
 }
-.cpc__atc-btn:active {
-  transform: scale(0.98);
+.cpc__compare-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #bbb;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  margin: 0;
 }
-.cpc__atc-btn:focus-visible {
+.cpc__compare-checkbox:checked {
+  background: #111;
+  border-color: #111;
+}
+.cpc__compare-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 5px;
+  height: 8px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+.cpc__compare-checkbox:focus-visible {
   outline: 2px solid #111;
   outline-offset: 2px;
+}
+.cpc__compare-text {
+  font-size: 0.8rem;
+  color: #555;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.cpc__compare-label:hover .cpc__compare-text { color: #111; }
+.cpc__compare-label:has(.cpc__compare-checkbox:checked) .cpc__compare-text {
+  color: #111;
+  font-weight: 600;
+}
+
+/* ── Small screens ── */
+@media (max-width: 599px) {
+  .cpc__price        { font-size: 1.25rem; }
+  .cpc__body         { padding: 0.75rem 0.75rem 0.85rem; }
+  .cpc__atc-btn      { font-size: 0.82rem; padding: 0.6rem 0.5rem; }
 }
 
 /* ── Reduced motion ── */
@@ -275,7 +322,6 @@
   .cpc,
   .cpc__img,
   .cpc__img--secondary,
-  .cpc__atc-btn {
-    transition: none;
-  }
+  .cpc__atc-btn,
+  .cpc__wishlist-btn { transition: none; }
 }
