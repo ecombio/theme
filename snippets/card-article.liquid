@@ -1,0 +1,64 @@
+{%- comment -%}
+  Snippet: card-article
+  Called by: snippets/collection-articles.liquid
+
+  Parameters:
+    - article {Object} — article object (required)
+{%- endcomment -%}
+
+{%- liquid
+  assign a = article
+  assign has_image = false
+  if a.image != blank
+    assign has_image = true
+  endif
+-%}
+
+<div class="card-article" data-article-id="{{ a.id }}">
+
+  {%- comment -%} ══ IMAGE ZONE ══ {%- endcomment -%}
+  {%- if has_image -%}
+    <div class="card-article__img-zone">
+      <a href="{{ a.url }}" class="card-article__image-wrapper" aria-label="{{ a.title | escape }}" tabindex="0">
+        {{
+          a.image
+          | image_url: width: 800
+          | image_tag:
+            class: 'card-article__image',
+            loading: 'lazy',
+            widths: '300, 400, 600, 800',
+            sizes: '(max-width: 379px) 100vw, (max-width: 599px) 50vw, (max-width: 1023px) 33vw, 25vw',
+            alt: a.image.alt | default: a.title | escape
+        }}
+      </a>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ══ CONTENT ══ {%- endcomment -%}
+  <div class="card-article__content">
+
+    {%- if a.blog != blank -%}
+      <span class="card-article__blog-label">
+        <a href="{{ a.blog.url }}" class="card-article__blog-link">{{ a.blog.title }}</a>
+      </span>
+    {%- endif -%}
+
+    <a href="{{ a.url }}" class="card-article__title">{{ a.title }}</a>
+
+    <div class="card-article__meta">
+      <span class="card-article__author">{{ a.author }}</span>
+      <span class="card-article__meta-sep" aria-hidden="true">&middot;</span>
+      <time class="card-article__date" datetime="{{ a.published_at | date: '%Y-%m-%d' }}">
+        {{ a.published_at | date: '%b %-d, %Y' }}
+      </time>
+    </div>
+
+    {%- if a.excerpt_or_content != blank -%}
+      <p class="card-article__excerpt">{{ a.excerpt_or_content | strip_html | truncate: 120 }}</p>
+    {%- endif -%}
+
+    <a href="{{ a.url }}" class="card-article__read-more" aria-label="Read {{ a.title | escape }}">Read more</a>
+
+  </div>
+
+</div>
