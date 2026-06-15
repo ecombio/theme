@@ -1,33 +1,38 @@
 {%- comment -%}
   snippets/card-product-carousel.liquid
-  Carousel card — matches collection card style.
+  Carousel card — wired to card-product-features.js.
   Accepts: product
 {%- endcomment -%}
 
 {%- liquid
-  assign card_product = product
-  assign card_image   = card_product.featured_image
-  assign card_image2  = card_product.images[1]
-  assign card_url     = card_product.url
-  assign card_title   = card_product.title
-  assign card_vendor  = card_product.vendor
-  assign card_price   = card_product.price
-  assign card_comp    = card_product.compare_at_price
-  assign on_sale      = false
+  assign card_product  = product
+  assign card_image    = card_product.featured_image
+  assign card_image2   = card_product.images[1]
+  assign card_url      = card_product.url
+  assign card_title    = card_product.title
+  assign card_vendor   = card_product.vendor
+  assign card_price    = card_product.price
+  assign card_comp     = card_product.compare_at_price
+  assign on_sale       = false
   if card_comp > card_price
     assign on_sale = true
   endif
-  assign save_amount    = card_comp | minus: card_price
-  assign first_variant  = card_product.first_available_variant | default: card_product.variants.first
-  assign variant_id     = first_variant.id
-
-  assign review_count = card_product.metafields.judge_me_product_metafields.reviews_count.value
-  assign rating       = card_product.metafields.judge_me_product_metafields.rating.value
-
-  assign eta_text = card_product.metafields.custom.eta_text
+  assign save_amount   = card_comp | minus: card_price
+  assign first_variant = card_product.first_available_variant | default: card_product.variants.first
+  assign variant_id    = first_variant.id
+  assign eta_text      = card_product.metafields.custom.eta_text
 -%}
 
-<div class="cpc" data-product-id="{{ card_product.id }}">
+{{- '' -}}
+{%- comment -%}
+  data-product-handle is on the wrapper so the wishlist JS can
+  find it with btn.closest('[data-product-handle]')
+{%- endcomment -%}
+<div
+  class="cpc"
+  data-product-id="{{ card_product.id }}"
+  data-product-handle="{{ card_product.handle }}"
+>
 
   {%- comment -%}── IMAGE ZONE ──{%- endcomment -%}
   <div class="cpc__img-zone">
@@ -62,7 +67,7 @@
       {%- endif -%}
     </a>
 
-    {%- comment -%}── Wishlist button ──{%- endcomment -%}
+    {%- comment -%}── Wishlist — data-product-id used by JS; handle read from parent .cpc ──{%- endcomment -%}
     <button
       class="cpc__wishlist-btn"
       type="button"
@@ -81,17 +86,25 @@
     {%- endif -%}
   </div>
 
-  {%- comment -%}── CARD CONTENT ──{%- endcomment -%}
+  {%- comment -%}── CARD BODY ──{%- endcomment -%}
   <div class="cpc__body">
+
     {%- if card_vendor != blank -%}
       <span class="cpc__vendor">{{ card_vendor }}</span>
     {%- endif -%}
 
     <a href="{{ card_url }}" class="cpc__title">{{ card_title }}</a>
 
-    {%- comment -%}── Judge.me reviews ──{%- endcomment -%}
+    {%- comment -%}
+      Judge.me: raw widget div (same pattern as card-product.liquid).
+      The jdgm script picks up [data-id] and hydrates it after page load.
+    {%- endcomment -%}
     <div class="cpc__reviews">
-      {%- render 'judgeme_widgets', widgetType: 'judgeme_preview_badge', conciergeInstalled: false, product: card_product -%}
+      <div
+        class="jdgm-widget jdgm-preview-badge"
+        data-id="{{ card_product.id }}"
+        data-auto-install="false"
+      ></div>
     </div>
 
     {%- comment -%}── Pricing ──{%- endcomment -%}
@@ -107,7 +120,7 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%}── ETA row ──{%- endcomment -%}
+    {%- comment -%}── ETA row (reads from metafield custom.eta_text) ──{%- endcomment -%}
     {%- if eta_text != blank -%}
       <div class="cpc__eta" aria-label="Estimated delivery">
         <svg class="cpc__eta-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -122,18 +135,41 @@
 
     {%- comment -%}── Bottom row: ATC + Compare ──{%- endcomment -%}
     <div class="cpc__bottom-row">
-      {%- if first_variant != blank -%}
-        <button
-          class="cpc__atc-btn"
-          type="button"
-          aria-label="Add {{ card_title | escape }} to cart"
-          data-atc-btn
-          data-variant-id="{{ variant_id }}"
+
+      {%- comment -%}
+        ATC: uses card-product__atc-label (not cpc__atc-label) because
+        card-product-features.js targets '.card-product__atc-label'
+      {%- endcomment -%}
+      <button
+        class="cpc__atc-btn"
+        type="button"
+        aria-label="Add {{ card_title | escape }} to cart"
+        data-atc-btn
+        data-variant-id="{{ variant_id }}"
+        data-product-title="{{ card_title | escape }}"
+      >
+        <span class="card-product__atc-label">Add to cart</span>
+      </button>
+
+      {%- comment -%}
+        Compare: all data-* attrs read by card-product-features.js initCompare().
+        Uses a 120px image for the compare bar thumbnail (matches collection card).
+      {%- endcomment -%}
+      <label class="cpc__compare-label">
+        <input
+          class="cpc__compare-checkbox"
+          type="checkbox"
+          data-compare-checkbox
+          data-product-id="{{ card_product.id }}"
+          data-product-handle="{{ card_product.handle }}"
           data-product-title="{{ card_title | escape }}"
+          data-product-image="{{ card_image | image_url: width: 120 }}"
+          data-product-price="{{ card_price | money }}"
+          aria-label="Compare {{ card_title | escape }}"
         >
-          <span class="cpc__atc-label">Add to cart</span>
-        </button>
-      {%- endif -%}
+        <span class="cpc__compare-text">Compare</span>
+      </label>
+
     </div>
   </div>
 
