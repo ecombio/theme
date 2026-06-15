@@ -135,7 +135,57 @@
             {%- if opt_name_down == 'color' or opt_name_down == 'colour' -%}
               <div class="qv__swatches" role="radiogroup" aria-label="{{ option.name }}">
                 {%- for value in option.values -%}
-                  {%- assign swatch_color = value | handleize -%}
+
+                  {%- comment -%}
+                    FIX: previously `value | handleize` produced slugs like
+                    "glacier", which are NOT valid CSS colors — every swatch
+                    silently fell back to the same gray (#ccc) regardless of
+                    the actual color name. This map translates known color
+                    option values to real hex codes. Add new product colors
+                    here as they're introduced.
+                  {%- endcomment -%}
+                  {%- assign value_down = value | downcase -%}
+                  {%- case value_down -%}
+                    {%- when 'glacier' -%}
+                      {%- assign swatch_color = '#a9c4cf' -%}
+                    {%- when 'polar' -%}
+                      {%- assign swatch_color = '#e8e9ea' -%}
+                    {%- when 'himalayan' -%}
+                      {%- assign swatch_color = '#3a3f47' -%}
+                    {%- when 'clay' -%}
+                      {%- assign swatch_color = '#9c8c7c' -%}
+                    {%- when 'black' -%}
+                      {%- assign swatch_color = '#1a1a1a' -%}
+                    {%- when 'white' -%}
+                      {%- assign swatch_color = '#ffffff' -%}
+                    {%- when 'navy' -%}
+                      {%- assign swatch_color = '#1f3354' -%}
+                    {%- when 'red' -%}
+                      {%- assign swatch_color = '#c0392b' -%}
+                    {%- when 'green' -%}
+                      {%- assign swatch_color = '#3a6b4f' -%}
+                    {%- when 'gray', 'grey' -%}
+                      {%- assign swatch_color = '#8c8c8c' -%}
+                    {%- when 'silver' -%}
+                      {%- assign swatch_color = '#c7c9cb' -%}
+                    {%- when 'teal' -%}
+                      {%- assign swatch_color = '#2fa8a0' -%}
+                    {%- else -%}
+                      {%- comment -%}
+                        Unmapped color name. Fall back to a neutral mid-gray
+                        (set via CSS default on .qv__swatch) rather than an
+                        invalid CSS value — leave swatch_color blank so the
+                        inline style is omitted entirely.
+                      {%- endcomment -%}
+                      {%- assign swatch_color = blank -%}
+                  {%- endcase -%}
+
+                  {%- comment -%}
+                    Light swatches need a visible border so they don't
+                    disappear against the white card background.
+                  {%- endcomment -%}
+                  {%- assign light_colors = 'polar,white,silver' | split: ',' -%}
+
                   {%- if value == option.selected_value -%}
                     {%- assign swatch_checked = 'true' -%}
                     {%- assign swatch_active = 'qv__swatch is-active' -%}
@@ -143,6 +193,11 @@
                     {%- assign swatch_checked = 'false' -%}
                     {%- assign swatch_active = 'qv__swatch' -%}
                   {%- endif -%}
+
+                  {%- if light_colors contains value_down -%}
+                    {%- assign swatch_active = swatch_active | append: ' qv__swatch--light' -%}
+                  {%- endif -%}
+
                   <button
                     class="{{ swatch_active }}"
                     type="button"
@@ -152,7 +207,9 @@
                     data-qv-swatch
                     data-option-index="{{ forloop.parentloop.index0 }}"
                     data-value="{{ value }}"
+                    {%- if swatch_color != blank %}
                     style="--swatch-color: {{ swatch_color }};"
+                    {%- endif %}
                     title="{{ value }}"
                   ></button>
                 {%- endfor -%}
