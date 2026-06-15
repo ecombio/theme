@@ -10,7 +10,7 @@
   assign cards_desk     = section.settings.cards_per_row_desktop | default: 3
   assign cards_mob      = section.settings.cards_per_row_mobile  | default: 2
   assign show_arrows    = section.settings.show_arrows
-  assign show_dots      = section.settings.show_dots
+  assign arrow_position = section.settings.arrow_position | default: 'bottom'
   assign autoplay       = section.settings.autoplay
   assign autoplay_ms    = section.settings.autoplay_interval | default: 4 | times: 1000
   assign banner_show    = section.settings.show_banner
@@ -19,6 +19,14 @@
   assign products_limit = section.settings.products_per_tab | default: 12
   assign sort_by        = section.settings.sort_by | default: 'best-selling'
   assign tab_blocks     = section.blocks | where: 'type', 'tab'
+
+  assign show_top_arrows    = false
+  assign show_bottom_arrows = false
+  if show_arrows and arrow_position == 'top'
+    assign show_top_arrows = true
+  elsif show_arrows
+    assign show_bottom_arrows = true
+  endif
 -%}
 
 {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
@@ -34,10 +42,22 @@
   data-autoplay-interval="{{ autoplay_ms }}"
 >
 
-  {%- if heading != blank or subheading != blank -%}
+  {%- if heading != blank or subheading != blank or show_top_arrows -%}
     <div class="product-carousel__header">
-      {%- if heading != blank -%}<h2 class="product-carousel__heading">{{ heading }}</h2>{%- endif -%}
-      {%- if subheading != blank -%}<p class="product-carousel__subheading">{{ subheading }}</p>{%- endif -%}
+      <div class="product-carousel__heading-group">
+        {%- if heading != blank -%}<h2 class="product-carousel__heading">{{ heading }}</h2>{%- endif -%}
+        {%- if subheading != blank -%}<p class="product-carousel__subheading">{{ subheading }}</p>{%- endif -%}
+      </div>
+      {%- if show_top_arrows -%}
+        <div class="product-carousel__arrows product-carousel__arrows--top">
+          <button class="product-carousel__arrow product-carousel__arrow--prev is-hidden" type="button" aria-label="Previous" data-carousel-prev-global>
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next-global>
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      {%- endif -%}
     </div>
   {%- endif -%}
 
@@ -70,8 +90,8 @@
     {%- comment -%}── CAROUSEL COLUMN ──{%- endcomment -%}
     <div class="product-carousel__carousel-col">
 
-      {%- comment -%}── TABS ──{%- endcomment -%}
-      {%- if tab_blocks.size > 0 -%}
+      {%- comment -%}── TABS (2+) OR STATIC LABEL (exactly 1) ──{%- endcomment -%}
+      {%- if tab_blocks.size > 1 -%}
         <div class="product-carousel__tabs" role="tablist" aria-label="{{ heading | default: 'Product categories' | escape }}">
           {%- for block in tab_blocks -%}
             {%- assign tab_label = block.settings.tab_label | default: block.settings.collection.title -%}
@@ -91,6 +111,17 @@
             </button>
           {%- endfor -%}
         </div>
+      {%- elsif tab_blocks.size == 1 -%}
+        {%- assign single_tab   = tab_blocks.first -%}
+        {%- assign single_label = single_tab.settings.tab_label | default: single_tab.settings.collection.title -%}
+        {%- if single_label != blank -%}
+          <div class="product-carousel__tab-label" {{ single_tab.shopify_attributes }}>
+            {%- if single_tab.settings.tab_icon != blank -%}
+              <span aria-hidden="true">{{ single_tab.settings.tab_icon }}</span>
+            {%- endif -%}
+            {{ single_label }}
+          </div>
+        {%- endif -%}
       {%- endif -%}
 
       {%- comment -%}── ONE PANEL PER TAB ──{%- endcomment -%}
@@ -137,23 +168,16 @@
             </div>
           </div>
 
-          {%- if show_dots or show_arrows -%}
+          {%- if show_bottom_arrows -%}
             <div class="product-carousel__nav">
-              {%- if show_dots -%}
-                <div class="product-carousel__dots" data-carousel-dots aria-hidden="true"></div>
-              {%- else -%}
-                <span></span>
-              {%- endif -%}
-              {%- if show_arrows -%}
-                <div class="product-carousel__arrows">
-                  <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev>
-                    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                  <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next>
-                    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                </div>
-              {%- endif -%}
+              <div class="product-carousel__arrows">
+                <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev>
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next>
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
             </div>
           {%- endif -%}
 
@@ -179,15 +203,12 @@
               {%- endfor -%}
             </ul>
           </div>
-          {%- if show_dots or show_arrows -%}
+          {%- if show_bottom_arrows -%}
             <div class="product-carousel__nav">
-              {%- if show_dots -%}<div class="product-carousel__dots" data-carousel-dots aria-hidden="true"></div>{%- else -%}<span></span>{%- endif -%}
-              {%- if show_arrows -%}
-                <div class="product-carousel__arrows">
-                  <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                  <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                </div>
-              {%- endif -%}
+              <div class="product-carousel__arrows">
+                <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
             </div>
           {%- endif -%}
         </div>
@@ -302,10 +323,15 @@
       "default": true
     },
     {
-      "type": "checkbox",
-      "id": "show_dots",
-      "label": "Show dot indicators",
-      "default": true
+      "type": "select",
+      "id": "arrow_position",
+      "label": "Arrow position",
+      "options": [
+        { "value": "bottom", "label": "Below each row" },
+        { "value": "top", "label": "Top right, next to heading" }
+      ],
+      "default": "bottom",
+      "info": "When set to top right, one shared pair of arrows controls whichever tab is active."
     },
     {
       "type": "checkbox",
