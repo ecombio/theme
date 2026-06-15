@@ -1,7 +1,6 @@
 {%- comment -%}
   snippets/card-product-carousel.liquid
-  Lightweight homepage carousel card.
-  Whole card is a link — no ATC, no quickview, no compare.
+  Carousel card — matches collection card style.
   Accepts: product
 {%- endcomment -%}
 
@@ -11,88 +10,131 @@
   assign card_image2  = card_product.images[1]
   assign card_url     = card_product.url
   assign card_title   = card_product.title
+  assign card_vendor  = card_product.vendor
   assign card_price   = card_product.price
   assign card_comp    = card_product.compare_at_price
   assign on_sale      = false
   if card_comp > card_price
     assign on_sale = true
   endif
-  assign save_amount = card_comp | minus: card_price
-  assign review_count = card_product.metafields.reviews.rating_count
-  assign rating       = card_product.metafields.reviews.rating.value
+  assign save_amount    = card_comp | minus: card_price
+  assign first_variant  = card_product.first_available_variant | default: card_product.variants.first
+  assign variant_id     = first_variant.id
+
+  assign review_count = card_product.metafields.judge_me_product_metafields.reviews_count.value
+  assign rating       = card_product.metafields.judge_me_product_metafields.rating.value
+
+  assign eta_text = card_product.metafields.custom.eta_text
 -%}
 
-<a href="{{ card_url }}" class="cpc" aria-label="{{ card_title | escape }}">
+<div class="cpc" data-product-id="{{ card_product.id }}">
 
+  {%- comment -%}── IMAGE ZONE ──{%- endcomment -%}
   <div class="cpc__img-zone">
-    {%- if card_image != blank -%}
-      {{
-        card_image
-        | image_url: width: 600
-        | image_tag:
-          class: 'cpc__img cpc__img--primary',
-          loading: 'lazy',
-          widths: '200, 300, 400, 600',
-          sizes: '(max-width: 767px) 50vw, 25vw',
-          alt: card_image.alt | default: card_title | escape
-      }}
-      {%- if card_image2 != blank -%}
+    <a href="{{ card_url }}" class="cpc__image-wrapper" aria-label="{{ card_title | escape }}" tabindex="0">
+      {%- if card_image != blank -%}
         {{
-          card_image2
+          card_image
           | image_url: width: 600
           | image_tag:
-            class: 'cpc__img cpc__img--secondary',
+            class: 'cpc__img cpc__img--primary',
             loading: 'lazy',
             widths: '200, 300, 400, 600',
             sizes: '(max-width: 767px) 50vw, 25vw',
-            alt: card_image2.alt | default: card_title | escape
+            alt: card_image.alt | default: card_title | escape
         }}
+        {%- if card_image2 != blank -%}
+          {{
+            card_image2
+            | image_url: width: 600
+            | image_tag:
+              class: 'cpc__img cpc__img--secondary',
+              loading: 'lazy',
+              widths: '200, 300, 400, 600',
+              sizes: '(max-width: 767px) 50vw, 25vw',
+              alt: card_image2.alt | default: card_title | escape
+          }}
+        {%- endif -%}
+      {%- else -%}
+        <div class="cpc__img-placeholder" aria-hidden="true">
+          {{ 'product-1' | placeholder_svg_tag: 'cpc__placeholder-svg' }}
+        </div>
       {%- endif -%}
-    {%- else -%}
-      <div class="cpc__img-placeholder" aria-hidden="true">
-        {{ 'product-1' | placeholder_svg_tag: 'cpc__placeholder-svg' }}
-      </div>
-    {%- endif -%}
+    </a>
+
+    {%- comment -%}── Wishlist button ──{%- endcomment -%}
+    <button
+      class="cpc__wishlist-btn"
+      type="button"
+      aria-label="Add {{ card_title | escape }} to wishlist"
+      aria-pressed="false"
+      data-wishlist-btn
+      data-product-id="{{ card_product.id }}"
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path class="cpc__wishlist-path" d="M9 15.5S2 11 2 6a4 4 0 0 1 7-2.65A4 4 0 0 1 16 6c0 5-7 9.5-7 9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+    </button>
 
     {%- if on_sale -%}
       <span class="cpc__badge">Price drop</span>
     {%- endif -%}
   </div>
 
+  {%- comment -%}── CARD CONTENT ──{%- endcomment -%}
   <div class="cpc__body">
-    <p class="cpc__title">{{ card_title }}</p>
-
-    {%- if rating != blank and review_count != blank and review_count > 0 -%}
-      <div class="cpc__stars" aria-label="Rated {{ rating }} out of 5, {{ review_count }} reviews">
-        <span class="cpc__stars-icons" aria-hidden="true">
-          {%- assign full_stars     = rating | floor -%}
-          {%- assign half_stars     = rating | modulo: 1 | times: 10 | floor -%}
-          {%- assign half_star_pos  = full_stars | plus: 1 -%}
-          {%- assign show_half      = false -%}
-          {%- if half_stars >= 5 -%}{%- assign show_half = true -%}{%- endif -%}
-          {%- for i in (1..5) -%}
-            {%- if i <= full_stars -%}
-              <svg class="cpc__star" viewBox="0 0 10 10"><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6"/></svg>
-            {%- elsif i == half_star_pos and show_half -%}
-              <svg class="cpc__star" viewBox="0 0 10 10"><defs><clipPath id="half-{{ forloop.index }}-{{ card_product.id }}"><rect x="0" y="0" width="5" height="10"/></clipPath></defs><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6" fill="#eee"/><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6" clip-path="url(#half-{{ forloop.index }}-{{ card_product.id }})" fill="#e6a817"/></svg>
-            {%- else -%}
-              <svg class="cpc__star" viewBox="0 0 10 10"><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6" fill="#eee"/></svg>
-            {%- endif -%}
-          {%- endfor -%}
-        </span>
-        <span class="cpc__review-count">{{ review_count }}</span>
-      </div>
+    {%- if card_vendor != blank -%}
+      <span class="cpc__vendor">{{ card_vendor }}</span>
     {%- endif -%}
 
+    <a href="{{ card_url }}" class="cpc__title">{{ card_title }}</a>
+
+    {%- comment -%}── Judge.me reviews ──{%- endcomment -%}
+    <div class="cpc__reviews">
+      {%- render 'judgeme_widgets', widgetType: 'judgeme_preview_badge', conciergeInstalled: false, product: card_product -%}
+    </div>
+
+    {%- comment -%}── Pricing ──{%- endcomment -%}
     <div class="cpc__pricing">
       {%- if on_sale -%}
         <span class="cpc__price cpc__price--sale">{{ card_price | money }}</span>
-        <s class="cpc__price cpc__price--was">{{ card_comp | money }}</s>
-        <span class="cpc__price cpc__price--save">−{{ save_amount | money_without_trailing_zeros }}</span>
+        <div class="cpc__savings-row">
+          <span class="cpc__save-badge">Save {{ save_amount | money_without_trailing_zeros }}</span>
+          <span class="cpc__comp-value">Comp. Value: <s>{{ card_comp | money }}</s></span>
+        </div>
       {%- else -%}
         <span class="cpc__price">{{ card_price | money }}</span>
       {%- endif -%}
     </div>
+
+    {%- comment -%}── ETA row ──{%- endcomment -%}
+    {%- if eta_text != blank -%}
+      <div class="cpc__eta" aria-label="Estimated delivery">
+        <svg class="cpc__eta-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="1" y="4" width="9" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M10 6.5h1.5l1.5 2V11h-3V6.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <circle cx="3.5" cy="11.5" r="1" fill="currentColor"/>
+          <circle cx="10.5" cy="11.5" r="1" fill="currentColor"/>
+        </svg>
+        <span>{{ eta_text }}</span>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%}── Bottom row: ATC + Compare ──{%- endcomment -%}
+    <div class="cpc__bottom-row">
+      {%- if first_variant != blank -%}
+        <button
+          class="cpc__atc-btn"
+          type="button"
+          aria-label="Add {{ card_title | escape }} to cart"
+          data-atc-btn
+          data-variant-id="{{ variant_id }}"
+          data-product-title="{{ card_title | escape }}"
+        >
+          <span class="cpc__atc-label">Add to cart</span>
+        </button>
+      {%- endif -%}
+    </div>
   </div>
 
-</a>
+</div>
