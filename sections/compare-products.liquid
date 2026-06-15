@@ -130,9 +130,18 @@
     });
 
     wireRemoveButtons();
-    wireAtcButtons();
     wireDiffToggle(products);
     hideEmptyRows();
+
+    // ── Add to cart ─────────────────────────────────────────
+    // NOTE: [data-atc-btn] clicks are handled globally by the
+    // document-level delegated listener in card-product-features.js
+    // (initAddToCart). That listener already covers buttons added to
+    // the DOM dynamically (like this table), so no per-button wiring
+    // is needed here. Wiring a second handler caused duplicate
+    // /cart/add.js requests and clashing label states ("Added ✓" vs
+    // "Added!") — removed to keep this page consistent with the
+    // collection/carousel cards.
   });
 
   // ── Hide rows where ALL products show "—" ────────────────
@@ -160,40 +169,6 @@
           ? url.searchParams.set('handles', kept.join(','))
           : url.searchParams.delete('handles');
         window.location.href = url.toString();
-      });
-    });
-  }
-
-  // ── Add to cart ───────────────────────────────────────────
-  function wireAtcButtons() {
-    tableWrap.querySelectorAll('[data-atc-btn]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var id = btn.getAttribute('data-variant-id');
-        if (!id) return;
-        var label = btn.querySelector('.card-product__atc-label');
-        btn.disabled = true;
-        if (label) label.textContent = 'Adding…';
-
-        fetch('/cart/add.js', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: id, quantity: 1 })
-        })
-        .then(function(r){ return r.json(); })
-        .then(function() {
-          if (label) label.textContent = 'Added ✓';
-          // Re-enable after a moment and refresh cart count if possible
-          setTimeout(function(){
-            btn.disabled = false;
-            if (label) label.textContent = 'Add to cart';
-          }, 2500);
-          // Dispatch Shopify cart update event for themes that listen
-          document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
-        })
-        .catch(function() {
-          btn.disabled = false;
-          if (label) label.textContent = 'Add to cart';
-        });
       });
     });
   }
