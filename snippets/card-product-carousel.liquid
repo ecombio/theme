@@ -2,6 +2,9 @@
   snippets/card-product-carousel.liquid
   Carousel card — wired to card-product-features.js.
   Accepts: product
+
+  FIX: save_pct / save_amount are now only computed when on_sale is true,
+  to avoid a `divided_by: 0` Liquid error when compare_at_price is 0 or blank.
 {%- endcomment -%}
 
 {%- liquid
@@ -13,12 +16,16 @@
   assign card_vendor   = card_product.vendor
   assign card_price    = card_product.price
   assign card_comp     = card_product.compare_at_price
-  assign on_sale       = false
+
+  assign on_sale     = false
+  assign save_amount = 0
+  assign save_pct    = 0
   if card_comp > card_price
-    assign on_sale = true
+    assign on_sale     = true
+    assign save_amount = card_comp | minus: card_price
+    assign save_pct    = save_amount | times: 100 | divided_by: card_comp
   endif
-  assign save_amount   = card_comp | minus: card_price
-  assign save_pct      = save_amount | times: 100 | divided_by: card_comp
+
   assign first_variant = card_product.first_available_variant | default: card_product.variants.first
   assign variant_id    = first_variant.id
   assign eta_text      = card_product.metafields.custom.eta_text
