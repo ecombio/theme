@@ -1,9 +1,7 @@
 {% comment %}
   Snippet: collection-tabs
   Called by: snippets/collection-toolbar.liquid
-  Calls:     snippets/collection-products.liquid
-             snippets/collection-articles.liquid
-             snippets/collection-pages.liquid
+  Calls:     snippets/collection-showcase.liquid
 
   Parameters:
     - active_tab    {String}  — 'products' | 'articles' | 'pages'
@@ -27,22 +25,20 @@
 {%- if article_count > 0 or page_count > 0 -%}
   <nav class="collection-toolbar__tabs" role="tablist" aria-label="Browse by type">
 
-    <a
+    
       href="{{ _base_url }}?tab=products"
       class="collection-toolbar__tab{% if active_tab == 'products' %} collection-toolbar__tab--active{% endif %}"
       role="tab"
       aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
     >
       Products
-      {%- if search.performed -%}
-        <span class="collection-toolbar__tab-count">({{ product_count }})</span>
-      {%- else -%}
-        <span class="collection-toolbar__tab-count">({{ collection.all_products_count }})</span>
-      {%- endif -%}
+      <span class="collection-toolbar__tab-count">
+        ({% if search.performed %}{{ product_count }}{% else %}{{ collection.all_products_count }}{% endif %})
+      </span>
     </a>
 
     {%- if article_count > 0 -%}
-      <a
+      
         href="{{ _base_url }}?tab=articles"
         class="collection-toolbar__tab{% if active_tab == 'articles' %} collection-toolbar__tab--active{% endif %}"
         role="tab"
@@ -54,7 +50,7 @@
     {%- endif -%}
 
     {%- if page_count > 0 -%}
-      <a
+      
         href="{{ _base_url }}?tab=pages"
         class="collection-toolbar__tab{% if active_tab == 'pages' %} collection-toolbar__tab--active{% endif %}"
         role="tab"
@@ -69,17 +65,9 @@
 {%- endif -%}
 
 {%- comment -%} ── Panel delegation ── {%- endcomment -%}
-{%- if active_tab == 'articles' -%}
-  {% render 'collection-articles', section: section %}
-
-{%- elsif active_tab == 'pages' -%}
-  {% render 'collection-pages', section: section %}
-
-{%- else -%}
-  {% render 'collection-products',
-    section:      section,
-    per_page:     per_page,
-    show_banners: show_banners
-  %}
-
-{%- endif -%}
+{% render 'collection-showcase',
+  active_tab:   active_tab,
+  per_page:     per_page,
+  show_banners: show_banners,
+  section:      section
+%}
