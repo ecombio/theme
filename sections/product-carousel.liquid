@@ -22,8 +22,11 @@
 
   assign show_top_arrows    = false
   assign show_bottom_arrows = false
+  assign show_side_arrows   = false
   if show_arrows and arrow_position == 'top'
     assign show_top_arrows = true
+  elsif show_arrows and arrow_position == 'side'
+    assign show_side_arrows = true
   elsif show_arrows
     assign show_bottom_arrows = true
   endif
@@ -33,13 +36,14 @@
 {{ 'card-product-carousel.css' | asset_url | stylesheet_tag }}
 
 <section
-  class="product-carousel"
+  class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %}"
   id="pc-section-{{ section.id }}"
   data-section-id="{{ section.id }}"
   data-cards-desktop="{{ cards_desk }}"
   data-cards-mobile="{{ cards_mob }}"
   data-autoplay="{{ autoplay }}"
   data-autoplay-interval="{{ autoplay_ms }}"
+  data-arrow-style="{{ arrow_position }}"
 >
 
   {%- if heading != blank or subheading != blank or show_top_arrows -%}
@@ -90,7 +94,11 @@
     {%- comment -%}── CAROUSEL COLUMN ──{%- endcomment -%}
     <div class="product-carousel__carousel-col">
 
-      {%- comment -%}── TABS (2+) OR STATIC LABEL (exactly 1) ──{%- endcomment -%}
+      {%- comment -%}
+        Tabs: only render the tab bar when there are 2+ tab blocks.
+        With exactly 1 block, skip the label entirely — the section heading
+        already identifies the content.
+      {%- endcomment -%}
       {%- if tab_blocks.size > 1 -%}
         <div class="product-carousel__tabs" role="tablist" aria-label="{{ heading | default: 'Product categories' | escape }}">
           {%- for block in tab_blocks -%}
@@ -111,17 +119,6 @@
             </button>
           {%- endfor -%}
         </div>
-      {%- elsif tab_blocks.size == 1 -%}
-        {%- assign single_tab   = tab_blocks.first -%}
-        {%- assign single_label = single_tab.settings.tab_label | default: single_tab.settings.collection.title -%}
-        {%- if single_label != blank -%}
-          <div class="product-carousel__tab-label" {{ single_tab.shopify_attributes }}>
-            {%- if single_tab.settings.tab_icon != blank -%}
-              <span aria-hidden="true">{{ single_tab.settings.tab_icon }}</span>
-            {%- endif -%}
-            {{ single_label }}
-          </div>
-        {%- endif -%}
       {%- endif -%}
 
       {%- comment -%}── ONE PANEL PER TAB ──{%- endcomment -%}
@@ -134,7 +131,20 @@
           role="tabpanel"
           data-carousel-panel="{{ block.id }}"
         >
-          <div class="product-carousel__stage">
+          <div class="product-carousel__stage{% if show_side_arrows %} product-carousel__stage--side-arrows{% endif %}">
+
+            {%- if show_side_arrows -%}
+              <button
+                class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-prev"
+                type="button"
+                aria-label="Previous"
+                data-carousel-prev
+                disabled
+              >
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            {%- endif -%}
+
             <div class="product-carousel__track-wrapper" data-carousel-wrapper>
               <ul
                 class="product-carousel__track"
@@ -166,10 +176,23 @@
                 {%- endif -%}
               </ul>
             </div>
+
+            {%- if show_side_arrows -%}
+              <button
+                class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-next"
+                type="button"
+                aria-label="Next"
+                data-carousel-next
+              >
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            {%- endif -%}
+
           </div>
 
           {%- if show_bottom_arrows -%}
             <div class="product-carousel__nav">
+              <div class="product-carousel__dots" data-carousel-dots></div>
               <div class="product-carousel__arrows">
                 <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev>
                   <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -186,7 +209,20 @@
 
       {%- comment -%}── Fallback: no blocks defined ──{%- endcomment -%}
       {%- if tab_blocks.size == 0 -%}
-        <div class="product-carousel__stage">
+        <div class="product-carousel__stage{% if show_side_arrows %} product-carousel__stage--side-arrows{% endif %}">
+
+          {%- if show_side_arrows -%}
+            <button
+              class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-prev"
+              type="button"
+              aria-label="Previous"
+              data-carousel-prev
+              disabled
+            >
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          {%- endif -%}
+
           <div class="product-carousel__track-wrapper" data-carousel-wrapper>
             <ul class="product-carousel__track" data-carousel-track role="list">
               {%- for i in (1..4) -%}
@@ -203,14 +239,28 @@
               {%- endfor -%}
             </ul>
           </div>
+
+          {%- if show_side_arrows -%}
+            <button
+              class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-next"
+              type="button"
+              aria-label="Next"
+              data-carousel-next
+            >
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          {%- endif -%}
+
           {%- if show_bottom_arrows -%}
             <div class="product-carousel__nav">
+              <div class="product-carousel__dots" data-carousel-dots></div>
               <div class="product-carousel__arrows">
                 <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
               </div>
             </div>
           {%- endif -%}
+
         </div>
       {%- endif -%}
 
@@ -281,11 +331,11 @@
       "id": "sort_by",
       "label": "Sort products by",
       "options": [
-        { "value": "best-selling", "label": "Best selling" },
-        { "value": "price-ascending", "label": "Price: low to high" },
-        { "value": "price-descending", "label": "Price: high to low" },
-        { "value": "created-descending", "label": "Newest" },
-        { "value": "manual", "label": "Manual (collection order)" }
+        { "value": "best-selling",      "label": "Best selling" },
+        { "value": "price-ascending",   "label": "Price: low to high" },
+        { "value": "price-descending",  "label": "Price: high to low" },
+        { "value": "created-descending","label": "Newest" },
+        { "value": "manual",            "label": "Manual (collection order)" }
       ],
       "default": "best-selling"
     },
@@ -325,13 +375,14 @@
     {
       "type": "select",
       "id": "arrow_position",
-      "label": "Arrow position",
+      "label": "Arrow style",
       "options": [
-        { "value": "bottom", "label": "Below each row" },
-        { "value": "top", "label": "Top right, next to heading" }
+        { "value": "bottom", "label": "Below carousel" },
+        { "value": "top",    "label": "Top right (shared)" },
+        { "value": "side",   "label": "Either side of carousel" }
       ],
       "default": "bottom",
-      "info": "When set to top right, one shared pair of arrows controls whichever tab is active."
+      "info": "\"Top right\" uses one shared pair of arrows for whichever tab is active. \"Either side\" floats arrows on the left and right edges of the track."
     },
     {
       "type": "checkbox",
