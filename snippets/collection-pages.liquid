@@ -1,35 +1,34 @@
 {% comment %}
   Snippet: collection-pages
-  Called by: snippets/collection-tabs.liquid
+  Called by: snippets/collection-showcase.liquid
   Calls:     snippets/card-page.liquid
 
   Context-aware: collection page renders page blocks added by the merchant
   in the section editor; search page loops search.results filtered to pages.
 
   Parameters:
-    - section {Object} — for block access on collection pages
+    - context {String}  — 'collection' | 'search'
+    - section {Object}  — for block access on collection pages
 {% endcomment %}
 
-{%- if search.performed -%}
+{%- if context == 'search' -%}
 
-  {%- assign found_pages = false -%}
-  <div class="search-pages-list">
-    {%- for result in search.results -%}
-      {%- if result.object_type == 'page' -%}
-        {%- assign found_pages = true -%}
-        {% render 'card-page', page: result %}
-      {%- endif -%}
-    {%- endfor -%}
-  </div>
-  {%- unless found_pages -%}
-    <p class="collection-empty">No pages matched &ldquo;{{ search.terms | escape }}&rdquo;.</p>
-  {%- endunless -%}
+  {%- assign page_results = search.results | where: 'object_type', 'page' -%}
+  {%- if page_results.size > 0 -%}
+    <div class="collection-pages-list">
+      {%- for page in page_results -%}
+        {% render 'card-page', page: page %}
+      {%- endfor -%}
+    </div>
+  {%- else -%}
+    <p class="collection-empty">No pages found for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
+  {%- endif -%}
 
 {%- else -%}
 
   {%- assign page_blocks = section.blocks | where: 'type', 'page' -%}
   {%- if page_blocks.size > 0 -%}
-    <div class="search-pages-list">
+    <div class="collection-pages-list">
       {%- for block in page_blocks -%}
         {%- assign page = block.settings.page -%}
         {%- if page != blank -%}

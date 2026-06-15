@@ -12,6 +12,7 @@
     - product_count {Number}  — search context only
     - per_page      {Number}
     - show_banners  {Boolean}
+    - context       {String}  — 'collection' | 'search'
     - section       {Object}
 {% endcomment %}
 
@@ -36,7 +37,7 @@
 
   {%- comment -%} ── Count ── {%- endcomment -%}
   <span class="collection-toolbar__count">
-    {%- if search.performed -%}
+    {%- if context == 'search' -%}
       {%- if active_tab == 'articles' -%}
         {{ article_count }} {{ article_count | pluralize: 'article', 'articles' }}
       {%- elsif active_tab == 'pages' -%}
@@ -53,7 +54,7 @@
     {%- endif -%}
   </span>
 
-  {%- comment -%} ── Tabs ── {%- endcomment -%}
+  {%- comment -%} ── Tabs + panels ── {%- endcomment -%}
   {% render 'collection-tabs',
     active_tab:    active_tab,
     article_count: article_count,
@@ -61,6 +62,7 @@
     product_count: product_count,
     per_page:      per_page,
     show_banners:  show_banners,
+    context:       context,
     section:       section
   %}
 

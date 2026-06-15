@@ -10,11 +10,12 @@
     - product_count {Number}  — search context only
     - per_page      {Number}
     - show_banners  {Boolean}
+    - context       {String}  — 'collection' | 'search'
     - section       {Object}
 {% endcomment %}
 
 {%- comment -%} ── Base URL for tab hrefs ── {%- endcomment -%}
-{%- if search.performed -%}
+{%- if context == 'search' -%}
   {%- assign _terms    = search.terms | url_encode -%}
   {%- assign _base_url = routes.search_url | append: '?type=product,article,page&q=' | append: _terms -%}
 {%- else -%}
@@ -25,7 +26,7 @@
 {%- if article_count > 0 or page_count > 0 -%}
   <nav class="collection-toolbar__tabs" role="tablist" aria-label="Browse by type">
 
-    
+    <a
       href="{{ _base_url }}?tab=products"
       class="collection-toolbar__tab{% if active_tab == 'products' %} collection-toolbar__tab--active{% endif %}"
       role="tab"
@@ -33,12 +34,12 @@
     >
       Products
       <span class="collection-toolbar__tab-count">
-        ({% if search.performed %}{{ product_count }}{% else %}{{ collection.all_products_count }}{% endif %})
+        ({% if context == 'search' %}{{ product_count }}{% else %}{{ collection.all_products_count }}{% endif %})
       </span>
     </a>
 
     {%- if article_count > 0 -%}
-      
+      <a
         href="{{ _base_url }}?tab=articles"
         class="collection-toolbar__tab{% if active_tab == 'articles' %} collection-toolbar__tab--active{% endif %}"
         role="tab"
@@ -50,7 +51,7 @@
     {%- endif -%}
 
     {%- if page_count > 0 -%}
-      
+      <a
         href="{{ _base_url }}?tab=pages"
         class="collection-toolbar__tab{% if active_tab == 'pages' %} collection-toolbar__tab--active{% endif %}"
         role="tab"
@@ -69,5 +70,6 @@
   active_tab:   active_tab,
   per_page:     per_page,
   show_banners: show_banners,
+  context:      context,
   section:      section
 %}

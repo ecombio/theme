@@ -1,13 +1,15 @@
 {% comment %}
   Snippet: collection-products
-  Called by: snippets/collection-tabs.liquid
+  Called by: snippets/collection-showcase.liquid
   Calls:     snippets/card-product.liquid
 
-  Owns the full product grid: .collection-products-section wrapper, paginate
-  loop, inline grid_banner / grid_carousel / subcollection_carousel blocks,
-  and all card-product renders.
+  Owns the full product grid: paginate loop, inline grid_banner /
+  grid_carousel / subcollection_carousel blocks, and all card-product renders.
+  Context-aware: collection page paginates collection.products;
+  search page loops search.results filtered to products.
 
   Parameters:
+    - context       {String}  — 'collection' | 'search'
     - section       {Object}
     - per_page      {Number}
     - show_banners  {Boolean} — false on page > 1 or when filters are active
@@ -15,188 +17,220 @@
 
 <div class="collection-products-section">
 
-  {% paginate collection.products by per_page %}
+  {%- if context == 'search' -%}
 
-    <div class="collection-products" id="collection-grid">
-      {% for product in collection.products %}
+    {%- assign product_results = search.results | where: 'object_type', 'product' -%}
 
-        {%- if show_banners -%}
-          {%- assign loop_pos = forloop.index -%}
-          {%- for block in section.blocks -%}
+    {% paginate product_results by per_page %}
+      <div class="collection-products" id="collection-grid">
+        {%- if product_results.size > 0 -%}
+          {%- for product in product_results -%}
+            <div class="collection-product-wrapper">
+              {% render 'card-product',
+                product:               product,
+                show_vendor:           true,
+                show_compare_at_price: true
+              %}
+            </div>
+          {%- endfor -%}
+        {%- else -%}
+          <p class="collection-empty">
+            No products found for &ldquo;{{ search.terms | escape }}&rdquo;. Try a different search term.
+          </p>
+        {%- endif -%}
+      </div>
 
-            {%- comment -%} ── Grid Banner ── {%- endcomment -%}
-            {%- if block.type == 'grid_banner'
-                   and block.settings.image != blank
-                   and block.settings.position == loop_pos -%}
-              {%- assign span_val = block.settings.span | default: '2' -%}
-              <div
-                class="collection-banner-item collection-banner-item--span-{{ span_val }}"
-                {{ block.shopify_attributes }}
-              >
-                {%- if block.settings.link != blank -%}
-                  <a href="{{ block.settings.link }}" class="collection-banner__link" aria-label="{{ block.settings.label | escape }}">
-                {%- endif -%}
-                {{
-                  block.settings.image
-                  | image_url: width: 1200
-                  | image_tag:
-                    class: 'collection-banner__img',
-                    loading: 'lazy',
-                    widths: '400, 600, 800, 1000, 1200',
-                    sizes: '(max-width: 599px) calc(100vw - 2rem), (max-width: 1023px) 66vw, 50vw'
-                }}
-                {%- if block.settings.overlay_text != blank -%}
-                  <span class="collection-banner__overlay-text">{{ block.settings.overlay_text }}</span>
-                {%- endif -%}
-                {%- if block.settings.link != blank -%}
-                  </a>
-                {%- endif -%}
-              </div>
-            {%- endif -%}
+      {%- if paginate.pages > 1 -%}
+        <div class="collection-pagination">
+          {{ paginate | default_pagination }}
+        </div>
+      {%- endif -%}
+    {% endpaginate %}
 
-            {%- comment -%} ── Grid Carousel ── {%- endcomment -%}
-            {%- if block.type == 'grid_carousel'
-                   and block.settings.source_collection != blank
-                   and block.settings.position == loop_pos -%}
-              {%- assign carousel_col   = block.settings.source_collection -%}
-              {%- assign carousel_span  = block.settings.span | default: 'full' -%}
-              {%- assign carousel_limit = block.settings.products_to_show | default: 6 -%}
-              <div
-                class="collection-grid-carousel collection-banner-item--span-{{ carousel_span }}"
-                data-carousel
-                {{ block.shopify_attributes }}
-              >
-                {%- if block.settings.heading != blank -%}
-                  <h2 class="collection-grid-carousel__heading">{{ block.settings.heading }}</h2>
-                {%- endif -%}
-                <div class="collection-grid-carousel__track-wrap">
-                  <button class="collection-grid-carousel__btn collection-grid-carousel__btn--prev" aria-label="Previous">&#8249;</button>
-                  <div class="collection-grid-carousel__track">
-                    {%- for p in carousel_col.products limit: carousel_limit -%}
-                      <div class="collection-grid-carousel__slide">
-                        <a href="{{ p.url }}" class="collection-grid-carousel__card">
-                          <div class="collection-grid-carousel__img-wrap">
-                            {%- if p.featured_image -%}
-                              {{ p.featured_image
-                                | image_url: width: 400
-                                | image_tag:
-                                  loading: 'lazy',
-                                  class: 'collection-grid-carousel__img',
-                                  widths: '200, 300, 400',
-                                  sizes: '200px',
-                                  alt: p.featured_image.alt | escape }}
-                            {%- else -%}
-                              <div class="collection-grid-carousel__img-placeholder"></div>
-                            {%- endif -%}
-                          </div>
-                          <div class="collection-grid-carousel__info">
-                            <span class="collection-grid-carousel__title">{{ p.title }}</span>
-                            <span class="collection-grid-carousel__price">{{ p.price | money }}</span>
-                          </div>
-                        </a>
-                      </div>
-                    {%- endfor -%}
-                  </div>
-                  <button class="collection-grid-carousel__btn collection-grid-carousel__btn--next" aria-label="Next">&#8250;</button>
+  {%- else -%}
+
+    {% paginate collection.products by per_page %}
+      <div class="collection-products" id="collection-grid">
+        {% for product in collection.products %}
+
+          {%- if show_banners -%}
+            {%- assign loop_pos = forloop.index -%}
+            {%- for block in section.blocks -%}
+
+              {%- comment -%} ── Grid Banner ── {%- endcomment -%}
+              {%- if block.type == 'grid_banner'
+                     and block.settings.image != blank
+                     and block.settings.position == loop_pos -%}
+                {%- assign span_val = block.settings.span | default: '2' -%}
+                <div
+                  class="collection-banner-item collection-banner-item--span-{{ span_val }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {%- if block.settings.link != blank -%}
+                    <a href="{{ block.settings.link }}" class="collection-banner__link" aria-label="{{ block.settings.label | escape }}">
+                  {%- endif -%}
+                  {{
+                    block.settings.image
+                    | image_url: width: 1200
+                    | image_tag:
+                      class: 'collection-banner__img',
+                      loading: 'lazy',
+                      widths: '400, 600, 800, 1000, 1200',
+                      sizes: '(max-width: 599px) calc(100vw - 2rem), (max-width: 1023px) 66vw, 50vw'
+                  }}
+                  {%- if block.settings.overlay_text != blank -%}
+                    <span class="collection-banner__overlay-text">{{ block.settings.overlay_text }}</span>
+                  {%- endif -%}
+                  {%- if block.settings.link != blank -%}
+                    </a>
+                  {%- endif -%}
                 </div>
-              </div>
-            {%- endif -%}
+              {%- endif -%}
 
-            {%- comment -%} ── Subcollection Carousel ── {%- endcomment -%}
-            {%- if block.type == 'subcollection_carousel'
-                   and block.settings.position == loop_pos -%}
-              {%- assign sc_span  = block.settings.span | default: 'full' -%}
-              {%- assign sc_style = block.settings.tile_style | default: 'portrait' -%}
-              <div
-                class="subcollection-carousel collection-banner-item--span-{{ sc_span }}"
-                data-subcollection-carousel
-                {{ block.shopify_attributes }}
-              >
-                {%- if block.settings.heading != blank or block.settings.view_all_url != blank -%}
-                  <div class="subcollection-carousel__header">
-                    {%- if block.settings.heading != blank -%}
-                      <h2 class="subcollection-carousel__heading">{{ block.settings.heading }}</h2>
-                    {%- endif -%}
-                    {%- if block.settings.view_all_url != blank -%}
-                      <a href="{{ block.settings.view_all_url }}" class="subcollection-carousel__view-all">
-                        {{ block.settings.view_all_label | default: 'View all' }}
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                          <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </a>
-                    {%- endif -%}
+              {%- comment -%} ── Grid Carousel ── {%- endcomment -%}
+              {%- if block.type == 'grid_carousel'
+                     and block.settings.source_collection != blank
+                     and block.settings.position == loop_pos -%}
+                {%- assign carousel_col   = block.settings.source_collection -%}
+                {%- assign carousel_span  = block.settings.span | default: 'full' -%}
+                {%- assign carousel_limit = block.settings.products_to_show | default: 6 -%}
+                <div
+                  class="collection-grid-carousel collection-banner-item--span-{{ carousel_span }}"
+                  data-carousel
+                  {{ block.shopify_attributes }}
+                >
+                  {%- if block.settings.heading != blank -%}
+                    <h2 class="collection-grid-carousel__heading">{{ block.settings.heading }}</h2>
+                  {%- endif -%}
+                  <div class="collection-grid-carousel__track-wrap">
+                    <button class="collection-grid-carousel__btn collection-grid-carousel__btn--prev" aria-label="Previous">&#8249;</button>
+                    <div class="collection-grid-carousel__track">
+                      {%- for p in carousel_col.products limit: carousel_limit -%}
+                        <div class="collection-grid-carousel__slide">
+                          <a href="{{ p.url }}" class="collection-grid-carousel__card">
+                            <div class="collection-grid-carousel__img-wrap">
+                              {%- if p.featured_image -%}
+                                {{ p.featured_image
+                                  | image_url: width: 400
+                                  | image_tag:
+                                    loading: 'lazy',
+                                    class: 'collection-grid-carousel__img',
+                                    widths: '200, 300, 400',
+                                    sizes: '200px',
+                                    alt: p.featured_image.alt | escape }}
+                              {%- else -%}
+                                <div class="collection-grid-carousel__img-placeholder"></div>
+                              {%- endif -%}
+                            </div>
+                            <div class="collection-grid-carousel__info">
+                              <span class="collection-grid-carousel__title">{{ p.title }}</span>
+                              <span class="collection-grid-carousel__price">{{ p.price | money }}</span>
+                            </div>
+                          </a>
+                        </div>
+                      {%- endfor -%}
+                    </div>
+                    <button class="collection-grid-carousel__btn collection-grid-carousel__btn--next" aria-label="Next">&#8250;</button>
                   </div>
-                {%- endif -%}
-                <div class="subcollection-carousel__track-wrap">
-                  <button class="subcollection-carousel__btn subcollection-carousel__btn--prev" aria-label="Previous">&#8249;</button>
-                  <div class="subcollection-carousel__track">
-                    {%- for sc_index in (1..8) -%}
-                      {%- assign sc_key = 'subcollection_' | append: sc_index -%}
-                      {%- assign sc_col = block.settings[sc_key] -%}
-                      {%- if sc_col != blank -%}
-                        <a
-                          href="{{ sc_col.url }}"
-                          class="subcollection-carousel__tile subcollection-carousel__tile--{{ sc_style }}"
-                          aria-label="{{ sc_col.title }}"
-                        >
-                          <div class="subcollection-carousel__tile-img-wrap">
-                            {%- if sc_col.featured_image -%}
-                              {{ sc_col.featured_image
-                                | image_url: width: 600
-                                | image_tag:
-                                  loading: 'lazy',
-                                  class: 'subcollection-carousel__tile-img',
-                                  widths: '200, 300, 400, 600',
-                                  sizes: '(max-width: 599px) 140px, 200px',
-                                  alt: sc_col.featured_image.alt | default: sc_col.title | escape }}
-                            {%- else -%}
-                              <div class="subcollection-carousel__tile-img-placeholder">
-                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                                  <rect x="4" y="4" width="24" height="24" rx="4" stroke="#ccc" stroke-width="1.5"/>
-                                  <circle cx="12" cy="13" r="3" stroke="#ccc" stroke-width="1.5"/>
-                                  <path d="M4 24l7-6 5 5 4-4 8 7" stroke="#ccc" stroke-width="1.5" stroke-linejoin="round"/>
-                                </svg>
-                              </div>
-                            {%- endif -%}
-                            {%- if block.settings.show_product_count and sc_col.products_count > 0 -%}
-                              <span class="subcollection-carousel__tile-count">
-                                {{ sc_col.products_count }}
-                                {%- if sc_col.products_count == 1 %} item{%- else %} items{%- endif %}
-                              </span>
-                            {%- endif -%}
-                          </div>
-                          <span class="subcollection-carousel__tile-label">{{ sc_col.title }}</span>
+                </div>
+              {%- endif -%}
+
+              {%- comment -%} ── Subcollection Carousel ── {%- endcomment -%}
+              {%- if block.type == 'subcollection_carousel'
+                     and block.settings.position == loop_pos -%}
+                {%- assign sc_span  = block.settings.span | default: 'full' -%}
+                {%- assign sc_style = block.settings.tile_style | default: 'portrait' -%}
+                <div
+                  class="subcollection-carousel collection-banner-item--span-{{ sc_span }}"
+                  data-subcollection-carousel
+                  {{ block.shopify_attributes }}
+                >
+                  {%- if block.settings.heading != blank or block.settings.view_all_url != blank -%}
+                    <div class="subcollection-carousel__header">
+                      {%- if block.settings.heading != blank -%}
+                        <h2 class="subcollection-carousel__heading">{{ block.settings.heading }}</h2>
+                      {%- endif -%}
+                      {%- if block.settings.view_all_url != blank -%}
+                        <a href="{{ block.settings.view_all_url }}" class="subcollection-carousel__view-all">
+                          {{ block.settings.view_all_label | default: 'View all' }}
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                            <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
                         </a>
                       {%- endif -%}
-                    {%- endfor -%}
+                    </div>
+                  {%- endif -%}
+                  <div class="subcollection-carousel__track-wrap">
+                    <button class="subcollection-carousel__btn subcollection-carousel__btn--prev" aria-label="Previous">&#8249;</button>
+                    <div class="subcollection-carousel__track">
+                      {%- for sc_index in (1..8) -%}
+                        {%- assign sc_key = 'subcollection_' | append: sc_index -%}
+                        {%- assign sc_col = block.settings[sc_key] -%}
+                        {%- if sc_col != blank -%}
+                          <a
+                            href="{{ sc_col.url }}"
+                            class="subcollection-carousel__tile subcollection-carousel__tile--{{ sc_style }}"
+                            aria-label="{{ sc_col.title }}"
+                          >
+                            <div class="subcollection-carousel__tile-img-wrap">
+                              {%- if sc_col.featured_image -%}
+                                {{ sc_col.featured_image
+                                  | image_url: width: 600
+                                  | image_tag:
+                                    loading: 'lazy',
+                                    class: 'subcollection-carousel__tile-img',
+                                    widths: '200, 300, 400, 600',
+                                    sizes: '(max-width: 599px) 140px, 200px',
+                                    alt: sc_col.featured_image.alt | default: sc_col.title | escape }}
+                              {%- else -%}
+                                <div class="subcollection-carousel__tile-img-placeholder">
+                                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                    <rect x="4" y="4" width="24" height="24" rx="4" stroke="#ccc" stroke-width="1.5"/>
+                                    <circle cx="12" cy="13" r="3" stroke="#ccc" stroke-width="1.5"/>
+                                    <path d="M4 24l7-6 5 5 4-4 8 7" stroke="#ccc" stroke-width="1.5" stroke-linejoin="round"/>
+                                  </svg>
+                                </div>
+                              {%- endif -%}
+                              {%- if block.settings.show_product_count and sc_col.products_count > 0 -%}
+                                <span class="subcollection-carousel__tile-count">
+                                  {{ sc_col.products_count }}
+                                  {%- if sc_col.products_count == 1 %} item{%- else %} items{%- endif %}
+                                </span>
+                              {%- endif -%}
+                            </div>
+                            <span class="subcollection-carousel__tile-label">{{ sc_col.title }}</span>
+                          </a>
+                        {%- endif -%}
+                      {%- endfor -%}
+                    </div>
+                    <button class="subcollection-carousel__btn subcollection-carousel__btn--next" aria-label="Next">&#8250;</button>
                   </div>
-                  <button class="subcollection-carousel__btn subcollection-carousel__btn--next" aria-label="Next">&#8250;</button>
                 </div>
-              </div>
-            {%- endif -%}
+              {%- endif -%}
 
-          {%- endfor -%}
-        {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
 
-        <div class="collection-product-wrapper">
-          {% render 'card-product',
-            product: product,
-            show_vendor: true,
-            show_compare_at_price: true
-          %}
-        </div>
+          <div class="collection-product-wrapper">
+            {% render 'card-product',
+              product:               product,
+              show_vendor:           true,
+              show_compare_at_price: true
+            %}
+          </div>
 
-      {% else %}
-        <p class="collection-empty">No products match the selected filters.</p>
-      {% endfor %}
-    </div>
-
-    {%- if paginate.pages > 1 -%}
-      <div class="collection-pagination">
-        {{ paginate | default_pagination }}
+        {% else %}
+          <p class="collection-empty">No products match the selected filters.</p>
+        {% endfor %}
       </div>
-    {%- endif -%}
 
-  {% endpaginate %}
+      {%- if paginate.pages > 1 -%}
+        <div class="collection-pagination">
+          {{ paginate | default_pagination }}
+        </div>
+      {%- endif -%}
+    {% endpaginate %}
+
+  {%- endif -%}
 
 </div>
