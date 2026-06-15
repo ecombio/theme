@@ -60,30 +60,20 @@
       var atEnd   = index >= maxIndex();
 
       if (prevBtn) {
-        if (sideMode) {
-          prevBtn.classList.remove('is-hidden');
-          prevBtn.toggleAttribute('disabled', atStart);
-        } else {
-          prevBtn.removeAttribute('disabled');
-          prevBtn.classList.toggle('is-hidden', atStart);
-        }
+        prevBtn.classList.remove('is-hidden');
+        prevBtn.toggleAttribute('disabled', atStart);
       }
 
       if (nextBtn) {
-        if (sideMode) {
-          nextBtn.classList.remove('is-hidden');
-          nextBtn.toggleAttribute('disabled', atEnd);
-        } else {
-          nextBtn.removeAttribute('disabled');
-          nextBtn.classList.toggle('is-hidden', atEnd);
-        }
+        nextBtn.classList.remove('is-hidden');
+        nextBtn.toggleAttribute('disabled', atEnd);
       }
 
       /* Sync top-level shared arrows if present */
       var topPrev = panel.closest('.product-carousel') && panel.closest('.product-carousel').querySelector('[data-carousel-top-prev]');
       var topNext = panel.closest('.product-carousel') && panel.closest('.product-carousel').querySelector('[data-carousel-top-next]');
-      if (topPrev) topPrev.classList.toggle('is-hidden', atStart);
-      if (topNext) topNext.classList.toggle('is-hidden', atEnd);
+      if (topPrev) topPrev.toggleAttribute('disabled', atStart);
+      if (topNext) topNext.toggleAttribute('disabled', atEnd);
 
       updateDots();
     }
