@@ -4,10 +4,17 @@
    wired to card-product-features.js
    ============================================================ */
 
+/* ── Slide must be full height so card can stretch ── */
+.product-carousel__slide {
+  display: flex;
+  align-items: stretch;
+}
+
 /* ── Card wrapper ── */
 .cpc {
   display: flex;
   flex-direction: column;
+  width: 100%;          /* fill the flex slide */
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
@@ -179,12 +186,18 @@
   letter-spacing: -0.02em;
 }
 .cpc__price--sale { color: #111; }
+/*
+  Reserve the same vertical space on every card whether on-sale or not,
+  so the ATC button always sits at the same height across a row.
+*/
 .cpc__savings-row {
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.75rem;
+  flex-wrap: nowrap;
+  gap: 0.4rem 0.6rem;
   margin-top: 0.1rem;
+  min-height: 1.25rem;
+  overflow: hidden;
 }
 .cpc__save-badge {
   font-size: 0.8rem;
@@ -226,7 +239,7 @@
 .cpc__bottom-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.75rem;
 }
@@ -234,10 +247,11 @@
 /* ATC button — yellow, matches collection card */
 .cpc__atc-btn {
   flex: 1;
+  min-width: 0;         /* allow shrinking so compare label never clips */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.65rem 0.75rem;
+  padding: 0.65rem 0.5rem;
   background: #f5c518;
   color: #111;
   border: none;
@@ -255,14 +269,15 @@
 .cpc__atc-btn.is-loading            { pointer-events: none; opacity: 0.7; }
 .cpc__atc-btn:focus-visible         { outline: 2px solid #111; outline-offset: 2px; }
 
-/* Compare */
+/* Compare — fixed width so it never wraps or clips */
 .cpc__compare-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.3rem;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  width: 84px;          /* checkbox (16px) + gap (5px) + "Compare" text */
 }
 .cpc__compare-checkbox {
   width: 16px;
