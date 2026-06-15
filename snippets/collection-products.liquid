@@ -1,13 +1,16 @@
 {% comment %}
   Snippet: collection-products
   Called by: snippets/collection-tabs.liquid
-  Owns:      .collection-products-section wrapper, paginate loop, inline banners,
-             grid_carousel, subcollection_carousel, card-product renders.
+  Calls:     snippets/card-product.liquid
+
+  Owns the full product grid: .collection-products-section wrapper, paginate
+  loop, inline grid_banner / grid_carousel / subcollection_carousel blocks,
+  and all card-product renders.
 
   Parameters:
     - section       {Object}
     - per_page      {Number}
-    - show_banners  {Boolean}
+    - show_banners  {Boolean} — false on page > 1 or when filters are active
 {% endcomment %}
 
 <div class="collection-products-section">
@@ -21,6 +24,7 @@
           {%- assign loop_pos = forloop.index -%}
           {%- for block in section.blocks -%}
 
+            {%- comment -%} ── Grid Banner ── {%- endcomment -%}
             {%- if block.type == 'grid_banner'
                    and block.settings.image != blank
                    and block.settings.position == loop_pos -%}
@@ -50,6 +54,7 @@
               </div>
             {%- endif -%}
 
+            {%- comment -%} ── Grid Carousel ── {%- endcomment -%}
             {%- if block.type == 'grid_carousel'
                    and block.settings.source_collection != blank
                    and block.settings.position == loop_pos -%}
@@ -97,6 +102,7 @@
               </div>
             {%- endif -%}
 
+            {%- comment -%} ── Subcollection Carousel ── {%- endcomment -%}
             {%- if block.type == 'subcollection_carousel'
                    and block.settings.position == loop_pos -%}
               {%- assign sc_span  = block.settings.span | default: 'full' -%}
@@ -128,7 +134,7 @@
                       {%- assign sc_key = 'subcollection_' | append: sc_index -%}
                       {%- assign sc_col = block.settings[sc_key] -%}
                       {%- if sc_col != blank -%}
-                        
+                        <a
                           href="{{ sc_col.url }}"
                           class="subcollection-carousel__tile subcollection-carousel__tile--{{ sc_style }}"
                           aria-label="{{ sc_col.title }}"

@@ -1,21 +1,24 @@
 {% comment %}
   Snippet: collection-toolbar
-  Renders the filter toggle button, product count, and sort selector.
-  Context-aware: collection page vs search page.
+  Called by: sections/main-collection.liquid, sections/main-search.liquid
+  Calls:     snippets/collection-tabs.liquid
+             snippets/collection-sort.liquid
 
-  Parameters (all optional — collection variables are global and need no passing):
-    - show_filters  {Boolean} — whether to render the filter toggle button
-    - active_tab    {String}  — 'products' | 'articles' | 'pages' (search page only)
-    - product_count {Number}  — pre-counted product results (search page only)
-    - article_count {Number}  — pre-counted article results (search page only)
-    - page_count    {Number}  — pre-counted page results (search page only)
-
-  Used in: sections/main-collection.liquid, sections/main-search.liquid
+  Parameters:
+    - show_filters  {Boolean}
+    - active_tab    {String}  — 'products' | 'articles' | 'pages'
+    - article_count {Number}
+    - page_count    {Number}
+    - product_count {Number}  — search context only
+    - per_page      {Number}
+    - show_banners  {Boolean}
+    - section       {Object}
 {% endcomment %}
 
 <div class="collection-toolbar">
 
-  {%- if show_filters -%}
+  {%- comment -%} ── Filter button — products tab only ── {%- endcomment -%}
+  {%- if show_filters and active_tab != 'articles' and active_tab != 'pages' -%}
     <button
       class="collection-toolbar__filter-btn"
       type="button"
@@ -31,6 +34,7 @@
     </button>
   {%- endif -%}
 
+  {%- comment -%} ── Count ── {%- endcomment -%}
   <span class="collection-toolbar__count">
     {%- if search.performed -%}
       {%- if active_tab == 'articles' -%}
@@ -49,6 +53,18 @@
     {%- endif -%}
   </span>
 
+  {%- comment -%} ── Tabs ── {%- endcomment -%}
+  {% render 'collection-tabs',
+    active_tab:    active_tab,
+    article_count: article_count,
+    page_count:    page_count,
+    product_count: product_count,
+    per_page:      per_page,
+    show_banners:  show_banners,
+    section:       section
+  %}
+
+  {%- comment -%} ── Sort — hidden on pages tab ── {%- endcomment -%}
   {%- unless active_tab == 'pages' -%}
     {% render 'collection-sort' %}
   {%- endunless -%}

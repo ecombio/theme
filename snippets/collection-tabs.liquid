@@ -1,0 +1,85 @@
+{% comment %}
+  Snippet: collection-tabs
+  Called by: snippets/collection-toolbar.liquid
+  Calls:     snippets/collection-products.liquid
+             snippets/collection-articles.liquid
+             snippets/collection-pages.liquid
+
+  Parameters:
+    - active_tab    {String}  — 'products' | 'articles' | 'pages'
+    - article_count {Number}
+    - page_count    {Number}
+    - product_count {Number}  — search context only
+    - per_page      {Number}
+    - show_banners  {Boolean}
+    - section       {Object}
+{% endcomment %}
+
+{%- comment -%} ── Base URL for tab hrefs ── {%- endcomment -%}
+{%- if search.performed -%}
+  {%- assign _terms    = search.terms | url_encode -%}
+  {%- assign _base_url = routes.search_url | append: '?type=product,article,page&q=' | append: _terms -%}
+{%- else -%}
+  {%- assign _base_url = collection.url -%}
+{%- endif -%}
+
+{%- comment -%} ── Tab nav (only when non-product content exists) ── {%- endcomment -%}
+{%- if article_count > 0 or page_count > 0 -%}
+  <nav class="collection-toolbar__tabs" role="tablist" aria-label="Browse by type">
+
+    <a
+      href="{{ _base_url }}?tab=products"
+      class="collection-toolbar__tab{% if active_tab == 'products' %} collection-toolbar__tab--active{% endif %}"
+      role="tab"
+      aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+    >
+      Products
+      {%- if search.performed -%}
+        <span class="collection-toolbar__tab-count">({{ product_count }})</span>
+      {%- else -%}
+        <span class="collection-toolbar__tab-count">({{ collection.all_products_count }})</span>
+      {%- endif -%}
+    </a>
+
+    {%- if article_count > 0 -%}
+      <a
+        href="{{ _base_url }}?tab=articles"
+        class="collection-toolbar__tab{% if active_tab == 'articles' %} collection-toolbar__tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+      >
+        Articles
+        <span class="collection-toolbar__tab-count">({{ article_count }})</span>
+      </a>
+    {%- endif -%}
+
+    {%- if page_count > 0 -%}
+      <a
+        href="{{ _base_url }}?tab=pages"
+        class="collection-toolbar__tab{% if active_tab == 'pages' %} collection-toolbar__tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'pages' %}true{% else %}false{% endif %}"
+      >
+        Pages
+        <span class="collection-toolbar__tab-count">({{ page_count }})</span>
+      </a>
+    {%- endif -%}
+
+  </nav>
+{%- endif -%}
+
+{%- comment -%} ── Panel delegation ── {%- endcomment -%}
+{%- if active_tab == 'articles' -%}
+  {% render 'collection-articles', section: section %}
+
+{%- elsif active_tab == 'pages' -%}
+  {% render 'collection-pages', section: section %}
+
+{%- else -%}
+  {% render 'collection-products',
+    section:      section,
+    per_page:     per_page,
+    show_banners: show_banners
+  %}
+
+{%- endif -%}
