@@ -13,47 +13,10 @@
     <h1 class="collection-products__title">{{ collection.title }}</h1>
   {%- endif -%}
 
-  <div class="collection-sticky-bar">
-    <div class="collection-toolbar">
-      {%- if show_filters -%}
-        <button
-          class="collection-toolbar__filter-btn"
-          type="button"
-          id="filters-open-btn"
-          aria-expanded="true"
-          aria-controls="collection-filters"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Filters
-          <span class="collection-toolbar__active-count" id="active-filter-count" aria-live="polite"></span>
-        </button>
-      {%- endif -%}
-
-      <span class="collection-toolbar__count">
-        {{ collection.products_count }}
-        {%- if collection.products_count == 1 -%} product{%- else -%} products{%- endif -%}
-      </span>
-
-      <div class="collection-toolbar__sort">
-        <label class="collection-toolbar__sort-label" for="sort-select">Sort</label>
-        <select id="sort-select" class="collection-toolbar__sort-select" data-sort-select>
-          <option value="manual"            {% if collection.sort_by == 'manual'            %}selected{% endif %}>Featured</option>
-          <option value="best-selling"      {% if collection.sort_by == 'best-selling'      %}selected{% endif %}>Best selling</option>
-          <option value="title-ascending"   {% if collection.sort_by == 'title-ascending'   %}selected{% endif %}>A–Z</option>
-          <option value="title-descending"  {% if collection.sort_by == 'title-descending'  %}selected{% endif %}>Z–A</option>
-          <option value="price-ascending"   {% if collection.sort_by == 'price-ascending'   %}selected{% endif %}>Price: low–high</option>
-          <option value="price-descending"  {% if collection.sort_by == 'price-descending'  %}selected{% endif %}>Price: high–low</option>
-          <option value="created-ascending" {% if collection.sort_by == 'created-ascending' %}selected{% endif %}>Oldest</option>
-          <option value="created-descending"{% if collection.sort_by == 'created-descending'%}selected{% endif %}>Newest</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
-
-  </div>
+<div class="collection-sticky-bar">
+  {% render 'collection-toolbar', show_filters: show_filters %}
+  <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
+</div>
 
   <div id="filters-backdrop" class="filters-backdrop"></div>
 
