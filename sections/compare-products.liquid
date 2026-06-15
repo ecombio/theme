@@ -9,6 +9,7 @@
   assign show_weight      = section.settings.show_weight      | default: false
   assign show_tags        = section.settings.show_tags        | default: true
   assign show_options     = section.settings.show_options     | default: true
+  assign sticky_offset    = section.settings.sticky_offset    | default: 0
 -%}
 
 <section class="compare-section page-width" id="compare-section">
@@ -24,7 +25,7 @@
     <p class="compare-header__meta" id="compare-meta"></p>
     <button class="compare-diff-toggle" id="compare-diff-toggle" type="button" hidden>
       <span class="compare-diff-toggle__dot"></span>
-      Show differences only
+      <span id="compare-diff-toggle-label">Show differences only</span>
     </button>
   </header>
 
@@ -57,14 +58,38 @@
     showType       : {{ show_type        | json }},
     showWeight     : {{ show_weight      | json }},
     showTags       : {{ show_tags        | json }},
-    showOptions    : {{ show_options     | json }}
+    showOptions    : {{ show_options     | json }},
+    stickyOffset   : {{ sticky_offset    | json }}
   };
+
+  // ── Tag filtering: hide internal/system tags from customers ──
+  // Tags matching these patterns are stripped before display.
+  var TAG_BLOCK_PATTERNS = [
+    /^filter[_-]/i,
+    /^category[_-]/i,
+    /^color[_-]/i,
+    /^brand[_-]/i,
+    /^capacity[_-]/i,
+    /^frame[_-]/i,
+    /^fit[_-]/i,
+    /^fenders[_-]/i,
+    /^refund[_-]/i,
+    /^enable[_-]/i,
+    /^beeline[_-]/i,
+    /^DISCONTINUED$/i,
+    /^EOL$/i,
+    /^battery[_-]/i
+  ];
+  function isPublicTag(tag) {
+    return !TAG_BLOCK_PATTERNS.some(function(re){ return re.test(tag); });
+  }
 
   var loadingEl  = document.getElementById('compare-loading');
   var emptyEl    = document.getElementById('compare-empty');
   var tableWrap  = document.getElementById('compare-table-wrap');
   var metaEl     = document.getElementById('compare-meta');
   var diffToggle = document.getElementById('compare-diff-toggle');
+  var diffLabel  = document.getElementById('compare-diff-toggle-label');
 
   var params  = new URLSearchParams(window.location.search);
   var raw     = params.get('handles') || '';
@@ -91,6 +116,11 @@
     tableWrap.hidden   = false;
     tableWrap.innerHTML = buildTable(products);
 
+    // Apply sticky offset CSS variable for header row
+    if (settings.stickyOffset > 0) {
+      tableWrap.style.setProperty('--compare-sticky-top', settings.stickyOffset + 'px');
+    }
+
     // Add data-product attr to mobile cells for CSS ::before labels
     tableWrap.querySelectorAll('tr:not(.compare-row--header)').forEach(function(row) {
       var cells = row.querySelectorAll('.compare-cell:not(.compare-cell--label)');
@@ -100,8 +130,23 @@
     });
 
     wireRemoveButtons();
+    wireAtcButtons();
     wireDiffToggle(products);
+    hideEmptyRows();
   });
+
+  // ── Hide rows where ALL products show "—" ────────────────
+  function hideEmptyRows() {
+    tableWrap.querySelectorAll('tbody tr:not(.compare-row--atc)').forEach(function(row) {
+      var cells = Array.from(row.querySelectorAll('.compare-cell:not(.compare-cell--label)'));
+      var allEmpty = cells.every(function(c){
+        var rv = c.dataset.rawValue;
+        var tx = c.textContent.trim();
+        return rv === '' || rv === '—' || tx === '—' || tx === '';
+      });
+      if (allEmpty) row.classList.add('compare-row--all-empty');
+    });
+  }
 
   // ── Remove button ─────────────────────────────────────────
   function wireRemoveButtons() {
@@ -119,6 +164,40 @@
     });
   }
 
+  // ── Add to cart ───────────────────────────────────────────
+  function wireAtcButtons() {
+    tableWrap.querySelectorAll('[data-atc-btn]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.getAttribute('data-variant-id');
+        if (!id) return;
+        var label = btn.querySelector('.card-product__atc-label');
+        btn.disabled = true;
+        if (label) label.textContent = 'Adding…';
+
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id, quantity: 1 })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function() {
+          if (label) label.textContent = 'Added ✓';
+          // Re-enable after a moment and refresh cart count if possible
+          setTimeout(function(){
+            btn.disabled = false;
+            if (label) label.textContent = 'Add to cart';
+          }, 2500);
+          // Dispatch Shopify cart update event for themes that listen
+          document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+        })
+        .catch(function() {
+          btn.disabled = false;
+          if (label) label.textContent = 'Add to cart';
+        });
+      });
+    });
+  }
+
   // ── Diff mode ─────────────────────────────────────────────
   function wireDiffToggle(products) {
     if (products.length < 2) return;
@@ -128,18 +207,17 @@
     diffToggle.addEventListener('click', function() {
       diffOn = !diffOn;
       diffToggle.classList.toggle('is-active', diffOn);
-      diffToggle.querySelector('span').textContent = diffOn ? 'Show all rows' : 'Show differences only';
+      diffLabel.textContent = diffOn ? 'Show all rows' : 'Show differences only';
       applyDiff(diffOn);
     });
   }
 
   function applyDiff(on) {
-    var rows = tableWrap.querySelectorAll('tbody tr:not(.compare-row--atc)');
+    var rows = tableWrap.querySelectorAll('tbody tr:not(.compare-row--atc):not(.compare-row--all-empty)');
     rows.forEach(function(row) {
       var cells = Array.from(row.querySelectorAll('.compare-cell:not(.compare-cell--label)'));
       var label = row.querySelector('.compare-cell--label');
 
-      // Clear previous state
       cells.forEach(function(c){ c.classList.remove('compare-cell--diff'); });
       if (label) label.classList.remove('compare-cell--diff-label');
       row.classList.remove('compare-row--diff-hidden');
@@ -191,8 +269,8 @@
         + img
         + '<a href="/products/' + p.handle + '" class="compare-product-header__title">' + esc(p.title) + '</a>'
         + vendor
-        + '<button class="compare-product-header__remove" type="button" data-compare-page-remove="' + esc(p.handle) + '">'
-        + '<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+        + '<button class="compare-product-header__remove" type="button" aria-label="Remove ' + esc(p.title) + '" data-compare-page-remove="' + esc(p.handle) + '">'
+        + '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
         + ' Remove</button>'
         + '</div></th>';
     }).join('');
@@ -257,7 +335,6 @@
 
     // ── Options / variants (e.g. Color, Size) ──
     if (settings.showOptions) {
-      // Collect all option names across products
       var allOptionNames = [];
       products.forEach(function(p) {
         (p.options || []).forEach(function(opt) {
@@ -276,11 +353,11 @@
       });
     }
 
-    // ── Tags ──
+    // ── Tags (public only) ──
     if (settings.showTags) {
       rows += '<tr class="compare-row">' + labelCell('Tags')
         + products.map(function(p) {
-            var tags = p.tags || [];
+            var tags = (p.tags || []).filter(isPublicTag);
             if (!tags.length) return dataCell('—', '');
             var pills = tags.slice(0, 8).map(function(t){ return '<span class="compare-tag">' + esc(t) + '</span>'; }).join('');
             return dataCell('<div class="compare-tags">' + pills + '</div>', tags.join(', '));
@@ -331,6 +408,13 @@
       "id": "max_products",
       "min": 2, "max": 5, "step": 1, "default": 5,
       "label": "Max products to compare"
+    },
+    {
+      "type": "range",
+      "id": "sticky_offset",
+      "min": 0, "max": 200, "step": 4, "default": 0,
+      "label": "Sticky header offset (px)",
+      "info": "Set this to the combined height of your announcement bar + navigation so the sticky product header row doesn't hide behind them."
     },
     { "type": "header", "content": "Rows to show" },
     { "type": "checkbox", "id": "show_vendor",      "label": "Vendor",           "default": true  },
