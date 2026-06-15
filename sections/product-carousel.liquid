@@ -1,14 +1,14 @@
 {%- comment -%}
   sections/product-carousel.liquid
-  Uses card-product.liquid — enable_atc is intentionally false.
-  All card feature flags are driven by this section's own settings.
+  Uses snippets/card-product-carousel.liquid
+  Features: pill tabs, side banner, arrow + dot nav row
 {%- endcomment -%}
 
 {%- liquid
   assign heading       = section.settings.heading
   assign subheading    = section.settings.subheading
   assign cards_desk    = section.settings.cards_per_row_desktop | default: 3
-  assign cards_mob     = section.settings.cards_per_row_mobile  | default: 1
+  assign cards_mob     = section.settings.cards_per_row_mobile  | default: 2
   assign show_arrows   = section.settings.show_arrows
   assign show_dots     = section.settings.show_dots
   assign autoplay      = section.settings.autoplay
@@ -16,7 +16,11 @@
   assign banner_show   = section.settings.show_banner
   assign banner_image  = section.settings.banner_image
   assign banner_link   = section.settings.banner_link
+  assign show_tabs     = section.settings.show_tabs
   assign placeholder_count = 4
+
+  assign tab_blocks = section.blocks | where: 'type', 'tab'
+  assign product_blocks = section.blocks | where: 'type', 'product'
 -%}
 
 {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
@@ -32,6 +36,13 @@
   data-autoplay-interval="{{ autoplay_ms }}"
 >
 
+  {%- if heading != blank or subheading != blank -%}
+    <div class="product-carousel__header">
+      {%- if heading != blank -%}<h2 class="product-carousel__heading">{{ heading }}</h2>{%- endif -%}
+      {%- if subheading != blank -%}<p class="product-carousel__subheading">{{ subheading }}</p>{%- endif -%}
+    </div>
+  {%- endif -%}
+
   <div class="product-carousel__layout{% if banner_show %} product-carousel__layout--has-banner{% endif %}">
 
     {%- comment -%}── BANNER ──{%- endcomment -%}
@@ -46,7 +57,7 @@
               class: 'product-carousel__banner-img',
               loading: 'lazy',
               widths: '200, 300, 400, 600',
-              sizes: '(max-width: 767px) 100vw, 260px',
+              sizes: '(max-width: 767px) 100vw, 220px',
               alt: banner_image.alt | default: heading | escape
           }}
         {%- else -%}
@@ -61,30 +72,45 @@
     {%- comment -%}── CAROUSEL COLUMN ──{%- endcomment -%}
     <div class="product-carousel__carousel-col">
 
-      {%- if heading != blank or subheading != blank -%}
-        <div class="product-carousel__header">
-          {%- if heading != blank -%}<h2 class="product-carousel__heading">{{ heading }}</h2>{%- endif -%}
-          {%- if subheading != blank -%}<p class="product-carousel__subheading">{{ subheading }}</p>{%- endif -%}
+      {%- comment -%}── TABS ──{%- endcomment -%}
+      {%- if show_tabs and tab_blocks.size > 0 -%}
+        <div class="product-carousel__tabs" role="tablist" aria-label="{{ heading | default: 'Product categories' | escape }}">
+          {%- for tab in tab_blocks -%}
+            <button
+              class="product-carousel__tab{% if forloop.first %} is-active{% endif %}"
+              role="tab"
+              type="button"
+              aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+              data-carousel-tab="{{ tab.settings.tab_handle }}"
+              {{ tab.shopify_attributes }}
+            >
+              {%- if tab.settings.tab_icon != blank -%}
+                <span aria-hidden="true">{{ tab.settings.tab_icon }}</span>
+              {%- endif -%}
+              {{ tab.settings.tab_label }}
+            </button>
+          {%- endfor -%}
         </div>
       {%- endif -%}
 
+      {%- comment -%}── STAGE ──{%- endcomment -%}
       <div class="product-carousel__stage">
-
-        {%- if show_arrows -%}
-          <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous products" data-carousel-prev>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        {%- endif -%}
-
         <div class="product-carousel__track-wrapper" data-carousel-wrapper>
-          <ul class="product-carousel__track" data-carousel-track role="list" aria-label="{{ heading | default: 'Products' | escape }}">
-
-            {%- if section.blocks.size > 0 -%}
-              {%- for block in section.blocks -%}
+          <ul
+            class="product-carousel__track"
+            data-carousel-track
+            role="list"
+            aria-label="{{ heading | default: 'Products' | escape }}"
+          >
+            {%- if product_blocks.size > 0 -%}
+              {%- for block in product_blocks -%}
                 {%- assign p = block.settings.product -%}
-                <li class="product-carousel__slide" data-carousel-slide {{ block.shopify_attributes }}>
+                <li
+                  class="product-carousel__slide"
+                  data-carousel-slide
+                  data-tab="{{ block.settings.tab_handle }}"
+                  {{ block.shopify_attributes }}
+                >
                   {%- if p != blank -%}
                     {%- render 'card-product-carousel', product: p -%}
                   {%- else -%}
@@ -93,7 +119,6 @@
                         {{ 'product-' | append: forloop.index | placeholder_svg_tag: 'pc-placeholder-card__svg' }}
                       </div>
                       <div class="pc-placeholder-card__body">
-                        <div class="pc-placeholder-card__line pc-placeholder-card__line--vendor"></div>
                         <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
                         <div class="pc-placeholder-card__line pc-placeholder-card__line--title pc-placeholder-card__line--title-short"></div>
                         <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
@@ -110,7 +135,6 @@
                       {{ 'product-' | append: i | placeholder_svg_tag: 'pc-placeholder-card__svg' }}
                     </div>
                     <div class="pc-placeholder-card__body">
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--vendor"></div>
                       <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
                       <div class="pc-placeholder-card__line pc-placeholder-card__line--title pc-placeholder-card__line--title-short"></div>
                       <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
@@ -119,22 +143,33 @@
                 </li>
               {%- endfor -%}
             {%- endif -%}
-
           </ul>
         </div>
-
-        {%- if show_arrows -%}
-          <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next products" data-carousel-next>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        {%- endif -%}
-
       </div><!-- /.product-carousel__stage -->
 
-      {%- if show_dots -%}
-        <div class="product-carousel__dots" data-carousel-dots aria-hidden="true"></div>
+      {%- comment -%}── NAV ROW (dots left, arrows right) ──{%- endcomment -%}
+      {%- if show_dots or show_arrows -%}
+        <div class="product-carousel__nav">
+          {%- if show_dots -%}
+            <div class="product-carousel__dots" data-carousel-dots aria-hidden="true"></div>
+          {%- else -%}
+            <span></span>
+          {%- endif -%}
+          {%- if show_arrows -%}
+            <div class="product-carousel__arrows">
+              <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous products" data-carousel-prev>
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next products" data-carousel-next>
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          {%- endif -%}
+        </div>
       {%- endif -%}
 
     </div><!-- /.product-carousel__carousel-col -->
@@ -149,8 +184,23 @@
   "name": "Product Carousel",
   "tag": "section",
   "class": "section-product-carousel",
-  "max_blocks": 24,
+  "max_blocks": 36,
   "settings": [
+    {
+      "type": "header",
+      "content": "Heading"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Shop our best deals"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    },
     {
       "type": "header",
       "content": "Banner"
@@ -173,18 +223,13 @@
     },
     {
       "type": "header",
-      "content": "Carousel"
+      "content": "Tabs"
     },
     {
-      "type": "text",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Featured Products"
-    },
-    {
-      "type": "text",
-      "id": "subheading",
-      "label": "Subheading"
+      "type": "checkbox",
+      "id": "show_tabs",
+      "label": "Show category tabs",
+      "default": true
     },
     {
       "type": "header",
@@ -207,7 +252,7 @@
         { "value": "1", "label": "1" },
         { "value": "2", "label": "2" }
       ],
-      "default": "1"
+      "default": "2"
     },
     {
       "type": "header",
@@ -243,6 +288,31 @@
   ],
   "blocks": [
     {
+      "type": "tab",
+      "name": "Category Tab",
+      "settings": [
+        {
+          "type": "text",
+          "id": "tab_label",
+          "label": "Tab label",
+          "default": "Price drop"
+        },
+        {
+          "type": "text",
+          "id": "tab_handle",
+          "label": "Tab handle (slug, e.g. price-drop)",
+          "default": "price-drop",
+          "info": "Must match the Tab handle set on each product block you want shown under this tab. Leave blank to show all products."
+        },
+        {
+          "type": "text",
+          "id": "tab_icon",
+          "label": "Icon SVG (optional)",
+          "info": "Paste a small inline SVG or leave blank."
+        }
+      ]
+    },
+    {
       "type": "product",
       "name": "Product",
       "settings": [
@@ -250,6 +320,12 @@
           "type": "product",
           "id": "product",
           "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "tab_handle",
+          "label": "Tab handle",
+          "info": "Enter the handle of the tab this product belongs to. Leave blank to always show."
         }
       ]
     }
@@ -258,6 +334,9 @@
     {
       "name": "Product Carousel",
       "blocks": [
+        { "type": "tab", "settings": { "tab_label": "Price drop", "tab_handle": "price-drop" } },
+        { "type": "tab", "settings": { "tab_label": "MacBook", "tab_handle": "macbook" } },
+        { "type": "tab", "settings": { "tab_label": "iPhone", "tab_handle": "iphone" } },
         { "type": "product" },
         { "type": "product" },
         { "type": "product" },
