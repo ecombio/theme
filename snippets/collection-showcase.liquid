@@ -1,6 +1,6 @@
 {% comment %}
   Snippet: collection-showcase
-  Called by: snippets/collection-tabs.liquid
+  Called by: sections/main-collection.liquid
   Calls:     snippets/collection-products.liquid
              snippets/collection-articles.liquid
              snippets/collection-pages.liquid
@@ -11,23 +11,26 @@
     - show_banners  {Boolean}
     - context       {String}  — 'collection' | 'search'
     - section       {Object}
+
+  Note: The .collection-showcase wrapper is ALWAYS rendered so that
+  content-switcher.js has a stable swap target. Empty state = empty div.
 {% endcomment %}
 
 <div class="collection-showcase">
 
-  {%- if active_tab == 'articles' -%}
+  {%- if active_tab == 'articles' and article_count > 0 -%}
     {% render 'collection-articles',
       context: context,
       section: section
     %}
 
-  {%- elsif active_tab == 'pages' -%}
+  {%- elsif active_tab == 'pages' and page_count > 0 -%}
     {% render 'collection-pages',
       context: context,
       section: section
     %}
 
-  {%- else -%}
+  {%- elsif collection.products_count > 0 -%}
     {% render 'collection-products',
       context:      context,
       section:      section,
