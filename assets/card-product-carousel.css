@@ -1,408 +1,345 @@
 /* ============================================================
    card-product-carousel.css
-   Scope: .cpc  (carousel product card)
+   Scoped to .cpc — mirrors collection card visual style,
+   wired to card-product-features.js
    ============================================================ */
 
-/* ── Tokens (locally scoped so they inherit from the section
-      but can be overridden at the card level if needed) ───── */
-.cpc {
-  --cpc-accent:        #4F46E5;
-  --cpc-accent-hover:  #4338CA;
-  --cpc-sale-badge:    #DC2626;
-  --cpc-save-badge:    #D97706;
-  --cpc-surface:       #ffffff;
-  --cpc-border:        #E5E7EB;
-  --cpc-text:          #111827;
-  --cpc-text-secondary:#6B7280;
-  --cpc-radius:        10px;
-  --cpc-radius-sm:     6px;
-  --cpc-transition:    0.2s ease;
+/* ── Slide must be full height so card can stretch ── */
+.product-carousel__slide {
+  display: flex;
+  align-items: stretch;
+}
 
+/* ── Card wrapper ── */
+.cpc {
   display: flex;
   flex-direction: column;
-  border-radius: var(--cpc-radius);
-  background: var(--cpc-surface);
-  border: 1px solid var(--cpc-border);
+  width: 100%;          /* fill the flex slide */
+  border-radius: 10px;
   overflow: hidden;
-  height: 100%;
-  transition: box-shadow var(--cpc-transition), transform var(--cpc-transition);
+  background: #fff;
+  border: 1px solid #ebebeb;
+  transition: box-shadow 0.2s ease;
 }
-
 .cpc:hover {
-  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.12);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,.09);
 }
 
-/* ── Image zone ───────────────────────────────────────────── */
+/* ── Image zone ── */
 .cpc__img-zone {
   position: relative;
-  flex-shrink: 0;
-  background: #F9FAFB;
+  border-radius: 10px 10px 0 0;
   overflow: hidden;
-  aspect-ratio: 1;
+  background: #f7f7f7;
 }
-
-/* ── Image link/wrapper ───────────────────────────────────── */
 .cpc__image-wrapper {
   display: block;
-  width: 100%;
-  height: 100%;
+  position: relative;
+  padding-top: 85%;
+  overflow: hidden;
 }
 
+/* Primary / secondary images */
 .cpc__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: opacity var(--cpc-transition), transform 0.35s ease;
-}
-
-/* Primary/secondary swap on hover */
-.cpc__img--primary  { opacity: 1; }
-.cpc__img--secondary {
   position: absolute;
   inset: 0;
-  opacity: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  padding: 0.5rem;
+  transition: opacity 0.3s ease;
 }
-
-.cpc:hover .cpc__img--primary  { opacity: 0; }
-.cpc:hover .cpc__img--secondary { opacity: 1; }
-
-/* Subtle zoom on the visible image */
-.cpc:hover .cpc__img--primary,
-.cpc:hover .cpc__img--secondary {
-  transform: scale(1.04);
-}
+.cpc__img--primary  { opacity: 1; z-index: 1; }
+.cpc__img--secondary { opacity: 0; z-index: 2; }
+.cpc__image-wrapper:hover .cpc__img--primary   { opacity: 0; }
+.cpc__image-wrapper:hover .cpc__img--secondary { opacity: 1; }
 
 /* Placeholder */
 .cpc__img-placeholder {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F3F4F6;
+  background: #efefef;
+}
+.cpc__placeholder-svg,
+.cpc__img-placeholder svg {
+  display: block;
+  width: 60%;
+  height: 60%;
+  opacity: 0.2;
 }
 
-.cpc__placeholder-svg {
-  width: 55%;
-  height: auto;
-  opacity: 0.22;
-}
-
-/* ── Wishlist button ──────────────────────────────────────── */
+/* ── Wishlist button — top-right ── */
 .cpc__wishlist-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(4px);
-  color: var(--cpc-text-secondary);
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #888;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: color var(--cpc-transition), background var(--cpc-transition);
-  z-index: 1;
-  /* hidden until hover, then always visible when active */
-  opacity: 0;
-  transition: opacity var(--cpc-transition), color var(--cpc-transition);
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
-
-.cpc:hover .cpc__wishlist-btn,
-.cpc__wishlist-btn[aria-pressed="true"] {
-  opacity: 1;
-}
-
-.cpc__wishlist-btn[aria-pressed="true"] {
-  color: #EF4444;
-}
-
-.cpc__wishlist-btn[aria-pressed="true"] .cpc__wishlist-path {
-  fill: #EF4444;
-  stroke: #EF4444;
-}
-
 .cpc__wishlist-btn:hover {
-  background: #fff;
-  color: #EF4444;
+  border-color: #c0392b;
+  color: #c0392b;
+}
+.cpc__wishlist-btn[aria-pressed="true"] {
+  border-color: #c0392b;
+  background: #c0392b;
+  color: #fff;
+}
+.cpc__wishlist-btn[aria-pressed="true"] .cpc__wishlist-path {
+  fill: #fff;
+  stroke: #c0392b;
 }
 
-/* ── Quick View button — matches collection card pill style ── */
-.cpc__quickview-btn {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
-  background: #fff;
-  color: #111;
-  font-size: 0.78rem;
-  font-weight: 500;
-  font-family: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
-
-.cpc:hover .cpc__quickview-btn {
-  opacity: 1;
-}
-
-.cpc__quickview-btn:hover {
-  background: #f5f5f5;
-}
-
-/* ── Sale badge ───────────────────────────────────────────── */
+/* ── Sale badge — top-left ── */
 .cpc__badge {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: var(--cpc-sale-badge);
+  z-index: 3;
+  background: #c0392b;
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 4px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  padding: 3px 10px;
+  border-radius: 20px;
   pointer-events: none;
-  text-transform: uppercase;
-  z-index: 1;
+  white-space: nowrap;
 }
 
-/* ── Card body ────────────────────────────────────────────── */
+/* ── Card body ── */
 .cpc__body {
+  padding: 0.9rem 1rem 1rem;
   display: flex;
   flex-direction: column;
+  gap: 0.3rem;
   flex: 1;
-  padding: 12px 12px 14px;
-  gap: 6px;
 }
 
-/* ── Vendor ───────────────────────────────────────────────── */
+/* Vendor */
 .cpc__vendor {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cpc-text-secondary);
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+/* Title */
+.cpc__title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #111;
+  text-decoration: none;
+  margin-top: 0.1rem;
+}
+.cpc__title:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Judge.me reviews ── */
+.cpc__reviews {
+  min-height: 1.4rem;
+  margin: 0.15rem 0 0.05rem;
+  font-size: 0.82rem;
   line-height: 1;
 }
+/* Nudge Judge.me colours to match amber reference */
+.cpc__reviews .jdgm-prev-badge__stars,
+.cpc__reviews .jdgm-star { color: #f5a623 !important; }
+.cpc__reviews .jdgm-prev-badge__text { font-size: 0.78rem; color: #555; }
 
-/* ── Title link ───────────────────────────────────────────── */
-.cpc__title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--cpc-text);
-  text-decoration: none;
-  line-height: 1.35;
-  /* Clamp to 2 lines */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.cpc__title:hover {
-  color: var(--cpc-accent);
-}
-
-/* ── Judge.me reviews row ─────────────────────────────────── */
-.cpc__reviews {
-  min-height: 18px; /* reserve space to avoid layout shift */
-  font-size: 0.75rem;
-}
-
-/* ── Pricing ──────────────────────────────────────────────── */
+/* ── Pricing ── */
 .cpc__pricing {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 0.2rem;
+  margin-top: 0.25rem;
 }
-
 .cpc__price {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--cpc-text);
-  line-height: 1;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
-
-.cpc__price--sale {
-  color: var(--cpc-sale-badge);
-}
-
-/* Savings row: badge + comp value sit on one line */
+.cpc__price--sale { color: #111; }
+/*
+  Reserve the same vertical space on every card whether on-sale or not,
+  so the ATC button always sits at the same height across a row.
+*/
 .cpc__savings-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  min-height: 18px; /* reserve space even when empty */
+  align-items: baseline;
+  flex-wrap: wrap;          /* allow wrap on very narrow cards */
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.1rem;
+  min-height: 1.25rem;
 }
-
 .cpc__save-badge {
-  background: #FEF3C7;
-  color: var(--cpc-save-badge);
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  color: #c0392b;
   white-space: nowrap;
 }
-
 .cpc__comp-value {
-  font-size: 0.72rem;
-  color: var(--cpc-text-secondary);
+  font-size: 0.72rem;   /* smaller — clearly secondary */
+  color: #aaa;
   white-space: nowrap;
 }
-
 .cpc__comp-value s {
-  text-decoration-color: var(--cpc-text-secondary);
+  color: #bbb;
+  font-weight: 400;
 }
 
-/* ── ETA row ──────────────────────────────────────────────── */
+/* ── ETA row ── */
 .cpc__eta {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--cpc-text-secondary);
-  line-height: 1.3;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #444;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+  padding: 0.4rem 0.6rem;
+  background: #f5f9f5;
+  border-radius: 6px;
+  border: 1px solid #d4ecd4;
 }
-
 .cpc__eta-icon {
   flex-shrink: 0;
-  color: var(--cpc-text-secondary);
+  margin-top: 1px;
+  color: #2e7d32;
 }
+.cpc__eta strong { font-weight: 700; color: #111; }
+.cpc__eta-free { color: #2e7d32; }
 
-/* ── Bottom row: ATC + Compare ────────────────────────────── */
+/* ── Bottom row ── */
 .cpc__bottom-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: auto; /* push to bottom of card */
-  padding-top: 8px;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
 }
 
-/* ── ATC button ───────────────────────────────────────────── */
+/* ATC button — yellow, matches collection card */
 .cpc__atc-btn {
   flex: 1;
-  position: relative;
-  overflow: hidden;
-  padding: 8px 10px;
-  border-radius: var(--cpc-radius-sm);
-  border: none;
-  background: var(--cpc-accent);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition: background var(--cpc-transition);
-  white-space: nowrap;
-}
-
-/* Fill-sweep on hover */
-.cpc__atc-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--cpc-accent-hover);
-  transform: translateX(-100%);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.cpc__atc-btn:hover::before {
-  transform: translateX(0);
-}
-
-.cpc__atc-btn .card-product__atc-label {
-  position: relative; /* above the ::before layer */
-  z-index: 1;
-}
-
-/* Loading state (card-product-features.js adds .is-loading) */
-.cpc__atc-btn.is-loading {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-/* Added-to-cart state */
-.cpc__atc-btn.is-added {
-  background: #059669;
-}
-
-.cpc__atc-btn.is-added::before {
-  display: none;
-}
-
-/* ── Compare label/checkbox ───────────────────────────────── */
-.cpc__compare-label {
+  min-width: 0;         /* allow shrinking so compare label never clips */
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  padding: 0.65rem 0.5rem;
+  background: #f5c518;
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 0.72rem;
-  color: var(--cpc-text-secondary);
+  transition: background 0.15s, transform 0.1s;
+  font-family: inherit;
   white-space: nowrap;
+  line-height: 1.2;
+}
+.cpc__atc-btn:hover:not(:disabled)  { background: #e6b800; }
+.cpc__atc-btn:active:not(:disabled) { transform: scale(0.98); }
+.cpc__atc-btn.is-loading            { pointer-events: none; opacity: 0.7; }
+.cpc__atc-btn:focus-visible         { outline: 2px solid #111; outline-offset: 2px; }
+
+/* Compare — fixed width so it never wraps or clips */
+.cpc__compare-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  width: 84px;          /* checkbox (16px) + gap (5px) + "Compare" text */
 }
-
 .cpc__compare-checkbox {
-  width: 14px;
-  height: 14px;
-  accent-color: var(--cpc-accent);
-  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #bbb;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #fff;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  margin: 0;
 }
-
+.cpc__compare-checkbox:checked {
+  background: #111;
+  border-color: #111;
+}
+.cpc__compare-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 5px;
+  height: 8px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+.cpc__compare-checkbox:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
 .cpc__compare-text {
-  line-height: 1;
+  font-size: 0.8rem;
+  color: #555;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.cpc__compare-label:hover .cpc__compare-text { color: #111; }
+.cpc__compare-label:has(.cpc__compare-checkbox:checked) .cpc__compare-text {
+  color: #111;
+  font-weight: 600;
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
-@media (max-width: 767px) {
-  .cpc__body {
-    padding: 10px 10px 12px;
-    gap: 5px;
-  }
-
-  .cpc__price {
-    font-size: 0.9rem;
-  }
-
-  .cpc__atc-btn {
-    font-size: 0.72rem;
-    padding: 7px 8px;
-  }
-
-  /* Wishlist always visible on touch (no hover) */
-  .cpc__wishlist-btn {
-    opacity: 1;
-  }
+/* ── Small screens ── */
+@media (max-width: 599px) {
+  .cpc__price        { font-size: 1.25rem; }
+  .cpc__body         { padding: 0.75rem 0.75rem 0.85rem; }
+  .cpc__atc-btn      { font-size: 0.82rem; padding: 0.6rem 0.5rem; }
 }
 
-/* ── Reduced motion ───────────────────────────────────────── */
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .cpc,
   .cpc__img,
-  .cpc__atc-btn::before {
-    transition: none;
-  }
-  .cpc:hover {
-    transform: none;
-  }
+  .cpc__img--secondary,
+  .cpc__atc-btn,
+  .cpc__wishlist-btn { transition: none; }
 }
