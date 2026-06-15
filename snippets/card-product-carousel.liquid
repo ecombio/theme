@@ -17,6 +17,9 @@
   if card_comp > card_price
     assign on_sale = true
   endif
+  assign save_amount = card_comp | minus: card_price
+  assign review_count = card_product.metafields.reviews.rating_count
+  assign rating       = card_product.metafields.reviews.rating.value
 -%}
 
 <a href="{{ card_url }}" class="cpc" aria-label="{{ card_title | escape }}">
@@ -52,17 +55,37 @@
     {%- endif -%}
 
     {%- if on_sale -%}
-      {%- assign save_amount = card_comp | minus: card_price -%}
-      <span class="cpc__badge">Save {{ save_amount | money_without_trailing_zeros }}</span>
+      <span class="cpc__badge">Price drop</span>
     {%- endif -%}
   </div>
 
   <div class="cpc__body">
     <p class="cpc__title">{{ card_title }}</p>
+
+    {%- if rating != blank and review_count != blank and review_count > 0 -%}
+      <div class="cpc__stars" aria-label="Rated {{ rating }} out of 5, {{ review_count }} reviews">
+        <span class="cpc__stars-icons" aria-hidden="true">
+          {%- assign full_stars  = rating | floor -%}
+          {%- assign has_half    = rating | modulo: 1 | times: 10 | floor -%}
+          {%- for i in (1..5) -%}
+            {%- if i <= full_stars -%}
+              <svg class="cpc__star" viewBox="0 0 10 10"><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6"/></svg>
+            {%- elsif i == full_stars | plus: 1 and has_half >= 5 -%}
+              <svg class="cpc__star" viewBox="0 0 10 10"><defs><clipPath id="half-{{ forloop.index }}-{{ card_product.id }}"><rect x="0" y="0" width="5" height="10"/></clipPath></defs><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6" fill="#eee"/><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6" clip-path="url(#half-{{ forloop.index }}-{{ card_product.id }})" fill="#e6a817"/></svg>
+            {%- else -%}
+              <svg class="cpc__star" viewBox="0 0 10 10"><polygon points="5,0.5 6.2,3.6 9.5,3.9 7.1,6 7.9,9.2 5,7.5 2.1,9.2 2.9,6 0.5,3.9 3.8,3.6" fill="#eee"/></svg>
+            {%- endif -%}
+          {%- endfor -%}
+        </span>
+        <span class="cpc__review-count">{{ review_count }}</span>
+      </div>
+    {%- endif -%}
+
     <div class="cpc__pricing">
       {%- if on_sale -%}
         <span class="cpc__price cpc__price--sale">{{ card_price | money }}</span>
         <s class="cpc__price cpc__price--was">{{ card_comp | money }}</s>
+        <span class="cpc__price cpc__price--save">−{{ save_amount | money_without_trailing_zeros }}</span>
       {%- else -%}
         <span class="cpc__price">{{ card_price | money }}</span>
       {%- endif -%}
