@@ -18,6 +18,7 @@
     assign on_sale = true
   endif
   assign save_amount   = card_comp | minus: card_price
+  assign save_pct      = save_amount | times: 100 | divided_by: card_comp
   assign first_variant = card_product.first_available_variant | default: card_product.variants.first
   assign variant_id    = first_variant.id
   assign eta_text      = card_product.metafields.custom.eta_text
@@ -82,7 +83,7 @@
     </button>
 
     {%- if on_sale -%}
-      <span class="cpc__badge">SALE</span>
+      <span class="cpc__badge">Save {{ save_pct }}%</span>
     {%- endif -%}
   </div>
 
