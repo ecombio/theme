@@ -1,9 +1,16 @@
 {% comment %}
   Snippet: collection-toolbar
   Renders the filter toggle button, product count, and sort selector.
-  Parameters:
-    - show_filters {Boolean} - whether to render the filter toggle button
-  Used in: sections/collection-products.liquid
+  Context-aware: collection page vs search page.
+
+  Parameters (all optional — collection variables are global and need no passing):
+    - show_filters  {Boolean} — whether to render the filter toggle button
+    - active_tab    {String}  — 'products' | 'articles' | 'pages' (search page only)
+    - product_count {Number}  — pre-counted product results (search page only)
+    - article_count {Number}  — pre-counted article results (search page only)
+    - page_count    {Number}  — pre-counted page results (search page only)
+
+  Used in: sections/main-collection.liquid, sections/main-search.liquid
 {% endcomment %}
 
 <div class="collection-toolbar">
@@ -25,10 +32,25 @@
   {%- endif -%}
 
   <span class="collection-toolbar__count">
-    {{ collection.products_count }}
-    {%- if collection.products_count == 1 -%} product{%- else -%} products{%- endif -%}
+    {%- if search.performed -%}
+      {%- if active_tab == 'articles' -%}
+        {{ article_count }} {{ article_count | pluralize: 'article', 'articles' }}
+      {%- elsif active_tab == 'pages' -%}
+        {{ page_count }} {{ page_count | pluralize: 'page', 'pages' }}
+      {%- else -%}
+        {{ product_count }} {{ product_count | pluralize: 'product', 'products' }}
+      {%- endif -%}
+    {%- else -%}
+      {%- if collection.products_count == collection.all_products_count -%}
+        {{ collection.all_products_count }} {{ collection.all_products_count | pluralize: 'product', 'products' }}
+      {%- else -%}
+        {{ collection.products_count }} of {{ collection.all_products_count }} products
+      {%- endif -%}
+    {%- endif -%}
   </span>
 
-  {% render 'collection-sort' %}
+  {%- unless active_tab == 'pages' -%}
+    {% render 'collection-sort' %}
+  {%- endunless -%}
 
 </div>
