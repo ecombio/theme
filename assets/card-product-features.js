@@ -36,7 +36,7 @@
           if (label) label.textContent = 'Added!';
           btn.classList.remove('is-loading');
           document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
-document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
+          document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
           setTimeout(function () { btn.innerHTML = originalHTML; }, 1800);
         })
         .catch(function () {
@@ -280,16 +280,27 @@ document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
       var body = qs('#card-quickview-modal .quickview-modal__body');
       body.innerHTML = '<div class="quickview-modal__loading" aria-live="polite">Loading…</div>';
       openModal(body.innerHTML);
-      fetch('/products/' + handle + '?view=quickview&sections=product-quickview', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(function (res) { return res.ok ? res.text() : null; })
-        .then(function (html) {
-          if (!html) {
-            body.innerHTML = '<div style="padding:2rem;text-align:center"><p style="margin:0 0 1rem;font-size:0.9rem;color:#555">Preview unavailable.</p><a href="/products/' + handle + '" style="display:inline-flex;text-decoration:none">View product</a></div>';
+
+      fetch('/products/' + handle + '?view=quickview&sections=product-quickview', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        /* ✅ FIX: was res.text() — Shopify sections API returns JSON, not raw HTML */
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (!data || !data['product-quickview']) {
+            body.innerHTML =
+              '<div style="padding:2rem;text-align:center">' +
+                '<p style="margin:0 0 1rem;font-size:0.9rem;color:#555">Preview unavailable.</p>' +
+                '<a href="/products/' + handle + '" style="display:inline-flex;text-decoration:none">View product</a>' +
+              '</div>';
             return;
           }
-          body.innerHTML = html;
+          /* ✅ FIX: extract the rendered HTML from the sections wrapper key */
+          body.innerHTML = data['product-quickview'];
         })
-        .catch(function () { body.innerHTML = '<p style="padding:2rem;color:#c0392b">Unable to load preview.</p>'; });
+        .catch(function () {
+          body.innerHTML = '<p style="padding:2rem;color:#c0392b">Unable to load preview.</p>';
+        });
     });
   }
 
