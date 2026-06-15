@@ -1,0 +1,44 @@
+{% comment %}
+  Snippet: collection-pages
+  Called by: snippets/collection-tabs.liquid
+  Calls:     snippets/card-page.liquid
+
+  Context-aware: collection page renders page blocks added by the merchant
+  in the section editor; search page loops search.results filtered to pages.
+
+  Parameters:
+    - section {Object} — for block access on collection pages
+{% endcomment %}
+
+{%- if search.performed -%}
+
+  {%- assign found_pages = false -%}
+  <div class="search-pages-list">
+    {%- for result in search.results -%}
+      {%- if result.object_type == 'page' -%}
+        {%- assign found_pages = true -%}
+        {% render 'card-page', page: result %}
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+  {%- unless found_pages -%}
+    <p class="collection-empty">No pages matched &ldquo;{{ search.terms | escape }}&rdquo;.</p>
+  {%- endunless -%}
+
+{%- else -%}
+
+  {%- assign page_blocks = section.blocks | where: 'type', 'page' -%}
+  {%- if page_blocks.size > 0 -%}
+    <div class="search-pages-list">
+      {%- for block in page_blocks -%}
+        {%- assign page = block.settings.page -%}
+        {%- if page != blank -%}
+          {% render 'card-page', page: page %}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  {%- else -%}
+    <p class="collection-empty">No pages have been added to this collection yet.</p>
+  {%- endif -%}
+
+{%- endif -%}
