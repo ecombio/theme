@@ -3,14 +3,13 @@
 
   Owns layout only. Resolves data once and passes it down to two snippets:
     - collection-features  → filters, sorting
-    - collection-showroom → products, articles, pages
+    - collection-showroom  → products, articles, pages
 {% endcomment %}
 
 {%- liquid
-  assign active_filters   = collection.filters | where: 'active', true
-  assign results_count    = collection.products_count
-  assign related_articles = collection.metafields.custom.articles.value
-  assign related_pages    = collection.metafields.custom.pages.value
+  assign results_count     = collection.products_count
+  assign related_articles  = collection.metafields.custom.articles.value
+  assign related_pages     = collection.metafields.custom.pages.value
 -%}
 
 {%- paginate collection.products by 24 -%}
@@ -18,9 +17,8 @@
   <div class="collection-page">
 
     {%- render 'collection-features',
-      collection:     collection,
-      active_filters: active_filters,
-      results_count:  results_count
+      collection:    collection,
+      results_count: results_count
     -%}
 
     {%- render 'collection-showroom',
