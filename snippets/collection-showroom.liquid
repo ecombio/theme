@@ -1,17 +1,17 @@
+```liquid
 {% comment %}
   snippets/collection-showroom.liquid
   Tab router — delegates each content type to its own sub-snippet.
 
   Tabs:
-    Products  — always shown          → collection-products.liquid
-    Posts     — if metafield present  → collection-posts.liquid
-    Pages     — if metafield present  → collection-pages.liquid
+    Products  — always shown           → collection-products.liquid
+    Articles  — if metafield present   → showroom-articles.liquid
+    Pages     — if metafield present   → collection-pages.liquid
 
   Expects (passed from collection-page.liquid / sections/collection.liquid):
-    collection       {Object} — the Shopify collection object
-    paginate         {Object} — paginate object opened upstream
-    related_posts    {Array}  — collection.metafields.custom.posts.value
-    related_pages    {Array}  — collection.metafields.custom.pages.value
+    collection     {Object} — the Shopify collection object
+    paginate       {Object} — paginate object opened upstream
+    related_pages  {Array}  — collection.metafields.custom.pages.value
 
   Self-contained: loads collection-showroom.css and collection-showroom.js.
   Each card type loads its own CSS/JS via its own sub-snippet.
@@ -29,11 +29,15 @@
 {{ 'collection-showroom.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign has_posts = false
+  assign showroom_articles = collection.metafields.showroom.articles.value
+
+  assign has_articles = false
   assign has_pages = false
-  if related_posts and related_posts.size > 0
-    assign has_posts = true
+
+  if showroom_articles != blank
+    assign has_articles = true
   endif
+
   if related_pages and related_pages.size > 0
     assign has_pages = true
   endif
@@ -43,7 +47,11 @@
 
   {%- comment -%} ── Tab bar ─────────────────────────────────────────────── {%- endcomment -%}
 
-  <div class="collection-showroom__tabs" role="tablist" aria-label="Collection content">
+  <div
+    class="collection-showroom__tabs"
+    role="tablist"
+    aria-label="Collection content"
+  >
 
     <button
       class="collection-showroom__tab collection-showroom__tab--active"
@@ -55,7 +63,9 @@
       data-showroom-tab="products"
     >
       Products
-      <span class="collection-showroom__tab-count">({{ collection.products_count }})</span>
+      <span class="collection-showroom__tab-count">
+        ({{ collection.products_count }})
+      </span>
     </button>
 
     {%- if has_articles -%}
@@ -63,14 +73,16 @@
         class="collection-showroom__tab"
         role="tab"
         aria-selected="false"
-        aria-controls="showroom-panel-posts"
-        id="showroom-tab-posts"
+        aria-controls="showroom-panel-articles"
+        id="showroom-tab-articles"
         type="button"
-        data-showroom-tab="posts"
+        data-showroom-tab="articles"
         tabindex="-1"
       >
-        Posts
-        <span class="collection-showroom__tab-count">({{ related_posts.size }})</span>
+        Articles
+        <span class="collection-showroom__tab-count">
+          ({{ showroom_articles.size }})
+        </span>
       </button>
     {%- endif -%}
 
@@ -86,7 +98,9 @@
         tabindex="-1"
       >
         Pages
-        <span class="collection-showroom__tab-count">({{ related_pages.size }})</span>
+        <span class="collection-showroom__tab-count">
+          ({{ related_pages.size }})
+        </span>
       </button>
     {%- endif -%}
 
@@ -101,21 +115,26 @@
     aria-labelledby="showroom-tab-products"
     data-showroom-panel="products"
   >
-    {%- render 'collection-products', collection: collection, paginate: paginate -%}
+    {%- render 'collection-products',
+      collection: collection,
+      paginate: paginate
+    -%}
   </div>
 
-  {%- comment -%} ── Posts panel ─────────────────────────────────────────── {%- endcomment -%}
+  {%- comment -%} ── Articles panel ──────────────────────────────────────── {%- endcomment -%}
 
-  {%- if has_posts -%}
+  {%- if has_articles -%}
     <div
       class="collection-showroom__panel"
-      id="showroom-panel-posts"
+      id="showroom-panel-articles"
       role="tabpanel"
-      aria-labelledby="showroom-tab-posts"
-      data-showroom-panel="posts"
+      aria-labelledby="showroom-tab-articles"
+      data-showroom-panel="articles"
       hidden
     >
-      {%- render 'collection-posts', posts: related_posts -%}
+      {%- render 'showroom-articles',
+        collection: collection
+      -%}
     </div>
   {%- endif -%}
 
@@ -130,10 +149,13 @@
       data-showroom-panel="pages"
       hidden
     >
-      {%- render 'collection-pages', pages: related_pages -%}
+      {%- render 'collection-pages',
+        pages: related_pages
+      -%}
     </div>
   {%- endif -%}
 
 </div>
 
 <script src="{{ 'collection-showroom.js' | asset_url }}" defer></script>
+```
