@@ -4,13 +4,14 @@
 
   Renders:
     [1.1] collection-features.liquid  — banner/carousel blocks + sort/filter UI
-    [1.2] collection-showroom.liquid  — tab router (products / posts / pages)
-      [1.2.1] collection-pages.liquid    → page-card.liquid
-      [1.2.2] collection-posts.liquid    → post-card.liquid
-      [1.2.3] collection-products.liquid → product-card.liquid
+[1.2] collection-showroom.liquid  — tab router (products / articles / pages)
+  [1.2.1] showroom-articles.liquid   → article-card.liquid
+  [1.2.2] collection-pages.liquid    → page-card.liquid
+  [1.2.3] collection-products.liquid → product-card.liquid
 
-  Metafields read:
-    collection.metafields.custom.posts.value  — list of article objects
+Metafields read:
+  collection.metafields.showroom.articles.value — list of article objects
+
     collection.metafields.custom.pages.value  — list of page objects
     collection.metafields.custom.description  — optional rich-text override
     collection.metafields.custom.banner_image — optional banner image
@@ -47,7 +48,6 @@
 {{ 'collection.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign related_posts = collection.metafields.custom.posts.value
   assign related_pages = collection.metafields.custom.pages.value
   assign products_per_page = section.settings.products_per_page | default: 12
   assign show_banner       = section.settings.show_banner
@@ -154,14 +154,14 @@
         </div>
       {%- endif -%}
 
-      {%- paginate collection.products by products_per_page -%}
-        {%- render 'collection-showroom',
-          collection:    collection,
-          paginate:      paginate,
-          related_posts: related_posts,
-          related_pages: related_pages
-        -%}
-      {%- endpaginate -%}
+
+ {%- paginate collection.products by products_per_page -%}
+  {%- render 'collection-showroom',
+    collection: collection,
+    paginate: paginate,
+    related_pages: related_pages
+  -%}
+  {%- endpaginate -%}
 
     </div>
 
