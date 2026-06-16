@@ -9,10 +9,6 @@
     collection-page.css  — layout, features, showroom, card-article, card-page
     collection-page.js   — sort param preservation, filter accordions,
                            price filter apply, checkbox filter navigation
-
-  NOTE: card-product-features.js is loaded globally in theme.liquid (line 122).
-  Do NOT load it here — doing so double-registers Add to Cart, Wishlist,
-  Compare, and Quick View handlers (each click fires twice).
 {% endcomment %}
 
 {%- liquid
@@ -21,15 +17,7 @@
   assign related_pages    = collection.metafields.custom.pages.value
 -%}
 
-<pre style="background:#f5f5f5;padding:16px;font-size:12px;overflow:auto;">
-  articles raw:  {{ collection.metafields.custom.articles | json }}
-  articles value: {{ collection.metafields.custom.articles.value | json }}
-  pages raw:     {{ collection.metafields.custom.pages | json }}
-  pages value:   {{ collection.metafields.custom.pages.value | json }}
-</pre>
-
-{{ 'collection-page.css'        | asset_url | stylesheet_tag }}
-{{ 'card-product-carousel.css'  | asset_url | stylesheet_tag }}
+{{ 'collection-page.css' | asset_url | stylesheet_tag }}
 
 {%- paginate collection.products by 24 -%}
 
