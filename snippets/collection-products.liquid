@@ -1,125 +1,37 @@
 {% comment %}
   snippets/collection-products.liquid
   Renders the products grid and pagination for collection-showroom.liquid.
-  Interleaves both "banner" and "carousel" section blocks at their configured
-  grid positions.
 
   Expects:
     collection  {Object} — the Shopify collection object
     paginate    {Object} — paginate object opened upstream in collection.liquid
-    blocks      {Array}  — section.blocks, forwarded from collection.liquid
-                            via collection-showroom.liquid. May be blank.
-
-  Block types handled:
-    "banner"   — rendered via collection-banner.liquid; width-aware grid span
-                 (25/50/75/100% of row), managed by collection-banner.css/.js.
-    "carousel" — rendered via collection-carousel.liquid; always full-row
-                 (grid-column: 1 / -1).
-
-  Both block types share the same `position` setting:
-    position  {Number} — 1-indexed product slot AFTER which the block renders
-                          on the CURRENT page. 0 or blank = before the first
-                          product. Values beyond the page's product count
-                          render after the last product.
 
   Card rendering: delegates to product-card.liquid.
   product-card.js is loaded globally via theme.liquid — do NOT load it here.
 
-  NOTE on pagination + block position:
-    "position" is evaluated per page, not globally across the whole
-    collection. A block set to position 4 will appear after the 4th
-    product on every page. If a merchant wants a block to appear only
-    once, instruct them to use a standalone section instead.
+  NOTE: banner/carousel section blocks are handled entirely by
+  collection-features.liquid now. This snippet has no awareness of
+  section.blocks at all — don't reintroduce a `blocks` param here.
+
+  NOTE on the products source: use `collection.products` directly, NOT
+  `paginate.collection.products`. The `paginate` object only exposes
+  pagination metadata (pages, parts, next, previous, items) — it has no
+  `.collection` property. Inside the `{% paginate collection.products by N %}`
+  block opened in collection.liquid, `collection.products` is already
+  sliced to the current page, which is what you want here.
 {% endcomment %}
 
 {%- liquid
-  assign safe_blocks = blocks | default: ''
-  assign grid_blocks = safe_blocks | where: 'type', 'banner'
-  assign carousel_blocks = safe_blocks | where: 'type', 'carousel'
-
-  comment
-    Merge all interleaved block types into one array isn't possible in Liquid,
-    so we render both types at each position checkpoint inside the same loop.
-    safe_blocks guards against nil being passed when no blocks are defined
-    on the section (older collection.liquid without a "blocks" schema key).
-  endcomment
-
-  assign products_on_page = paginate.collection.products.size
+  assign products_on_page = collection.products.size
 -%}
-
-{% comment %} Helper capture: renders all blocks (banner + carousel) due at a given position {% endcomment %}
 
 <div class="collection-products">
 
   {%- if products_on_page > 0 -%}
     <div class="collection-products__grid">
-
-      {%- comment -%} Blocks positioned before the first product (position 0 or blank) {%- endcomment -%}
-
-      {%- for block in grid_blocks -%}
-        {%- assign block_position = block.settings.position | default: 0 -%}
-        {%- if block_position <= 0 -%}
-          {%- render 'collection-banner', block: block -%}
-        {%- endif -%}
-      {%- endfor -%}
-
-      {%- for block in carousel_blocks -%}
-        {%- assign block_position = block.settings.position | default: 0 -%}
-        {%- if block_position <= 0 -%}
-          <div class="collection-products__carousel-slot" style="grid-column: 1 / -1;">
-            {%- render 'collection-carousel', block: block -%}
-          </div>
-        {%- endif -%}
-      {%- endfor -%}
-
-      {%- for product in paginate.collection.products -%}
+      {%- for product in collection.products -%}
         {%- render 'product-card', product: product -%}
-
-        {%- assign current_index = forloop.index -%}
-
-        {%- comment -%} Banner blocks after this product index {%- endcomment -%}
-        {%- for block in grid_blocks -%}
-          {%- assign block_position = block.settings.position | default: 0 -%}
-          {%- if block_position == current_index -%}
-            {%- render 'collection-banner', block: block -%}
-          {%- endif -%}
-        {%- endfor -%}
-
-        {%- comment -%} Carousel blocks after this product index {%- endcomment -%}
-        {%- for block in carousel_blocks -%}
-          {%- assign block_position = block.settings.position | default: 0 -%}
-          {%- if block_position == current_index -%}
-            <div class="collection-products__carousel-slot" style="grid-column: 1 / -1;">
-              {%- render 'collection-carousel', block: block -%}
-            </div>
-          {%- endif -%}
-        {%- endfor -%}
-
-        {%- comment -%}
-          On the last product, also render any blocks whose configured
-          position is greater than the number of products on this page
-          so they are never silently dropped on short pages.
-        {%- endcomment -%}
-        {%- if forloop.last -%}
-          {%- for block in grid_blocks -%}
-            {%- assign block_position = block.settings.position | default: 0 -%}
-            {%- if block_position > products_on_page -%}
-              {%- render 'collection-banner', block: block -%}
-            {%- endif -%}
-          {%- endfor -%}
-
-          {%- for block in carousel_blocks -%}
-            {%- assign block_position = block.settings.position | default: 0 -%}
-            {%- if block_position > products_on_page -%}
-              <div class="collection-products__carousel-slot" style="grid-column: 1 / -1;">
-                {%- render 'collection-carousel', block: block -%}
-              </div>
-            {%- endif -%}
-          {%- endfor -%}
-        {%- endif -%}
-
       {%- endfor -%}
-
     </div>
 
   {%- else -%}
@@ -127,17 +39,6 @@
     <p class="collection-products__empty">
       {{ 'collections.general.no_matches' | t }}
     </p>
-
-    {%- comment -%} No products — still show blocks so merchants can preview them {%- endcomment -%}
-    {%- for block in grid_blocks -%}
-      {%- render 'collection-banner', block: block -%}
-    {%- endfor -%}
-
-    {%- for block in carousel_blocks -%}
-      <div class="collection-products__carousel-slot">
-        {%- render 'collection-carousel', block: block -%}
-      </div>
-    {%- endfor -%}
 
   {%- endif -%}
 
