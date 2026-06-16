@@ -1,0 +1,137 @@
+{%- comment -%}
+  ============================================================================
+  ARTICLE CARD
+  snippets/article-card.liquid
+
+  Usage:
+
+  {% render 'article-card',
+    article: article
+  %}
+
+  Optional parameters:
+
+  {% render 'article-card',
+    article: article,
+    show_image: true,
+    show_blog: true,
+    show_author: false,
+    show_date: true,
+    show_excerpt: true,
+    excerpt_length: 140,
+    image_ratio: '4/3'
+  %}
+  ============================================================================
+{%- endcomment -%}
+
+{%- liquid
+  if article == blank
+    break
+  endif
+
+  assign show_image = show_image | default: true
+  assign show_blog = show_blog | default: true
+  assign show_author = show_author | default: false
+  assign show_date = show_date | default: true
+  assign show_excerpt = show_excerpt | default: true
+
+  assign excerpt_length = excerpt_length | default: 140
+  assign image_ratio = image_ratio | default: '4/3'
+-%}
+
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+<article
+  class="article-card"
+  itemscope
+  itemtype="https://schema.org/BlogPosting"
+>
+
+  <a
+    class="article-card__link"
+    href="{{ article.url }}"
+    aria-label="{{ article.title | escape }}"
+    itemprop="url"
+  >
+
+    {%- if show_image and article.image -%}
+      <div
+        class="article-card__media"
+        style="--article-card-ratio: {{ image_ratio }};"
+      >
+        {{
+          article.image
+          | image_url: width: 960
+          | image_tag:
+            class: 'article-card__image',
+            loading: 'lazy',
+            widths: '320,480,640,800,960',
+            sizes: '(min-width: 990px) 33vw, 100vw',
+            alt: article.image.alt | default: article.title,
+            itemprop: 'image'
+        }}
+      </div>
+    {%- endif -%}
+
+    <div class="article-card__content">
+
+      {%- if show_blog or show_date or show_author -%}
+        <div class="article-card__meta">
+
+          {%- if show_blog -%}
+            <span class="article-card__blog">
+              {{ article.blog.title }}
+            </span>
+          {%- endif -%}
+
+          {%- if show_date -%}
+            <time
+              class="article-card__date"
+              datetime="{{ article.published_at | date: '%Y-%m-%d' }}"
+              itemprop="datePublished"
+            >
+              {{ article.published_at | date: '%b %-d, %Y' }}
+            </time>
+          {%- endif -%}
+
+          {%- if show_author -%}
+            <span
+              class="article-card__author"
+              itemprop="author"
+            >
+              {{ article.author }}
+            </span>
+          {%- endif -%}
+
+        </div>
+      {%- endif -%}
+
+      <h3
+        class="article-card__title"
+        itemprop="headline"
+      >
+        {{ article.title }}
+      </h3>
+
+      {%- if show_excerpt -%}
+        <div
+          class="article-card__excerpt"
+          itemprop="description"
+        >
+          {{
+            article.excerpt_or_content
+            | strip_html
+            | truncate: excerpt_length
+          }}
+        </div>
+      {%- endif -%}
+
+      <span class="article-card__cta">
+        Read article
+      </span>
+
+    </div>
+
+  </a>
+
+</article>
