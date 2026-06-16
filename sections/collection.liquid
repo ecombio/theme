@@ -3,13 +3,11 @@
   Root section for templates/collection.json.
 
   Renders:
-    [1.1] collection-features.liquid  — sort, filters, active-filter bar
+    [1.1] collection-features.liquid  — banner/carousel blocks + sort/filter UI
     [1.2] collection-showroom.liquid  — tab router (products / posts / pages)
       [1.2.1] collection-pages.liquid    → page-card.liquid
       [1.2.2] collection-posts.liquid    → post-card.liquid
       [1.2.3] collection-products.liquid → product-card.liquid
-                                          → collection-banner.liquid  (blocks)
-                                          → collection-carousel.liquid (blocks)
 
   Metafields read:
     collection.metafields.custom.posts.value  — list of article objects
@@ -17,15 +15,18 @@
     collection.metafields.custom.description  — optional rich-text override
     collection.metafields.custom.banner_image — optional banner image
 
-  Blocks (both types interleaved into the product grid):
+  Blocks (rendered by collection-features.liquid — NOT interleaved into
+  the product grid anymore):
     "banner"   — a clickable image banner, sized as a percent of the row's
                  width (25/50/75/100%). See collection-banner.liquid and
                  collection-banner.css/.js for rendering and span logic.
     "carousel" — a multi-slide image carousel, always full-row width.
                  See collection-carousel.liquid and collection-carousel.css/.js.
 
-  Both block types share a `position` setting (insert after product #N).
-  collection-products.liquid handles the interleaving for both.
+  Block render order follows the order blocks are arranged in the theme
+  editor's block list. The old per-block `position` ("insert after
+  product #N") setting has been removed from both block types — it
+  controlled grid-interleaving, which no longer happens.
 
   Pagination:
     Opened here around the showroom render so that all sub-snippets
@@ -135,6 +136,7 @@
       <aside class="collection-section__sidebar" aria-label="Collection filters">
         {%- render 'collection-features',
           collection: collection,
+          blocks:     section.blocks,
           context:    'sidebar'
         -%}
       </aside>
@@ -146,6 +148,7 @@
         <div class="collection-section__toolbar">
           {%- render 'collection-features',
             collection: collection,
+            blocks:     section.blocks,
             context:    'toolbar'
           -%}
         </div>
@@ -156,8 +159,7 @@
           collection:    collection,
           paginate:      paginate,
           related_posts: related_posts,
-          related_pages: related_pages,
-          blocks:        section.blocks
+          related_pages: related_pages
         -%}
       {%- endpaginate -%}
 
@@ -257,17 +259,6 @@
         },
         {
           "type": "header",
-          "content": "Position"
-        },
-        {
-          "type": "number",
-          "id": "position",
-          "label": "Insert after product #",
-          "info": "0 = before the first product. Reappears at this position on every page.",
-          "default": 3
-        },
-        {
-          "type": "header",
           "content": "Size"
         },
         {
@@ -297,17 +288,6 @@
           "id": "heading",
           "label": "Heading",
           "default": "Shop the look"
-        },
-        {
-          "type": "header",
-          "content": "Position"
-        },
-        {
-          "type": "number",
-          "id": "position",
-          "label": "Insert after product #",
-          "info": "0 = before the first product. Reappears at this position on every page.",
-          "default": 4
         },
         {
           "type": "header",
