@@ -1,6 +1,7 @@
 {% comment %}
   snippets/collection-showroom.liquid
-  Renders browsable collection content: products, articles, pages.
+  Renders browsable collection content via a tab switcher.
+  Tabs: Products (always), Articles (if metafield populated), Pages (if metafield populated)
 
   Expects:
     collection       {Object} — the Shopify collection object
@@ -9,86 +10,164 @@
     related_pages    {Array}  — collection.metafields.custom.pages.value
 {% endcomment %}
 
+{%- liquid
+  assign has_articles = false
+  assign has_pages    = false
+  if related_articles and related_articles.size > 0
+    assign has_articles = true
+  endif
+  if related_pages and related_pages.size > 0
+    assign has_pages = true
+  endif
+-%}
+
 <div class="collection-showroom">
 
-  {%- comment -%} ---------------------------------------- Products {%- endcomment -%}
+  {%- comment -%} ── Tab bar ─────────────────────────────────────────────── {%- endcomment -%}
 
-  <div class="collection-showroom__products">
-    {%- if collection.products.size > 0 -%}
-      {%- for product in collection.products -%}
-        {%- render 'card-product', product: product -%}
-      {%- endfor -%}
-    {%- else -%}
-      <p class="collection-showroom__empty">
-        {{ 'collections.general.no_matches' | t }}
-      </p>
+  <div class="collection-showroom__tabs" role="tablist" aria-label="Collection content">
+
+    <button
+      class="collection-showroom__tab collection-showroom__tab--active"
+      role="tab"
+      aria-selected="true"
+      aria-controls="showroom-panel-products"
+      id="showroom-tab-products"
+      type="button"
+      data-showroom-tab="products"
+    >
+      Products
+      <span class="collection-showroom__tab-count">({{ collection.products_count }})</span>
+    </button>
+
+    {%- if has_articles -%}
+      <button
+        class="collection-showroom__tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="showroom-panel-articles"
+        id="showroom-tab-articles"
+        type="button"
+        data-showroom-tab="articles"
+        tabindex="-1"
+      >
+        Articles
+        <span class="collection-showroom__tab-count">({{ related_articles.size }})</span>
+      </button>
     {%- endif -%}
+
+    {%- if has_pages -%}
+      <button
+        class="collection-showroom__tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="showroom-panel-pages"
+        id="showroom-tab-pages"
+        type="button"
+        data-showroom-tab="pages"
+        tabindex="-1"
+      >
+        Pages
+        <span class="collection-showroom__tab-count">({{ related_pages.size }})</span>
+      </button>
+    {%- endif -%}
+
   </div>
 
-  {%- comment -%} ---------------------------------------- Pagination {%- endcomment -%}
+  {%- comment -%} ── Products panel ──────────────────────────────────────── {%- endcomment -%}
 
-  {%- if paginate.pages > 1 -%}
-    <nav
-      class="collection-showroom__pagination"
-      aria-label="{{ 'general.pagination.label' | t }}"
-    >
-      {%- if paginate.previous -%}
-        <a href="{{ paginate.previous.url }}" class="collection-showroom__page-link">
-          &larr; {{ 'general.pagination.previous' | t }}
-        </a>
+  <div
+    class="collection-showroom__panel collection-showroom__panel--active"
+    id="showroom-panel-products"
+    role="tabpanel"
+    aria-labelledby="showroom-tab-products"
+    data-showroom-panel="products"
+  >
+
+    <div class="collection-showroom__products">
+      {%- if collection.products.size > 0 -%}
+        {%- for product in collection.products -%}
+          {%- render 'card-product', product: product -%}
+        {%- endfor -%}
+      {%- else -%}
+        <p class="collection-showroom__empty">
+          {{ 'collections.general.no_matches' | t }}
+        </p>
       {%- endif -%}
+    </div>
 
-      {%- for part in paginate.parts -%}
-        {%- if part.is_link -%}
-          <a href="{{ part.url }}" class="collection-showroom__page-link">
-            {{ part.title }}
+    {%- if paginate.pages > 1 -%}
+      <nav
+        class="collection-showroom__pagination"
+        aria-label="{{ 'general.pagination.label' | t }}"
+      >
+        {%- if paginate.previous -%}
+          <a href="{{ paginate.previous.url }}" class="collection-showroom__page-link">
+            &larr; {{ 'general.pagination.previous' | t }}
           </a>
-        {%- else -%}
-          <span
-            class="collection-showroom__page-link collection-showroom__page-link--current"
-            aria-current="page"
-          >
-            {{ part.title }}
-          </span>
         {%- endif -%}
-      {%- endfor -%}
 
-      {%- if paginate.next -%}
-        <a href="{{ paginate.next.url }}" class="collection-showroom__page-link">
-          {{ 'general.pagination.next' | t }} &rarr;
-        </a>
-      {%- endif -%}
-    </nav>
-  {%- endif -%}
+        {%- for part in paginate.parts -%}
+          {%- if part.is_link -%}
+            <a href="{{ part.url }}" class="collection-showroom__page-link">
+              {{ part.title }}
+            </a>
+          {%- else -%}
+            <span
+              class="collection-showroom__page-link collection-showroom__page-link--current"
+              aria-current="page"
+            >
+              {{ part.title }}
+            </span>
+          {%- endif -%}
+        {%- endfor -%}
 
-  {%- comment -%} ---------------------------------------- Related articles {%- endcomment -%}
+        {%- if paginate.next -%}
+          <a href="{{ paginate.next.url }}" class="collection-showroom__page-link">
+            {{ 'general.pagination.next' | t }} &rarr;
+          </a>
+        {%- endif -%}
+      </nav>
+    {%- endif -%}
 
-  {%- if related_articles and related_articles.size > 0 -%}
-    <section class="collection-showroom__related collection-showroom__related--articles">
-      <h2 class="collection-showroom__related-heading">
-        {{ 'collections.related_articles.title' | t }}
-      </h2>
-      <div class="collection-showroom__related-grid">
+  </div>
+
+  {%- comment -%} ── Articles panel ──────────────────────────────────────── {%- endcomment -%}
+
+  {%- if has_articles -%}
+    <div
+      class="collection-showroom__panel"
+      id="showroom-panel-articles"
+      role="tabpanel"
+      aria-labelledby="showroom-tab-articles"
+      data-showroom-panel="articles"
+      hidden
+    >
+      <div class="collection-showroom__grid">
         {%- for article in related_articles -%}
           {%- render 'card-article', article: article -%}
         {%- endfor -%}
       </div>
-    </section>
+    </div>
   {%- endif -%}
 
-  {%- comment -%} ---------------------------------------- Related pages {%- endcomment -%}
+  {%- comment -%} ── Pages panel ─────────────────────────────────────────── {%- endcomment -%}
 
-  {%- if related_pages and related_pages.size > 0 -%}
-    <section class="collection-showroom__related collection-showroom__related--pages">
-      <h2 class="collection-showroom__related-heading">
-        {{ 'collections.related_pages.title' | t }}
-      </h2>
-      <div class="collection-showroom__related-grid">
+  {%- if has_pages -%}
+    <div
+      class="collection-showroom__panel"
+      id="showroom-panel-pages"
+      role="tabpanel"
+      aria-labelledby="showroom-tab-pages"
+      data-showroom-panel="pages"
+      hidden
+    >
+      <div class="collection-showroom__grid">
         {%- for page in related_pages -%}
           {%- render 'card-page', page: page -%}
         {%- endfor -%}
       </div>
-    </section>
+    </div>
   {%- endif -%}
 
 </div>
