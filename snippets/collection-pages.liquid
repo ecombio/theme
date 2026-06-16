@@ -3,41 +3,35 @@
   Called by: snippets/collection-showcase.liquid
   Calls:     snippets/card-page.liquid
 
-  Context-aware: collection page renders page blocks added by the merchant
-  in the section editor; search page loops search.results filtered to pages.
-
   Parameters:
-    - context {String}  — 'collection' | 'search'
-    - section {Object}  — for block access on collection pages
+    - context    {String} — 'collection' | 'search'
+    - section    {Object}
+    - meta_pages {Array}  — collection.metafields.custom.pages.value
 {% endcomment %}
 
 {%- if context == 'search' -%}
 
   {%- assign page_results = search.results | where: 'object_type', 'page' -%}
   {%- if page_results.size > 0 -%}
-    <div class="collection-pages-list">
+    <div class="collection-pages-grid">
       {%- for page in page_results -%}
         {% render 'card-page', page: page %}
       {%- endfor -%}
     </div>
   {%- else -%}
-    <p class="collection-empty">No pages found for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
+    <p class="collection-showcase__empty">No pages found for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
   {%- endif -%}
 
 {%- else -%}
 
-  {%- assign page_blocks = section.blocks | where: 'type', 'page' -%}
-  {%- if page_blocks.size > 0 -%}
-    <div class="collection-pages-list">
-      {%- for block in page_blocks -%}
-        {%- assign page = block.settings.page -%}
-        {%- if page != blank -%}
-          {% render 'card-page', page: page %}
-        {%- endif -%}
+  {%- if meta_pages != blank and meta_pages.size > 0 -%}
+    <div class="collection-pages-grid">
+      {%- for page in meta_pages -%}
+        {% render 'card-page', page: page %}
       {%- endfor -%}
     </div>
   {%- else -%}
-    <p class="collection-empty">No pages have been added to this collection yet.</p>
+    <p class="collection-showcase__empty">No pages have been added to this collection yet.</p>
   {%- endif -%}
 
 {%- endif -%}
