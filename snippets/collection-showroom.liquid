@@ -3,9 +3,9 @@
   Tab router — delegates each content type to its own sub-snippet.
 
   Tabs:
-    Products  — always shown           → collection-products.liquid
-    Articles  — if metafield present   → showroom-articles.liquid
-    Pages     — if metafield present   → collection-pages.liquid
+Products  — always shown           → showroom-products.liquid
+Articles  — if metafield present   → showroom-articles.liquid
+Pages     — if metafield present   → showroom-pages.liquid
 
   Expects (passed from collection-page.liquid / sections/collection.liquid):
     collection     {Object} — the Shopify collection object
@@ -16,13 +16,13 @@
   Each card type loads its own CSS/JS via its own sub-snippet.
 
   NOTE: product-card.js is loaded globally in theme.liquid.
-  Do NOT re-load it here or in collection-products.liquid — doing so
+  Do NOT re-load it here or in showroom-products.liquid — doing so
   double-registers click handlers (double Add to Cart, wishlist toggles
   cancelling out, Quick View fetching twice).
 
   NOTE: section.blocks (banner/carousel) are handled entirely by
   collection-features.liquid upstream now — this router and
-  collection-products.liquid have no awareness of blocks at all.
+  showroom-products.liquid has no awareness of blocks at all.
 {% endcomment %}
 
 {{ 'collection-showroom.css' | asset_url | stylesheet_tag }}
@@ -114,10 +114,10 @@
     aria-labelledby="showroom-tab-products"
     data-showroom-panel="products"
   >
-    {%- render 'collection-products',
-      collection: collection,
-      paginate: paginate
-    -%}
+{%- render 'showroom-products',
+  collection: collection,
+  paginate: paginate
+-%}
   </div>
 
   {%- comment -%} ── Articles panel ──────────────────────────────────────── {%- endcomment -%}
