@@ -1,10 +1,49 @@
-sections/collection-page.liquid
+{% comment %}
+  sections/collection-page.liquid
 
-snippets/collection-features.liquid
-- filter
-- sort
+  Owns layout only. Resolves data once and passes it down to two snippets:
+    - collection-features  → filters, sorting
+    - collection-showroom → products, articles, pages
+{% endcomment %}
 
-snippets/collection-showroom.liquid
-- products
-- pages
-- articles
+{%- liquid
+  assign active_filters   = collection.filters | where: 'active', true
+  assign results_count    = collection.products_count
+  assign related_articles = collection.metafields.custom.articles.value
+  assign related_pages    = collection.metafields.custom.pages.value
+-%}
+
+{%- paginate collection.products by 24 -%}
+
+  <div class="collection-page">
+
+    {%- render 'collection-features',
+      collection:     collection,
+      active_filters: active_filters,
+      results_count:  results_count
+    -%}
+
+    {%- render 'collection-showroom',
+      collection:      collection,
+      paginate:        paginate,
+      related_articles: related_articles,
+      related_pages:   related_pages
+    -%}
+
+  </div>
+
+{%- endpaginate -%}
+
+{% schema %}
+{
+  "name": "Collection page",
+  "tag": "section",
+  "class": "section-collection-page",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Collection page"
+    }
+  ]
+}
+{% endschema %}

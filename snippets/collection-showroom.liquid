@@ -1,0 +1,94 @@
+{% comment %}
+  snippets/collection-showroom.liquid
+  Renders browsable collection content: products, articles, pages.
+
+  Expects:
+    collection       {Object} — the Shopify collection object
+    paginate         {Object} — paginate object, opened in collection-page.liquid
+    related_articles {Array}  — collection.metafields.custom.articles.value
+    related_pages    {Array}  — collection.metafields.custom.pages.value
+{% endcomment %}
+
+<div class="collection-showroom">
+
+  {%- comment -%} ---------------------------------------- Products {%- endcomment -%}
+
+  <div class="collection-showroom__products">
+    {%- if collection.products.size > 0 -%}
+      {%- for product in collection.products -%}
+        {%- render 'card-product', product: product -%}
+      {%- endfor -%}
+    {%- else -%}
+      <p class="collection-showroom__empty">
+        {{ 'collections.general.no_matches' | t }}
+      </p>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%} ---------------------------------------- Pagination {%- endcomment -%}
+
+  {%- if paginate.pages > 1 -%}
+    <nav
+      class="collection-showroom__pagination"
+      aria-label="{{ 'general.pagination.label' | t }}"
+    >
+      {%- if paginate.previous -%}
+        <a href="{{ paginate.previous.url }}" class="collection-showroom__page-link">
+          &larr; {{ 'general.pagination.previous' | t }}
+        </a>
+      {%- endif -%}
+
+      {%- for part in paginate.parts -%}
+        {%- if part.is_link -%}
+          <a href="{{ part.url }}" class="collection-showroom__page-link">
+            {{ part.title }}
+          </a>
+        {%- else -%}
+          <span
+            class="collection-showroom__page-link collection-showroom__page-link--current"
+            aria-current="page"
+          >
+            {{ part.title }}
+          </span>
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- if paginate.next -%}
+        <a href="{{ paginate.next.url }}" class="collection-showroom__page-link">
+          {{ 'general.pagination.next' | t }} &rarr;
+        </a>
+      {%- endif -%}
+    </nav>
+  {%- endif -%}
+
+  {%- comment -%} ---------------------------------------- Related articles {%- endcomment -%}
+
+  {%- if related_articles and related_articles.size > 0 -%}
+    <section class="collection-showroom__related collection-showroom__related--articles">
+      <h2 class="collection-showroom__related-heading">
+        {{ 'collections.related_articles.title' | t }}
+      </h2>
+      <div class="collection-showroom__related-grid">
+        {%- for article in related_articles -%}
+          {%- render 'card-article', article: article -%}
+        {%- endfor -%}
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- comment -%} ---------------------------------------- Related pages {%- endcomment -%}
+
+  {%- if related_pages and related_pages.size > 0 -%}
+    <section class="collection-showroom__related collection-showroom__related--pages">
+      <h2 class="collection-showroom__related-heading">
+        {{ 'collections.related_pages.title' | t }}
+      </h2>
+      <div class="collection-showroom__related-grid">
+        {%- for page in related_pages -%}
+          {%- render 'card-page', page: page -%}
+        {%- endfor -%}
+      </div>
+    </section>
+  {%- endif -%}
+
+</div>
