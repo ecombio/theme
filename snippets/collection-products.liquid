@@ -33,12 +33,15 @@
 {% endcomment %}
 
 {%- liquid
-  assign grid_blocks = blocks | where: 'type', 'banner'
-  assign carousel_blocks = blocks | where: 'type', 'carousel'
+  assign safe_blocks = blocks | default: ''
+  assign grid_blocks = safe_blocks | where: 'type', 'banner'
+  assign carousel_blocks = safe_blocks | where: 'type', 'carousel'
 
   comment
     Merge all interleaved block types into one array isn't possible in Liquid,
     so we render both types at each position checkpoint inside the same loop.
+    safe_blocks guards against nil being passed when no blocks are defined
+    on the section (older collection.liquid without a "blocks" schema key).
   endcomment
 
   assign products_on_page = paginate.collection.products.size
