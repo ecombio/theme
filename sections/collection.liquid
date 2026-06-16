@@ -1,5 +1,5 @@
 {% comment %}
-  sections/collection-page.liquid
+  sections/collection.liquid
   Root section for templates/collection.json.
 
   Renders:
@@ -21,7 +21,7 @@
     by the section setting `products_per_page`.
 
   CSS:
-    collection-page.css — loaded below via stylesheet_tag.
+    collection.css — loaded below via stylesheet_tag.
 
   JS:
     product-card.js — loaded globally in theme.liquid.
@@ -29,7 +29,7 @@
     post-card.js / page-card.js — loaded by their respective card snippets.
 {% endcomment %}
 
-{{ 'collection-page.css' | asset_url | stylesheet_tag }}
+{{ 'collection.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign related_posts = collection.metafields.custom.posts.value
@@ -46,26 +46,26 @@
   endif
 -%}
 
-<div class="collection-page collection-page--layout-{{ layout }}">
+<div class="collection-section collection-section--layout-{{ layout }}">
 
   {%- comment -%} ── Breadcrumb ──────────────────────────────────────────── {%- endcomment -%}
 
   {%- if show_breadcrumb -%}
-    <nav class="collection-page__breadcrumb" aria-label="Breadcrumb">
-      <ol class="collection-page__breadcrumb-list">
-        <li class="collection-page__breadcrumb-item">
-          <a href="/" class="collection-page__breadcrumb-link">Home</a>
+    <nav class="collection-section__breadcrumb" aria-label="Breadcrumb">
+      <ol class="collection-section__breadcrumb-list">
+        <li class="collection-section__breadcrumb-item">
+          <a href="/" class="collection-section__breadcrumb-link">Home</a>
         </li>
-        <li class="collection-page__breadcrumb-item" aria-hidden="true">
-          <span class="collection-page__breadcrumb-sep">/</span>
+        <li class="collection-section__breadcrumb-item" aria-hidden="true">
+          <span class="collection-section__breadcrumb-sep">/</span>
         </li>
-        <li class="collection-page__breadcrumb-item">
-          <a href="/collections" class="collection-page__breadcrumb-link">Collections</a>
+        <li class="collection-section__breadcrumb-item">
+          <a href="/collections" class="collection-section__breadcrumb-link">Collections</a>
         </li>
-        <li class="collection-page__breadcrumb-item" aria-hidden="true">
-          <span class="collection-page__breadcrumb-sep">/</span>
+        <li class="collection-section__breadcrumb-item" aria-hidden="true">
+          <span class="collection-section__breadcrumb-sep">/</span>
         </li>
-        <li class="collection-page__breadcrumb-item collection-page__breadcrumb-item--current" aria-current="page">
+        <li class="collection-section__breadcrumb-item collection-section__breadcrumb-item--current" aria-current="page">
           {{ collection.title }}
         </li>
       </ol>
@@ -75,9 +75,9 @@
   {%- comment -%} ── Banner ──────────────────────────────────────────────── {%- endcomment -%}
 
   {%- if show_banner and banner_image -%}
-    <div class="collection-page__banner">
+    <div class="collection-section__banner">
       <img
-        class="collection-page__banner-image"
+        class="collection-section__banner-image"
         src="{{ banner_image | image_url: width: 1400 }}"
         alt="{{ banner_image.alt | escape | default: collection.title | escape }}"
         width="1400"
@@ -85,8 +85,8 @@
         loading="eager"
         fetchpriority="high"
       >
-      <div class="collection-page__banner-overlay">
-        <h1 class="collection-page__banner-title">{{ collection.title }}</h1>
+      <div class="collection-section__banner-overlay">
+        <h1 class="collection-section__banner-title">{{ collection.title }}</h1>
       </div>
     </div>
   {%- endif -%}
@@ -94,8 +94,8 @@
   {%- comment -%} ── Header (no banner) ──────────────────────────────────── {%- endcomment -%}
 
   {%- unless show_banner and banner_image -%}
-    <header class="collection-page__header">
-      <h1 class="collection-page__title">{{ collection.title }}</h1>
+    <header class="collection-section__header">
+      <h1 class="collection-section__title">{{ collection.title }}</h1>
 
       {%- if show_description -%}
         {%- liquid
@@ -105,7 +105,7 @@
           endif
         -%}
         {%- if description_content != blank -%}
-          <div class="collection-page__description">
+          <div class="collection-section__description">
             {{ description_content }}
           </div>
         {%- endif -%}
@@ -115,7 +115,7 @@
 
   {%- comment -%} ── Body: features + showroom ────────────────────────────── {%- endcomment -%}
 
-  <div class="collection-page__body">
+  <div class="collection-section__body">
 
     {%- comment -%}
       [1.1] collection-features.liquid
@@ -124,7 +124,7 @@
     {%- endcomment -%}
 
     {%- if layout == 'sidebar' -%}
-      <aside class="collection-page__sidebar" aria-label="Collection filters">
+      <aside class="collection-section__sidebar" aria-label="Collection filters">
         {%- render 'collection-features',
           collection: collection,
           context:    'sidebar'
@@ -134,12 +134,12 @@
 
     {%- comment -%} ── Main content area ───────────────────────────────────── {%- endcomment -%}
 
-    <div class="collection-page__main">
+    <div class="collection-section__main">
 
       {%- comment -%} Sort / filter bar above the grid when layout is full-width {%- endcomment -%}
 
       {%- if layout == 'full' -%}
-        <div class="collection-page__toolbar">
+        <div class="collection-section__toolbar">
           {%- render 'collection-features',
             collection: collection,
             context:    'toolbar'
@@ -170,9 +170,9 @@
 
 {% schema %}
 {
-  "name": "Collection page",
+  "name": "Collection",
   "tag": "section",
-  "class": "section-collection-page",
+  "class": "section-collection",
   "settings": [
     {
       "type": "header",
@@ -227,7 +227,7 @@
   ],
   "presets": [
     {
-      "name": "Collection page"
+      "name": "Collection"
     }
   ]
 }
