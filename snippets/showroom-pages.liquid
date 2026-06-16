@@ -1,0 +1,59 @@
+{% comment %}
+  snippets/showroom-pages.liquid
+
+  Showroom adapter for Shopify pages.
+
+  Responsibilities:
+    - Render a grid of pages
+    - Handle empty states
+    - Delegate page presentation to page-card.liquid
+
+  Expects:
+    pages               {Array}  — collection.metafields.custom.pages.value
+
+  Optional:
+    columns_mobile      {Number} — default: 1
+    columns_desktop     {Number} — default: 3
+
+  Card rendering:
+    page-card.liquid
+
+  Notes:
+    - page-card.css and page-card.js are loaded by page-card.liquid.
+    - Do NOT load card assets here.
+{% endcomment %}
+
+{%- liquid
+  assign columns_mobile = columns_mobile | default: 1
+  assign columns_desktop = columns_desktop | default: 3
+-%}
+
+<div
+  class="showroom-pages"
+  style="
+    --showroom-pages-columns-mobile: {{ columns_mobile }};
+    --showroom-pages-columns-desktop: {{ columns_desktop }};
+  "
+>
+
+  {%- if pages != blank -%}
+
+    <div class="showroom-pages__grid">
+
+      {%- for page in pages -%}
+        {%- render 'page-card',
+          page: page
+        -%}
+      {%- endfor -%}
+
+    </div>
+
+  {%- else -%}
+
+    <p class="showroom-pages__empty">
+      No pages available.
+    </p>
+
+  {%- endif -%}
+
+</div>
