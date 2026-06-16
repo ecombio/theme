@@ -4,8 +4,9 @@
   Calls:     snippets/card-article.liquid
 
   Parameters:
-    - context {String}  — 'collection' | 'search'
-    - section {Object}
+    - context       {String} — 'collection' | 'search'
+    - section       {Object}
+    - meta_articles {Array}  — collection.metafields.custom.articles.value
 {% endcomment %}
 
 {%- if context == 'search' -%}
@@ -18,12 +19,11 @@
       {%- endfor -%}
     </div>
   {%- else -%}
-    <p class="collection-empty">No articles found for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
+    <p class="collection-showcase__empty">No articles found for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
   {%- endif -%}
 
 {%- else -%}
 
-  {%- assign meta_articles = collection.metafields.custom.articles.value -%}
   {%- if meta_articles != blank and meta_articles.size > 0 -%}
     <div class="collection-articles-grid">
       {%- for article in meta_articles -%}
@@ -31,7 +31,7 @@
       {%- endfor -%}
     </div>
   {%- else -%}
-    <p class="collection-empty">No articles have been added to this collection yet.</p>
+    <p class="collection-showcase__empty">No articles have been added to this collection yet.</p>
   {%- endif -%}
 
 {%- endif -%}
