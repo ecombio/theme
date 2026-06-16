@@ -1,232 +1,276 @@
-{% comment %}
+{%- comment -%}
   snippets/product-card.liquid
-  Self-contained product card used by collection-products.liquid.
+  ────────────────────────────────────────────────────────────────
+  THE product card. One implementation, every context (carousel,
+  collection grid, search results, related products, featured
+  collections, recommendations).
 
-  Expects:
-    product  {Object} — a Shopify product object
+  Contract:
+    - Never reads section.settings or block.settings directly.
+      Every optional feature is a parameter the caller passes in.
+    - Never assumes a parent grid/track/column count. Sizes itself
+      relative to its own box only (height: 100%, internal flex
+      layout) and never its siblings.
+    - Every JS-driven interaction is wired through data-* attributes,
+      never class names. Classes in this file are for styling only.
 
-  Loads: product-card.css (via stylesheet_tag below)
-  JS:    product-card.js — loaded globally in theme.liquid. Do NOT load here.
+  Parameters
+    product                 product object, required
 
-  Reviews:
-    Judge.me star badge via product.metafields.judgeme.badge.
-    Requires the Judge.me app embed to be enabled under
-    Online Store → Themes → Customize → App embeds.
+    show_vendor             boolean, default: false
+    show_secondary_image    boolean, default: true
+    show_wishlist           boolean, default: true
+    show_quickview          boolean, default: true
+    show_compare            boolean, default: true
+    show_atc                boolean, default: true
+    show_compare_at_price   boolean, default: true
+      – show "Comp. Value: $X" next to the sale badge
 
-  Metafields read:
-    product.metafields.judgeme.badge            — Judge.me preview badge HTML
-    product.metafields.custom.estimated_arrival — optional delivery string,
-                                                  e.g. "Tue, Apr 9"
+    show_eta                boolean, default: true
+      – gates the row entirely; the row itself only renders
+        markup when there's actually eta content to show, so
+        leaving this on is safe even when eta_text is blank
 
-  Data attributes wired to product-card.js:
-    [data-product-handle]    — on the card root, used by Wishlist + Quick View
-    [data-atc-btn]           — Add to Cart button
-    [data-variant-id]        — first available variant ID
-    [data-wishlist-btn]      — wishlist toggle; JS must set aria-pressed="true/false"
-    [data-product-id]        — numeric product ID
-    [data-quickview-btn]     — Quick View trigger
-    [data-compare-checkbox]  — compare toggle
-    [data-product-title]     — for compare bar display
-    [data-product-image]     — for compare bar thumbnail
-    [data-product-price]     — for compare bar display
-{% endcomment %}
+    eta_text                string, default: blank
+      – explicit, already-formatted ETA copy supplied by the
+        caller (e.g. a date range computed from the caller's own
+        settings). Falls back to product.metafields.custom.eta_text
+        when blank, so contexts that just want the metafield value
+        don't need to pass anything.
 
-{{ 'product-card.css' | asset_url | stylesheet_tag }}
+    image_width              number, default: 600
+    image_sizes               string, default: '(max-width: 767px) 50vw, 25vw'
+    compare_image_width      number, default: 120
+{%- endcomment -%}
 
 {%- liquid
-  assign current_variant   = product.selected_or_first_available_variant
-  assign product_image     = product.featured_image | default: product.images.first
-  assign on_sale           = false
-  assign savings           = 0
-  assign savings_pct       = 0
-  if current_variant.compare_at_price > current_variant.price
-    assign on_sale     = true
-    assign savings     = current_variant.compare_at_price | minus: current_variant.price
-    assign savings_pct = savings | times: 100 | divided_by: current_variant.compare_at_price | round
+  assign p = product
+
+  assign _show_vendor        = show_vendor           | default: false
+  assign _show_secondary_img = show_secondary_image  | default: true
+  assign _show_wishlist      = show_wishlist         | default: true
+  assign _show_quickview     = show_quickview        | default: true
+  assign _show_compare       = show_compare          | default: true
+  assign _show_atc           = show_atc              | default: true
+  assign _show_comp_price    = show_compare_at_price | default: true
+  assign _show_eta           = show_eta              | default: true
+
+  assign _image_width  = image_width  | default: 600
+  assign _image_sizes  = image_sizes  | default: '(max-width: 767px) 50vw, 25vw'
+  assign _compare_width = compare_image_width | default: 120
+
+  assign _eta_text = eta_text
+  if _eta_text == blank
+    assign _eta_text = p.metafields.custom.eta_text
   endif
-  assign estimated_arrival = product.metafields.custom.estimated_arrival.value
-  assign jdgm_badge        = product.metafields.judgeme.badge
+
+  assign available = p.available
+
+  assign on_sale     = false
+  assign save_amount = 0
+  assign save_pct    = 0
+  if p.compare_at_price > p.price
+    assign on_sale     = true
+    assign save_amount = p.compare_at_price | minus: p.price
+    assign save_pct    = save_amount | times: 100 | divided_by: p.compare_at_price
+  endif
+
+  assign first_variant = p.first_available_variant | default: p.variants.first
 -%}
 
 <div
-  class="product-card{% if product.available == false %} product-card--sold-out{% endif %}"
-  data-product-handle="{{ product.handle }}"
-  data-product-id="{{ product.id }}"
+  class="product-card"
+  data-product-id="{{ p.id }}"
+  data-product-handle="{{ p.handle }}"
 >
 
-  {%- comment -%} ── Media ────────────────────────────────────────────────── {%- endcomment -%}
-
-  <div class="product-card__media{% if product.images[1] %} product-card__media--has-hover{% endif %}">
-    <a href="{{ product.url }}" class="product-card__media-link" aria-label="{{ product.title | escape }}" tabindex="-1">
-      {%- if product_image -%}
-        <img
-          class="product-card__image product-card__image--primary"
-          src="{{ product_image | image_url: width: 600 }}"
-          alt="{{ product_image.alt | escape | default: product.title | escape }}"
-          width="600"
-          height="{{ 600 | divided_by: product_image.aspect_ratio | round }}"
-          loading="lazy"
-        >
-        {%- if product.images[1] -%}
-          <img
-            class="product-card__image product-card__image--hover"
-            src="{{ product.images[1] | image_url: width: 600 }}"
-            alt="{{ product.images[1].alt | escape | default: product.title | escape }}"
-            width="600"
-            height="{{ 600 | divided_by: product.images[1].aspect_ratio | round }}"
-            loading="lazy"
-            aria-hidden="true"
-          >
+  {%- comment -%}── IMAGE ZONE ──{%- endcomment -%}
+  <div class="product-card__img-zone">
+    <a href="{{ p.url }}" class="product-card__image-wrapper" aria-label="{{ p.title | escape }}" tabindex="0">
+      {%- if p.featured_image != blank -%}
+        {{
+          p.featured_image
+          | image_url: width: _image_width
+          | image_tag:
+            class: 'product-card__image product-card__image--primary',
+            loading: 'lazy',
+            widths: '200, 300, 400, 600, 800',
+            sizes: _image_sizes,
+            alt: p.featured_image.alt | default: p.title | escape
+        }}
+        {%- if _show_secondary_img and p.images[1] != blank -%}
+          {{
+            p.images[1]
+            | image_url: width: _image_width
+            | image_tag:
+              class: 'product-card__image product-card__image--secondary',
+              loading: 'lazy',
+              widths: '200, 300, 400, 600, 800',
+              sizes: _image_sizes,
+              alt: p.images[1].alt | default: p.title | escape
+          }}
         {%- endif -%}
       {%- else -%}
-        <div class="product-card__image-placeholder">
-          {{ 'image' | placeholder_svg_tag: 'product-card__placeholder-svg' }}
+        <div class="product-card__image-placeholder" aria-hidden="true">
+          {{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder-svg' }}
         </div>
       {%- endif -%}
     </a>
 
-    {%- comment -%} ── Badges (top-left) ───────────────────────────────────── {%- endcomment -%}
+    {%- comment -%}
+      Sold out takes priority over the sale badge in the same corner —
+      a product that can't be purchased shouldn't lead with "Save 47%".
+    {%- endcomment -%}
+    {%- if available == false -%}
+      <span class="product-card__badge product-card__badge--sold-out">Sold out</span>
+    {%- elsif on_sale -%}
+      <span class="product-card__badge product-card__badge--sale">Save {{ save_pct }}%</span>
+    {%- endif -%}
 
-    <div class="product-card__badges">
-      {%- if on_sale -%}
-        {%- comment -%} Changed: badge shows percentage savings instead of plain "Sale" {%- endcomment -%}
-        <span class="product-card__badge product-card__badge--sale">Save {{ savings_pct }}%</span>
-      {%- endif -%}
-      {%- if product.available == false -%}
-        <span class="product-card__badge product-card__badge--sold-out">Sold out</span>
-      {%- endif -%}
-    </div>
-
-    {%- comment -%} ── Wishlist button (always visible, top-right) ─────────── {%- endcomment -%}
-
-    <button
-      class="product-card__wishlist-btn"
-      type="button"
-      aria-label="Add {{ product.title | escape }} to wishlist"
-      aria-pressed="false"
-      data-wishlist-btn
-      data-product-id="{{ product.id }}"
-    >
-      <svg class="product-card__wishlist-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-    </button>
-
-    {%- comment -%} ── Quick View (hover-reveal, centered pill over image) ─── {%- endcomment -%}
-
-    <div class="product-card__actions">
+    {%- if _show_wishlist -%}
       <button
-        class="product-card__action-btn product-card__action-btn--quickview"
+        class="product-card__wishlist-btn"
         type="button"
-        aria-label="Quick view {{ product.title | escape }}"
-        data-quickview-btn
-        data-product-handle="{{ product.handle }}"
+        aria-label="Add {{ p.title | escape }} to wishlist"
+        aria-pressed="false"
+        data-wishlist-btn
+        data-product-id="{{ p.id }}"
       >
-        <svg class="product-card__action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path class="product-card__wishlist-path" d="M9 15.5S2 11 2 6a4 4 0 0 1 7-2.65A4 4 0 0 1 16 6c0 5-7 9.5-7 9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    {%- endif -%}
+
+    {%- if _show_quickview -%}
+      <button
+        class="product-card__quickview-btn"
+        type="button"
+        aria-label="Quick view {{ p.title | escape }}"
+        data-quickview-btn
+        data-product-url="{{ p.url }}"
+        data-product-handle="{{ p.handle }}"
+      >
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+          <ellipse cx="7.5" cy="7.5" rx="6" ry="4.5" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/>
         </svg>
         Quick view
       </button>
-    </div>
-
+    {%- endif -%}
   </div>
 
-  {%- comment -%} ── Info ────────────────────────────────────────────────── {%- endcomment -%}
+  {%- comment -%}── CONTENT ──{%- endcomment -%}
+  <div class="product-card__content">
 
-  <div class="product-card__info">
-
-    {%- if product.vendor -%}
-      <p class="product-card__vendor">{{ product.vendor }}</p>
+    {%- if _show_vendor and p.vendor != blank -%}
+      <span class="product-card__vendor">{{ p.vendor }}</span>
     {%- endif -%}
 
-    <h3 class="product-card__title">
-      <a href="{{ product.url }}" class="product-card__title-link">{{ product.title }}</a>
-    </h3>
+    <a href="{{ p.url }}" class="product-card__title">{{ p.title }}</a>
 
-    {%- comment -%} ── Judge.me star badge ──────────────────────────────────── {%- endcomment -%}
-
-    <div class="product-card__reviews jdgm-widget jdgm-preview-badge" data-id="{{ product.id }}" data-auto-install="false">
-      {{- jdgm_badge -}}
+    {%- comment -%}
+      Judge.me: rendered through the app's own snippet rather than a
+      hand-rolled widget div, so review markup only has one source of
+      truth in the theme and picks up app updates automatically.
+    {%- endcomment -%}
+    <div class="product-card__reviews">
+      {%- render 'judgeme_widgets', widget_type: 'judgeme_preview_badge', concierge_install: true, product: p -%}
     </div>
 
-    {%- comment -%} ── Price ───────────────────────────────────────────────── {%- endcomment -%}
-
-    <div class="product-card__price">
+    {%- comment -%}── Pricing ──{%- endcomment -%}
+    <div class="product-card__pricing">
       {%- if on_sale -%}
-        <span class="product-card__price-sale">{{ current_variant.price | money }}</span>
-      {%- else -%}
-        <span class="product-card__price-regular">
-          {%- if product.price_varies -%}
-            From {{ product.price_min | money }}
-          {%- else -%}
-            {{ product.price | money }}
+        <span class="product-card__price product-card__price--sale">{{ p.price | money }}</span>
+        <div class="product-card__savings-row">
+          <span class="product-card__save-badge">Save {{ save_amount | money_without_trailing_zeros }}</span>
+          {%- if _show_comp_price -%}
+            <span class="product-card__comp-value">Comp. Value: <s>{{ p.compare_at_price | money }}</s></span>
           {%- endif -%}
-        </span>
+        </div>
+      {%- else -%}
+        <span class="product-card__price">{{ p.price | money }}</span>
+        <div class="product-card__savings-row" aria-hidden="true"></div>
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── Savings line (sale only) ─────────────────────────────── {%- endcomment -%}
-    {%- comment -%} Changed: now renders as a pill chip + inline comp value {%- endcomment -%}
+    {%- comment -%}
+      ETA: this snippet never computes shipping-estimate logic itself —
+      it only displays whatever eta_text the caller hands it (or the
+      product's own metafield as a no-config fallback). A section that
+      wants a computed date range from its own settings should do that
+      math itself and pass the resulting string in as eta_text.
+    {%- endcomment -%}
+    {%- if _show_eta -%}
+      {%- if available == false -%}
+        <div class="product-card__eta product-card__eta--unavailable">
+          <svg class="product-card__eta-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <span>Currently unavailable</span>
+        </div>
+      {%- elsif _eta_text != blank -%}
+        <div class="product-card__eta" aria-label="Estimated delivery">
+          <svg class="product-card__eta-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <rect x="1" y="4" width="9" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M10 6.5h1.5l1.5 2V11h-3V6.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            <circle cx="3.5" cy="11.5" r="1" fill="currentColor"/>
+            <circle cx="10.5" cy="11.5" r="1" fill="currentColor"/>
+          </svg>
+          <span>{{ _eta_text }}</span>
+        </div>
+      {%- endif -%}
+    {%- endif -%}
 
-    {%- if on_sale -%}
-      <div class="product-card__savings">
-        <span class="product-card__savings-chip">Save {{ savings | money }}</span>
-        <span class="product-card__savings-comp">Comp. Value: <s>{{ current_variant.compare_at_price | money }}</s></span>
+    {%- comment -%}── Bottom row: ATC + Compare ──{%- endcomment -%}
+    {%- if _show_atc or _show_compare -%}
+      <div class="product-card__bottom-row">
+
+        {%- if _show_atc -%}
+          {%- if available -%}
+            <button
+              class="product-card__atc-btn"
+              type="button"
+              aria-label="Add {{ p.title | escape }} to cart"
+              data-atc-btn
+              data-variant-id="{{ first_variant.id }}"
+              data-product-title="{{ p.title | escape }}"
+            >
+              {%- comment -%}
+                data-atc-label is the JS hook; product-card__atc-label is
+                purely styling (keeps the text above the hover fill-sweep).
+                Renaming one never breaks the other.
+              {%- endcomment -%}
+              <span class="product-card__atc-label" data-atc-label>Add to cart</span>
+            </button>
+          {%- else -%}
+            <button class="product-card__atc-btn product-card__atc-btn--disabled" type="button" disabled aria-disabled="true">
+              Sold out
+            </button>
+          {%- endif -%}
+        {%- endif -%}
+
+        {%- if _show_compare -%}
+          <label class="product-card__compare-label">
+            <input
+              class="product-card__compare-checkbox"
+              type="checkbox"
+              data-compare-checkbox
+              data-product-id="{{ p.id }}"
+              data-product-handle="{{ p.handle }}"
+              data-product-title="{{ p.title | escape }}"
+              data-product-image="{{ p.featured_image | image_url: width: _compare_width }}"
+              data-product-price="{{ p.price | money }}"
+              aria-label="Compare {{ p.title | escape }}"
+            >
+            <span class="product-card__compare-text">Compare</span>
+          </label>
+        {%- endif -%}
+
       </div>
     {%- endif -%}
 
-    {%- comment -%} ── Estimated arrival chip ───────────────────────────────── {%- endcomment -%}
-
-    {%- if estimated_arrival != blank -%}
-      <div class="product-card__arrival">
-        <svg class="product-card__arrival-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <rect x="1" y="3" width="15" height="13" rx="1"/>
-          <path d="M16 8h4l3 5v3h-7V8z"/>
-          <circle cx="5.5" cy="18.5" r="2.5"/>
-          <circle cx="18.5" cy="18.5" r="2.5"/>
-        </svg>
-        <span>
-          Est. arrival: <strong>{{ estimated_arrival }}</strong>
-          <span class="product-card__arrival-sep">&nbsp;&middot;&nbsp;</span>
-          <strong class="product-card__arrival-free">FREE</strong>
-        </span>
-      </div>
-    {%- endif -%}
-
-  </div>
-
-  {%- comment -%} ── Footer: ATC + Compare ───────────────────────────────────── {%- endcomment -%}
-
-  <div class="product-card__footer">
-    {%- if product.available -%}
-      <button
-        class="product-card__atc"
-        type="button"
-        data-atc-btn
-        data-variant-id="{{ current_variant.id }}"
-      >
-        <span class="product-card__atc-label">Add to cart</span>
-      </button>
-    {%- else -%}
-      <button class="product-card__atc product-card__atc--disabled" type="button" disabled>
-        <span class="product-card__atc-label">Sold out</span>
-      </button>
-    {%- endif -%}
-
-    <label class="product-card__compare">
-      <input
-        class="product-card__compare-checkbox"
-        type="checkbox"
-        data-compare-checkbox
-        data-product-id="{{ product.id }}"
-        data-product-handle="{{ product.handle }}"
-        data-product-title="{{ product.title | escape }}"
-        data-product-image="{{ product_image | image_url: width: 96 }}"
-        data-product-price="{{ current_variant.price | money }}"
-      >
-      <span class="product-card__compare-label">Compare</span>
-    </label>
   </div>
 
 </div>
