@@ -9,6 +9,10 @@
     related_articles {Array}  — collection.metafields.custom.articles.value
     related_pages    {Array}  — collection.metafields.custom.pages.value
 
+  Self-contained: loads its own collection-showroom.css and collection-showroom.js.
+  To adjust styles or tab behaviour: edit those files directly — do not touch this
+  snippet unless the markup structure itself needs to change.
+
   NOTE: card-product-features.js is loaded globally in theme.liquid (line 122).
   Do NOT re-load it here — doing so double-registers the click handlers
   for Add to Cart, Wishlist, Compare, and Quick View (each click fires
@@ -19,6 +23,8 @@
   canonical card wired to card-product-features.js. card-product-carousel.css
   is loaded by the parent section (collection-page.liquid), not here.
 {% endcomment %}
+
+{{ 'collection-showroom.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign has_articles = false
@@ -87,7 +93,7 @@
   {%- comment -%} ── Products panel ──────────────────────────────────────── {%- endcomment -%}
 
   <div
-    class="collection-showroom__panel collection-showroom__panel--active"
+    class="collection-showroom__panel"
     id="showroom-panel-products"
     role="tabpanel"
     aria-labelledby="showroom-tab-products"
@@ -181,3 +187,5 @@
   {%- endif -%}
 
 </div>
+
+<script src="{{ 'collection-showroom.js' | asset_url }}" defer></script>
