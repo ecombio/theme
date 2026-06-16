@@ -38,9 +38,11 @@
   assign product_image     = product.featured_image | default: product.images.first
   assign on_sale           = false
   assign savings           = 0
+  assign savings_pct       = 0
   if current_variant.compare_at_price > current_variant.price
-    assign on_sale = true
-    assign savings = current_variant.compare_at_price | minus: current_variant.price
+    assign on_sale     = true
+    assign savings     = current_variant.compare_at_price | minus: current_variant.price
+    assign savings_pct = savings | times: 100 | divided_by: current_variant.compare_at_price | round
   endif
   assign estimated_arrival = product.metafields.custom.estimated_arrival.value
   assign jdgm_badge        = product.metafields.judgeme.badge
@@ -54,7 +56,7 @@
 
   {%- comment -%} ── Media ────────────────────────────────────────────────── {%- endcomment -%}
 
-  <div class="product-card__media">
+  <div class="product-card__media{% if product.images[1] %} product-card__media--has-hover{% endif %}">
     <a href="{{ product.url }}" class="product-card__media-link" aria-label="{{ product.title | escape }}" tabindex="-1">
       {%- if product_image -%}
         <img
@@ -87,7 +89,8 @@
 
     <div class="product-card__badges">
       {%- if on_sale -%}
-        <span class="product-card__badge product-card__badge--sale">Sale</span>
+        {%- comment -%} Changed: badge shows percentage savings instead of plain "Sale" {%- endcomment -%}
+        <span class="product-card__badge product-card__badge--sale">Save {{ savings_pct }}%</span>
       {%- endif -%}
       {%- if product.available == false -%}
         <span class="product-card__badge product-card__badge--sold-out">Sold out</span>
@@ -109,7 +112,7 @@
       </svg>
     </button>
 
-    {%- comment -%} ── Quick View (hover-reveal, bottom-right) ─────────────── {%- endcomment -%}
+    {%- comment -%} ── Quick View (hover-reveal, centered pill over image) ─── {%- endcomment -%}
 
     <div class="product-card__actions">
       <button
@@ -123,6 +126,7 @@
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
           <circle cx="12" cy="12" r="3"/>
         </svg>
+        Quick view
       </button>
     </div>
 
@@ -163,13 +167,13 @@
     </div>
 
     {%- comment -%} ── Savings line (sale only) ─────────────────────────────── {%- endcomment -%}
+    {%- comment -%} Changed: now renders as a pill chip + inline comp value {%- endcomment -%}
 
     {%- if on_sale -%}
-      <p class="product-card__savings">
-        Save <strong>{{ savings | money }}</strong>
-        <span class="product-card__savings-sep">&nbsp;&middot;&nbsp;</span>
-        Comp. Value: <s>{{ current_variant.compare_at_price | money }}</s>
-      </p>
+      <div class="product-card__savings">
+        <span class="product-card__savings-chip">Save {{ savings | money }}</span>
+        <span class="product-card__savings-comp">Comp. Value: <s>{{ current_variant.compare_at_price | money }}</s></span>
+      </div>
     {%- endif -%}
 
     {%- comment -%} ── Estimated arrival chip ───────────────────────────────── {%- endcomment -%}
