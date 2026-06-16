@@ -10,12 +10,8 @@
   Expects (passed from collection-page.liquid / sections/collection.liquid):
     collection       {Object} — the Shopify collection object
     paginate         {Object} — paginate object opened upstream
-    related_posts    {Array}  — collection.metafields.custom.posts.value
+    related_posts    {Array}  — collection.metafields.custom.articles.value
     related_pages    {Array}  — collection.metafields.custom.pages.value
-    blocks           {Array}  — section.blocks; forwarded as-is to
-                                 collection-products.liquid, which filters
-                                 for type == "banner" itself. Only the
-                                 Products tab consumes blocks today.
 
   Self-contained: loads collection-showroom.css and collection-showroom.js.
   Each card type loads its own CSS/JS via its own sub-snippet.
@@ -24,6 +20,10 @@
   Do NOT re-load it here or in collection-products.liquid — doing so
   double-registers click handlers (double Add to Cart, wishlist toggles
   cancelling out, Quick View fetching twice).
+
+  NOTE: section.blocks (banner/carousel) are handled entirely by
+  collection-features.liquid upstream now — this router and
+  collection-products.liquid have no awareness of blocks at all.
 {% endcomment %}
 
 {{ 'collection-showroom.css' | asset_url | stylesheet_tag }}
@@ -101,7 +101,7 @@
     aria-labelledby="showroom-tab-products"
     data-showroom-panel="products"
   >
-    {%- render 'collection-products', collection: collection, paginate: paginate, blocks: blocks -%}
+    {%- render 'collection-products', collection: collection, paginate: paginate -%}
   </div>
 
   {%- comment -%} ── Posts panel ─────────────────────────────────────────── {%- endcomment -%}
