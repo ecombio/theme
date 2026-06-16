@@ -8,6 +8,16 @@
     paginate         {Object} — paginate object, opened in collection-page.liquid
     related_articles {Array}  — collection.metafields.custom.articles.value
     related_pages    {Array}  — collection.metafields.custom.pages.value
+
+  NOTE: card-product-features.js is loaded globally in theme.liquid (line 122).
+  Do NOT re-load it here — doing so double-registers the click handlers
+  for Add to Cart, Wishlist, Compare, and Quick View (each click fires
+  twice: double-add to cart, wishlist toggles cancel out, Quick View
+  fetches the product twice).
+
+  Card rendering uses card-product-carousel (snippet + CSS) — this is the
+  canonical card wired to card-product-features.js. card-product-carousel.css
+  is loaded by the parent section (collection-page.liquid), not here.
 {% endcomment %}
 
 {%- liquid
@@ -87,7 +97,7 @@
     <div class="collection-showroom__products">
       {%- if collection.products.size > 0 -%}
         {%- for product in collection.products -%}
-          {%- render 'card-product', product: product -%}
+          {%- render 'card-product-carousel', product: product -%}
         {%- endfor -%}
       {%- else -%}
         <p class="collection-showroom__empty">
