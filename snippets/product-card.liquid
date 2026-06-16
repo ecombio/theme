@@ -1,147 +1,179 @@
 {% comment %}
-  Snippet: product-card
-  Renders a single product card for the related-products section.
+  snippets/product-card.liquid
+  Self-contained product card used by collection-products.liquid.
 
-  Accepts:
-  - product {Object}            - Shopify product object (required)
-  - show_badge {Boolean}        - Whether to render Sale / Best Choice badges
-  - show_selling_fast {Boolean} - Whether to render low-stock "Selling Fast" banner
-  - show_swatches {Boolean}     - Whether to render color swatches
-  - image_ratio {String}        - 'square' | 'portrait' | 'landscape'
+  Expects:
+    product  {Object} — a Shopify product object
 
-  Usage:
-  {%- render 'product-card', product: product, show_badge: true, show_swatches: true -%}
+  Loads: product-card.css (via stylesheet_tag below)
+  JS:    product-card.js — loaded globally in theme.liquid. Do NOT load here.
+
+  Data attributes wired to product-card.js:
+    [data-product-handle]    — on the card root, used by Wishlist + Quick View
+    [data-atc-btn]           — Add to Cart button
+    [data-variant-id]        — first available variant ID
+    [data-wishlist-btn]      — wishlist toggle
+    [data-product-id]        — numeric product ID
+    [data-quickview-btn]     — Quick View trigger
+    [data-compare-checkbox]  — compare toggle
+    [data-product-title]     — for compare bar display
+    [data-product-image]     — for compare bar thumbnail
+    [data-product-price]     — for compare bar display
 {% endcomment %}
 
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+
 {%- liquid
-  assign image_ratio     = image_ratio | default: 'portrait'
-  assign show_badge      = show_badge | default: true
-  assign show_swatches   = show_swatches | default: true
-  assign show_selling_fast = show_selling_fast | default: true
-
-  assign featured_image  = product.featured_media.preview_image | default: product.featured_image
-
+  assign current_variant = product.selected_or_first_available_variant
+  assign product_image   = product.featured_image | default: product.images.first
   assign on_sale         = false
-  if product.compare_at_price > product.price
+  if current_variant.compare_at_price > current_variant.price
     assign on_sale = true
-  endif
-
-  assign best_choice_tag = false
-  if product.tags contains 'best-choice'
-    assign best_choice_tag = true
-  endif
-
-  assign color_option_index = nil
-  for option in product.options_with_values
-    if option.name == 'Color' or option.name == 'Colour'
-      assign color_option_index = forloop.index0
-    endif
-  endfor
-
-  assign selling_fast_threshold = section.settings.selling_fast_threshold | default: 5
-  assign is_selling_fast = false
-  if product.available
-    assign total_inventory = 0
-    for variant in product.variants
-      assign total_inventory = total_inventory | plus: variant.inventory_quantity
-    endfor
-    if total_inventory > 0 and total_inventory <= selling_fast_threshold
-      assign is_selling_fast = true
-    endif
   endif
 -%}
 
-<div class="product-card" data-product-id="{{ product.id }}">
-  {%- comment -%} ── Image wrapper ── {%- endcomment -%}
-  <div class="product-card__image-wrapper product-card__image-wrapper--{{ image_ratio }}">
-    <a class="product-card__image-link" href="{{ product.url | within: collection }}" aria-label="{{ product.title | escape }}">
-      {%- if featured_image -%}
+<div
+  class="product-card{% if product.available == false %} product-card--sold-out{% endif %}"
+  data-product-handle="{{ product.handle }}"
+  data-product-id="{{ product.id }}"
+>
+
+  {%- comment -%} ── Media ────────────────────────────────────────────────── {%- endcomment -%}
+
+  <div class="product-card__media">
+    <a href="{{ product.url }}" class="product-card__media-link" aria-label="{{ product.title | escape }}" tabindex="-1">
+      {%- if product_image -%}
         <img
-          class="product-card__image"
-          src="{{ featured_image | image_url: width: 600 }}"
-          srcset="
-            {{ featured_image | image_url: width: 300 }} 300w,
-            {{ featured_image | image_url: width: 600 }} 600w,
-            {{ featured_image | image_url: width: 900 }} 900w
-          "
-          sizes="(min-width: 1200px) calc((100vw - 270px) / 5), (min-width: 768px) calc((100vw - 60px) / 3), calc(100vw - 30px)"
-          alt="{{ featured_image.alt | escape | default: product.title }}"
-          width="{{ featured_image.width }}"
-          height="{{ featured_image.height }}"
+          class="product-card__image product-card__image--primary"
+          src="{{ product_image | image_url: width: 600 }}"
+          alt="{{ product_image.alt | escape | default: product.title | escape }}"
+          width="600"
+          height="{{ 600 | divided_by: product_image.aspect_ratio | round }}"
           loading="lazy"
         >
+        {%- if product.images[1] -%}
+          <img
+            class="product-card__image product-card__image--hover"
+            src="{{ product.images[1] | image_url: width: 600 }}"
+            alt="{{ product.images[1].alt | escape | default: product.title | escape }}"
+            width="600"
+            height="{{ 600 | divided_by: product.images[1].aspect_ratio | round }}"
+            loading="lazy"
+            aria-hidden="true"
+          >
+        {%- endif -%}
       {%- else -%}
-        {{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}
+        <div class="product-card__image-placeholder">
+          {{ 'image' | placeholder_svg_tag: 'product-card__placeholder-svg' }}
+        </div>
       {%- endif -%}
     </a>
 
-    {%- comment -%} ── Badge (Sale / Best Choice / custom tag) ── {%- endcomment -%}
-    {%- if show_badge -%}
+    {%- comment -%} ── Badges ─────────────────────────────────────────────── {%- endcomment -%}
+
+    <div class="product-card__badges">
       {%- if on_sale -%}
         <span class="product-card__badge product-card__badge--sale">Sale</span>
-      {%- elsif best_choice_tag -%}
-        <span class="product-card__badge product-card__badge--best-choice">Best Choice!</span>
       {%- endif -%}
-    {%- endif -%}
-
-    {%- comment -%} ── Selling Fast banner ── {%- endcomment -%}
-    {%- if show_selling_fast and is_selling_fast -%}
-      <div class="product-card__selling-fast" aria-label="Selling Fast">
-        <div class="product-card__selling-fast-track" aria-hidden="true">
-          {%- for i in (1..6) -%}
-            <span class="product-card__selling-fast-item">
-              <svg class="product-card__bolt" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M11.6946 6.86122L5.56963 13.4238C5.50472 13.493 5.41905 13.5393 5.32553 13.5556C5.23201 13.5719 5.13573 13.5573 5.05121 13.5141C4.96669 13.4709 4.89852 13.4014 4.85698 13.316C4.81545 13.2306 4.8028 13.1341 4.82096 13.0409L5.62268 9.0307L2.47103 7.84721C2.40335 7.82194 2.34299 7.78022 2.29535 7.7259C2.24771 7.67158 2.21427 7.60627 2.19802 7.53585C2.18177 7.46543 2.18322 7.39207 2.20223 7.32235C2.22124 7.25263 2.25723 7.18872 2.30698 7.13629L8.43199 0.573805C8.49688 0.504535 8.58256 0.458256 8.67608 0.441951C8.7696 0.425647 8.86585 0.440201 8.95041 0.483418C9.0349 0.526634 9.10308 0.59617 9.14459 0.681529C9.18617 0.766885 9.19877 0.863443 9.18064 0.95662L8.37676 4.97122L11.5284 6.15302C11.5956 6.17851 11.6554 6.22016 11.7027 6.27428C11.75 6.3284 11.7832 6.39334 11.7994 6.46334C11.8157 6.53334 11.8144 6.60627 11.7957 6.67566C11.777 6.74506 11.7416 6.80879 11.6924 6.86122H11.6946Z" fill="#F3C625"/>
-              </svg>
-              Selling Fast
-            </span>
-          {%- endfor -%}
-        </div>
-      </div>
-    {%- endif -%}
-
-    {%- comment -%} ── "Choose Options" hover button ── {%- endcomment -%}
-    <div class="product-card__actions">
-      <a
-        class="product-card__choose-options"
-        href="{{ product.url | within: collection }}"
-      >
-        Choose Options
-      </a>
+      {%- if product.available == false -%}
+        <span class="product-card__badge product-card__badge--sold-out">Sold out</span>
+      {%- endif -%}
     </div>
+
+    {%- comment -%} ── Quick actions ───────────────────────────────────────── {%- endcomment -%}
+
+    <div class="product-card__actions">
+      <button
+        class="product-card__action-btn product-card__action-btn--wishlist"
+        type="button"
+        aria-label="Add {{ product.title | escape }} to wishlist"
+        aria-pressed="false"
+        data-wishlist-btn
+        data-product-id="{{ product.id }}"
+      >
+        <svg class="product-card__action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </button>
+
+      <button
+        class="product-card__action-btn product-card__action-btn--quickview"
+        type="button"
+        aria-label="Quick view {{ product.title | escape }}"
+        data-quickview-btn
+        data-product-handle="{{ product.handle }}"
+      >
+        <svg class="product-card__action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
+
   </div>
 
-  {%- comment -%} ── Product info ── {%- endcomment -%}
+  {%- comment -%} ── Info ────────────────────────────────────────────────── {%- endcomment -%}
+
   <div class="product-card__info">
-    {%- if product.type != blank -%}
-      <p class="product-card__type">{{ product.type | upcase | escape }}</p>
+
+    {%- if product.vendor -%}
+      <p class="product-card__vendor">{{ product.vendor }}</p>
     {%- endif -%}
 
     <h3 class="product-card__title">
-      <a href="{{ product.url | within: collection }}">{{ product.title | escape }}</a>
+      <a href="{{ product.url }}" class="product-card__title-link">{{ product.title }}</a>
     </h3>
 
-    <div class="product-card__price-row">
+    <div class="product-card__price">
       {%- if on_sale -%}
-        <span class="product-card__price product-card__price--sale">
-          {{ product.price | money }}
-        </span>
-        <span class="product-card__price product-card__price--compare">
-          {{ product.compare_at_price | money }}
-        </span>
+        <span class="product-card__price-sale">{{ current_variant.price | money }}</span>
+        <span class="product-card__price-compare">{{ current_variant.compare_at_price | money }}</span>
       {%- else -%}
-        <span class="product-card__price">
-          {{ product.price | money }}
+        <span class="product-card__price-regular">
+          {%- if product.price_varies -%}
+            From {{ product.price_min | money }}
+          {%- else -%}
+            {{ product.price | money }}
+          {%- endif -%}
         </span>
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── Color swatches ── {%- endcomment -%}
-    {%- if show_swatches and color_option_index != nil -%}
-      {%- render 'product-card-swatches',
-        product: product,
-        color_option_index: color_option_index
-      -%}
+    {%- comment -%} ── Compare checkbox ────────────────────────────────────── {%- endcomment -%}
+
+    <label class="product-card__compare">
+      <input
+        class="product-card__compare-checkbox"
+        type="checkbox"
+        data-compare-checkbox
+        data-product-id="{{ product.id }}"
+        data-product-handle="{{ product.handle }}"
+        data-product-title="{{ product.title | escape }}"
+        data-product-image="{{ product_image | image_url: width: 96 }}"
+        data-product-price="{{ current_variant.price | money }}"
+      >
+      <span class="product-card__compare-label">Compare</span>
+    </label>
+
+  </div>
+
+  {%- comment -%} ── Add to Cart ─────────────────────────────────────────── {%- endcomment -%}
+
+  <div class="product-card__footer">
+    {%- if product.available -%}
+      <button
+        class="product-card__atc"
+        type="button"
+        data-atc-btn
+        data-variant-id="{{ current_variant.id }}"
+      >
+        <span class="card-product__atc-label">Add to cart</span>
+      </button>
+    {%- else -%}
+      <button class="product-card__atc product-card__atc--disabled" type="button" disabled>
+        <span class="card-product__atc-label">Sold out</span>
+      </button>
     {%- endif -%}
   </div>
+
 </div>

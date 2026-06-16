@@ -1,36 +1,34 @@
 {% comment %}
   snippets/collection-showroom.liquid
-  Renders browsable collection content via a tab switcher.
-  Tabs: Products (always), Articles (if metafield populated), Pages (if metafield populated)
+  Tab router — delegates each content type to its own sub-snippet.
 
-  Expects:
+  Tabs:
+    Products  — always shown          → collection-products.liquid
+    Posts     — if metafield present  → collection-posts.liquid
+    Pages     — if metafield present  → collection-pages.liquid
+
+  Expects (passed from collection-page.liquid):
     collection       {Object} — the Shopify collection object
-    paginate         {Object} — paginate object, opened in collection-page.liquid
-    related_articles {Array}  — collection.metafields.custom.articles.value
+    paginate         {Object} — paginate object opened upstream
+    related_posts    {Array}  — collection.metafields.custom.posts.value
     related_pages    {Array}  — collection.metafields.custom.pages.value
 
-  Self-contained: loads its own collection-showroom.css and collection-showroom.js.
-  To adjust styles or tab behaviour: edit those files directly — do not touch this
-  snippet unless the markup structure itself needs to change.
+  Self-contained: loads collection-showroom.css and collection-showroom.js.
+  Each card type loads its own CSS/JS via its own sub-snippet.
 
-  NOTE: card-product-features.js is loaded globally in theme.liquid (line 122).
-  Do NOT re-load it here — doing so double-registers the click handlers
-  for Add to Cart, Wishlist, Compare, and Quick View (each click fires
-  twice: double-add to cart, wishlist toggles cancel out, Quick View
-  fetches the product twice).
-
-  Card rendering uses card-product-carousel (snippet + CSS) — this is the
-  canonical card wired to card-product-features.js. card-product-carousel.css
-  is loaded by the parent section (collection-page.liquid), not here.
+  NOTE: product-card.js is loaded globally in theme.liquid.
+  Do NOT re-load it here or in collection-products.liquid — doing so
+  double-registers click handlers (double Add to Cart, wishlist toggles
+  cancelling out, Quick View fetching twice).
 {% endcomment %}
 
 {{ 'collection-showroom.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign has_articles = false
-  assign has_pages    = false
-  if related_articles and related_articles.size > 0
-    assign has_articles = true
+  assign has_posts = false
+  assign has_pages = false
+  if related_posts and related_posts.size > 0
+    assign has_posts = true
   endif
   if related_pages and related_pages.size > 0
     assign has_pages = true
@@ -56,19 +54,19 @@
       <span class="collection-showroom__tab-count">({{ collection.products_count }})</span>
     </button>
 
-    {%- if has_articles -%}
+    {%- if has_posts -%}
       <button
         class="collection-showroom__tab"
         role="tab"
         aria-selected="false"
-        aria-controls="showroom-panel-articles"
-        id="showroom-tab-articles"
+        aria-controls="showroom-panel-posts"
+        id="showroom-tab-posts"
         type="button"
-        data-showroom-tab="articles"
+        data-showroom-tab="posts"
         tabindex="-1"
       >
-        Articles
-        <span class="collection-showroom__tab-count">({{ related_articles.size }})</span>
+        Posts
+        <span class="collection-showroom__tab-count">({{ related_posts.size }})</span>
       </button>
     {%- endif -%}
 
@@ -99,71 +97,21 @@
     aria-labelledby="showroom-tab-products"
     data-showroom-panel="products"
   >
-
-    <div class="collection-showroom__products">
-      {%- if collection.products.size > 0 -%}
-        {%- for product in collection.products -%}
-          {%- render 'card-product-carousel', product: product -%}
-        {%- endfor -%}
-      {%- else -%}
-        <p class="collection-showroom__empty">
-          {{ 'collections.general.no_matches' | t }}
-        </p>
-      {%- endif -%}
-    </div>
-
-    {%- if paginate.pages > 1 -%}
-      <nav
-        class="collection-showroom__pagination"
-        aria-label="{{ 'general.pagination.label' | t }}"
-      >
-        {%- if paginate.previous -%}
-          <a href="{{ paginate.previous.url }}" class="collection-showroom__page-link">
-            &larr; {{ 'general.pagination.previous' | t }}
-          </a>
-        {%- endif -%}
-
-        {%- for part in paginate.parts -%}
-          {%- if part.is_link -%}
-            <a href="{{ part.url }}" class="collection-showroom__page-link">
-              {{ part.title }}
-            </a>
-          {%- else -%}
-            <span
-              class="collection-showroom__page-link collection-showroom__page-link--current"
-              aria-current="page"
-            >
-              {{ part.title }}
-            </span>
-          {%- endif -%}
-        {%- endfor -%}
-
-        {%- if paginate.next -%}
-          <a href="{{ paginate.next.url }}" class="collection-showroom__page-link">
-            {{ 'general.pagination.next' | t }} &rarr;
-          </a>
-        {%- endif -%}
-      </nav>
-    {%- endif -%}
-
+    {%- render 'collection-products', collection: collection, paginate: paginate -%}
   </div>
 
-  {%- comment -%} ── Articles panel ──────────────────────────────────────── {%- endcomment -%}
+  {%- comment -%} ── Posts panel ─────────────────────────────────────────── {%- endcomment -%}
 
-  {%- if has_articles -%}
+  {%- if has_posts -%}
     <div
       class="collection-showroom__panel"
-      id="showroom-panel-articles"
+      id="showroom-panel-posts"
       role="tabpanel"
-      aria-labelledby="showroom-tab-articles"
-      data-showroom-panel="articles"
+      aria-labelledby="showroom-tab-posts"
+      data-showroom-panel="posts"
       hidden
     >
-      <div class="collection-showroom__grid">
-        {%- for article in related_articles -%}
-          {%- render 'card-article', article: article -%}
-        {%- endfor -%}
-      </div>
+      {%- render 'collection-posts', posts: related_posts -%}
     </div>
   {%- endif -%}
 
@@ -178,11 +126,7 @@
       data-showroom-panel="pages"
       hidden
     >
-      <div class="collection-showroom__grid">
-        {%- for page in related_pages -%}
-          {%- render 'card-page', page: page -%}
-        {%- endfor -%}
-      </div>
+      {%- render 'collection-pages', pages: related_pages -%}
     </div>
   {%- endif -%}
 
