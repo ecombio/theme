@@ -1,0 +1,311 @@
+{% comment %}
+  sections/collection.liquid
+  Root section for templates/collection.json.
+
+  Renders:
+    [1.1] collection-features.liquid  — sort, filters, active-filter bar
+    [1.2] collection-showroom.liquid  — tab router (products / posts / pages)
+      [1.2.1] collection-pages.liquid    → page-card.liquid
+      [1.2.2] collection-posts.liquid    → post-card.liquid
+      [1.2.3] collection-products.liquid → product-card.liquid
+                                          → collection-banner.liquid (blocks)
+
+  Metafields read:
+    collection.metafields.custom.posts.value  — list of article objects
+    collection.metafields.custom.pages.value  — list of page objects
+    collection.metafields.custom.description  — optional rich-text override
+    collection.metafields.custom.banner_image — optional banner image
+
+  Blocks:
+    "banner" — a single clickable image banner rendered INSIDE the
+               product grid (collection-products.liquid), sized as a
+               percent of the row's width (25/50/75/100%) and
+               positioned by its `position` setting. Added/removed/
+               reordered via the theme editor's block list, same as
+               any other section block. See collection-banner.liquid
+               for rendering and collection-products.liquid for the
+               interleaving logic.
+
+  Pagination:
+    Opened here around the showroom render so that all sub-snippets
+    share the same paginate object. Products per page is controlled
+    by the section setting `products_per_page`.
+
+  CSS:
+    collection.css — loaded below via stylesheet_tag.
+
+  JS:
+    product-card.js — loaded globally in theme.liquid.
+    collection-showroom.js — loaded by collection-showroom.liquid.
+    collection-banner.js — loaded by collection-banner.liquid.
+    post-card.js / page-card.js — loaded by their respective card snippets.
+{% endcomment %}
+
+{{ 'collection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign related_posts = collection.metafields.custom.posts.value
+  assign related_pages = collection.metafields.custom.pages.value
+  assign products_per_page = section.settings.products_per_page | default: 12
+  assign show_banner       = section.settings.show_banner
+  assign show_description  = section.settings.show_description
+  assign show_breadcrumb   = section.settings.show_breadcrumb
+  assign layout            = section.settings.layout | default: 'sidebar'
+
+  assign banner_image = collection.metafields.custom.banner_image.value
+  if banner_image == blank
+    assign banner_image = collection.image
+  endif
+-%}
+
+<div class="collection-section collection-section--layout-{{ layout }}">
+
+  {%- comment -%} ── Breadcrumb ──────────────────────────────────────────── {%- endcomment -%}
+
+  {%- if show_breadcrumb -%}
+    <nav class="collection-section__breadcrumb" aria-label="Breadcrumb">
+      <ol class="collection-section__breadcrumb-list">
+        <li class="collection-section__breadcrumb-item">
+          <a href="/" class="collection-section__breadcrumb-link">Home</a>
+        </li>
+        <li class="collection-section__breadcrumb-item" aria-hidden="true">
+          <span class="collection-section__breadcrumb-sep">/</span>
+        </li>
+        <li class="collection-section__breadcrumb-item">
+          <a href="/collections" class="collection-section__breadcrumb-link">Collections</a>
+        </li>
+        <li class="collection-section__breadcrumb-item" aria-hidden="true">
+          <span class="collection-section__breadcrumb-sep">/</span>
+        </li>
+        <li class="collection-section__breadcrumb-item collection-section__breadcrumb-item--current" aria-current="page">
+          {{ collection.title }}
+        </li>
+      </ol>
+    </nav>
+  {%- endif -%}
+
+  {%- comment -%} ── Banner ──────────────────────────────────────────────── {%- endcomment -%}
+
+  {%- if show_banner and banner_image -%}
+    <div class="collection-section__banner">
+      <img
+        class="collection-section__banner-image"
+        src="{{ banner_image | image_url: width: 1400 }}"
+        alt="{{ banner_image.alt | escape | default: collection.title | escape }}"
+        width="1400"
+        height="{{ 1400 | divided_by: banner_image.aspect_ratio | round }}"
+        loading="eager"
+        fetchpriority="high"
+      >
+      <div class="collection-section__banner-overlay">
+        <h1 class="collection-section__banner-title">{{ collection.title }}</h1>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Header (no banner) ──────────────────────────────────── {%- endcomment -%}
+
+  {%- unless show_banner and banner_image -%}
+    <header class="collection-section__header">
+      <h1 class="collection-section__title">{{ collection.title }}</h1>
+
+      {%- if show_description -%}
+        {%- liquid
+          assign description_content = collection.metafields.custom.description.value
+          if description_content == blank
+            assign description_content = collection.description
+          endif
+        -%}
+        {%- if description_content != blank -%}
+          <div class="collection-section__description">
+            {{ description_content }}
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    </header>
+  {%- endunless -%}
+
+  {%- comment -%} ── Body: features + showroom ────────────────────────────── {%- endcomment -%}
+
+  <div class="collection-section__body">
+
+    {%- comment -%}
+      [1.1] collection-features.liquid
+      Handles: sort bar, filter panel, active filter pills.
+      Only rendered when layout includes a sidebar or filter bar.
+    {%- endcomment -%}
+
+    {%- if layout == 'sidebar' -%}
+      <aside class="collection-section__sidebar" aria-label="Collection filters">
+        {%- render 'collection-features',
+          collection: collection,
+          context:    'sidebar'
+        -%}
+      </aside>
+    {%- endif -%}
+
+    {%- comment -%} ── Main content area ───────────────────────────────────── {%- endcomment -%}
+
+    <div class="collection-section__main">
+
+      {%- comment -%} Sort / filter bar above the grid when layout is full-width {%- endcomment -%}
+
+      {%- if layout == 'full' -%}
+        <div class="collection-section__toolbar">
+          {%- render 'collection-features',
+            collection: collection,
+            context:    'toolbar'
+          -%}
+        </div>
+      {%- endif -%}
+
+      {%- comment -%}
+        [1.2] collection-showroom.liquid
+        Paginate is opened here so the paginate object is available
+        to collection-products.liquid's pagination markup.
+        section.blocks is forwarded through so "banner" blocks can
+        be interleaved into the products grid by position.
+      {%- endcomment -%}
+
+      {%- paginate collection.products by products_per_page -%}
+        {%- render 'collection-showroom',
+          collection:    collection,
+          paginate:      paginate,
+          related_posts: related_posts,
+          related_pages: related_pages,
+          blocks:        section.blocks
+        -%}
+      {%- endpaginate -%}
+
+    </div>
+
+  </div>
+
+</div>
+
+{% schema %}
+{
+  "name": "Collection",
+  "tag": "section",
+  "class": "section-collection",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "sidebar", "label": "Sidebar filters" },
+        { "value": "full",    "label": "Full width + toolbar" }
+      ],
+      "default": "sidebar"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 6,
+      "max": 48,
+      "step": 6,
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Header"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_breadcrumb",
+      "label": "Show breadcrumb",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_description",
+      "label": "Show collection description",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Banner"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_banner",
+      "label": "Show banner image",
+      "info": "Uses collection.metafields.custom.banner_image if set, otherwise falls back to the collection image.",
+      "default": false
+    }
+  ],
+  "blocks": [
+    {
+      "type": "banner",
+      "name": "Banner",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image",
+          "info": "Landscape images work best; the banner is always wider than it is tall."
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Choose a product, collection, page, blog, article, or enter a custom URL. Leave blank for a non-clickable banner."
+        },
+        {
+          "type": "header",
+          "content": "Position"
+        },
+        {
+          "type": "number",
+          "id": "position",
+          "label": "Insert after product #",
+          "info": "0 = before the first product. The banner reappears at this position on every page of results.",
+          "default": 3
+        },
+        {
+          "type": "header",
+          "content": "Size"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Row width",
+          "info": "Percent of the current row's width. 100% always spans the full row regardless of how many products-per-row your grid uses; 25/50/75% scale proportionally to that row width.",
+          "options": [
+            { "value": "25",  "label": "25% of row" },
+            { "value": "50",  "label": "50% of row" },
+            { "value": "75",  "label": "75% of row" },
+            { "value": "100", "label": "100% of row (full width)" }
+          ],
+          "default": "100"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection"
+    }
+  ]
+}
+{% endschema %}
