@@ -1,37 +1,27 @@
-{% comment %}
-  Snippet: collection-pages
-  Called by: snippets/collection-showcase.liquid
-  Calls:     snippets/card-page.liquid
+{%- comment -%}
+  Snippet: card-page
+  Called by: snippets/collection-pages.liquid
 
   Parameters:
-    - context    {String} — 'collection' | 'search'
-    - section    {Object}
-    - meta_pages {Array}  — collection.metafields.custom.pages.value
-{% endcomment %}
+    - page {Object} — page object (required)
 
-{%- if context == 'search' -%}
+  Note: Shopify pages have no native image object. If you add a metafield
+  image to pages (e.g. custom.thumbnail), slot it in the image zone below.
+{%- endcomment -%}
 
-  {%- assign page_results = search.results | where: 'object_type', 'page' -%}
-  {%- if page_results.size > 0 -%}
-    <div class="collection-pages-grid">
-      {%- for page in page_results -%}
-        {% render 'card-page', page: page %}
-      {%- endfor -%}
-    </div>
-  {%- else -%}
-    <p class="collection-showcase__empty">No pages found for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
-  {%- endif -%}
+<div class="card-page" data-page-id="{{ page.id }}">
 
-{%- else -%}
+  {%- comment -%} ══ CONTENT ══ {%- endcomment -%}
+  <div class="card-page__content">
 
-  {%- if meta_pages != blank and meta_pages.size > 0 -%}
-    <div class="collection-pages-grid">
-      {%- for page in meta_pages -%}
-        {% render 'card-page', page: page %}
-      {%- endfor -%}
-    </div>
-  {%- else -%}
-    <p class="collection-showcase__empty">No pages have been added to this collection yet.</p>
-  {%- endif -%}
+    <a href="{{ page.url }}" class="card-page__title">{{ page.title }}</a>
 
-{%- endif -%}
+    {%- if page.content != blank -%}
+      <p class="card-page__excerpt">{{ page.content | strip_html | truncate: 120 }}</p>
+    {%- endif -%}
+
+    <a href="{{ page.url }}" class="card-page__link" aria-label="View {{ page.title | escape }}">View page</a>
+
+  </div>
+
+</div>
