@@ -108,20 +108,21 @@
 .product-card__badge {
   display: inline-block;
 
-  padding: 3px 8px;
+  padding: 4px 10px;
 
-  border-radius: 4px;
+  border-radius: 6px;
 
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.4;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
+/* Changed: sale badge is now red, not black */
 .product-card__badge--sale {
   color: #fff;
-  background: #111;
+  background: #e53935;
 }
 
 .product-card__badge--sold-out {
@@ -176,59 +177,66 @@
 
 /* ── Quick View ────────────────────────────────────────────── */
 
+/* Changed: Quick View is now a centered pill label over the image */
 .product-card__actions {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
+  inset: 0;
   z-index: 2;
 
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
 
   opacity: 0;
-  transform: translateX(6px);
 
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+  transition: opacity 0.2s ease;
+
+  /* no pointer-events when hidden so clicks pass through to link */
+  pointer-events: none;
 }
 
 .product-card:hover .product-card__actions,
 .product-card:focus-within .product-card__actions {
   opacity: 1;
-  transform: translateX(0);
+  pointer-events: auto;
 }
 
-.product-card__action-btn {
+.product-card__action-btn--quickview {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 7px;
 
-  width: 34px;
-  height: 34px;
+  padding: 9px 18px;
 
-  color: #555;
+  color: #111;
   cursor: pointer;
 
-  background: #fff;
-  border: 1.5px solid #e5e5e5;
-  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  border-radius: 999px;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 
   transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.product-card__action-btn:hover {
-  color: #111;
-  border-color: #111;
+.product-card__action-btn--quickview:hover {
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
 }
 
 .product-card__action-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
   pointer-events: none;
 }
 
@@ -286,42 +294,54 @@
   margin-top: 4px;
 }
 
-.product-card__price-regular,
-.product-card__price-sale {
+.product-card__price-regular {
   color: #111;
   font-size: 1.25rem;
-}
-
-.product-card__price-regular {
   font-weight: 600;
 }
 
+/* Changed: sale price is now red */
 .product-card__price-sale {
+  color: #e53935;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
 /* ── Savings ───────────────────────────────────────────────── */
 
+/* Changed: savings is now a pill-chip layout */
 .product-card__savings {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 
-  color: #888;
+  margin: 2px 0 0;
 
   font-size: 0.75rem;
   line-height: 1.4;
 }
 
-.product-card__savings strong {
+.product-card__savings-chip {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 2px 8px;
+
   color: #111;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.75rem;
+
+  background: #f0f0f0;
+  border-radius: 4px;
 }
 
-.product-card__savings s {
+.product-card__savings-comp {
+  color: #888;
+}
+
+.product-card__savings-comp s {
   color: #aaa;
-}
-
-.product-card__savings-sep {
-  color: #ccc;
 }
 
 /* ── Arrival chip ──────────────────────────────────────────── */
@@ -446,7 +466,7 @@
 /* ── Accessibility ─────────────────────────────────────────── */
 
 .product-card__wishlist-btn:focus-visible,
-.product-card__action-btn:focus-visible,
+.product-card__action-btn--quickview:focus-visible,
 .product-card__atc:focus-visible,
 .product-card__title-link:focus-visible,
 .product-card__compare-checkbox:focus-visible {
@@ -459,7 +479,7 @@
 @media (hover: none) {
   .product-card__actions {
     opacity: 1;
-    transform: none;
+    pointer-events: auto;
   }
 }
 
@@ -470,7 +490,7 @@
   .product-card__image,
   .product-card__actions,
   .product-card__wishlist-btn,
-  .product-card__action-btn,
+  .product-card__action-btn--quickview,
   .product-card__atc {
     transition: none;
   }
