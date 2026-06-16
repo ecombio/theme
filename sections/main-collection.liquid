@@ -7,13 +7,12 @@
   assign per_page     = section.settings.products_per_page | default: 20
   assign show_filters = section.settings.show_filters | default: true
 
-  assign article_blocks = section.blocks | where: 'type', 'article'
-  assign page_blocks    = section.blocks | where: 'type', 'page'
-  assign article_count  = article_blocks.size
-  assign page_count     = page_blocks.size
+  assign meta_articles = collection.metafields.custom.articles.value
+  assign meta_pages    = collection.metafields.custom.pages.value
+  assign article_count = meta_articles.size | default: 0
+  assign page_count    = meta_pages.size | default: 0
 
   assign active_tab = request.parameters.tab | default: 'products'
- 
 
   assign show_banners = true
   assign active_filter_count = 0
@@ -55,14 +54,14 @@
       <div id="filters-backdrop" class="filters-backdrop"></div>
 
       {% render 'collection-showcase',
-  active_tab:    active_tab,
-  article_count: article_count,
-  page_count:    page_count,
-  per_page:      per_page,
-  show_banners:  show_banners,
-  context:       'collection',
-  section:       section
-%}
+        active_tab:    active_tab,
+        per_page:      per_page,
+        show_banners:  show_banners,
+        context:       'collection',
+        section:       section,
+        meta_articles: meta_articles,
+        meta_pages:    meta_pages
+      %}
 
     </div>
   </div>
@@ -158,20 +157,6 @@
     }
   ],
   "blocks": [
-    {
-      "type": "article",
-      "name": "Article",
-      "settings": [
-        { "type": "article", "id": "article", "label": "Article" }
-      ]
-    },
-    {
-      "type": "page",
-      "name": "Page",
-      "settings": [
-        { "type": "page", "id": "page", "label": "Page" }
-      ]
-    },
     {
       "type": "grid_banner",
       "name": "Grid Banner",
