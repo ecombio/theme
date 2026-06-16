@@ -1,0 +1,89 @@
+{% comment %}
+  snippets/collection-banner.liquid
+  Renders a single clickable banner block inside the products grid
+  (collection-products.liquid). Occupies a configurable fraction of
+  the current row's width, landscape-oriented, sized in slots relative
+  to the grid's column count — NOT a fixed pixel/column count — so it
+  stays correct if a merchant changes "products per row".
+
+  Expects:
+    block  {Block} — a section block of type "banner", with settings:
+      image       {Image}  — banner image (landscape recommended)
+      heading     {String} — optional overlay heading
+      subheading  {String} — optional overlay subheading
+      width       {String} — "25" | "50" | "75" | "100" (percent of row)
+      link        {Url}    — native Shopify link setting; resource picker
+                              (product / collection / page / blog / URL)
+                              renders automatically in the theme editor
+                              because the setting type is "url"
+      position    {Number} — see collection-products.liquid for semantics
+
+  Self-contained: loads collection-banner.css and collection-banner.js.
+
+  NOTE on width math:
+    "width" is a percent-of-row value, translated to a CSS custom
+    property (--banner-span-percent) rather than a hardcoded
+    grid-column count. collection-banner.css reads this alongside
+    --grid-columns (set by collection-products.css on the grid
+    container) to compute how many actual columns to span:
+      spanColumns = round( (width / 100) * gridColumns )
+    This keeps "50%" meaning "half the row" even if a merchant changes
+    products-per-row from 3 to 4 or 5. If the resulting span would
+    exceed the grid's column count, it's clamped to the full row.
+{% endcomment %}
+
+{{ 'collection-banner.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign width = block.settings.width | default: '100'
+  assign image = block.settings.image
+  assign link = block.settings.link
+  assign banner_id = 'banner-' | append: block.id
+-%}
+
+<div
+  class="collection-banner collection-banner--width-{{ width }}"
+  id="{{ banner_id }}"
+  data-banner
+  style="--banner-span-percent: {{ width }};"
+  {{ block.shopify_attributes }}
+>
+  {%- if link != blank -%}<a href="{{ link }}" class="collection-banner__link">{%- endif -%}
+
+    <div class="collection-banner__image-wrap">
+      {%- if image != blank -%}
+        <img
+          class="collection-banner__image"
+          src="{{ image | image_url: width: 1600 }}"
+          srcset="
+            {{ image | image_url: width: 400 }} 400w,
+            {{ image | image_url: width: 800 }} 800w,
+            {{ image | image_url: width: 1200 }} 1200w,
+            {{ image | image_url: width: 1600 }} 1600w
+          "
+          sizes="(min-width: 990px) {{ width }}vw, 100vw"
+          alt="{{ image.alt | escape | default: block.settings.heading | escape }}"
+          width="1600"
+          height="{{ 1600 | divided_by: image.aspect_ratio | round }}"
+          loading="lazy"
+        >
+      {%- else -%}
+        <div class="collection-banner__image collection-banner__image--placeholder" aria-hidden="true"></div>
+      {%- endif -%}
+
+      {%- if block.settings.heading != blank or block.settings.subheading != blank -%}
+        <div class="collection-banner__overlay">
+          {%- if block.settings.heading != blank -%}
+            <span class="collection-banner__heading">{{ block.settings.heading | escape }}</span>
+          {%- endif -%}
+          {%- if block.settings.subheading != blank -%}
+            <span class="collection-banner__subheading">{{ block.settings.subheading | escape }}</span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+  {%- if link != blank -%}</a>{%- endif -%}
+</div>
+
+<script src="{{ 'collection-banner.js' | asset_url }}" defer></script>
