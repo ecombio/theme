@@ -1,53 +1,10 @@
 {% comment %}
   snippets/collection-features.liquid
-  Renders collection controls: filters and sorting.
+  Houses the filter sidebar and results count for the collection page.
 
   Expects:
     collection    {Object} — the Shopify collection object
     results_count {Number} — collection.products_count
 {% endcomment %}
 
-<div class="collection-features">
-
-  {%- comment -%} ---- Meta: title + count ---- {%- endcomment -%}
-
-  <div class="collection-features__meta">
-    <h1 class="collection-features__title">{{ collection.title }}</h1>
-    <p class="collection-features__count">
-      {{- results_count -}}
-      {%- if results_count == 1 -%}
-        &nbsp;{{ 'collections.general.product' | t }}
-      {%- else -%}
-        &nbsp;{{ 'collections.general.products' | t }}
-      {%- endif -%}
-    </p>
-  </div>
-
-  {%- comment -%} ---- Filters ---- {%- endcomment -%}
-
-  {%- render 'collection-filters' -%}
-
-  {%- comment -%} ---- Sorting ---- {%- endcomment -%}
-
-  <div class="collection-features__sort">
-    <label for="collection-sort" class="collection-features__sort-label">
-      {{ 'collections.sorting.title' | t }}
-    </label>
-    <select
-      id="collection-sort"
-      name="sort_by"
-      class="collection-features__sort-select"
-      onchange="window.location = '{{ collection.url }}?sort_by=' + this.value;"
-    >
-      {%- for option in collection.sort_options -%}
-        <option
-          value="{{ option.value }}"
-          {% if option.value == collection.sort_by %}selected{% endif %}
-        >
-          {{- option.name -}}
-        </option>
-      {%- endfor -%}
-    </select>
-  </div>
-
-</div>
+{%- render 'collection-filters', collection: collection -%}
