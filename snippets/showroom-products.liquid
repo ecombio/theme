@@ -1,0 +1,120 @@
+{% comment %}
+  snippets/showroom-products.liquid
+
+  Showroom adapter for collection products.
+
+  Responsibilities:
+    - Render the current paginated set of products
+    - Handle empty states
+    - Render pagination controls
+    - Delegate product presentation to product-card.liquid
+
+  Expects:
+    collection        {Object} — Shopify collection object
+    paginate          {Object} — paginate object opened upstream
+
+  Optional:
+    columns_mobile    {Number} — default: 2
+    columns_desktop   {Number} — default: 4
+
+  Card rendering:
+    product-card.liquid
+
+  Notes:
+    - product-card.js is loaded globally in theme.liquid.
+    - Do NOT load JavaScript here.
+    - Do NOT pass section.blocks into this snippet.
+    - collection.products is already paginated upstream.
+{% endcomment %}
+
+{{ 'showroom-products.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign columns_mobile = columns_mobile | default: 2
+  assign columns_desktop = columns_desktop | default: 4
+-%}
+
+<div
+  class="showroom-products"
+  style="
+    --showroom-products-columns-mobile: {{ columns_mobile }};
+    --showroom-products-columns-desktop: {{ columns_desktop }};
+  "
+>
+
+  {%- if collection.products != blank -%}
+
+    <div class="showroom-products__grid">
+
+      {%- for product in collection.products -%}
+        {%- render 'product-card',
+          product: product
+        -%}
+      {%- endfor -%}
+
+    </div>
+
+  {%- else -%}
+
+    <p class="showroom-products__empty">
+      {{ 'collections.general.no_matches' | t }}
+    </p>
+
+  {%- endif -%}
+
+  {%- if paginate.pages > 1 -%}
+
+    <nav
+      class="showroom-products__pagination"
+      aria-label="{{ 'general.pagination.label' | t }}"
+    >
+
+      {%- if paginate.previous -%}
+        <a
+          href="{{ paginate.previous.url }}"
+          class="showroom-products__page-link"
+        >
+          &larr; {{ 'general.pagination.previous' | t }}
+        </a>
+      {%- endif -%}
+
+      {%- for part in paginate.parts -%}
+
+        {%- if part.is_link -%}
+
+          <a
+            href="{{ part.url }}"
+            class="showroom-products__page-link"
+          >
+            {{ part.title }}
+          </a>
+
+        {%- else -%}
+
+          <span
+            class="showroom-products__page-link showroom-products__page-link--current"
+            aria-current="page"
+          >
+            {{ part.title }}
+          </span>
+
+        {%- endif -%}
+
+      {%- endfor -%}
+
+      {%- if paginate.next -%}
+
+        <a
+          href="{{ paginate.next.url }}"
+          class="showroom-products__page-link"
+        >
+          {{ 'general.pagination.next' | t }} &rarr;
+        </a>
+
+      {%- endif -%}
+
+    </nav>
+
+  {%- endif -%}
+
+</div>
