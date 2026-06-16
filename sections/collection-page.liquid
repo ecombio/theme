@@ -1,0 +1,43 @@
+<div class="collection-page">
+
+  {%- if show_title -%}
+    <h1 class="collection-page__title">{{ collection.title }}</h1>
+  {%- endif -%}
+
+  <div class="collection-layout">
+    {%- if show_filters and active_tab == 'products' -%}
+      {% render 'collection-filters', open: true %}
+    {%- endif -%}
+
+    <div class="collection-main">
+
+      <div class="collection-sticky-bar">
+        {% render 'collection-toolbar',
+          show_filters:  show_filters,
+          active_tab:    active_tab,
+          article_count: article_count,
+          page_count:    page_count,
+          per_page:      per_page,
+          show_banners:  show_banners,
+          context:       'collection',
+          section:       section
+        %}
+        <div class="collection-active-filters" id="active-filters-bar" aria-label="Active filters"></div>
+      </div>
+
+      <div id="filters-backdrop" class="filters-backdrop"></div>
+
+      {% render 'collection-showcase',
+        active_tab:    active_tab,
+        per_page:      per_page,
+        show_banners:  show_banners,
+        context:       'collection',
+        section:       section,
+        meta_articles: meta_articles,
+        meta_pages:    meta_pages
+      %}
+
+    </div>
+  </div>
+
+</div>
