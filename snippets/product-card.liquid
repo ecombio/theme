@@ -9,17 +9,20 @@
   JS:    product-card.js — loaded globally in theme.liquid. Do NOT load here.
 
   Reviews:
-    Judge.me star badge rendered via judgeme_widgets snippet.
-    Requires the Judge.me app embed to be enabled in theme settings.
+    Judge.me star badge via product.metafields.judgeme.badge.
+    Requires the Judge.me app embed to be enabled under
+    Online Store → Themes → Customize → App embeds.
 
   Metafields read:
-    product.metafields.custom.estimated_arrival — optional string, e.g. "Tue, Apr 9"
+    product.metafields.judgeme.badge            — Judge.me preview badge HTML
+    product.metafields.custom.estimated_arrival — optional delivery string,
+                                                  e.g. "Tue, Apr 9"
 
   Data attributes wired to product-card.js:
     [data-product-handle]    — on the card root, used by Wishlist + Quick View
     [data-atc-btn]           — Add to Cart button
     [data-variant-id]        — first available variant ID
-    [data-wishlist-btn]      — wishlist toggle
+    [data-wishlist-btn]      — wishlist toggle; JS must set aria-pressed="true/false"
     [data-product-id]        — numeric product ID
     [data-quickview-btn]     — Quick View trigger
     [data-compare-checkbox]  — compare toggle
@@ -40,6 +43,7 @@
     assign savings = current_variant.compare_at_price | minus: current_variant.price
   endif
   assign estimated_arrival = product.metafields.custom.estimated_arrival.value
+  assign jdgm_badge        = product.metafields.judgeme.badge
 -%}
 
 <div
@@ -79,7 +83,7 @@
       {%- endif -%}
     </a>
 
-    {%- comment -%} ── Badges ─────────────────────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Badges (top-left) ───────────────────────────────────── {%- endcomment -%}
 
     <div class="product-card__badges">
       {%- if on_sale -%}
@@ -90,7 +94,7 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── Wishlist (always visible, top-right) ────────────────── {%- endcomment -%}
+    {%- comment -%} ── Wishlist button (always visible, top-right) ─────────── {%- endcomment -%}
 
     <button
       class="product-card__wishlist-btn"
@@ -105,7 +109,7 @@
       </svg>
     </button>
 
-    {%- comment -%} ── Quick View (hover-reveal) ────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Quick View (hover-reveal, bottom-right) ─────────────── {%- endcomment -%}
 
     <div class="product-card__actions">
       <button
@@ -138,13 +142,8 @@
 
     {%- comment -%} ── Judge.me star badge ──────────────────────────────────── {%- endcomment -%}
 
-    <div class="product-card__reviews">
-      {%- render 'judgeme_widgets',
-        widget_type:       'judgeme_preview_badge',
-        jm_style:          '',
-        concierge_install: false,
-        product:           product
-      -%}
+    <div class="product-card__reviews jdgm-widget jdgm-preview-badge" data-id="{{ product.id }}" data-auto-install="false">
+      {{- jdgm_badge -}}
     </div>
 
     {%- comment -%} ── Price ───────────────────────────────────────────────── {%- endcomment -%}
@@ -163,17 +162,17 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── Savings line ────────────────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Savings line (sale only) ─────────────────────────────── {%- endcomment -%}
 
     {%- if on_sale -%}
       <p class="product-card__savings">
         Save <strong>{{ savings | money }}</strong>
-        <span class="product-card__savings-sep">&nbsp;·&nbsp;</span>
+        <span class="product-card__savings-sep">&nbsp;&middot;&nbsp;</span>
         Comp. Value: <s>{{ current_variant.compare_at_price | money }}</s>
       </p>
     {%- endif -%}
 
-    {%- comment -%} ── Estimated arrival ───────────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Estimated arrival chip ───────────────────────────────── {%- endcomment -%}
 
     {%- if estimated_arrival != blank -%}
       <div class="product-card__arrival">
@@ -185,7 +184,7 @@
         </svg>
         <span>
           Est. arrival: <strong>{{ estimated_arrival }}</strong>
-          <span class="product-card__arrival-sep">&nbsp;·&nbsp;</span>
+          <span class="product-card__arrival-sep">&nbsp;&middot;&nbsp;</span>
           <strong class="product-card__arrival-free">FREE</strong>
         </span>
       </div>
@@ -193,7 +192,7 @@
 
   </div>
 
-  {%- comment -%} ── Footer: ATC + Compare ───────────────────────────────── {%- endcomment -%}
+  {%- comment -%} ── Footer: ATC + Compare ───────────────────────────────────── {%- endcomment -%}
 
   <div class="product-card__footer">
     {%- if product.available -%}
