@@ -8,6 +8,13 @@
   Loads: product-card.css (via stylesheet_tag below)
   JS:    product-card.js — loaded globally in theme.liquid. Do NOT load here.
 
+  Reviews:
+    Judge.me star badge rendered via judgeme_widgets snippet.
+    Requires the Judge.me app embed to be enabled in theme settings.
+
+  Metafields read:
+    product.metafields.custom.estimated_arrival — optional string, e.g. "Tue, Apr 9"
+
   Data attributes wired to product-card.js:
     [data-product-handle]    — on the card root, used by Wishlist + Quick View
     [data-atc-btn]           — Add to Cart button
@@ -24,12 +31,15 @@
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign current_variant = product.selected_or_first_available_variant
-  assign product_image   = product.featured_image | default: product.images.first
-  assign on_sale         = false
+  assign current_variant   = product.selected_or_first_available_variant
+  assign product_image     = product.featured_image | default: product.images.first
+  assign on_sale           = false
+  assign savings           = 0
   if current_variant.compare_at_price > current_variant.price
     assign on_sale = true
+    assign savings = current_variant.compare_at_price | minus: current_variant.price
   endif
+  assign estimated_arrival = product.metafields.custom.estimated_arrival.value
 -%}
 
 <div
@@ -80,22 +90,24 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── Quick actions ───────────────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Wishlist (always visible, top-right) ────────────────── {%- endcomment -%}
+
+    <button
+      class="product-card__wishlist-btn"
+      type="button"
+      aria-label="Add {{ product.title | escape }} to wishlist"
+      aria-pressed="false"
+      data-wishlist-btn
+      data-product-id="{{ product.id }}"
+    >
+      <svg class="product-card__wishlist-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+
+    {%- comment -%} ── Quick View (hover-reveal) ────────────────────────────── {%- endcomment -%}
 
     <div class="product-card__actions">
-      <button
-        class="product-card__action-btn product-card__action-btn--wishlist"
-        type="button"
-        aria-label="Add {{ product.title | escape }} to wishlist"
-        aria-pressed="false"
-        data-wishlist-btn
-        data-product-id="{{ product.id }}"
-      >
-        <svg class="product-card__action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-      </button>
-
       <button
         class="product-card__action-btn product-card__action-btn--quickview"
         type="button"
@@ -124,10 +136,22 @@
       <a href="{{ product.url }}" class="product-card__title-link">{{ product.title }}</a>
     </h3>
 
+    {%- comment -%} ── Judge.me star badge ──────────────────────────────────── {%- endcomment -%}
+
+    <div class="product-card__reviews">
+      {%- render 'judgeme_widgets',
+        widget_type:       'judgeme_preview_badge',
+        jm_style:          '',
+        concierge_install: false,
+        product:           product
+      -%}
+    </div>
+
+    {%- comment -%} ── Price ───────────────────────────────────────────────── {%- endcomment -%}
+
     <div class="product-card__price">
       {%- if on_sale -%}
         <span class="product-card__price-sale">{{ current_variant.price | money }}</span>
-        <span class="product-card__price-compare">{{ current_variant.compare_at_price | money }}</span>
       {%- else -%}
         <span class="product-card__price-regular">
           {%- if product.price_varies -%}
@@ -139,7 +163,53 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%} ── Compare checkbox ────────────────────────────────────── {%- endcomment -%}
+    {%- comment -%} ── Savings line ────────────────────────────────────────── {%- endcomment -%}
+
+    {%- if on_sale -%}
+      <p class="product-card__savings">
+        Save <strong>{{ savings | money }}</strong>
+        <span class="product-card__savings-sep">&nbsp;·&nbsp;</span>
+        Comp. Value: <s>{{ current_variant.compare_at_price | money }}</s>
+      </p>
+    {%- endif -%}
+
+    {%- comment -%} ── Estimated arrival ───────────────────────────────────── {%- endcomment -%}
+
+    {%- if estimated_arrival != blank -%}
+      <div class="product-card__arrival">
+        <svg class="product-card__arrival-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <rect x="1" y="3" width="15" height="13" rx="1"/>
+          <path d="M16 8h4l3 5v3h-7V8z"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/>
+          <circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+        <span>
+          Est. arrival: <strong>{{ estimated_arrival }}</strong>
+          <span class="product-card__arrival-sep">&nbsp;·&nbsp;</span>
+          <strong class="product-card__arrival-free">FREE</strong>
+        </span>
+      </div>
+    {%- endif -%}
+
+  </div>
+
+  {%- comment -%} ── Footer: ATC + Compare ───────────────────────────────── {%- endcomment -%}
+
+  <div class="product-card__footer">
+    {%- if product.available -%}
+      <button
+        class="product-card__atc"
+        type="button"
+        data-atc-btn
+        data-variant-id="{{ current_variant.id }}"
+      >
+        <span class="product-card__atc-label">Add to cart</span>
+      </button>
+    {%- else -%}
+      <button class="product-card__atc product-card__atc--disabled" type="button" disabled>
+        <span class="product-card__atc-label">Sold out</span>
+      </button>
+    {%- endif -%}
 
     <label class="product-card__compare">
       <input
@@ -154,26 +224,6 @@
       >
       <span class="product-card__compare-label">Compare</span>
     </label>
-
-  </div>
-
-  {%- comment -%} ── Add to Cart ─────────────────────────────────────────── {%- endcomment -%}
-
-  <div class="product-card__footer">
-    {%- if product.available -%}
-      <button
-        class="product-card__atc"
-        type="button"
-        data-atc-btn
-        data-variant-id="{{ current_variant.id }}"
-      >
-        <span class="card-product__atc-label">Add to cart</span>
-      </button>
-    {%- else -%}
-      <button class="product-card__atc product-card__atc--disabled" type="button" disabled>
-        <span class="card-product__atc-label">Sold out</span>
-      </button>
-    {%- endif -%}
   </div>
 
 </div>
