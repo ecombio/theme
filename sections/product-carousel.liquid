@@ -1,9 +1,11 @@
+product-carousel ("section")
+****
 {%- comment -%}
   sections/product-carousel.liquid
   Tab = collection. Products pulled from each collection directly.
   Reviews via Judge.me: product.metafields.judge_me_product_metafields
 
-  NOTE: card-product-features.js is loaded globally in theme.liquid.
+  NOTE: product-card.js is loaded globally in theme.liquid.
   Do NOT re-load it here — doing so double-registers the click handlers
   for Add to Cart, Wishlist, Compare, and Quick View (each click fires
   twice: double-add to cart, wishlist toggles cancel out, Quick View
@@ -39,7 +41,7 @@
 -%}
 
 {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
-{{ 'card-product-carousel.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 <section
   class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %}"
@@ -161,7 +163,7 @@
                 {%- if col != blank and col.products_count > 0 -%}
                   {%- for product in col.products limit: products_limit -%}
                     <li class="product-carousel__slide" data-carousel-slide>
-                      {%- render 'card-product-carousel', product: product -%}
+                      {%- render 'product-card', product: product -%}
                     </li>
                   {%- endfor -%}
                 {%- else -%}
