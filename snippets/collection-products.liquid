@@ -1,141 +1,120 @@
 {% comment %}
   snippets/collection-products.liquid
-  Renders the products grid and pagination for collection-showroom.liquid.
-  Also interleaves any "banner" section blocks at their configured
-  grid slot (e.g. a clickable landscape banner after the 3rd product).
+
+  Showroom adapter for collection products.
+
+  Responsibilities:
+    - Render the current paginated set of products
+    - Handle empty states
+    - Render pagination controls
+    - Delegate product presentation to product-card.liquid
 
   Expects:
-    collection  {Object} — the Shopify collection object
-    paginate    {Object} — paginate object opened upstream in collection.liquid
-    blocks      {Array}  — section.blocks, forwarded from collection.liquid
-                            via collection-showroom.liquid. May be blank.
+    collection        {Object} — Shopify collection object
+    paginate          {Object} — paginate object opened upstream
 
-  Block settings read (per block, type == "banner"):
-    position  {Number} — 1-indexed product slot AFTER which the banner
-                          renders on the CURRENT page. 0 or blank = before
-                          the first product. Values beyond the page's
-                          product count render after the last product.
-    width     {String} — "25" | "50" | "75" | "100", percent of row width.
-                          Resolved to an actual grid-column span by
-                          collection-banner.js against the grid's live
-                          column count.
+  Optional:
+    columns_mobile    {Number} — default: 2
+    columns_desktop   {Number} — default: 4
 
-  Card rendering: delegates to product-card.liquid.
-  Banner rendering: delegates to collection-banner.liquid.
-  product-card.js is loaded globally via theme.liquid — do NOT load it here.
+  Card rendering:
+    product-card.liquid
 
-  IMPORTANT — paginate.collection.products vs collection.products:
-    Inside a {% paginate %} block, `collection.products` is NOT sliced
-    to the current page; it still returns the full collection. The
-    page-sliced array is only available via `paginate.collection.products`.
-    This snippet must loop over paginate.collection.products, or every
-    page will render the full product list while pagination links
-    still appear (since paginate.pages/parts are computed correctly
-    from the paginate tag itself, independent of which array you loop).
-
-  NOTE on pagination + block position:
-    "position" is evaluated per page, not globally across the whole
-    collection. A banner set to position 3 will appear after the 3rd
-    product on every page, not only on page 1. If a merchant wants a
-    banner to appear only once, instruct them to place it via a
-    standalone section instead of a collection block.
+  Notes:
+    - product-card.js is loaded globally in theme.liquid.
+    - Do NOT load JavaScript here.
+    - Do NOT pass section.blocks into this snippet.
+    - collection.products is already paginated upstream.
 {% endcomment %}
 
+{{ 'collection-products.css' | asset_url | stylesheet_tag }}
+
 {%- liquid
-  assign banner_blocks = blocks | where: 'type', 'banner'
-  assign products_on_page = paginate.collection.products.size
+  assign columns_mobile  = columns_mobile  | default: 2
+  assign columns_desktop = columns_desktop | default: 4
 -%}
 
-<div class="collection-products">
+<div
+  class="collection-products"
+  style="
+    --collection-products-columns-mobile: {{ columns_mobile }};
+    --collection-products-columns-desktop: {{ columns_desktop }};
+  "
+>
 
-  {%- if products_on_page > 0 -%}
+  {%- if collection.products != blank -%}
+
     <div class="collection-products__grid">
 
-      {%- comment -%} Banners positioned before the first product (position 0 or blank) {%- endcomment -%}
-      {%- for block in banner_blocks -%}
-        {%- liquid
-          assign block_position = block.settings.position | default: 0
+      {%- for product in collection.products -%}
+        {%- render 'product-card',
+          product: product
         -%}
-        {%- if block_position <= 0 -%}
-          {%- render 'collection-banner', block: block -%}
-        {%- endif -%}
-      {%- endfor -%}
-
-      {%- for product in paginate.collection.products -%}
-        {%- render 'product-card', product: product -%}
-
-        {%- comment -%} Banners positioned after THIS product index {%- endcomment -%}
-        {%- assign current_index = forloop.index -%}
-        {%- for block in banner_blocks -%}
-          {%- liquid
-            assign block_position = block.settings.position | default: 0
-          -%}
-          {%- if block_position == current_index -%}
-            {%- render 'collection-banner', block: block -%}
-          {%- endif -%}
-        {%- endfor -%}
-
-        {%- comment -%}
-          On the last product, also render any banner blocks whose
-          configured position is greater than the number of products
-          on this page (so they aren't silently dropped on short pages).
-        {%- endcomment -%}
-        {%- if forloop.last -%}
-          {%- for block in banner_blocks -%}
-            {%- liquid
-              assign block_position = block.settings.position | default: 0
-            -%}
-            {%- if block_position > products_on_page -%}
-              {%- render 'collection-banner', block: block -%}
-            {%- endif -%}
-          {%- endfor -%}
-        {%- endif -%}
       {%- endfor -%}
 
     </div>
+
   {%- else -%}
+
     <p class="collection-products__empty">
       {{ 'collections.general.no_matches' | t }}
     </p>
 
-    {%- comment -%} No products at all on this page — still show banners so merchants can preview them. {%- endcomment -%}
-    {%- for block in banner_blocks -%}
-      {%- render 'collection-banner', block: block -%}
-    {%- endfor -%}
   {%- endif -%}
 
   {%- if paginate.pages > 1 -%}
+
     <nav
       class="collection-products__pagination"
       aria-label="{{ 'general.pagination.label' | t }}"
     >
+
       {%- if paginate.previous -%}
-        <a href="{{ paginate.previous.url }}" class="collection-products__page-link">
+        <a
+          href="{{ paginate.previous.url }}"
+          class="collection-products__page-link"
+        >
           &larr; {{ 'general.pagination.previous' | t }}
         </a>
       {%- endif -%}
 
       {%- for part in paginate.parts -%}
+
         {%- if part.is_link -%}
-          <a href="{{ part.url }}" class="collection-products__page-link">
+
+          <a
+            href="{{ part.url }}"
+            class="collection-products__page-link"
+          >
             {{ part.title }}
           </a>
+
         {%- else -%}
+
           <span
             class="collection-products__page-link collection-products__page-link--current"
             aria-current="page"
           >
             {{ part.title }}
           </span>
+
         {%- endif -%}
+
       {%- endfor -%}
 
       {%- if paginate.next -%}
-        <a href="{{ paginate.next.url }}" class="collection-products__page-link">
+
+        <a
+          href="{{ paginate.next.url }}"
+          class="collection-products__page-link"
+        >
           {{ 'general.pagination.next' | t }} &rarr;
         </a>
+
       {%- endif -%}
+
     </nav>
+
   {%- endif -%}
 
 </div>
