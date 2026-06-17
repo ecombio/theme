@@ -1,0 +1,153 @@
+{% comment %}
+  snippets/collection-function.liquid
+
+  Tab router — delegates each content type to its own adapter snippet.
+
+  Tabs:
+    Products  — always shown                → collection-products.liquid
+    Posts     — if metafield present        → collection-posts.liquid
+    Pages     — if metafield present        → collection-pages.liquid
+
+  Expects:
+    collection  {Object} — Shopify collection object
+    paginate    {Object} — paginate object opened upstream in collection.liquid
+
+  Metafields:
+    collection.metafields.showroom.articles  → posts
+    collection.metafields.showroom.pages     → pages
+
+  Self-contained:
+    - collection-function.css
+    - collection-function.js
+
+  Notes:
+    - product-card.js is loaded globally in theme.liquid.
+    - Do NOT load product-card.js here or in collection-products.liquid.
+    - section.blocks are handled entirely by collection-features.liquid.
+{% endcomment %}
+
+{{ 'collection-function.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign showroom_posts  = collection.metafields.showroom.articles.value
+  assign showroom_pages  = collection.metafields.showroom.pages.value
+
+  assign has_posts = false
+  assign has_pages = false
+
+  if showroom_posts != blank
+    assign has_posts = true
+  endif
+
+  if showroom_pages != blank
+    assign has_pages = true
+  endif
+-%}
+
+<div class="collection-function">
+
+  <div
+    class="collection-function__tabs"
+    role="tablist"
+    aria-label="Collection content"
+  >
+
+    <button
+      class="collection-function__tab collection-function__tab--active"
+      role="tab"
+      aria-selected="true"
+      aria-controls="function-panel-products"
+      id="function-tab-products"
+      type="button"
+      data-function-tab="products"
+    >
+      Products
+      <span class="collection-function__tab-count">
+        ({{ collection.products_count }})
+      </span>
+    </button>
+
+    {%- if has_posts -%}
+      <button
+        class="collection-function__tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="function-panel-posts"
+        id="function-tab-posts"
+        type="button"
+        data-function-tab="posts"
+        tabindex="-1"
+      >
+        Posts
+        <span class="collection-function__tab-count">
+          ({{ showroom_posts.size }})
+        </span>
+      </button>
+    {%- endif -%}
+
+    {%- if has_pages -%}
+      <button
+        class="collection-function__tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="function-panel-pages"
+        id="function-tab-pages"
+        type="button"
+        data-function-tab="pages"
+        tabindex="-1"
+      >
+        Pages
+        <span class="collection-function__tab-count">
+          ({{ showroom_pages.size }})
+        </span>
+      </button>
+    {%- endif -%}
+
+  </div>
+
+  <div
+    class="collection-function__panel"
+    id="function-panel-products"
+    role="tabpanel"
+    aria-labelledby="function-tab-products"
+    data-function-panel="products"
+  >
+    {%- render 'collection-products',
+      collection: collection,
+      paginate:   paginate
+    -%}
+  </div>
+
+  {%- if has_posts -%}
+    <div
+      class="collection-function__panel"
+      id="function-panel-posts"
+      role="tabpanel"
+      aria-labelledby="function-tab-posts"
+      data-function-panel="posts"
+      hidden
+    >
+      {%- render 'collection-posts',
+        posts: showroom_posts
+      -%}
+    </div>
+  {%- endif -%}
+
+  {%- if has_pages -%}
+    <div
+      class="collection-function__panel"
+      id="function-panel-pages"
+      role="tabpanel"
+      aria-labelledby="function-tab-pages"
+      data-function-panel="pages"
+      hidden
+    >
+      {%- render 'collection-pages',
+        pages: showroom_pages
+      -%}
+    </div>
+  {%- endif -%}
+
+</div>
+
+<script src="{{ 'collection-function.js' | asset_url }}" defer></script>
