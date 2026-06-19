@@ -1,0 +1,69 @@
+{% comment %}
+  snippets/banner-image.liquid
+  [1.2.1 → 1.1.1] In-feed banner image block.
+
+  Renders a clickable (or static) image banner injected between product
+  rows. Width is controlled by block.settings.width (25/50/75/100%),
+  allowing multiple partial-width banners to sit side-by-side in one
+  row slot when collection-promo fires more than one block at the same
+  row index.
+
+  Parameters:
+    block  {Object}  required — Shopify block with settings:
+      image      {image}   — image picker
+      heading    {String}  — optional overlay heading
+      subheading {String}  — optional overlay subheading
+      link       {URL}     — optional; omit for non-clickable banner
+      width      {String}  — '25' | '50' | '75' | '100'
+
+  CSS: banner-image.css
+{% endcomment %}
+
+{{ 'banner-image.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign bi_image      = block.settings.image
+  assign bi_heading    = block.settings.heading
+  assign bi_subheading = block.settings.subheading
+  assign bi_link       = block.settings.link
+  assign bi_width      = block.settings.width | default: '100'
+-%}
+
+{%- if bi_image != blank -%}
+
+  <div
+    class="banner-image banner-image--w{{ bi_width }}"
+    {{ block.shopify_attributes }}
+  >
+
+    {%- if bi_link != blank -%}
+      <a href="{{ bi_link }}" class="banner-image__link">
+    {%- endif -%}
+
+      <img
+        class="banner-image__img"
+        src="{{ bi_image | image_url: width: 1400 }}"
+        alt="{{ bi_image.alt | escape | default: bi_heading | escape }}"
+        width="1400"
+        height="{{ 1400 | divided_by: bi_image.aspect_ratio | round }}"
+        loading="lazy"
+      >
+
+      {%- if bi_heading != blank or bi_subheading != blank -%}
+        <div class="banner-image__overlay">
+          {%- if bi_heading != blank -%}
+            <p class="banner-image__heading">{{ bi_heading }}</p>
+          {%- endif -%}
+          {%- if bi_subheading != blank -%}
+            <p class="banner-image__subheading">{{ bi_subheading }}</p>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+    {%- if bi_link != blank -%}
+      </a>
+    {%- endif -%}
+
+  </div>
+
+{%- endif -%}

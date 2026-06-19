@@ -1,120 +1,185 @@
 {% comment %}
   snippets/collection-carousel.liquid
-  Renders a single carousel block inside the products grid
-  (collection-products.liquid). Designed to span the full grid row.
+  [1.2.1 → 1.1.3] In-feed image slide carousel.
 
-  Expects:
-    block  {Block} — a section block of type "carousel", with settings:
-      heading       {String}
-      image_shape   {String} — "circle" | "rounded" | "square"
-      autoplay      {Boolean}
-      autoplay_speed{Number} — seconds
-      slide_1..6    {Image}  — block image-picker settings
-      slide_*_label {String} — optional caption per slide
-      slide_*_link  {Url}    — optional link per slide
+  Injected between product rows by collection-promo → promo-block.
+  Always full row width. Supports up to 6 slides.
+  Image shape is controlled per-block: circular / square / rounded.
 
-  Self-contained: loads collection-carousel.css and collection-carousel.js.
-  Multiple instances can exist on one page — JS scopes by data-carousel-id.
+  Parameters:
+    block  {Object}  required — Shopify block with settings:
+      heading      {String}   — carousel heading
+      image_shape  {String}   — 'circle' | 'square' | 'rounded'
+      autoplay     {Boolean}  — enable autoplay
+      autoplay_speed {Number} — seconds between slides (3–10)
+      slide_1      {image}    — slide image
+      slide_1_label {String}  — slide caption
+      slide_1_link  {URL}     — slide link
+      … slide_2 through slide_6
 
-  NOTE: This snippet renders an <li>-equivalent wrapper sized to span the
-  full grid row (collection-products__grid is a CSS grid). It is inserted
-  directly into the product loop's markup by collection-products.liquid,
-  not wrapped in a separate container, so it lines up with grid columns.
+  CSS: collection-carousel.css
+  JS:  collection-carousel.js
 {% endcomment %}
 
 {{ 'collection-carousel.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign shape = block.settings.image_shape | default: 'rounded'
-  assign autoplay = block.settings.autoplay
-  assign autoplay_speed = block.settings.autoplay_speed | default: 5
-  assign carousel_id = 'carousel-' | append: block.id
+  assign cc_heading   = block.settings.heading
+  assign cc_shape     = block.settings.image_shape | default: 'rounded'
+  assign cc_autoplay  = block.settings.autoplay
+  assign cc_speed     = block.settings.autoplay_speed | default: 5
 
-  assign slides = ''
-  assign slide_count = 0
-  for i in (1..6)
-    assign slide_key = 'slide_' | append: i
-    assign slide_image = block.settings[slide_key]
-    if slide_image != blank
-      assign slide_count = slide_count | plus: 1
-    endif
-  endfor
+  assign cc_slides = ''
 -%}
 
+{%- comment -%}
+  Build slide array. Liquid can't build arrays dynamically, so we
+  iterate a fixed range and check each slide setting individually.
+{%- endcomment -%}
+
 <div
-  class="collection-carousel collection-carousel--shape-{{ shape }}"
-  id="{{ carousel_id }}"
-  data-carousel
-  data-carousel-id="{{ carousel_id }}"
-  data-autoplay="{{ autoplay }}"
-  data-autoplay-speed="{{ autoplay_speed }}"
+  class="collection-carousel collection-carousel--{{ cc_shape }}"
+  data-collection-carousel
+  data-autoplay="{{ cc_autoplay }}"
+  data-speed="{{ cc_speed }}"
   {{ block.shopify_attributes }}
 >
 
-  {%- if block.settings.heading != blank -%}
-    <h3 class="collection-carousel__heading">{{ block.settings.heading | escape }}</h3>
+  {%- if cc_heading != blank -%}
+    <h2 class="collection-carousel__heading">{{ cc_heading }}</h2>
   {%- endif -%}
 
-  {%- if slide_count > 0 -%}
-    <div class="collection-carousel__viewport">
-      <ul class="collection-carousel__track" role="list" style="--slide-count: {{ slide_count }};">
-        {%- for i in (1..6) -%}
-          {%- liquid
-            assign slide_key = 'slide_' | append: i
-            assign label_key = 'slide_' | append: i | append: '_label'
-            assign link_key  = 'slide_' | append: i | append: '_link'
-            assign slide_image = block.settings[slide_key]
-            assign slide_label = block.settings[label_key]
-            assign slide_link  = block.settings[link_key]
-          -%}
-          {%- if slide_image != blank -%}
-            <li class="collection-carousel__slide" data-carousel-slide aria-hidden="{% if i == 1 %}false{% else %}true{% endif %}">
-              {%- if slide_link != blank -%}<a href="{{ slide_link }}" class="collection-carousel__slide-link">{%- endif -%}
-                <div class="collection-carousel__image-wrap">
-                  <img
-                    class="collection-carousel__image"
-                    src="{{ slide_image | image_url: width: 800 }}"
-                    srcset="{{ slide_image | image_url: width: 400 }} 400w, {{ slide_image | image_url: width: 800 }} 800w, {{ slide_image | image_url: width: 1200 }} 1200w"
-                    sizes="(min-width: 990px) 33vw, 90vw"
-                    alt="{{ slide_image.alt | escape | default: slide_label | escape }}"
-                    width="800"
-                    height="{{ 800 | divided_by: slide_image.aspect_ratio | round }}"
-                    loading="lazy"
-                  >
-                </div>
-                {%- if slide_label != blank -%}
-                  <span class="collection-carousel__slide-label">{{ slide_label | escape }}</span>
-                {%- endif -%}
-              {%- if slide_link != blank -%}</a>{%- endif -%}
-            </li>
+  <div class="collection-carousel__track" data-collection-carousel-track>
+
+    {%- comment -%} Slide 1 {%- endcomment -%}
+    {%- if block.settings.slide_1 != blank -%}
+      <div class="collection-carousel__slide" data-collection-carousel-slide>
+        {%- if block.settings.slide_1_link != blank -%}
+          <a href="{{ block.settings.slide_1_link }}" class="collection-carousel__slide-link">
+        {%- endif -%}
+          <div class="collection-carousel__img-wrap">
+            <img
+              class="collection-carousel__img"
+              src="{{ block.settings.slide_1 | image_url: width: 600 }}"
+              alt="{{ block.settings.slide_1.alt | escape | default: block.settings.slide_1_label | escape }}"
+              width="600"
+              height="600"
+              loading="lazy"
+            >
+          </div>
+          {%- if block.settings.slide_1_label != blank -%}
+            <span class="collection-carousel__caption">{{ block.settings.slide_1_label }}</span>
           {%- endif -%}
-        {%- endfor -%}
-      </ul>
-    </div>
-
-    {%- if slide_count > 1 -%}
-      <button type="button" class="collection-carousel__arrow collection-carousel__arrow--prev" data-carousel-prev aria-label="Previous slide">
-        &larr;
-      </button>
-      <button type="button" class="collection-carousel__arrow collection-carousel__arrow--next" data-carousel-next aria-label="Next slide">
-        &rarr;
-      </button>
-
-      <div class="collection-carousel__dots" role="tablist" aria-label="Carousel slides" data-carousel-dots>
-        {%- for i in (1..slide_count) -%}
-          <button
-            type="button"
-            class="collection-carousel__dot{% if i == 1 %} collection-carousel__dot--active{% endif %}"
-            role="tab"
-            aria-selected="{% if i == 1 %}true{% else %}false{% endif %}"
-            aria-label="Go to slide {{ i }}"
-            data-carousel-dot
-            data-slide-index="{{ forloop.index0 }}"
-          ></button>
-        {%- endfor -%}
+        {%- if block.settings.slide_1_link != blank -%}
+          </a>
+        {%- endif -%}
       </div>
     {%- endif -%}
-  {%- endif -%}
+
+    {%- comment -%} Slide 2 {%- endcomment -%}
+    {%- if block.settings.slide_2 != blank -%}
+      <div class="collection-carousel__slide" data-collection-carousel-slide>
+        {%- if block.settings.slide_2_link != blank -%}
+          <a href="{{ block.settings.slide_2_link }}" class="collection-carousel__slide-link">
+        {%- endif -%}
+          <div class="collection-carousel__img-wrap">
+            <img class="collection-carousel__img" src="{{ block.settings.slide_2 | image_url: width: 600 }}" alt="{{ block.settings.slide_2.alt | escape | default: block.settings.slide_2_label | escape }}" width="600" height="600" loading="lazy">
+          </div>
+          {%- if block.settings.slide_2_label != blank -%}
+            <span class="collection-carousel__caption">{{ block.settings.slide_2_label }}</span>
+          {%- endif -%}
+        {%- if block.settings.slide_2_link != blank -%}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Slide 3 {%- endcomment -%}
+    {%- if block.settings.slide_3 != blank -%}
+      <div class="collection-carousel__slide" data-collection-carousel-slide>
+        {%- if block.settings.slide_3_link != blank -%}
+          <a href="{{ block.settings.slide_3_link }}" class="collection-carousel__slide-link">
+        {%- endif -%}
+          <div class="collection-carousel__img-wrap">
+            <img class="collection-carousel__img" src="{{ block.settings.slide_3 | image_url: width: 600 }}" alt="{{ block.settings.slide_3.alt | escape | default: block.settings.slide_3_label | escape }}" width="600" height="600" loading="lazy">
+          </div>
+          {%- if block.settings.slide_3_label != blank -%}
+            <span class="collection-carousel__caption">{{ block.settings.slide_3_label }}</span>
+          {%- endif -%}
+        {%- if block.settings.slide_3_link != blank -%}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Slide 4 {%- endcomment -%}
+    {%- if block.settings.slide_4 != blank -%}
+      <div class="collection-carousel__slide" data-collection-carousel-slide>
+        {%- if block.settings.slide_4_link != blank -%}
+          <a href="{{ block.settings.slide_4_link }}" class="collection-carousel__slide-link">
+        {%- endif -%}
+          <div class="collection-carousel__img-wrap">
+            <img class="collection-carousel__img" src="{{ block.settings.slide_4 | image_url: width: 600 }}" alt="{{ block.settings.slide_4.alt | escape | default: block.settings.slide_4_label | escape }}" width="600" height="600" loading="lazy">
+          </div>
+          {%- if block.settings.slide_4_label != blank -%}
+            <span class="collection-carousel__caption">{{ block.settings.slide_4_label }}</span>
+          {%- endif -%}
+        {%- if block.settings.slide_4_link != blank -%}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Slide 5 {%- endcomment -%}
+    {%- if block.settings.slide_5 != blank -%}
+      <div class="collection-carousel__slide" data-collection-carousel-slide>
+        {%- if block.settings.slide_5_link != blank -%}
+          <a href="{{ block.settings.slide_5_link }}" class="collection-carousel__slide-link">
+        {%- endif -%}
+          <div class="collection-carousel__img-wrap">
+            <img class="collection-carousel__img" src="{{ block.settings.slide_5 | image_url: width: 600 }}" alt="{{ block.settings.slide_5.alt | escape | default: block.settings.slide_5_label | escape }}" width="600" height="600" loading="lazy">
+          </div>
+          {%- if block.settings.slide_5_label != blank -%}
+            <span class="collection-carousel__caption">{{ block.settings.slide_5_label }}</span>
+          {%- endif -%}
+        {%- if block.settings.slide_5_link != blank -%}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Slide 6 {%- endcomment -%}
+    {%- if block.settings.slide_6 != blank -%}
+      <div class="collection-carousel__slide" data-collection-carousel-slide>
+        {%- if block.settings.slide_6_link != blank -%}
+          <a href="{{ block.settings.slide_6_link }}" class="collection-carousel__slide-link">
+        {%- endif -%}
+          <div class="collection-carousel__img-wrap">
+            <img class="collection-carousel__img" src="{{ block.settings.slide_6 | image_url: width: 600 }}" alt="{{ block.settings.slide_6.alt | escape | default: block.settings.slide_6_label | escape }}" width="600" height="600" loading="lazy">
+          </div>
+          {%- if block.settings.slide_6_label != blank -%}
+            <span class="collection-carousel__caption">{{ block.settings.slide_6_label }}</span>
+          {%- endif -%}
+        {%- if block.settings.slide_6_link != blank -%}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+  </div>
+
+  <button class="collection-carousel__btn collection-carousel__btn--prev" type="button" aria-label="Previous slide" data-collection-carousel-prev>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button class="collection-carousel__btn collection-carousel__btn--next" type="button" aria-label="Next slide" data-collection-carousel-next>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <div class="collection-carousel__dots" aria-hidden="true" data-collection-carousel-dots></div>
 
 </div>
 

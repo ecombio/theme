@@ -1,0 +1,33 @@
+{% comment %}
+  snippets/collection-promo.liquid
+  [1.2.1 → 1] Placement layer — decides which blocks fire at a given row.
+
+  Called by collection-products.liquid after each product row closes.
+  Iterates section.blocks, finds any whose `row` setting matches the
+  current row_index, and delegates each to promo-block.liquid.
+
+  Parameters:
+    blocks     {Array}   required — section.blocks forwarded from collection.liquid
+    row_index  {Number}  required — 1-based row number just completed
+
+  Owns:
+    - Row-matching logic only
+    - Nothing else — no markup of its own
+
+  Does NOT own:
+    - Block markup (promo-block.liquid)
+    - Block-type routing (promo-block.liquid)
+    - Individual block rendering (banner-image / product-carousel / collection-carousel)
+
+  Pitfall — multiple blocks at the same row:
+    Multiple blocks can share the same `row` value. This is intentional:
+    e.g. a 50% banner + a 50% banner side-by-side in one row slot.
+    collection-promo renders all matching blocks; promo-block handles
+    width so they sit correctly in a flex row.
+{% endcomment %}
+
+{%- for block in blocks -%}
+  {%- if block.settings.row == row_index -%}
+    {%- render 'promo-block', block: block -%}
+  {%- endif -%}
+{%- endfor -%}
