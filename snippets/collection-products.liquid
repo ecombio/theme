@@ -4,38 +4,19 @@
 
   Owns:
     - Row-by-row iteration of collection.products
-    - After each row: filters `blocks` for any whose block.settings.row
+    - After each row: checks blocks for any whose block.settings.row
       matches that row number, and calls sponsored-ads once per match
     - Empty state
     - Pagination controls
 
   Parameters:
     collection  {Object}  required
-    blocks      {Array}   required — forwarded to sponsored-ads, filtered
-                           here by block.settings.row == row_index
+    blocks      {Array}   required
     paginate    {Object}  required
     columns     {Number}  optional — default 4
 
-  Pitfall — row math:
-    Shopify Liquid has no native modulo operator in early versions, but
-    the `modulo` filter is available and used here: forloop.index | modulo: columns.
-    After the last product of each row fires, we filter `blocks` for any
-    block whose settings.row equals the row we just finished, and render
-    each one via sponsored-ads. The same filter+render runs once more
-    after the loop for the final (possibly partial) row.
-
-  FIX (previously a no-op): this snippet used to call
-    {% render 'sponsored-ads', blocks: blocks, row_index: row_index %}
-  but sponsored-ads.liquid only ever read a singular `block`, never
-  `blocks` or `row_index` — so no ad block could ever render. The fix
-  keeps the row-matching responsibility here (per the original docs —
-  "Do not move row logic into sponsored-ads.liquid") and calls
-  sponsored-ads once per matching block, passing `block` (singular),
-  matching sponsored-ads.liquid's actual parameter contract.
-
   CSS: collection-products.css, product-card.css, sponsored-ads.css
-  JS:  sponsored-ads.js (only needed when a sponsored carousel can
-       appear; product-card.js is global, loaded in theme.liquid)
+  JS:  sponsored-ads.js (carousel only)
 {% endcomment %}
 
 {{ 'collection-products.css' | asset_url | stylesheet_tag }}
@@ -54,24 +35,6 @@
 
   {%- if collection.products != blank -%}
 
-    {%- comment -%}
-      We render the grid row-by-row so we can inject promo blocks
-      between rows. Each `columns` products = one row.
-
-      Strategy:
-        1. Open .collection-products__grid
-        2. For each product, render product-card
-        3. At the end of each full row (forloop.index divisible by columns),
-           close the grid, render any sponsored blocks targeting that row,
-           then re-open the grid for the next row.
-        4. After the loop, close the final (possibly partial) grid, then
-           render any sponsored blocks targeting that final row.
-
-      Pitfall: Don't close + reopen the grid wrapper on partial last rows
-      or you'll get an unclosed/double-closed div. The final close is
-      always outside the loop.
-    {%- endcomment -%}
-
     {%- assign row_index = 0 -%}
     <div class="collection-products__grid">
 
@@ -79,24 +42,17 @@
 
         {%- render 'product-card', product: product -%}
 
-        {%- comment -%}
-          End of a full row: close grid, inject promos, reopen grid.
-          Skip this on the very last product to avoid an empty trailing grid div.
-        {%- endcomment -%}
         {%- assign position_mod = forloop.index | modulo: columns -%}
         {%- if position_mod == 0 and forloop.last == false -%}
           {%- assign row_index = row_index | plus: 1 -%}
           </div>
-          {%- assign row_blocks = blocks | where: 'settings.row', row_index -%}
-          {%- for row_block in row_blocks -%}
-            {%- render 'sponsored-ads', block: row_block, collection: collection -%}
+          {%- for row_block in blocks -%}
+            {%- if row_block.settings.row == row_index -%}
+              {%- render 'sponsored-ads', block: row_block, collection: collection -%}
+            {%- endif -%}
           {%- endfor -%}
           <div class="collection-products__grid">
         {%- elsif forloop.last -%}
-          {%- comment -%}
-            On the last product, calculate which row we just finished
-            (may be a partial row) and inject any promos for it too.
-          {%- endcomment -%}
           {%- assign row_index = row_index | plus: 1 -%}
         {%- endif -%}
 
@@ -104,12 +60,10 @@
 
     </div>
 
-    {%- comment -%}
-      Inject promos targeting the final row (after grid closes).
-    {%- endcomment -%}
-    {%- assign row_blocks = blocks | where: 'settings.row', row_index -%}
-    {%- for row_block in row_blocks -%}
-      {%- render 'sponsored-ads', block: row_block, collection: collection -%}
+    {%- for row_block in blocks -%}
+      {%- if row_block.settings.row == row_index -%}
+        {%- render 'sponsored-ads', block: row_block, collection: collection -%}
+      {%- endif -%}
     {%- endfor -%}
 
   {%- else -%}
@@ -119,8 +73,6 @@
     </p>
 
   {%- endif -%}
-
-  {%- comment -%} ── Pagination ───────────────────────────────────────────── {%- endcomment -%}
 
   {%- if paginate.pages > 1 -%}
     <nav
