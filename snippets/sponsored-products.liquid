@@ -1,31 +1,32 @@
 {% comment %}
   snippets/sponsored-products.liquid
-  [2.1] "Sponsored Products" ad unit.
+  [2.1] "Sponsored Products" in-feed ad unit.
 
   Reads block.settings.product_1..product_8 (discrete product pickers,
   not a list picker — matches the schema in sections/collection.liquid).
   Renders two ways:
-    - exactly 1 product configured  → single sponsored card  (ref: Image 1)
+    - exactly 1 product configured  → single sponsored card
     - 2+ products configured        → horizontal sponsored carousel
+
+  Card rendering is delegated to product-card.liquid (is_sponsored: true)
+  so sponsored cards share image/price/reviews/wishlist/quickview/compare/
+  ATC markup and behavior with organic product-grid cards. This snippet
+  owns only ad-unit chrome: the "Sponsored" section label and, for the
+  carousel variant, the scroll track wrapper.
 
   Parameters:
     block {Object} required — section block, type "sponsored-products"
       block.settings.row          {Number}  — used upstream, not here
       block.settings.product_1-8  {Product}
 
-  Rating assumes a reviews app writes to product.metafields.reviews.rating
-  (Judge.me / Loox / Shopify Product Reviews convention). If the store
-  doesn't have that metafield, the stars are simply omitted — adjust the
-  `rating` assignment below if a different app/metafield is in use.
-
-  CSS: sponsored-ads.css
-  JS:  sponsored-ads.js — only loaded for the carousel variant (scroll +
-                            drag/swipe); the single-card variant is static.
+  Asset ownership: this snippet loads no CSS/JS of its own.
+    sponsored-ads.css is loaded once by collection-products.liquid.
+    sponsored-ads.js  is loaded once by collection-products.liquid
+                       (needed whenever the carousel variant can appear).
 {% endcomment %}
 
 {%- liquid
   assign product_count = 0
-  assign products = block.settings.product_1 | default: blank
 
   for i in (1..8)
     assign key = 'product_' | append: i
@@ -44,54 +45,19 @@
   {%- comment -%} ── Single sponsored product card ───────────────────────── {%- endcomment -%}
 
   {%- liquid
-    assign product = block.settings.product_1
-    if product == blank
-      for i in (1..8)
-        assign key = 'product_' | append: i
-        assign p = block.settings[key]
-        if p != blank
-          assign product = p
-          break
-        endif
-      endfor
-    endif
-
-    assign rating = product.metafields.reviews.rating.value.rating
+    assign product = blank
+    for i in (1..8)
+      assign key = 'product_' | append: i
+      assign p = block.settings[key]
+      if p != blank
+        assign product = p
+        break
+      endif
+    endfor
   -%}
 
   <div class="sponsored-products sponsored-products--single" data-sponsored-block-id="{{ block.id }}">
-    <a href="{{ product.url }}" class="sponsored-products__card">
-      <span class="sponsored-products__label">Sponsored</span>
-
-      <span class="sponsored-products__image-wrap">
-        <img
-          class="sponsored-products__image"
-          src="{{ product.featured_image | image_url: width: 300 }}"
-          alt="{{ product.featured_image.alt | escape | default: product.title | escape }}"
-          width="300"
-          height="{{ 300 | divided_by: product.featured_image.aspect_ratio | round }}"
-          loading="lazy"
-        >
-      </span>
-
-      <span class="sponsored-products__title">{{ product.title }}</span>
-
-      {%- if rating -%}
-        <span class="sponsored-products__rating" aria-label="Rated {{ rating }} out of 5">
-          {%- for i in (1..5) -%}
-            {%- if i <= rating -%}
-              <span class="sponsored-products__star sponsored-products__star--filled">★</span>
-            {%- else -%}
-              <span class="sponsored-products__star">★</span>
-            {%- endif -%}
-          {%- endfor -%}
-        </span>
-      {%- endif -%}
-
-      <span class="sponsored-products__price">{{ product.price | money }}</span>
-
-      <span class="sponsored-products__cta">Shop now</span>
-    </a>
+    {%- render 'product-card', product: product, is_sponsored: true -%}
   </div>
 
 {%- else -%}
@@ -109,27 +75,11 @@
         -%}
         {%- if product != blank -%}
           <li class="sponsored-products__item">
-            <a href="{{ product.url }}" class="sponsored-products__item-link">
-              <span class="sponsored-products__image-wrap">
-                <img
-                  class="sponsored-products__image"
-                  src="{{ product.featured_image | image_url: width: 220 }}"
-                  alt="{{ product.featured_image.alt | escape | default: product.title | escape }}"
-                  width="220"
-                  height="{{ 220 | divided_by: product.featured_image.aspect_ratio | round }}"
-                  loading="lazy"
-                >
-              </span>
-              <span class="sponsored-products__item-title">{{ product.title }}</span>
-              <span class="sponsored-products__price">{{ product.price | money }}</span>
-              <span class="sponsored-products__cta sponsored-products__cta--compact">Shop now</span>
-            </a>
+            {%- render 'product-card', product: product, is_sponsored: true -%}
           </li>
         {%- endif -%}
       {%- endfor -%}
     </ul>
   </div>
-
-  <script src="{{ 'sponsored-ads.js' | asset_url }}" defer></script>
 
 {%- endif -%}

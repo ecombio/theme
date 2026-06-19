@@ -1,11 +1,16 @@
 {% comment %}
   snippets/sponsored-brands.liquid
-  [2.2] "Sponsored Brands" ad unit — banner-left + product carousel.
-  (ref: Image 2)
+  [2.2] "Sponsored Brands" in-feed ad unit — banner-left + product carousel.
 
   Product source is merchant-controlled via block.settings.source_mode:
     "manual"     → block.settings.product_1..product_8
     "collection" → block.settings.source_collection.products
+
+  Card rendering is delegated to product-card.liquid (is_sponsored: true)
+  so the carousel cards share image/price/reviews/wishlist/quickview/
+  compare/ATC markup and behavior with organic product-grid cards. This
+  snippet owns only ad-unit chrome: the banner panel and the carousel
+  track wrapper/heading.
 
   Parameters:
     block      {Object} required — section block, type "sponsored-brands"
@@ -23,8 +28,9 @@
                           future source_mode wants "products from the
                           collection currently being viewed"
 
-  CSS: sponsored-ads.css
-  JS:  sponsored-ads.js — carousel scroll, shared with sponsored-products
+  Asset ownership: this snippet loads no CSS/JS of its own.
+    sponsored-ads.css is loaded once by collection-products.liquid.
+    sponsored-ads.js  is loaded once by collection-products.liquid.
 {% endcomment %}
 
 {%- liquid
@@ -87,20 +93,7 @@
 
           {%- for product in products limit: 8 -%}
             <li class="sponsored-brands__item">
-              <a href="{{ product.url }}" class="sponsored-brands__item-link">
-                <span class="sponsored-brands__image-wrap">
-                  <img
-                    class="sponsored-brands__image"
-                    src="{{ product.featured_image | image_url: width: 220 }}"
-                    alt="{{ product.featured_image.alt | escape | default: product.title | escape }}"
-                    width="220"
-                    height="{{ 220 | divided_by: product.featured_image.aspect_ratio | round }}"
-                    loading="lazy"
-                  >
-                </span>
-                <span class="sponsored-brands__price">{{ product.price | money }}</span>
-                <span class="sponsored-brands__cta">Shop now</span>
-              </a>
+              {%- render 'product-card', product: product, is_sponsored: true -%}
             </li>
           {%- endfor -%}
 
@@ -113,20 +106,7 @@
             -%}
             {%- if product != blank -%}
               <li class="sponsored-brands__item">
-                <a href="{{ product.url }}" class="sponsored-brands__item-link">
-                  <span class="sponsored-brands__image-wrap">
-                    <img
-                      class="sponsored-brands__image"
-                      src="{{ product.featured_image | image_url: width: 220 }}"
-                      alt="{{ product.featured_image.alt | escape | default: product.title | escape }}"
-                      width="220"
-                      height="{{ 220 | divided_by: product.featured_image.aspect_ratio | round }}"
-                      loading="lazy"
-                    >
-                  </span>
-                  <span class="sponsored-brands__price">{{ product.price | money }}</span>
-                  <span class="sponsored-brands__cta">Shop now</span>
-                </a>
+                {%- render 'product-card', product: product, is_sponsored: true -%}
               </li>
             {%- endif -%}
           {%- endfor -%}
@@ -138,5 +118,3 @@
 
   </div>
 </div>
-
-<script src="{{ 'sponsored-ads.js' | asset_url }}" defer></script>

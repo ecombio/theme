@@ -4,29 +4,43 @@
 
   Owns:
     - Row-by-row iteration of collection.products
-    - After each row: calls sponsored-ads to inject any blocks targeting that row
+    - After each row: filters `blocks` for any whose block.settings.row
+      matches that row number, and calls sponsored-ads once per match
     - Empty state
     - Pagination controls
 
   Parameters:
     collection  {Object}  required
-    blocks      {Array}   required — forwarded to sponsored-ads
+    blocks      {Array}   required — forwarded to sponsored-ads, filtered
+                           here by block.settings.row == row_index
     paginate    {Object}  required
     columns     {Number}  optional — default 4
 
   Pitfall — row math:
-    Shopify Liquid has no modulo operator. We track row index by
-    comparing (forloop.index / columns | floor) to the previous value.
-    A simpler approach: just check (forloop.index | modulo: columns) == 0
-    using the `modulo` filter (available in Liquid via Ruby's %).
-    After the last product of each row fires, inject promos for that row.
+    Shopify Liquid has no native modulo operator in early versions, but
+    the `modulo` filter is available and used here: forloop.index | modulo: columns.
+    After the last product of each row fires, we filter `blocks` for any
+    block whose settings.row equals the row we just finished, and render
+    each one via sponsored-ads. The same filter+render runs once more
+    after the loop for the final (possibly partial) row.
 
-  CSS: collection-products.css
-  JS:  none — product-card.js is global (theme.liquid)
+  FIX (previously a no-op): this snippet used to call
+    {% render 'sponsored-ads', blocks: blocks, row_index: row_index %}
+  but sponsored-ads.liquid only ever read a singular `block`, never
+  `blocks` or `row_index` — so no ad block could ever render. The fix
+  keeps the row-matching responsibility here (per the original docs —
+  "Do not move row logic into sponsored-ads.liquid") and calls
+  sponsored-ads once per matching block, passing `block` (singular),
+  matching sponsored-ads.liquid's actual parameter contract.
+
+  CSS: collection-products.css, product-card.css, sponsored-ads.css
+  JS:  sponsored-ads.js (only needed when a sponsored carousel can
+       appear; product-card.js is global, loaded in theme.liquid)
 {% endcomment %}
 
 {{ 'collection-products.css' | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
+{{ 'sponsored-ads.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign columns = columns | default: 4
@@ -48,9 +62,10 @@
         1. Open .collection-products__grid
         2. For each product, render product-card
         3. At the end of each full row (forloop.index divisible by columns),
-           close the grid, call sponsored-ads for that row number,
+           close the grid, render any sponsored blocks targeting that row,
            then re-open the grid for the next row.
-        4. After the loop, close the final (possibly partial) grid.
+        4. After the loop, close the final (possibly partial) grid, then
+           render any sponsored blocks targeting that final row.
 
       Pitfall: Don't close + reopen the grid wrapper on partial last rows
       or you'll get an unclosed/double-closed div. The final close is
@@ -72,10 +87,10 @@
         {%- if position_mod == 0 and forloop.last == false -%}
           {%- assign row_index = row_index | plus: 1 -%}
           </div>
-          {%- render 'sponsored-ads',
-            blocks:    blocks,
-            row_index: row_index
-          -%}
+          {%- assign row_blocks = blocks | where: 'settings.row', row_index -%}
+          {%- for row_block in row_blocks -%}
+            {%- render 'sponsored-ads', block: row_block, collection: collection -%}
+          {%- endfor -%}
           <div class="collection-products__grid">
         {%- elsif forloop.last -%}
           {%- comment -%}
@@ -92,10 +107,10 @@
     {%- comment -%}
       Inject promos targeting the final row (after grid closes).
     {%- endcomment -%}
-    {%- render 'sponsored-ads',
-      blocks:    blocks,
-      row_index: row_index
-    -%}
+    {%- assign row_blocks = blocks | where: 'settings.row', row_index -%}
+    {%- for row_block in row_blocks -%}
+      {%- render 'sponsored-ads', block: row_block, collection: collection -%}
+    {%- endfor -%}
 
   {%- else -%}
 
