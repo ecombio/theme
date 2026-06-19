@@ -1,0 +1,33 @@
+{% comment %}
+  snippets/sponsored-ads.liquid
+  [2] Dispatcher — routes a single in-feed block to its ad-unit renderer.
+
+  Called from collection-products.liquid once per grid row that has a
+  matching block.settings.row. Does no row-matching itself — that stays
+  upstream so this snippet can be reused anywhere a single block needs
+  rendering (e.g. theme-editor block preview).
+
+  Parameters:
+    block       {Object}  required — a section.blocks entry,
+                           type "sponsored-products" or "sponsored-brands"
+    collection  {Object}  optional — forwarded to sponsored-brands so it
+                           can pull products from a merchant-picked
+                           collection when source_mode == "collection"
+
+  Children:
+    snippets/sponsored-products.liquid
+    snippets/sponsored-brands.liquid
+
+  CSS: sponsored-ads.css — shared chrome (Sponsored label, card frame,
+                            rating row, CTA button) used by both children
+{% endcomment %}
+
+{%- case block.type -%}
+
+  {%- when 'sponsored-products' -%}
+    {%- render 'sponsored-products', block: block -%}
+
+  {%- when 'sponsored-brands' -%}
+    {%- render 'sponsored-brands', block: block, collection: collection -%}
+
+{%- endcase -%}
