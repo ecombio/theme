@@ -4,13 +4,13 @@
 
   Owns:
     - Row-by-row iteration of collection.products
-    - After each row: calls collection-promo to inject any blocks targeting that row
+    - After each row: calls sponsored-ads to inject any blocks targeting that row
     - Empty state
     - Pagination controls
 
   Parameters:
     collection  {Object}  required
-    blocks      {Array}   required — forwarded to collection-promo
+    blocks      {Array}   required — forwarded to sponsored-ads
     paginate    {Object}  required
     columns     {Number}  optional — default 4
 
@@ -48,7 +48,7 @@
         1. Open .collection-products__grid
         2. For each product, render product-card
         3. At the end of each full row (forloop.index divisible by columns),
-           close the grid, call collection-promo for that row number,
+           close the grid, call sponsored-ads for that row number,
            then re-open the grid for the next row.
         4. After the loop, close the final (possibly partial) grid.
 
@@ -72,7 +72,7 @@
         {%- if position_mod == 0 and forloop.last == false -%}
           {%- assign row_index = row_index | plus: 1 -%}
           </div>
-          {%- render 'collection-promo',
+          {%- render 'sponsored-ads',
             blocks:    blocks,
             row_index: row_index
           -%}
@@ -92,7 +92,7 @@
     {%- comment -%}
       Inject promos targeting the final row (after grid closes).
     {%- endcomment -%}
-    {%- render 'collection-promo',
+    {%- render 'sponsored-ads',
       blocks:    blocks,
       row_index: row_index
     -%}
