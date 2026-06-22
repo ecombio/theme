@@ -1,0 +1,127 @@
+{% comment %}
+  sections/product-feed.liquid
+
+  Standalone product grid section.
+  Derived from snippets/collection-products.liquid (collection-feed [1.2.1]).
+
+  Intentionally dropped from the original:
+    - Tab bar (was collection-feed.liquid's job, not this grid's)
+    - Sponsored-ad row injection (was block-driven ad placement —
+      pull this back in later as its own concern if/when needed)
+
+  Works on the collection template (uses the page's `collection` object).
+  If placed elsewhere, falls back to a collection chosen in the section settings.
+
+  CSS: collection-products.css, product-card.css
+{% endcomment %}
+
+{{ 'collection-products.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign columns = section.settings.columns | default: 4
+
+  if collection != blank
+    assign feed_collection = collection
+  elsif section.settings.collection != blank
+    assign feed_collection = section.settings.collection
+  endif
+-%}
+
+<div
+  class="product-feed"
+  style="--product-feed-columns: {{ columns }};"
+  data-product-feed
+>
+
+  {%- if feed_collection.products != blank -%}
+
+    {%- paginate feed_collection.products by section.settings.products_per_page -%}
+
+      <div class="product-feed__grid">
+        {%- for product in feed_collection.products -%}
+          {%- render 'product-card', product: product -%}
+        {%- endfor -%}
+      </div>
+
+      {%- if paginate.pages > 1 -%}
+        <nav
+          class="product-feed__pagination"
+          aria-label="{{ 'general.pagination.label' | t }}"
+        >
+          {%- if paginate.previous -%}
+            <a href="{{ paginate.previous.url }}" class="product-feed__page-link">
+              &larr; {{ 'general.pagination.previous' | t }}
+            </a>
+          {%- endif -%}
+
+          {%- for part in paginate.parts -%}
+            {%- if part.is_link -%}
+              <a href="{{ part.url }}" class="product-feed__page-link">
+                {{ part.title }}
+              </a>
+            {%- else -%}
+              <span class="product-feed__page-link product-feed__page-link--current" aria-current="page">
+                {{ part.title }}
+              </span>
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- if paginate.next -%}
+            <a href="{{ paginate.next.url }}" class="product-feed__page-link">
+              {{ 'general.pagination.next' | t }} &rarr;
+            </a>
+          {%- endif -%}
+        </nav>
+      {%- endif -%}
+
+    {%- endpaginate -%}
+
+  {%- else -%}
+
+    <p class="product-feed__empty">
+      {{ 'collections.general.no_matches' | t }}
+    </p>
+
+  {%- endif -%}
+
+</div>
+
+{% schema %}
+{
+  "name": "Product feed",
+  "tag": "section",
+  "class": "section-product-feed",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "Used only if this section is placed outside the collection template."
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product feed"
+    }
+  ]
+}
+{% endschema %}
