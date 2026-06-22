@@ -303,6 +303,107 @@
         });
     });
   }
+/* ──────────────────────────────────────────────────────────
+     QUICK VIEW UI (Global Event Delegation)
+  ────────────────────────────────────────────────────────── */
+  function initQuickViewUI() {
+    document.addEventListener('click', function (e) {
+      // 1. Thumbnail Image Swapping
+      var thumb = e.target.closest('[data-qv-thumb]');
+      if (thumb) {
+        var wrap = thumb.closest('.qv');
+        var mainImg = wrap.querySelector('#qv-main-img');
+        if (mainImg) {
+          mainImg.src = thumb.getAttribute('data-src');
+          mainImg.alt = thumb.getAttribute('data-alt');
+        }
+        wrap.querySelectorAll('[data-qv-thumb]').forEach(function (t) { t.classList.remove('is-active'); });
+        thumb.classList.add('is-active');
+        return;
+      }
+
+      // 2. Variant Swatch / Button Logic
+      var optBtn = e.target.closest('[data-qv-swatch], [data-qv-option-btn]');
+      if (optBtn) {
+        var wrap = optBtn.closest('.qv');
+        var productId = wrap.getAttribute('data-product-id');
+        var value = optBtn.getAttribute('data-value');
+
+        /* Update visual active state on the clicked group */
+        var group = optBtn.closest('[role="radiogroup"]');
+        if (group) {
+          group.querySelectorAll('[data-qv-swatch], [data-qv-option-btn]').forEach(function (b) {
+            b.classList.remove('is-active');
+            b.setAttribute('aria-checked', 'false');
+          });
+          optBtn.classList.add('is-active');
+          optBtn.setAttribute('aria-checked', 'true');
+        }
+
+        /* Update the text label */
+        var optionName = optBtn.closest('.qv__option');
+        var selectedLabel = optionName && optionName.querySelector('[data-qv-option-selected]');
+        if (selectedLabel) selectedLabel.textContent = value;
+
+        /* Find the correct variant from the JSON block */
+        var jsonEl = document.getElementById('qv-variant-data-' + productId);
+        if (!jsonEl) return;
+        var variants = JSON.parse(jsonEl.textContent);
+
+        /* Gather all currently active option values in this modal */
+        var activeBtns = wrap.querySelectorAll('[data-qv-swatch].is-active, [data-qv-option-btn].is-active');
+        var currentOptions = [];
+        activeBtns.forEach(function (b) {
+          var idx = parseInt(b.getAttribute('data-option-index'), 10);
+          currentOptions[idx] = b.getAttribute('data-value');
+        });
+
+        /* Find matching variant */
+        var variant = variants.find(function (v) {
+          return v.options.every(function (opt, i) { return opt === currentOptions[i]; });
+        });
+
+        if (variant) updateQuickViewVariant(wrap, variant);
+      }
+    });
+  }
+
+  function updateQuickViewVariant(wrap, variant) {
+    /* Update hidden select */
+    var select = wrap.querySelector('[data-qv-variant-select]');
+    if (select) select.value = variant.id;
+
+    /* Update ATC button */
+    var atcBtn = wrap.querySelector('.qv__atc');
+    if (atcBtn) {
+      atcBtn.setAttribute('data-variant-id', variant.id);
+      var label = atcBtn.querySelector('[data-atc-label]');
+      if (variant.available) {
+        atcBtn.disabled = false;
+        atcBtn.classList.remove('qv__atc--soldout');
+        if (label) label.textContent = 'Add to cart';
+      } else {
+        atcBtn.disabled = true;
+        atcBtn.classList.add('qv__atc--soldout');
+        if (label) label.textContent = 'Sold out';
+      }
+    }
+
+    /* Update Price */
+    var priceEl = wrap.querySelector('.qv__price');
+    if (priceEl) {
+      var moneyFormatter = function (cents) {
+        return '$' + (cents / 100).toFixed(2).replace(/\.00$/, '');
+      };
+      var html = '';
+      if (variant.compare_at_price && variant.compare_at_price > variant.price) {
+        html += '<s class="qv__price-compare">' + moneyFormatter(variant.compare_at_price) + '</s>';
+        html += '<span class="qv__price-sale-badge">Save ' + moneyFormatter(variant.compare_at_price - variant.price) + '</span>';
+      }
+      html += '<span class="qv__price-current">' + moneyFormatter(variant.price) + '</span>';
+      priceEl.innerHTML = html;
+    }
+  }
 
   /* ── INIT ── */
   document.addEventListener('DOMContentLoaded', function () {
@@ -310,6 +411,7 @@
     initWishlist();
     initCompare();
     initQuickView();
+    initQuickViewUI();
   });
 
 })();
