@@ -1,0 +1,62 @@
+{%- liquid
+  assign columns           = section.settings.columns           | default: 4
+  assign products_per_page = section.settings.products_per_page | default: 16
+  assign heading           = section.settings.heading           | default: 'Filters'
+  assign show_sort         = section.settings.show_sort
+-%}
+
+{%- render 'product-filter',
+  heading:   heading,
+  show_sort: show_sort
+-%}
+
+{%- render 'product-feed',
+  collection:        collection,
+  columns:           columns,
+  products_per_page: products_per_page
+-%}
+
+{% schema %}
+{
+  "name": "Collection",
+  "tag": "div",
+  "class": "section-collection",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Filter heading",
+      "default": "Filters"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort options",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection"
+    }
+  ]
+}
+{% endschema %}
