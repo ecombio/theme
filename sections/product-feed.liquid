@@ -39,10 +39,33 @@
     {%- paginate feed_collection.products by section.settings.products_per_page -%}
 
       <div class="product-feed__grid">
+        {%- assign row_index = 0 -%}
         {%- for product in feed_collection.products -%}
+
           {%- render 'product-card', product: product -%}
+
+          {%- assign position_mod = forloop.index | modulo: columns -%}
+          {%- if position_mod == 0 and forloop.last == false -%}
+            {%- assign row_index = row_index | plus: 1 -%}
+            </div>
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'in_feed_unit' and block.settings.row == row_index -%}
+                {%- render 'in-feed-unit', block: block -%}
+              {%- endif -%}
+            {%- endfor -%}
+            <div class="product-feed__grid">
+          {%- elsif forloop.last -%}
+            {%- assign row_index = row_index | plus: 1 -%}
+          {%- endif -%}
+
         {%- endfor -%}
       </div>
+
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'in_feed_unit' and block.settings.row == row_index -%}
+          {%- render 'in-feed-unit', block: block -%}
+        {%- endif -%}
+      {%- endfor -%}
 
       {%- if paginate.pages > 1 -%}
         <nav
@@ -116,6 +139,45 @@
       "max": 48,
       "step": 4,
       "default": 16
+    }
+  ],
+  "blocks": [
+    {
+      "type": "in_feed_unit",
+      "name": "In-feed unit",
+      "settings": [
+        {
+          "type": "number",
+          "id": "row",
+          "label": "Insert after row",
+          "info": "1 = after the first row of products, 2 = after the second row, etc."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        }
+      ]
     }
   ],
   "presets": [
