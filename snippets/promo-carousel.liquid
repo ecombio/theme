@@ -1,0 +1,63 @@
+{% comment %}
+  snippets/promo-carousel.liquid
+
+  Renders a horizontal in-feed carousel of either banners or products.
+  No sub-snippets by design — both content types are handled inline.
+
+  Expects:
+    block - a section block of type 'promo_carousel'
+{% endcomment %}
+
+{%- liquid
+  assign content_type = block.settings.content_type
+-%}
+
+<div class="promo-carousel" data-content-type="{{ content_type }}" {{ block.shopify_attributes }}>
+
+  {%- if block.settings.heading != blank -%}
+    <h3 class="promo-carousel__heading">{{ block.settings.heading }}</h3>
+  {%- endif -%}
+
+  <div class="promo-carousel__track">
+    {%- case content_type -%}
+
+      {%- when 'product' -%}
+        {%- if block.settings.source_collection != blank -%}
+          {%- for product in block.settings.source_collection.products limit: block.settings.item_count -%}
+            <div class="promo-carousel__slide">
+              {%- render 'product-card', product: product -%}
+            </div>
+          {%- endfor -%}
+        {%- endif -%}
+
+      {%- when 'banner' -%}
+        {%- for i in (1..block.settings.banner_count) -%}
+          {%- assign img_key = 'banner_' | append: i | append: '_image' -%}
+          {%- assign heading_key = 'banner_' | append: i | append: '_heading' -%}
+          {%- assign link_key = 'banner_' | append: i | append: '_link' -%}
+          {%- assign img = block.settings[img_key] -%}
+
+          {%- if img != blank -%}
+            <div class="promo-carousel__slide promo-carousel__slide--banner">
+              <a href="{{ block.settings[link_key] | default: '#' }}" class="promo-carousel__banner-link">
+                <img
+                  src="{{ img | image_url: width: 600 }}"
+                  srcset="{{ img | image_url: width: 400 }} 400w, {{ img | image_url: width: 600 }} 600w, {{ img | image_url: width: 900 }} 900w"
+                  sizes="(min-width: 750px) 600px, 90vw"
+                  width="{{ img.width }}"
+                  height="{{ img.height }}"
+                  alt="{{ img.alt | default: block.settings[heading_key] | escape }}"
+                  loading="lazy"
+                >
+                {%- if block.settings[heading_key] != blank -%}
+                  <p class="promo-carousel__slide-heading">{{ block.settings[heading_key] }}</p>
+                {%- endif -%}
+              </a>
+            </div>
+          {%- endif -%}
+        {%- endfor -%}
+
+    {%- endcase -%}
+  </div>
+
+</div>
