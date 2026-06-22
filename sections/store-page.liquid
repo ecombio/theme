@@ -26,6 +26,39 @@
 {{ 'promo-product.css' | asset_url | stylesheet_tag }}
 {{ 'product-filter.css' | asset_url | stylesheet_tag }}
 
+<style>
+  .store-page__layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 2.5rem;
+  }
+
+  .store-page__sidebar {
+    flex: 0 0 260px;
+    width: 260px;
+    position: sticky;
+    top: 1.5rem;
+  }
+
+  .store-page__main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  @media (max-width: 989px) {
+    .store-page__layout {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .store-page__sidebar {
+      flex: 1 1 auto;
+      width: 100%;
+      position: static;
+    }
+  }
+</style>
+
 {%- liquid
   assign columns = section.settings.columns | default: 4
 
@@ -91,8 +124,11 @@
     data-store-division="product"
   >
 
-    {%- comment -%} ── Filter + sort ──────────────────────────────────────── {%- endcomment -%}
+    <div class="store-page__layout">
+
+    {%- comment -%} ── Filter + sort (left sidebar) ───────────────────────── {%- endcomment -%}
     {%- if feed_collection != blank -%}
+      <aside class="store-page__sidebar">
       <div class="product-filter" data-product-filter>
 
         <div class="product-filter__header">
@@ -303,7 +339,10 @@
         </form>
 
       </div>
+      </aside>
     {%- endif -%}
+
+    <div class="store-page__main">
 
     {%- if feed_collection.products != blank -%}
 
@@ -384,6 +423,9 @@
     {%- else -%}
       <p class="store-page__empty">{{ 'collections.general.no_matches' | t }}</p>
     {%- endif -%}
+
+    </div>
+    </div>
   </div>
 
   {%- comment -%} ── [2] CONTENT division ── {%- endcomment -%}
