@@ -1,24 +1,21 @@
 {% comment %}
-  sections/product-feed.liquid
+  sections/store-page.liquid
 
-  Standalone product grid section with in-feed promo blocks.
+  Two divisions within one section:
+    [1] product  — product-card, promo-product, promo-carousel
+    [2] content  — article-card
 
-  In-feed block types:
-    promo_product   - single sponsored product card (reuses product-card)
-    promo_carousel  - horizontal carousel of banners OR products
+  Tab bar toggles between divisions client-side (no page reload).
 
-  Intentionally dropped from the original:
-    - Tab bar (was collection-feed.liquid's job, not this grid's)
-    - The old generic 'in_feed_unit' block (replaced by promo_product / promo_carousel)
+  Collection falls back to section settings if not on a collection template.
+  Blog is always chosen in section settings.
 
-  Works on the collection template (uses the page's `collection` object).
-  If placed elsewhere, falls back to a collection chosen in the section settings.
-
-  CSS: product-feed.css, product-card.css
+  CSS: store-page.css
 {% endcomment %}
 
-{{ 'product-feed.css' | asset_url | stylesheet_tag }}
+{{ 'store-page.css' | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
 {{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
 {{ 'promo-product.css' | asset_url | stylesheet_tag }}
 
@@ -30,106 +27,232 @@
   elsif section.settings.collection != blank
     assign feed_collection = section.settings.collection
   endif
+
+  assign feed_blog = section.settings.blog
 -%}
 
 <div
-  class="product-feed"
-  style="--product-feed-columns: {{ columns }};"
-  data-product-feed
+  class="store-page"
+  style="--store-page-columns: {{ columns }};"
+  data-store-page
 >
 
-  {%- if feed_collection.products != blank -%}
+  {%- comment -%} Tab bar {%- endcomment -%}
+  <div class="store-page__tabs" role="tablist">
+    <button
+      class="store-page__tab store-page__tab--active"
+      role="tab"
+      aria-selected="true"
+      aria-controls="store-page-product-{{ section.id }}"
+      id="store-page-tab-product-{{ section.id }}"
+      data-store-tab="product"
+    >
+      {{ 'sections.store_page.tab_product' | t | default: 'Product' }}
+    </button>
+    <button
+      class="store-page__tab"
+      role="tab"
+      aria-selected="false"
+      aria-controls="store-page-content-{{ section.id }}"
+      id="store-page-tab-content-{{ section.id }}"
+      data-store-tab="content"
+      tabindex="-1"
+    >
+      {{ 'sections.store_page.tab_content' | t | default: 'Content' }}
+    </button>
+  </div>
 
-    {%- paginate feed_collection.products by section.settings.products_per_page -%}
+  {%- comment -%} ── [1] PRODUCT division ── {%- endcomment -%}
+  <div
+    class="store-page__division"
+    id="store-page-product-{{ section.id }}"
+    role="tabpanel"
+    aria-labelledby="store-page-tab-product-{{ section.id }}"
+    data-store-division="product"
+  >
+    {%- if feed_collection.products != blank -%}
 
-      <div class="product-feed__grid">
-        {%- assign row_index = 0 -%}
-        {%- for product in feed_collection.products -%}
+      {%- paginate feed_collection.products by section.settings.products_per_page -%}
 
-          {%- render 'product-card', product: product -%}
+        {%- assign row_index = 1 -%}
 
-          {%- assign position_mod = forloop.index | modulo: columns -%}
-          {%- if position_mod == 0 and forloop.last == false -%}
-            {%- assign row_index = row_index | plus: 1 -%}
-            </div>
-            {%- for block in section.blocks -%}
-              {%- if block.settings.row == row_index -%}
-                {%- case block.type -%}
-                  {%- when 'promo_product' -%}
-                    {%- render 'promo-product', block: block -%}
-                  {%- when 'promo_carousel' -%}
-                    {%- render 'promo-carousel', block: block -%}
-                {%- endcase -%}
-              {%- endif -%}
-            {%- endfor -%}
-            <div class="product-feed__grid">
-          {%- elsif forloop.last -%}
-            {%- assign row_index = row_index | plus: 1 -%}
-          {%- endif -%}
+        <div class="store-page__grid">
 
-        {%- endfor -%}
-      </div>
+          {%- for product in feed_collection.products -%}
 
-      {%- for block in section.blocks -%}
-        {%- if block.settings.row == row_index -%}
-          {%- case block.type -%}
-            {%- when 'promo_product' -%}
-              {%- render 'promo-product', block: block -%}
-            {%- when 'promo_carousel' -%}
-              {%- render 'promo-carousel', block: block -%}
-          {%- endcase -%}
-        {%- endif -%}
-      {%- endfor -%}
+            {%- render 'product-card', product: product -%}
 
-      {%- if paginate.pages > 1 -%}
-        <nav
-          class="product-feed__pagination"
-          aria-label="{{ 'general.pagination.label' | t }}"
-        >
-          {%- if paginate.previous -%}
-            <a href="{{ paginate.previous.url }}" class="product-feed__page-link">
-              &larr; {{ 'general.pagination.previous' | t }}
-            </a>
-          {%- endif -%}
+            {%- assign position_mod = forloop.index | modulo: columns -%}
 
-          {%- for part in paginate.parts -%}
-            {%- if part.is_link -%}
-              <a href="{{ part.url }}" class="product-feed__page-link">
-                {{ part.title }}
-              </a>
-            {%- else -%}
-              <span class="product-feed__page-link product-feed__page-link--current" aria-current="page">
-                {{ part.title }}
-              </span>
+            {%- if position_mod == 0 and forloop.last == false -%}
+
+              </div>{{- '' -}}
+
+              {%- for block in section.blocks -%}
+                {%- if block.settings.row == row_index -%}
+                  {%- case block.type -%}
+                    {%- when 'promo_product' -%}
+                      {%- render 'promo-product', block: block -%}
+                    {%- when 'promo_carousel' -%}
+                      {%- render 'promo-carousel', block: block -%}
+                  {%- endcase -%}
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- assign row_index = row_index | plus: 1 -%}
+
+              <div class="store-page__grid">
+
             {%- endif -%}
+
           {%- endfor -%}
 
-          {%- if paginate.next -%}
-            <a href="{{ paginate.next.url }}" class="product-feed__page-link">
-              {{ 'general.pagination.next' | t }} &rarr;
-            </a>
+        </div>
+
+        {%- for block in section.blocks -%}
+          {%- if block.settings.row == row_index -%}
+            {%- case block.type -%}
+              {%- when 'promo_product' -%}
+                {%- render 'promo-product', block: block -%}
+              {%- when 'promo_carousel' -%}
+                {%- render 'promo-carousel', block: block -%}
+            {%- endcase -%}
           {%- endif -%}
-        </nav>
-      {%- endif -%}
+        {%- endfor -%}
 
-    {%- endpaginate -%}
+        {%- if paginate.pages > 1 -%}
+          <nav class="store-page__pagination" aria-label="{{ 'general.pagination.label' | t }}">
+            {%- if paginate.previous -%}
+              <a href="{{ paginate.previous.url }}" class="store-page__page-link">
+                &larr; {{ 'general.pagination.previous' | t }}
+              </a>
+            {%- endif -%}
+            {%- for part in paginate.parts -%}
+              {%- if part.is_link -%}
+                <a href="{{ part.url }}" class="store-page__page-link">{{ part.title }}</a>
+              {%- else -%}
+                <span class="store-page__page-link store-page__page-link--current" aria-current="page">
+                  {{ part.title }}
+                </span>
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if paginate.next -%}
+              <a href="{{ paginate.next.url }}" class="store-page__page-link">
+                {{ 'general.pagination.next' | t }} &rarr;
+              </a>
+            {%- endif -%}
+          </nav>
+        {%- endif -%}
 
-  {%- else -%}
+      {%- endpaginate -%}
 
-    <p class="product-feed__empty">
-      {{ 'collections.general.no_matches' | t }}
-    </p>
+    {%- else -%}
+      <p class="store-page__empty">{{ 'collections.general.no_matches' | t }}</p>
+    {%- endif -%}
+  </div>
 
-  {%- endif -%}
+  {%- comment -%} ── [2] CONTENT division ── {%- endcomment -%}
+  <div
+    class="store-page__division"
+    id="store-page-content-{{ section.id }}"
+    role="tabpanel"
+    aria-labelledby="store-page-tab-content-{{ section.id }}"
+    data-store-division="content"
+    hidden
+  >
+    {%- if feed_blog != blank and feed_blog.articles != blank -%}
+
+      {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
+
+        <div class="store-page__grid">
+          {%- for article in feed_blog.articles -%}
+            {%- render 'article-card', article: article -%}
+          {%- endfor -%}
+        </div>
+
+        {%- if paginate.pages > 1 -%}
+          <nav class="store-page__pagination" aria-label="{{ 'general.pagination.label' | t }}">
+            {%- if paginate.previous -%}
+              <a href="{{ paginate.previous.url }}" class="store-page__page-link">
+                &larr; {{ 'general.pagination.previous' | t }}
+              </a>
+            {%- endif -%}
+            {%- for part in paginate.parts -%}
+              {%- if part.is_link -%}
+                <a href="{{ part.url }}" class="store-page__page-link">{{ part.title }}</a>
+              {%- else -%}
+                <span class="store-page__page-link store-page__page-link--current" aria-current="page">
+                  {{ part.title }}
+                </span>
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if paginate.next -%}
+              <a href="{{ paginate.next.url }}" class="store-page__page-link">
+                {{ 'general.pagination.next' | t }} &rarr;
+              </a>
+            {%- endif -%}
+          </nav>
+        {%- endif -%}
+
+      {%- endpaginate -%}
+
+    {%- else -%}
+      <p class="store-page__empty">
+        {{ 'sections.store_page.no_articles' | t | default: 'No articles found.' }}
+      </p>
+    {%- endif -%}
+  </div>
 
 </div>
 
+<script>
+  (function () {
+    var page = document.querySelector('[data-store-page]');
+    if (!page) return;
+
+    var tabs      = page.querySelectorAll('[data-store-tab]');
+    var divisions = page.querySelectorAll('[data-store-division]');
+
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () {
+        var target = tab.dataset.storeTab;
+
+        tabs.forEach(function (t) {
+          var active = t.dataset.storeTab === target;
+          t.classList.toggle('store-page__tab--active', active);
+          t.setAttribute('aria-selected', active ? 'true' : 'false');
+          t.setAttribute('tabindex', active ? '0' : '-1');
+        });
+
+        divisions.forEach(function (div) {
+          if (div.dataset.storeDivision === target) {
+            div.removeAttribute('hidden');
+          } else {
+            div.setAttribute('hidden', '');
+          }
+        });
+      });
+
+      tab.addEventListener('keydown', function (e) {
+        var next;
+        if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
+        if (e.key === 'ArrowLeft')  next = tabs[i - 1] || tabs[tabs.length - 1];
+        if (next) { next.focus(); next.click(); }
+      });
+    });
+  })();
+</script>
+
 {% schema %}
 {
-  "name": "Product feed",
+  "name": "Store page",
   "tag": "section",
-  "class": "section-product-feed",
+  "class": "section-store-page",
   "settings": [
+    {
+      "type": "header",
+      "content": "Product division"
+    },
     {
       "type": "collection",
       "id": "collection",
@@ -149,6 +272,24 @@
       "type": "range",
       "id": "products_per_page",
       "label": "Products per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Content division"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "articles_per_page",
+      "label": "Articles per page",
       "min": 4,
       "max": 48,
       "step": 4,
@@ -210,11 +351,10 @@
           "id": "heading",
           "label": "Carousel heading"
         },
-
         {
           "type": "collection",
           "id": "source_collection",
-          "label": "Source collection (for products)",
+          "label": "Source collection (for products)"
         },
         {
           "type": "range",
@@ -223,9 +363,8 @@
           "min": 2,
           "max": 12,
           "step": 1,
-          "default": 6,
+          "default": 6
         },
-
         {
           "type": "range",
           "id": "banner_count",
@@ -233,62 +372,59 @@
           "min": 1,
           "max": 3,
           "step": 1,
-          "default": 3,
+          "default": 3
         },
-
         {
           "type": "image_picker",
           "id": "banner_1_image",
-          "label": "Banner 1 image",
+          "label": "Banner 1 image"
         },
         {
           "type": "text",
           "id": "banner_1_heading",
-          "label": "Banner 1 heading",
+          "label": "Banner 1 heading"
         },
         {
           "type": "url",
           "id": "banner_1_link",
-          "label": "Banner 1 link",
+          "label": "Banner 1 link"
         },
-
         {
           "type": "image_picker",
           "id": "banner_2_image",
-          "label": "Banner 2 image",
+          "label": "Banner 2 image"
         },
         {
           "type": "text",
           "id": "banner_2_heading",
-          "label": "Banner 2 heading",
+          "label": "Banner 2 heading"
         },
         {
           "type": "url",
           "id": "banner_2_link",
-          "label": "Banner 2 link",
+          "label": "Banner 2 link"
         },
-
         {
           "type": "image_picker",
           "id": "banner_3_image",
-          "label": "Banner 3 image",
+          "label": "Banner 3 image"
         },
         {
           "type": "text",
           "id": "banner_3_heading",
-          "label": "Banner 3 heading",
+          "label": "Banner 3 heading"
         },
         {
           "type": "url",
           "id": "banner_3_link",
-          "label": "Banner 3 link",
+          "label": "Banner 3 link"
         }
       ]
     }
   ],
   "presets": [
     {
-      "name": "Product feed"
+      "name": "Store page"
     }
   ]
 }
