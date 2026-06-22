@@ -1,38 +1,325 @@
 {% comment %}
-  templates/collection.liquid
+  sections/collection.liquid
 
-  Composes the collection page from two independent sections:
-    sections/product-filter.liquid  - filter sidebar + sort
-    sections/product-feed.liquid    - product grid + in-feed promo blocks
+  Merged from:
+    - sections/product-filter.liquid  (filter UI — inlined below)
+    - sections/product-feed.liquid    (product grid — inlined below)
 
-  Both sections already read the page's `collection` object directly
-  (with a `section.settings.collection` fallback for use outside this
-  template), so no data needs to be passed between them here — Liquid
-  just renders each section in turn.
-
-  Note: product-feed.liquid and product-filter.liquid each define their
-  own {% schema %}. A single file can only have one schema block, so
-  they're included here as sections (which keeps each schema intact),
-  not inlined/merged into this file.
+  Previously split across templates/collection.json; consolidated here
+  so a single section file owns the collection layout.
 {% endcomment %}
 
-<div class="collection-page" data-collection-page>
-  <div class="collection-page__header">
-    <h1 class="collection-page__title">{{ collection.title }}</h1>
-    {%- if collection.description != blank -%}
-      <div class="collection-page__description rte">
-        {{ collection.description }}
+{% comment %} ─── PRODUCT FILTER ──────────────────────────────────────────── {% endcomment %}
+{% comment %}
+  TODO: paste the Liquid body of your sections/product-filter.liquid here.
+  It will have access to the filter settings below via section.settings:
+    section.settings.heading   → filter panel heading
+    section.settings.show_sort → whether to render the sort control
+{% endcomment %}
+
+
+{% comment %} ─── PRODUCT FEED ─────────────────────────────────────────────── {% endcomment %}
+{% comment %}
+  sections/product-feed.liquid
+
+  Standalone product grid section with in-feed promo blocks.
+
+  In-feed block types:
+    promo_product   - single sponsored product card (reuses product-card)
+    promo_carousel  - horizontal carousel of banners OR products
+
+  Works on the collection template (uses the page's `collection` object).
+  If placed elsewhere, falls back to a collection chosen in the section settings.
+
+  CSS: product-feed.css, product-card.css
+{% endcomment %}
+
+{{ 'product-feed.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign columns = section.settings.columns | default: 4
+
+  if collection != blank
+    assign feed_collection = collection
+  elsif section.settings.collection != blank
+    assign feed_collection = section.settings.collection
+  endif
+-%}
+
+<div
+  class="product-feed"
+  style="--product-feed-columns: {{ columns }};"
+  data-product-feed
+>
+
+  {%- if feed_collection.products != blank -%}
+
+    {%- paginate feed_collection.products by section.settings.products_per_page -%}
+
+      <div class="product-feed__grid">
+        {%- assign row_index = 0 -%}
+        {%- for product in feed_collection.products -%}
+
+          {%- render 'product-card', product: product -%}
+
+          {%- assign position_mod = forloop.index | modulo: columns -%}
+          {%- if position_mod == 0 and forloop.last == false -%}
+            {%- assign row_index = row_index | plus: 1 -%}
+            </div>
+            {%- for block in section.blocks -%}
+              {%- if block.settings.row == row_index -%}
+                {%- case block.type -%}
+                  {%- when 'promo_product' -%}
+                    {%- render 'promo-product', block: block -%}
+                  {%- when 'promo_carousel' -%}
+                    {%- render 'promo-carousel', block: block -%}
+                {%- endcase -%}
+              {%- endif -%}
+            {%- endfor -%}
+            <div class="product-feed__grid">
+          {%- elsif forloop.last -%}
+            {%- assign row_index = row_index | plus: 1 -%}
+          {%- endif -%}
+
+        {%- endfor -%}
       </div>
-    {%- endif -%}
-  </div>
 
-  <div class="collection-page__layout">
-    <aside class="collection-page__sidebar">
-      {%- section 'product-filter' -%}
-    </aside>
+      {%- for block in section.blocks -%}
+        {%- if block.settings.row == row_index -%}
+          {%- case block.type -%}
+            {%- when 'promo_product' -%}
+              {%- render 'promo-product', block: block -%}
+            {%- when 'promo_carousel' -%}
+              {%- render 'promo-carousel', block: block -%}
+          {%- endcase -%}
+        {%- endif -%}
+      {%- endfor -%}
 
-    <div class="collection-page__main">
-      {%- section 'product-feed' -%}
-    </div>
-  </div>
+      {%- if paginate.pages > 1 -%}
+        <nav
+          class="product-feed__pagination"
+          aria-label="{{ 'general.pagination.label' | t }}"
+        >
+          {%- if paginate.previous -%}
+            <a href="{{ paginate.previous.url }}" class="product-feed__page-link">
+              &larr; {{ 'general.pagination.previous' | t }}
+            </a>
+          {%- endif -%}
+
+          {%- for part in paginate.parts -%}
+            {%- if part.is_link -%}
+              <a href="{{ part.url }}" class="product-feed__page-link">
+                {{ part.title }}
+              </a>
+            {%- else -%}
+              <span class="product-feed__page-link product-feed__page-link--current" aria-current="page">
+                {{ part.title }}
+              </span>
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- if paginate.next -%}
+            <a href="{{ paginate.next.url }}" class="product-feed__page-link">
+              {{ 'general.pagination.next' | t }} &rarr;
+            </a>
+          {%- endif -%}
+        </nav>
+      {%- endif -%}
+
+    {%- endpaginate -%}
+
+  {%- else -%}
+
+    <p class="product-feed__empty">
+      {{ 'collections.general.no_matches' | t }}
+    </p>
+
+  {%- endif -%}
+
 </div>
+
+{% schema %}
+{
+  "name": "Collection",
+  "tag": "div",
+  "class": "section-collection",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Filters"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Filter heading",
+      "default": "Filters"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort options",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Product grid"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "Used only if this section is placed outside the collection template."
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
+    }
+  ],
+  "blocks": [
+    {
+      "type": "promo_product",
+      "name": "Sponsored Product",
+      "settings": [
+        {
+          "type": "number",
+          "id": "row",
+          "label": "Insert after row",
+          "info": "1 = after the first row of products, 2 = after the second row, etc."
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "checkbox",
+          "id": "sponsored",
+          "label": "Show 'Sponsored' label",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "sponsor_name",
+          "label": "Sponsor name (optional)",
+          "info": "Defaults to \"Sponsored\" if left blank."
+        }
+      ]
+    },
+    {
+      "type": "promo_carousel",
+      "name": "Promo Carousel",
+      "settings": [
+        {
+          "type": "number",
+          "id": "row",
+          "label": "Insert after row",
+          "info": "1 = after the first row of products, 2 = after the second row, etc."
+        },
+        {
+          "type": "select",
+          "id": "content_type",
+          "label": "Carousel content",
+          "options": [
+            { "value": "banner", "label": "Banners" },
+            { "value": "product", "label": "Products" }
+          ],
+          "default": "product"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Carousel heading"
+        },
+        {
+          "type": "collection",
+          "id": "source_collection",
+          "label": "Source collection (for products)"
+        },
+        {
+          "type": "range",
+          "id": "item_count",
+          "label": "Items to show",
+          "min": 2,
+          "max": 12,
+          "step": 1,
+          "default": 6
+        },
+        {
+          "type": "range",
+          "id": "banner_count",
+          "label": "Number of banners",
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "default": 3
+        },
+        {
+          "type": "image_picker",
+          "id": "banner_1_image",
+          "label": "Banner 1 image"
+        },
+        {
+          "type": "text",
+          "id": "banner_1_heading",
+          "label": "Banner 1 heading"
+        },
+        {
+          "type": "url",
+          "id": "banner_1_link",
+          "label": "Banner 1 link"
+        },
+        {
+          "type": "image_picker",
+          "id": "banner_2_image",
+          "label": "Banner 2 image"
+        },
+        {
+          "type": "text",
+          "id": "banner_2_heading",
+          "label": "Banner 2 heading"
+        },
+        {
+          "type": "url",
+          "id": "banner_2_link",
+          "label": "Banner 2 link"
+        },
+        {
+          "type": "image_picker",
+          "id": "banner_3_image",
+          "label": "Banner 3 image"
+        },
+        {
+          "type": "text",
+          "id": "banner_3_heading",
+          "label": "Banner 3 heading"
+        },
+        {
+          "type": "url",
+          "id": "banner_3_link",
+          "label": "Banner 3 link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection"
+    }
+  ]
+}
+{% endschema %}
