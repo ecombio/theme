@@ -1,0 +1,104 @@
+{% comment %}
+  snippets/collection-filter.liquid
+  [1.1] Collection-specific filter chrome wrapper.
+
+  Owns:
+    - Sidebar heading + result count (sidebar context)
+    - Mobile drawer toggle + close button
+    - Delegates the actual form to filters.liquid
+
+  Parameters:
+    collection  {Object}  required
+    context     {String}  optional — 'sidebar' | 'toolbar', default 'sidebar'
+
+  CSS: collection-filter.css
+  JS:  filters.js (loaded by filters.liquid)
+{% endcomment %}
+
+{{ 'collection-filter.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign context = context | default: 'sidebar'
+
+  assign active_count = 0
+  for filter in collection.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value or filter.max_value.value
+        assign active_count = active_count | plus: 1
+      endif
+    else
+      assign active_count = active_count | plus: filter.active_values.size
+    endif
+  endfor
+-%}
+
+<div
+  class="collection-filter collection-filter--{{ context }}"
+  data-collection-filter
+  data-context="{{ context }}"
+>
+
+  {%- if context == 'sidebar' -%}
+    <div class="collection-filter__header">
+      <h2 class="collection-filter__heading" id="collection-filter-heading">Filters</h2>
+      <span class="collection-filter__count" aria-live="polite">
+        {{ collection.products_count }}
+        {{- collection.products_count | pluralize: 'result', 'results' }}
+      </span>
+    </div>
+  {%- endif -%}
+
+  <button
+    class="collection-filter__mobile-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="collection-filter-drawer"
+    data-filters-mobile-toggle
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <line x1="1" y1="4"  x2="15" y2="4"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="3" y1="8"  x2="13" y2="8"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="5" y1="12" x2="11" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Filters &amp; sort
+    {%- if active_count > 0 -%}
+      <span class="collection-filter__mobile-count" aria-label="{{ active_count }} active filters">
+        {{ active_count }}
+      </span>
+    {%- endif -%}
+  </button>
+
+  <div
+    class="collection-filter__body"
+    id="collection-filter-drawer"
+    data-filters-drawer
+  >
+    <button
+      class="collection-filter__drawer-close"
+      type="button"
+      aria-label="Close filters"
+      data-filters-drawer-close
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    {%- if context == 'toolbar' -%}
+      <span class="collection-filter__count" aria-live="polite">
+        {{ collection.products_count }}
+        {{- collection.products_count | pluralize: 'result', 'results' }}
+      </span>
+    {%- endif -%}
+
+    {%- render 'filters',
+      results:     collection,
+      context:     context,
+      show_sort:   true,
+      show_active: true,
+      form_id:     'collection-filter-form'
+    -%}
+
+  </div>
+
+</div>

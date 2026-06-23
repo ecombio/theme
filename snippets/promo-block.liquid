@@ -1,0 +1,29 @@
+{% comment %}
+  snippets/promo-block.liquid
+  [1.2.1 → 1.1] Adapter — routes a single block to its renderer.
+
+  Receives one block object from collection-promo.liquid and delegates
+  to the correct block-type snippet. Owns no markup itself.
+
+  Parameters:
+    block  {Object}  required — a single Shopify section block
+
+  Block types handled:
+    "banner-image"        → banner-image.liquid
+    "product-carousel"    → product-carousel.liquid
+    "collection-carousel" → collection-carousel.liquid
+
+  Pitfall — unknown block types:
+    If a new block type is added to the schema but not handled here,
+    it silently renders nothing. Add a new `when` branch here and a
+    matching snippet when extending.
+{% endcomment %}
+
+{%- case block.type -%}
+  {%- when 'banner-image' -%}
+    {%- render 'banner-image', block: block -%}
+  {%- when 'product-carousel' -%}
+    {%- render 'product-carousel', block: block -%}
+  {%- when 'collection-carousel' -%}
+    {%- render 'collection-carousel', block: block -%}
+{%- endcase -%}

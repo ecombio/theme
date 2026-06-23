@@ -1,21 +1,25 @@
 {%- comment -%}
   snippets/product-card.liquid
   Reusable product card. Context-agnostic — works in carousels,
-  collection grids, search results, featured collections, etc.
+  collection grids, search results, featured collections, sponsored
+  ad units, etc.
 
   Wired to assets/product-card.js (loaded globally via theme.liquid).
-make sure to fucking use this shit when rendering this product-card, or it'll look like shit
 
-
-{{ 'product-card.css' | asset_url | stylesheet_tag }}
- 
   Parameters:
     product        {Object}  required  — Shopify product object
     show_quickview {Boolean} optional  — default true
     show_compare   {Boolean} optional  — default true
     show_eta       {Boolean} optional  — default true
+    is_sponsored   {Boolean} optional  — default false
+                             When true, renders a "Sponsored" disclosure
+                             label on the card. Used by sponsored-products
+                             and sponsored-brands so in-feed ad units share
+                             the exact same card markup/behavior as
+                             organic product cards.
 
-  CSS dependency: assets/product-card.css
+  CSS dependency: assets/product-card.css (loaded by collection-products.liquid;
+                  snippets do not load their own assets — see asset ownership rule)
 
   MIGRATION NOTES (from card-product-carousel.liquid):
     • All CSS classes renamed: .cpc__* → .product-card__*
@@ -51,6 +55,7 @@ make sure to fucking use this shit when rendering this product-card, or it'll lo
   assign show_quickview = show_quickview | default: true
   assign show_compare   = show_compare   | default: true
   assign show_eta       = show_eta       | default: true
+  assign is_sponsored   = is_sponsored   | default: false
 -%}
 
 {{- '' -}}
@@ -59,13 +64,21 @@ make sure to fucking use this shit when rendering this product-card, or it'll lo
   logic can climb up with btn.closest('[data-product-handle]').
 {%- endcomment -%}
 <div
-  class="product-card"
+  class="product-card{% if is_sponsored %} product-card--sponsored{% endif %}"
   data-product-id="{{ card_product.id }}"
   data-product-handle="{{ card_product.handle }}"
+  {%- if is_sponsored %}
+  data-sponsored="true"
+  {%- endif %}
 >
 
   {%- comment -%}── IMAGE ZONE ──{%- endcomment -%}
   <div class="product-card__img-zone">
+
+    {%- if is_sponsored -%}
+      <span class="product-card__sponsored-label">Sponsored</span>
+    {%- endif -%}
+
     <a href="{{ card_url }}" class="product-card__image-wrapper" aria-label="{{ card_title | escape }}" tabindex="0">
       {%- if card_image != blank -%}
         {{

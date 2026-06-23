@@ -1,0 +1,140 @@
+{% comment %}
+  snippets/collection-feed.liquid
+  [1.2] Absorbs collection-features + collection-function.
+
+  Owns:
+    - Tab bar (Products / Posts / Pages)
+    - Forwards blocks + columns into collection-products for in-feed promo injection
+    - Delegates grids to collection-products / collection-posts / collection-pages
+
+  Parameters:
+    collection  {Object}  required
+    blocks      {Array}   required — section.blocks, forwarded to collection-products → collection-promo
+    paginate    {Object}  required — opened upstream in collection.liquid
+    columns     {Number}  optional — default 4
+
+  Metafields:
+    collection.metafields.showroom.articles
+    collection.metafields.showroom.pages
+
+  CSS: collection-feed.css (loaded in theme.liquid <head>)
+  JS:  collection-feed.js
+{% endcomment %}
+
+{%- liquid
+  assign columns        = columns | default: 4
+  assign showroom_posts = collection.metafields.showroom.articles.value
+  assign showroom_pages = collection.metafields.showroom.pages.value
+  assign has_posts      = false
+  assign has_pages      = false
+  if showroom_posts != blank
+    assign has_posts = true
+  endif
+  if showroom_pages != blank
+    assign has_pages = true
+  endif
+-%}
+
+<div class="collection-feed" data-collection-feed>
+
+  {%- comment -%} ── Tab bar ─────────────────────────────────────────────── {%- endcomment -%}
+
+  <div class="collection-feed__tabs" role="tablist" aria-label="Collection content">
+
+    <button
+      class="collection-feed__tab collection-feed__tab--active"
+      role="tab"
+      aria-selected="true"
+      aria-controls="feed-panel-products"
+      id="feed-tab-products"
+      type="button"
+      data-feed-tab="products"
+    >
+      Products
+      <span class="collection-feed__tab-count">({{ collection.products_count }})</span>
+    </button>
+
+    {%- if has_posts -%}
+      <button
+        class="collection-feed__tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="feed-panel-posts"
+        id="feed-tab-posts"
+        type="button"
+        data-feed-tab="posts"
+        tabindex="-1"
+      >
+        Posts
+        <span class="collection-feed__tab-count">({{ showroom_posts.size }})</span>
+      </button>
+    {%- endif -%}
+
+    {%- if has_pages -%}
+      <button
+        class="collection-feed__tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="feed-panel-pages"
+        id="feed-tab-pages"
+        type="button"
+        data-feed-tab="pages"
+        tabindex="-1"
+      >
+        Pages
+        <span class="collection-feed__tab-count">({{ showroom_pages.size }})</span>
+      </button>
+    {%- endif -%}
+
+  </div>
+
+  {%- comment -%} ── Products panel ───────────────────────────────────────── {%- endcomment -%}
+
+  <div
+    class="collection-feed__panel"
+    id="feed-panel-products"
+    role="tabpanel"
+    aria-labelledby="feed-tab-products"
+    data-feed-panel="products"
+  >
+    {%- render 'collection-products',
+      collection: collection,
+      blocks:     blocks,
+      paginate:   paginate,
+      columns:    columns
+    -%}
+  </div>
+
+  {%- comment -%} ── Posts panel ──────────────────────────────────────────── {%- endcomment -%}
+
+  {%- if has_posts -%}
+    <div
+      class="collection-feed__panel"
+      id="feed-panel-posts"
+      role="tabpanel"
+      aria-labelledby="feed-tab-posts"
+      data-feed-panel="posts"
+      hidden
+    >
+      {%- render 'collection-posts', posts: showroom_posts -%}
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Pages panel ──────────────────────────────────────────── {%- endcomment -%}
+
+  {%- if has_pages -%}
+    <div
+      class="collection-feed__panel"
+      id="feed-panel-pages"
+      role="tabpanel"
+      aria-labelledby="feed-tab-pages"
+      data-feed-panel="pages"
+      hidden
+    >
+      {%- render 'collection-pages', pages: showroom_pages -%}
+    </div>
+  {%- endif -%}
+
+</div>
+
+<script src="{{ 'collection-feed.js' | asset_url }}" defer></script>

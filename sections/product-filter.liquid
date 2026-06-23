@@ -1,0 +1,297 @@
+{% comment %}
+  sections/product-filter.liquid
+
+  Standalone product filter + sort section.
+
+  Replaces, in one place:
+    - snippets/filters.liquid            (sort select, active-filter chips, accordion idea)
+    - snippets/collection-filters.liquid (checkbox/price markup, clear-all)
+    - snippets/collection-filter.liquid  (sidebar chrome — folded in directly, not a separate wrapper)
+    - snippets/collection-features.liquid (banner/carousel routing dropped — unrelated concern)
+
+  Dropped entirely:
+    - collection-filters.js — targeted markup (#ProductGrid, #FilterDrawer, -GTE/-LTE
+      range sliders, etc.) that doesn't exist anywhere in this theme's actual filter
+      markup. Replaced by product-filter.js below, written against this file's markup.
+    - Dual-handle price slider — its JS never matched its own markup either; plain
+      min/max number inputs + Apply button cover the same job with no breakage risk.
+
+  Sort lives here, gated by a setting, rather than being force-bundled into
+  product-feed — toggle `show_sort` off if sort should live elsewhere instead.
+
+  Works on the collection template (uses the page's `collection` object).
+  Falls back to a collection chosen in section settings if placed elsewhere.
+
+  CSS: product-filter.css
+  JS:  product-filter.js
+{% endcomment %}
+
+{{ 'product-filter.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  if collection != blank
+    assign filter_collection = collection
+  elsif section.settings.collection != blank
+    assign filter_collection = section.settings.collection
+  endif
+
+  assign show_sort = section.settings.show_sort
+
+  assign active_count = 0
+  for filter in filter_collection.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value or filter.max_value.value
+        assign active_count = active_count | plus: 1
+      endif
+    else
+      assign active_count = active_count | plus: filter.active_values.size
+    endif
+  endfor
+-%}
+
+<div class="product-filter" data-product-filter>
+
+  <div class="product-filter__header">
+    <h2 class="product-filter__heading">{{ section.settings.heading | default: 'Filters' }}</h2>
+    <span class="product-filter__count" aria-live="polite">
+      {{ filter_collection.products_count }}
+      {{- filter_collection.products_count | pluralize: 'result', 'results' }}
+    </span>
+  </div>
+
+  <button
+    class="product-filter__mobile-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="product-filter-drawer"
+    data-product-filter-mobile-toggle
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <line x1="1" y1="4"  x2="15" y2="4"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="3" y1="8"  x2="13" y2="8"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="5" y1="12" x2="11" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Filters &amp; sort
+    {%- if active_count > 0 -%}
+      <span class="product-filter__mobile-count" aria-label="{{ active_count }} active filters">
+        {{ active_count }}
+      </span>
+    {%- endif -%}
+  </button>
+
+  <form
+    id="product-filter-drawer"
+    class="product-filter__body"
+    data-product-filter-form
+    method="get"
+    novalidate
+  >
+
+    {%- comment -%} Preserve non-filter params (q, page, etc.) {%- endcomment -%}
+    {%- for param in request.query_parameters -%}
+      {%- assign param_key = param | first -%}
+      {%- unless param_key == 'sort_by' or param_key contains 'filter.' -%}
+        <input type="hidden" name="{{ param_key }}" value="{{ param | last | escape }}">
+      {%- endunless -%}
+    {%- endfor -%}
+
+    {%- comment -%} ── Sort ──────────────────────────────────────────────── {%- endcomment -%}
+    {%- if show_sort and filter_collection.sort_options.size > 0 -%}
+      <div class="product-filter__sort">
+        <label class="product-filter__sort-label" for="product-filter-sort">Sort by</label>
+        <select
+          id="product-filter-sort"
+          class="product-filter__sort-select"
+          name="sort_by"
+          data-product-filter-sort
+        >
+          {%- for option in filter_collection.sort_options -%}
+            <option value="{{ option.value }}"{% if option.value == filter_collection.sort_by %} selected{% endif %}>
+              {{ option.name }}
+            </option>
+          {%- endfor -%}
+        </select>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} ── Active filter chips ───────────────────────────────── {%- endcomment -%}
+    {%- if active_count > 0 -%}
+      <div class="product-filter__active" aria-label="Active filters" data-product-filter-active>
+        {%- for filter in filter_collection.filters -%}
+          {%- if filter.type == 'price_range' -%}
+            {%- if filter.min_value.value or filter.max_value.value -%}
+              <a class="product-filter__chip" href="{{ filter.url_to_remove }}" aria-label="Remove price filter">
+                Price:
+                {%- if filter.min_value.value -%}
+                  {{ filter.min_value.value | money_without_trailing_zeros }}
+                {%- else -%}0{%- endif -%}
+                &ndash;
+                {%- if filter.max_value.value -%}
+                  {{ filter.max_value.value | money_without_trailing_zeros }}
+                {%- else -%}
+                  {{ filter.range_max | money_without_trailing_zeros }}
+                {%- endif -%}
+                <span aria-hidden="true">&times;</span>
+              </a>
+            {%- endif -%}
+          {%- else -%}
+            {%- for value in filter.active_values -%}
+              <a class="product-filter__chip" href="{{ value.url_to_remove }}" aria-label="Remove filter: {{ value.label | escape }}">
+                {{ value.label }}
+                <span aria-hidden="true">&times;</span>
+              </a>
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endfor -%}
+
+        <a class="product-filter__chip product-filter__chip--clear" href="{{ filter_collection.url }}{% if show_sort %}?sort_by={{ filter_collection.sort_by }}{% endif %}" data-product-filter-clear-all>
+          Clear all
+        </a>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} ── Filter groups ──────────────────────────────────────── {%- endcomment -%}
+    {%- if filter_collection.filters.size > 0 -%}
+      <div class="product-filter__groups" data-product-filter-groups>
+        {%- for filter in filter_collection.filters -%}
+          <details
+            class="product-filter__group"
+            data-filter-type="{{ filter.type }}"
+            {%- if filter.type == 'price_range' -%}
+              {%- if filter.min_value.value or filter.max_value.value %} open{% endif -%}
+            {%- elsif filter.active_values.size > 0 %} open{%- endif -%}
+          >
+            <summary class="product-filter__group-summary">
+              <span class="product-filter__group-label">{{ filter.label }}</span>
+              {%- if filter.type != 'price_range' and filter.active_values.size > 0 -%}
+                <span class="product-filter__group-count">{{ filter.active_values.size }}</span>
+              {%- endif -%}
+              <svg class="product-filter__group-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+
+            <div class="product-filter__group-body">
+              {%- case filter.type -%}
+
+                {%- when 'boolean', 'list' -%}
+                  <ul class="product-filter__list" role="group" aria-label="{{ filter.label }}">
+                    {%- for value in filter.values -%}
+                      {%- assign input_id = 'product-filter-' | append: filter.param_name | append: '-' | append: forloop.index -%}
+                      <li class="product-filter__item{% if value.count == 0 and value.active == false %} product-filter__item--disabled{% endif %}">
+                        <label class="product-filter__item-label" for="{{ input_id }}">
+                          <input
+                            id="{{ input_id }}"
+                            class="product-filter__checkbox"
+                            type="checkbox"
+                            name="{{ value.param_name }}"
+                            value="{{ value.value | escape }}"
+                            {%- if value.active %} checked{% endif -%}
+                            {%- if value.count == 0 and value.active == false %} disabled{% endif -%}
+                            data-product-filter-checkbox
+                            data-url-add="{{ value.url_to_add }}"
+                            data-url-remove="{{ value.url_to_remove }}"
+                          >
+                          <span class="product-filter__item-text">{{ value.label }}</span>
+                          <span class="product-filter__item-count">({{ value.count }})</span>
+                        </label>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+
+                {%- when 'price_range' -%}
+                  {%- assign price_max = filter.range_max | divided_by: 100 -%}
+                  {%- assign price_min_val = filter.min_value.value | divided_by: 100 -%}
+                  {%- assign price_max_val = filter.max_value.value | divided_by: 100 -%}
+
+                  <div class="product-filter__price" data-product-filter-price>
+                    <div class="product-filter__price-field">
+                      <label class="product-filter__price-label" for="product-filter-price-min">Min</label>
+                      <div class="product-filter__price-input-wrap">
+                        <span class="product-filter__price-symbol">{{ cart.currency.symbol }}</span>
+                        <input
+                          id="product-filter-price-min"
+                          class="product-filter__price-input"
+                          type="number"
+                          name="{{ filter.min_value.param_name }}"
+                          min="0"
+                          max="{{ price_max }}"
+                          value="{{ price_min_val }}"
+                          placeholder="0"
+                          data-product-filter-price-min
+                        >
+                      </div>
+                    </div>
+                    <span class="product-filter__price-sep" aria-hidden="true">&ndash;</span>
+                    <div class="product-filter__price-field">
+                      <label class="product-filter__price-label" for="product-filter-price-max">Max</label>
+                      <div class="product-filter__price-input-wrap">
+                        <span class="product-filter__price-symbol">{{ cart.currency.symbol }}</span>
+                        <input
+                          id="product-filter-price-max"
+                          class="product-filter__price-input"
+                          type="number"
+                          name="{{ filter.max_value.param_name }}"
+                          min="0"
+                          max="{{ price_max }}"
+                          value="{{ price_max_val }}"
+                          placeholder="{{ price_max }}"
+                          data-product-filter-price-max
+                        >
+                      </div>
+                    </div>
+                    <button class="product-filter__price-apply" type="button" data-product-filter-price-apply>
+                      Apply
+                    </button>
+                  </div>
+
+              {%- endcase -%}
+            </div>
+          </details>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    <button class="product-filter__submit" type="submit" data-product-filter-submit>
+      Apply filters
+    </button>
+
+  </form>
+
+</div>
+
+<script src="{{ 'product-filter.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Product filter",
+  "tag": "section",
+  "class": "section-product-filter",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "Used only if this section is placed outside the collection template."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Filters"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort control",
+      "default": true,
+      "info": "Turn off if sort is handled by the product feed instead."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product filter"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,50 @@
+{% comment %}
+  snippets/in-feed-unit.liquid
+
+  Promo/banner unit injected between rows of sections/product-feed.liquid.
+  Spans the full grid width — see .in-feed-unit grid-column rule in
+  in-feed-unit.css.
+
+  Parameters:
+    block  {Object}  required — section.blocks entry, type "in_feed_unit"
+{% endcomment %}
+
+{{ 'in-feed-unit.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign image        = block.settings.image
+  assign heading       = block.settings.heading
+  assign text          = block.settings.text
+  assign button_label  = block.settings.button_label
+  assign button_link   = block.settings.button_link
+-%}
+
+<div class="in-feed-unit" {{ block.shopify_attributes }}>
+  {%- if image != blank -%}
+    <div class="in-feed-unit__image-wrap">
+      {{
+        image
+        | image_url: width: 1200
+        | image_tag: loading: 'lazy', class: 'in-feed-unit__image', widths: '400,600,800,1200'
+      }}
+    </div>
+  {%- endif -%}
+
+  {%- if heading != blank or text != blank or button_label != blank -%}
+    <div class="in-feed-unit__content">
+      {%- if heading != blank -%}
+        <h3 class="in-feed-unit__heading">{{ heading }}</h3>
+      {%- endif -%}
+
+      {%- if text != blank -%}
+        <div class="in-feed-unit__text">{{ text }}</div>
+      {%- endif -%}
+
+      {%- if button_label != blank and button_link != blank -%}
+        <a href="{{ button_link }}" class="in-feed-unit__button">
+          {{ button_label }}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</div>

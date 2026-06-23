@@ -1,10 +1,12 @@
 {%- comment -%}
   sections/product-quickview.liquid
   Rendered via: /products/{handle}?view=quickview&sections=product-quickview
-  Consumed by: card-product-features.js → initQuickView()
+  Consumed by: card-product-features.js -> initQuickViewUI()
+  
+  NOTE: 
+  - CSS is loaded globally in theme.liquid. 
+  - JS logic lives globally in card-product-features.js via event delegation.
 {%- endcomment -%}
-
-{{ 'product-quickview.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign current = product.selected_or_first_available_variant
@@ -79,7 +81,7 @@
 
     <h2 class="qv__title">{{ product.title }}</h2>
 
-    {%- comment -%} Reviews badge placeholder (integrates with Judge.me / Yotpo if present) {%- endcomment -%}
+    {%- comment -%} Reviews badge placeholder {%- endcomment -%}
     <div class="qv__reviews-placeholder" aria-hidden="true">
       {%- for i in (1..5) -%}
         <svg class="qv__star qv__star--empty" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -100,7 +102,7 @@
       <span class="qv__price-current">{{ current.price | money }}</span>
     </div>
 
-    {%- comment -%} Estimated arrival (mirrors collection card ETA style) {%- endcomment -%}
+    {%- comment -%} Estimated arrival {%- endcomment -%}
     <div class="qv__eta">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
         <rect x="1" y="2" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/>
@@ -128,64 +130,28 @@
               </span>
             </label>
 
-            {%- comment -%}
-              Render swatches for Color/Colour, buttons for everything else
-            {%- endcomment -%}
             {%- assign opt_name_down = option.name | downcase -%}
             {%- if opt_name_down == 'color' or opt_name_down == 'colour' -%}
               <div class="qv__swatches" role="radiogroup" aria-label="{{ option.name }}">
                 {%- for value in option.values -%}
-
-                  {%- comment -%}
-                    FIX: previously `value | handleize` produced slugs like
-                    "glacier", which are NOT valid CSS colors — every swatch
-                    silently fell back to the same gray (#ccc) regardless of
-                    the actual color name. This map translates known color
-                    option values to real hex codes. Add new product colors
-                    here as they're introduced.
-                  {%- endcomment -%}
                   {%- assign value_down = value | downcase -%}
                   {%- case value_down -%}
-                    {%- when 'glacier' -%}
-                      {%- assign swatch_color = '#a9c4cf' -%}
-                    {%- when 'polar' -%}
-                      {%- assign swatch_color = '#e8e9ea' -%}
-                    {%- when 'himalayan' -%}
-                      {%- assign swatch_color = '#3a3f47' -%}
-                    {%- when 'clay' -%}
-                      {%- assign swatch_color = '#9c8c7c' -%}
-                    {%- when 'black' -%}
-                      {%- assign swatch_color = '#1a1a1a' -%}
-                    {%- when 'white' -%}
-                      {%- assign swatch_color = '#ffffff' -%}
-                    {%- when 'navy' -%}
-                      {%- assign swatch_color = '#1f3354' -%}
-                    {%- when 'red' -%}
-                      {%- assign swatch_color = '#c0392b' -%}
-                    {%- when 'green' -%}
-                      {%- assign swatch_color = '#3a6b4f' -%}
-                    {%- when 'gray', 'grey' -%}
-                      {%- assign swatch_color = '#8c8c8c' -%}
-                    {%- when 'silver' -%}
-                      {%- assign swatch_color = '#c7c9cb' -%}
-                    {%- when 'teal' -%}
-                      {%- assign swatch_color = '#2fa8a0' -%}
-                    {%- else -%}
-                      {%- comment -%}
-                        Unmapped color name. Fall back to a neutral mid-gray
-                        (set via CSS default on .qv__swatch) rather than an
-                        invalid CSS value — leave swatch_color blank so the
-                        inline style is omitted entirely.
-                      {%- endcomment -%}
-                      {%- assign swatch_color = blank -%}
+                    {%- when 'glacier' -%}  {%- assign swatch_color = '#a9c4cf' -%}
+                    {%- when 'polar' -%}    {%- assign swatch_color = '#e8e9ea' -%}
+                    {%- when 'himalayan' -%}{%- assign swatch_color = '#3a3f47' -%}
+                    {%- when 'clay' -%}     {%- assign swatch_color = '#9c8c7c' -%}
+                    {%- when 'black' -%}    {%- assign swatch_color = '#1a1a1a' -%}
+                    {%- when 'white' -%}    {%- assign swatch_color = '#ffffff' -%}
+                    {%- when 'navy' -%}     {%- assign swatch_color = '#1f3354' -%}
+                    {%- when 'red' -%}      {%- assign swatch_color = '#c0392b' -%}
+                    {%- when 'green' -%}    {%- assign swatch_color = '#3a6b4f' -%}
+                    {%- when 'gray', 'grey' -%}{%- assign swatch_color = '#8c8c8c' -%}
+                    {%- when 'silver' -%}   {%- assign swatch_color = '#c7c9cb' -%}
+                    {%- when 'teal' -%}     {%- assign swatch_color = '#2fa8a0' -%}
+                    {%- else -%}            {%- assign swatch_color = blank -%}
                   {%- endcase -%}
 
-                  {%- comment -%}
-                    Light swatches need a visible border so they don't
-                    disappear against the white card background.
-                  {%- endcomment -%}
                   {%- assign light_colors = 'polar,white,silver' | split: ',' -%}
-
                   {%- if value == option.selected_value -%}
                     {%- assign swatch_checked = 'true' -%}
                     {%- assign swatch_active = 'qv__swatch is-active' -%}
@@ -207,9 +173,7 @@
                     data-qv-swatch
                     data-option-index="{{ forloop.parentloop.index0 }}"
                     data-value="{{ value }}"
-                    {%- if swatch_color != blank %}
-                    style="--swatch-color: {{ swatch_color }};"
-                    {%- endif %}
+                    {%- if swatch_color != blank %}style="--swatch-color: {{ swatch_color }};"{%- endif %}
                     title="{{ value }}"
                   ></button>
                 {%- endfor -%}
@@ -239,7 +203,7 @@
           </div>
         {%- endfor -%}
 
-        {%- comment -%} Hidden variant select — JS reads & updates this {%- endcomment -%}
+        {%- comment -%} Hidden variant select {%- endcomment -%}
         <select class="qv__variant-select visually-hidden" id="qv-variant-{{ product.id }}" data-qv-variant-select aria-label="Selected variant">
           {%- for variant in product.variants -%}
             <option
@@ -263,10 +227,12 @@
           data-atc-btn
           data-variant-id="{{ current.id }}"
         >
-          <span class="card-product__atc-label">Add to cart</span>
+          <span data-atc-label>Add to cart</span>
         </button>
       {%- else -%}
-        <button class="qv__atc qv__atc--soldout" type="button" disabled>Sold out</button>
+        <button class="qv__atc qv__atc--soldout" type="button" disabled>
+          <span data-atc-label>Sold out</span>
+        </button>
       {%- endif -%}
 
       <a class="qv__pdp-link" href="{{ product.url }}">View full details &rarr;</a>
@@ -275,114 +241,13 @@
   </div>
 </div>
 
-<script>
-(function () {
-  var wrap = document.querySelector('.qv[data-product-id="{{ product.id }}"]');
-  if (!wrap) return;
-
-  /* ── Thumbnail switcher ── */
-  var mainImg = wrap.querySelector('#qv-main-img');
-  wrap.querySelectorAll('[data-qv-thumb]').forEach(function (thumb) {
-    thumb.addEventListener('click', function () {
-      if (mainImg) {
-        mainImg.src = thumb.getAttribute('data-src');
-        mainImg.alt = thumb.getAttribute('data-alt');
-      }
-      wrap.querySelectorAll('[data-qv-thumb]').forEach(function (t) { t.classList.remove('is-active'); });
-      thumb.classList.add('is-active');
-    });
-  });
-
-  /* ── Variant selection ── */
-  var variantSelect = wrap.querySelector('[data-qv-variant-select]');
-  var atcBtn        = wrap.querySelector('[data-atc-btn]');
-  var priceEl       = wrap.querySelector('#qv-price-{{ product.id }}');
-
-  var productVariants = {{ product.variants | json }};
-
-  /* Current selected options array */
-  var selectedOptions = [];
-  {%- for option in product.options_with_values -%}
-    selectedOptions.push({{ option.selected_value | json }});
-  {%- endfor -%}
-
-  function findVariant() {
-    return productVariants.find(function (v) {
-      return v.options.every(function (opt, i) { return opt === selectedOptions[i]; });
-    });
-  }
-
-  function updateUI(variant) {
-    if (!variant) return;
-
-    /* Update hidden select */
-    if (variantSelect) {
-      variantSelect.value = variant.id;
-    }
-
-    /* Update ATC button */
-    if (atcBtn) {
-      atcBtn.setAttribute('data-variant-id', variant.id);
-      var label = atcBtn.querySelector('.card-product__atc-label');
-      if (variant.available) {
-        atcBtn.disabled = false;
-        atcBtn.classList.remove('qv__atc--soldout');
-        if (label) label.textContent = 'Add to cart';
-      } else {
-        atcBtn.disabled = true;
-        atcBtn.classList.add('qv__atc--soldout');
-        if (label) label.textContent = 'Sold out';
-      }
-    }
-
-    /* Update price */
-    if (priceEl) {
-      var currentPrice   = variant.price;
-      var comparePrice   = variant.compare_at_price;
-      var moneyFormatter = function (cents) {
-        return '$' + (cents / 100).toFixed(2).replace(/\.00$/, '');
-      };
-      var html = '';
-      if (comparePrice && comparePrice > currentPrice) {
-        html += '<s class="qv__price-compare">' + moneyFormatter(comparePrice) + '</s>';
-        html += '<span class="qv__price-sale-badge">Save ' + moneyFormatter(comparePrice - currentPrice) + '</span>';
-      }
-      html += '<span class="qv__price-current">' + moneyFormatter(currentPrice) + '</span>';
-      priceEl.innerHTML = html;
-    }
-  }
-
-  /* Swatch / option button clicks */
-  wrap.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-qv-swatch], [data-qv-option-btn]');
-    if (!btn) return;
-
-    var optionIndex = parseInt(btn.getAttribute('data-option-index'), 10);
-    var value       = btn.getAttribute('data-value');
-
-    /* Update selected options */
-    selectedOptions[optionIndex] = value;
-
-    /* Active state on siblings */
-    var group = btn.closest('[role="radiogroup"]');
-    if (group) {
-      group.querySelectorAll('[data-qv-swatch], [data-qv-option-btn]').forEach(function (b) {
-        b.classList.remove('is-active');
-        b.setAttribute('aria-checked', 'false');
-      });
-      btn.classList.add('is-active');
-      btn.setAttribute('aria-checked', 'true');
-    }
-
-    /* Update selected label */
-    var optionName    = btn.closest('.qv__option');
-    var selectedLabel = optionName && optionName.querySelector('[data-qv-option-selected]');
-    if (selectedLabel) selectedLabel.textContent = value;
-
-    updateUI(findVariant());
-  });
-
-})();
+{%- comment -%}
+  Hidden variant JSON payload. 
+  This is parsed by the global event delegation logic in card-product-features.js 
+  so variant selection works seamlessly despite being injected via AJAX.
+{%- endcomment -%}
+<script type="application/json" id="qv-variant-data-{{ product.id }}">
+  {{ product.variants | json }}
 </script>
 
 {% schema %}

@@ -1,0 +1,437 @@
+{% comment %}
+  snippets/filters.liquid
+  Reusable filter + sort form. Context-agnostic.
+
+  Designed to be rendered inside a context-aware wrapper
+  (collection-filters.liquid, search-filters.liquid, etc.)
+  that owns the outer layout class and any context-specific
+  chrome (headings, toggle buttons, drawer wrappers, etc.).
+
+  Parameters:
+    results          {Object}  required — collection or search object
+                               Must expose .filters (Shopify storefront
+                               filter array) and .sort_options.
+    context          {String}  optional — 'sidebar' | 'toolbar'
+                               default: 'sidebar'
+                               Passed as a data-attribute so CSS/JS can
+                               switch between vertical facet list and
+                               horizontal pill/toolbar layout without
+                               forking markup.
+    show_sort        {Boolean} optional — default: true
+    show_active      {Boolean} optional — default: true
+                               Render the active-filter chips row.
+    form_id          {String}  optional — default: 'filters-form'
+                               Override when rendering multiple instances
+                               on one page (e.g. mobile drawer + desktop
+                               sidebar simultaneously).
+
+  URL contract:
+    Filter params follow Shopify's storefront filter spec:
+      filter.p.m.{namespace}.{key}=value   (product metafield)
+      filter.p.tag=value                   (tag)
+      filter.p.vendor=value                (vendor)
+      filter.v.price.gte / .lte            (price range)
+    Sort param: sort_by=manual|price-asc|…
+
+    This snippet emits a plain GET <form>. On submit the browser
+    builds the correct query string automatically. No JS required
+    for basic filtering; progressive-enhancement JS (filters.js)
+    can intercept submit for AJAX if needed.
+
+  CSS dependency: assets/filters.css
+  JS dependency:  assets/filters.js (optional, progressive enhancement)
+
+  Reuse examples:
+    snippets/collection-filters.liquid → renders this
+    snippets/search-filters.liquid     → renders this (future)
+{% endcomment %}
+
+{%- liquid
+  assign context     = context    | default: 'sidebar'
+  assign show_sort   = show_sort  | default: true
+  assign show_active = show_active | default: true
+  assign form_id     = form_id    | default: 'filters-form'
+
+  -%}
+
+{{- 'filters.css' | asset_url | stylesheet_tag -}}
+
+{%- comment -%}
+  Preserve non-filter params (page, q, etc.) as hidden inputs so they
+  survive a filter form submission. We explicitly exclude filter.* and
+  sort_by — those come from the live controls below.
+{%- endcomment -%}
+
+{%- assign excluded_params = 'filter.' -%}
+
+<form
+  id="{{ form_id }}"
+  class="filters"
+  data-filters-form
+  data-context="{{ context }}"
+  method="get"
+  novalidate
+>
+
+  {%- comment -%}
+    ── Carry-through: preserve ?q= (search), page, and any other
+       non-filter params the URL might carry, so a filter change
+       doesn't silently drop them.
+    ──────────────────────────────────────────────────────────────
+    NOTE: Shopify's `request.query_parameters` is a Hash of
+    {key: value | Array}. We iterate and emit hidden inputs,
+    skipping filter.* and sort_by (those are controlled below).
+  {%- endcomment -%}
+
+  {%- for param in request.query_parameters -%}
+    {%- assign param_key = param | first -%}
+    {%- unless param_key == 'sort_by' or param_key contains 'filter.' -%}
+      <input type="hidden" name="{{ param_key }}" value="{{ param | last | escape }}">
+    {%- endunless -%}
+  {%- endfor -%}
+
+  {%- comment -%} ── Sort ───────────────────────────────────────────────── {%- endcomment -%}
+
+  {%- if show_sort and results.sort_options.size > 0 -%}
+    <div class="filters__sort">
+      <label class="filters__sort-label" for="{{ form_id }}-sort">
+        Sort by
+      </label>
+      <select
+        id="{{ form_id }}-sort"
+        class="filters__sort-select"
+        name="sort_by"
+        data-filters-sort
+      >
+        {%- for option in results.sort_options -%}
+          <option
+            value="{{ option.value }}"
+            {%- if option.value == results.sort_by %} selected{%- endif -%}
+          >
+            {{ option.name }}
+          </option>
+        {%- endfor -%}
+      </select>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Active filter chips ─────────────────────────────────── {%- endcomment -%}
+
+  {%- if show_active -%}
+    {%- assign active_filters = results.filters | where: 'active_values' -%}
+    {%- comment -%}
+      NOTE: `where: 'active_values'` returns filter groups that have
+      at least one active value. We then iterate active_values inside.
+      Price range filters surface differently — handled below.
+    {%- endcomment -%}
+
+    {%- assign has_active = false -%}
+    {%- for filter in results.filters -%}
+      {%- if filter.type == 'price_range' -%}
+        {%- if filter.min_value.value or filter.max_value.value -%}
+          {%- assign has_active = true -%}
+        {%- endif -%}
+      {%- else -%}
+        {%- if filter.active_values.size > 0 -%}
+          {%- assign has_active = true -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- if has_active -%}
+      <div class="filters__active" aria-label="Active filters" data-filters-active>
+
+        {%- for filter in results.filters -%}
+          {%- if filter.type == 'price_range' -%}
+            {%- if filter.min_value.value or filter.max_value.value -%}
+              <a
+                class="filters__chip filters__chip--remove"
+                href="{{ filter.url_to_remove }}"
+                aria-label="Remove price filter"
+              >
+                Price:
+                {%- if filter.min_value.value -%}
+                  {{ filter.min_value.value | money_without_trailing_zeros }}
+                {%- else -%}
+                  0
+                {%- endif -%}
+                &ndash;
+                {%- if filter.max_value.value -%}
+                  {{ filter.max_value.value | money_without_trailing_zeros }}
+                {%- else -%}
+                  {{ filter.range_max | money_without_trailing_zeros }}
+                {%- endif -%}
+                <span class="filters__chip-remove" aria-hidden="true">&times;</span>
+              </a>
+            {%- endif -%}
+          {%- else -%}
+            {%- for value in filter.active_values -%}
+              <a
+                class="filters__chip filters__chip--remove"
+                href="{{ value.url_to_remove }}"
+                aria-label="Remove filter: {{ value.label | escape }}"
+              >
+                {{ value.label }}
+                <span class="filters__chip-remove" aria-hidden="true">&times;</span>
+              </a>
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endfor -%}
+
+        <a
+          class="filters__chip filters__chip--clear"
+          href="{{ results.url }}?sort_by={{ results.sort_by }}"
+          data-filters-clear-all
+        >
+          Clear all
+        </a>
+
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- comment -%} ── Filter groups ───────────────────────────────────────── {%- endcomment -%}
+
+  {%- if results.filters.size > 0 -%}
+
+    <div class="filters__groups" data-filters-groups>
+
+      {%- for filter in results.filters -%}
+
+        <details
+          class="filters__group"
+          data-filters-group
+          data-filter-type="{{ filter.type }}"
+          {%- if filter.type == 'price_range' -%}
+            {%- if filter.min_value.value or filter.max_value.value -%} open{%- endif -%}
+          {%- elsif filter.active_values.size > 0 -%}
+            open
+          {%- endif -%}
+        >
+
+          <summary class="filters__group-summary" data-filters-group-toggle>
+            <span class="filters__group-label">{{ filter.label }}</span>
+
+            {%- comment -%}
+              Active count badge — shows how many values are selected in
+              this group, so the user can see state even when collapsed.
+            {%- endcomment -%}
+
+            {%- if filter.type != 'price_range' and filter.active_values.size > 0 -%}
+              <span
+                class="filters__group-count"
+                aria-label="{{ filter.active_values.size }} active"
+              >
+                {{ filter.active_values.size }}
+              </span>
+            {%- endif -%}
+
+            <svg
+              class="filters__group-chevron"
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+
+          <div class="filters__group-body">
+
+            {%- case filter.type -%}
+
+              {%- when 'boolean', 'list' -%}
+                {%- comment -%}
+                  List filter: checkboxes for each value.
+                  Shopify surfaces `filter.values` (all options) and
+                  `filter.active_values` (currently selected subset).
+
+                  We iterate filter.values and mark each as checked if
+                  it's in active_values by matching value.value.
+
+                  Pitfall: don't use value.active — it's not reliable
+                  across all Shopify plan types. Match by value instead.
+                {%- endcomment -%}
+
+                {%- comment -%}
+                  Searchable list: only show the input when there are
+                  enough values to warrant it.
+                {%- endcomment -%}
+                {%- if filter.values.size > 8 -%}
+                  <div class="filters__search-wrap">
+                    <input
+                      class="filters__value-search"
+                      type="search"
+                      placeholder="Search {{ filter.label | downcase }}…"
+                      aria-label="Search {{ filter.label }} options"
+                      data-filters-value-search
+                      autocomplete="off"
+                    >
+                  </div>
+                {%- endif -%}
+
+                <ul
+                  class="filters__list"
+                  role="group"
+                  aria-label="{{ filter.label }}"
+                >
+                  {%- for value in filter.values -%}
+                    {%- comment -%}
+                      Build the input id once and reuse for the label's
+                      `for` attribute — avoids duplicating the string.
+                    {%- endcomment -%}
+                    {%- assign input_id = form_id | append: '-' | append: filter.param_name | append: '-' | append: forloop.index -%}
+
+                    <li
+                      class="filters__item{%- if value.count == 0 %} filters__item--zero{%- endif -%}"
+                      data-filters-item
+                      data-filter-value-search-target
+                    >
+                      <label class="filters__item-label" for="{{ input_id }}">
+                        <input
+                          id="{{ input_id }}"
+                          class="filters__checkbox"
+                          type="checkbox"
+                          name="{{ filter.param_name }}"
+                          value="{{ value.value | escape }}"
+                          {%- if value.active %} checked{%- endif -%}
+                          {%- if value.count == 0 %} disabled{%- endif -%}
+                          data-filters-checkbox
+                        >
+                        <span class="filters__item-text">{{ value.label }}</span>
+                        <span class="filters__item-count" aria-label="{{ value.count }} products">
+                          {{ value.count }}
+                        </span>
+                      </label>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+
+              {%- when 'price_range' -%}
+                {%- comment -%}
+                  Price range filter.
+                  Shopify exposes:
+                    filter.range_max       — collection's ceiling price (cents)
+                    filter.min_value.value — currently applied min (cents) or blank
+                    filter.max_value.value — currently applied max (cents) or blank
+
+                  We emit two number inputs that submit as:
+                    filter.v.price.gte=NNN
+                    filter.v.price.lte=NNN
+                  in dollars (Shopify expects money in the currency's
+                  major unit for storefront filter params, NOT cents).
+
+                  Pitfall: if you submit cents here Shopify misinterprets
+                  the range. Always divide by 100 for the input value.
+                {%- endcomment -%}
+
+                {%- assign price_max = filter.range_max | divided_by: 100 -%}
+                {%- assign price_min_val = filter.min_value.value | divided_by: 100 -%}
+                {%- assign price_max_val = filter.max_value.value | divided_by: 100 -%}
+
+                <div class="filters__price-range" data-filters-price-range>
+
+                  <div class="filters__price-inputs">
+                    <label class="filters__price-label" for="{{ form_id }}-price-min">
+                      Min
+                    </label>
+                    <div class="filters__price-input-wrap">
+                      <span class="filters__price-symbol" aria-hidden="true">
+                        {{ cart.currency.symbol }}
+                      </span>
+                      <input
+                        id="{{ form_id }}-price-min"
+                        class="filters__price-input"
+                        type="number"
+                        name="{{ filter.min_value.param_name }}"
+                        min="0"
+                        max="{{ price_max }}"
+                        value="{{ price_min_val }}"
+                        placeholder="0"
+                        data-filters-price-min
+                      >
+                    </div>
+
+                    <span class="filters__price-sep" aria-hidden="true">&ndash;</span>
+
+                    <label class="filters__price-label" for="{{ form_id }}-price-max">
+                      Max
+                    </label>
+                    <div class="filters__price-input-wrap">
+                      <span class="filters__price-symbol" aria-hidden="true">
+                        {{ cart.currency.symbol }}
+                      </span>
+                      <input
+                        id="{{ form_id }}-price-max"
+                        class="filters__price-input"
+                        type="number"
+                        name="{{ filter.max_value.param_name }}"
+                        min="0"
+                        max="{{ price_max }}"
+                        value="{{ price_max_val }}"
+                        placeholder="{{ price_max }}"
+                        data-filters-price-max
+                      >
+                    </div>
+                  </div>
+
+                  {%- comment -%}
+                    Dual-handle range track — driven by filters.js.
+                    Falls back gracefully to the number inputs above
+                    if JS is unavailable.
+                  {%- endcomment -%}
+                  <div
+                    class="filters__range-track"
+                    data-filters-range-track
+                    data-min="0"
+                    data-max="{{ price_max }}"
+                    data-min-val="{{ price_min_val | default: 0 }}"
+                    data-max-val="{{ price_max_val | default: price_max }}"
+                    aria-hidden="true"
+                  >
+                    <div class="filters__range-fill" data-filters-range-fill></div>
+                    <div
+                      class="filters__range-thumb filters__range-thumb--min"
+                      tabindex="-1"
+                      data-filters-thumb="min"
+                    ></div>
+                    <div
+                      class="filters__range-thumb filters__range-thumb--max"
+                      tabindex="-1"
+                      data-filters-thumb="max"
+                    ></div>
+                  </div>
+
+                </div>
+
+            {%- endcase -%}
+
+          </div>
+
+        </details>
+
+      {%- endfor -%}
+
+    </div>
+
+  {%- endif -%}
+
+  {%- comment -%}
+    Submit button — always present for no-JS baseline.
+    JS (filters.js) auto-submits on checkbox/select change so this
+    button is visually hidden in the enhanced experience but stays
+    in the DOM for accessibility and no-JS users.
+  {%- endcomment -%}
+  <button
+    class="filters__apply-btn"
+    type="submit"
+    data-filters-submit
+  >
+    Apply filters
+  </button>
+
+</form>
+
+<script src="{{ 'filters.js' | asset_url }}" defer></script>

@@ -1,165 +1,380 @@
-{% comment %}
-  sections/collection.liquid
-  Root section for templates/collection.json.
-
-Renders:
-    [1.1] collection-features.liquid  — banner/carousel blocks + sort/filter UI
-    [1.2] collection-function.liquid — product grid adapter
-
-    [1.2.1] collection-products.liquid → product-card.liquid
-
-Metafields read:
-    collection.metafields.custom.description  — optional rich-text override
-    collection.metafields.custom.banner_image — optional banner image
-
-  Blocks (rendered by collection-features.liquid — NOT interleaved into
-  the product grid anymore):
-    "banner"   — a clickable image banner, sized as a percent of the row's
-                 width (25/50/75/100%). See collection-banner.liquid and
-                 collection-banner.css/.js for rendering and span logic.
-    "carousel" — a multi-slide image carousel, always full-row width.
-                 See collection-carousel.liquid and collection-carousel.css/.js.
-
-  Block render order follows the order blocks are arranged in the theme
-  editor's block list. The old per-block `position` ("insert after
-  product #N") setting has been removed from both block types — it
-  controlled grid-interleaving, which no longer happens.
-
-  Pagination:
-    Opened here around the collection-function render so that all
-    sub-snippets share the same paginate object. Products per page is
-    controlled by the section setting `products_per_page`.
-
-  CSS:
-    collection.css — loaded below via stylesheet_tag.
-
-  JS:
-    product-card.js          — loaded globally in theme.liquid.
-    collection-function.js  — loaded by collection-function.liquid.
-    collection-banner.js     — loaded by collection-banner.liquid.
-    collection-carousel.js   — loaded by collection-carousel.liquid.
-{% endcomment %}
-
 {{ 'collection.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
+{{ 'sub-collections.css' | asset_url | stylesheet_tag }}
+{{ 'feed-banner.css' | asset_url | stylesheet_tag }}
+{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
+
+<style>
+  .collection-feed {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .collection-filter {
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+
+  .collection-feed__main {
+    min-width: 0;
+  }
+
+  .collection-feed__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--columns, 4), 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .collection-feed {
+      grid-template-columns: 1fr;
+    }
+    .collection-filter {
+      position: static;
+      max-height: none;
+    }
+  }
+</style>
 
 {%- liquid
-  assign products_per_page = section.settings.products_per_page | default: 12
-  assign show_banner       = section.settings.show_banner
-  assign show_description  = section.settings.show_description
-  assign show_breadcrumb   = section.settings.show_breadcrumb
-  assign layout            = section.settings.layout | default: 'sidebar'
-
-  assign banner_image = collection.metafields.custom.banner_image.value
-  if banner_image == blank
-    assign banner_image = collection.image
-  endif
+  assign columns = section.settings.columns | default: 4
+  assign active_tab = request.query_parameters['tab'] | default: 'products'
+  unless active_tab == 'products' or active_tab == 'articles'
+    assign active_tab = 'products'
+  endunless
 -%}
 
-<div class="collection-section collection-section--layout-{{ layout }}">
+<section class="collection-section">
+  <div class="collection-page" data-collection-page data-active-tab="{{ active_tab }}">
 
-  {%- comment -%} ── Breadcrumb ──────────────────────────────────────────── {%- endcomment -%}
-
-  {%- if show_breadcrumb -%}
-    <nav class="collection-section__breadcrumb" aria-label="Breadcrumb">
-      <ol class="collection-section__breadcrumb-list">
-        <li class="collection-section__breadcrumb-item">
-          <a href="/" class="collection-section__breadcrumb-link">Home</a>
-        </li>
-        <li class="collection-section__breadcrumb-item" aria-hidden="true">
-          <span class="collection-section__breadcrumb-sep">/</span>
-        </li>
-        <li class="collection-section__breadcrumb-item">
-          <a href="/collections" class="collection-section__breadcrumb-link">Collections</a>
-        </li>
-        <li class="collection-section__breadcrumb-item" aria-hidden="true">
-          <span class="collection-section__breadcrumb-sep">/</span>
-        </li>
-        <li class="collection-section__breadcrumb-item collection-section__breadcrumb-item--current" aria-current="page">
-          {{ collection.title }}
-        </li>
-      </ol>
-    </nav>
-  {%- endif -%}
-
-  {%- comment -%} ── Section-level banner (metafield / collection image) ──── {%- endcomment -%}
-
-  {%- if show_banner and banner_image -%}
-    <div class="collection-section__banner">
-      <img
-        class="collection-section__banner-image"
-        src="{{ banner_image | image_url: width: 1400 }}"
-        alt="{{ banner_image.alt | escape | default: collection.title | escape }}"
-        width="1400"
-        height="{{ 1400 | divided_by: banner_image.aspect_ratio | round }}"
-        loading="eager"
-        fetchpriority="high"
-      >
-      <div class="collection-section__banner-overlay">
-        <h1 class="collection-section__banner-title">{{ collection.title }}</h1>
-      </div>
+    <div class="tab-switcher" role="tablist">
+      <button
+        class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+        aria-controls="panel-products"
+        id="tab-products"
+        data-tab="products"
+        tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
+      >{{ section.settings.tab_products_label | default: 'Products' }}</button>
+      <button
+        class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+        aria-controls="panel-articles"
+        id="tab-articles"
+        data-tab="articles"
+        tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
+      >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
     </div>
-  {%- endif -%}
 
-  {%- comment -%} ── Header (no section-level banner) ────────────────────── {%- endcomment -%}
+    {%- comment -%} PRODUCTS PANEL {%- endcomment -%}
+    <div id="panel-products" role="tabpanel" aria-labelledby="tab-products" data-panel="products" {% if active_tab != 'products' %}hidden{% endif %}>
+      {%- paginate collection.products by section.settings.products_per_page -%}
 
-  {%- unless show_banner and banner_image -%}
-    <header class="collection-section__header">
-      <h1 class="collection-section__title">{{ collection.title }}</h1>
+        <div class="collection-feed" style="--columns: {{ columns }};">
 
-      {%- if show_description -%}
-        {%- liquid
-          assign description_content = collection.metafields.custom.description.value
-          if description_content == blank
-            assign description_content = collection.description
-          endif
-        -%}
-        {%- if description_content != blank -%}
-          <div class="collection-section__description">
-            {{ description_content }}
+          {%- if section.settings.show_filters -%}
+            <aside class="collection-filter">
+
+              {%- if section.settings.show_sort -%}
+                <div class="collection-filter__sort">
+                  <label for="SortBy">Sort</label>
+                  <select id="SortBy" data-sort>
+                    {%- for option in collection.sort_options -%}
+                      <option value="{{ option.value }}"{% if option.value == collection.sort_by %} selected{% endif %}>{{ option.name }}</option>
+                    {%- endfor -%}
+                  </select>
+                </div>
+              {%- endif -%}
+
+              <form method="get" action="{{ collection.url }}" id="FilterForm">
+                {%- for filter in collection.filters -%}
+                  <details class="collection-filter__group"{% if filter.active_values.size > 0 %} open{% endif %}>
+                    <summary class="collection-filter__group-label">
+                      {{ filter.label }}
+                      {%- if filter.active_values.size > 0 -%}<span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>{%- endif -%}
+                    </summary>
+                    <div class="collection-filter__group-body">
+                      {%- case filter.type -%}
+                        {%- when 'list' -%}
+                          {%- for value in filter.values -%}
+                            <label class="collection-filter__option{% if value.active %} collection-filter__option--active{% endif %}{% if value.count == 0 and value.active == false %} collection-filter__option--disabled{% endif %}">
+                              <input
+                                type="checkbox"
+                                name="{{ value.param_name }}"
+                                value="{{ value.value }}"
+                                {% if value.active %}checked{% endif %}
+                                {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                              >
+                              {{ value.label }} <span>({{ value.count }})</span>
+                            </label>
+                          {%- endfor -%}
+                        {%- when 'price_range' -%}
+                          <div class="collection-filter__price">
+                            <input type="number" name="{{ filter.min_value.param_name }}" value="{{ filter.min_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="0">
+                            <span>–</span>
+                            <input type="number" name="{{ filter.max_value.param_name }}" value="{{ filter.max_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="{{ filter.range_max | divided_by: 100.0 }}">
+                          </div>
+                      {%- endcase -%}
+                    </div>
+                  </details>
+                {%- endfor -%}
+
+                {%- assign active_count = 0 -%}
+                {%- for filter in collection.filters -%}
+                  {%- assign active_count = active_count | plus: filter.active_values.size -%}
+                {%- endfor -%}
+                {%- if active_count > 0 -%}
+                  <div class="collection-filter__active">
+                    {%- for filter in collection.filters -%}
+                      {%- for value in filter.active_values -%}
+                        <a href="{{ value.url_to_remove }}" class="collection-filter__pill">{{ value.label }} &times;</a>
+                      {%- endfor -%}
+                    {%- endfor -%}
+                    <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+                  </div>
+                {%- endif -%}
+
+                <button type="submit" class="collection-filter__submit">Apply</button>
+              </form>
+            </aside>
+          {%- endif -%}
+
+          <div class="collection-feed__main">
+
+            {%- comment -%} Sub-collections carousel sits above the product grid only {%- endcomment -%}
+            {%- render 'sub-collection' -%}
+
+            {%- comment -%}
+              Build position -> block maps so the loop below can splice
+              both static banners and promo-carousels in at merchant-
+              chosen slots without breaking Liquid's single-pass
+              iteration. Position is 1-based and means "render this item
+              immediately before the Nth product on this page." Multiple
+              items can share a position; all render, in block order.
+              Position 0 or blank means "don't show."
+
+              promo_carousel blocks are tabbed product carousels (see
+              snippets/promo-carousel.liquid). Each promo_carousel block
+              owns zero or more carousel_tab blocks — ownership is by
+              matching carousel_tab.settings.parent_position to the
+              promo_carousel's own settings.position, since Shopify
+              section blocks are a flat list and can't nest natively.
+            {%- endcomment -%}
+            {%- liquid
+              assign banner_blocks = section.blocks | where: 'type', 'feed_banner'
+              assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
+              assign carousel_tab_blocks = section.blocks | where: 'type', 'carousel_tab'
+            -%}
+
+            <div class="collection-feed__grid">
+              {%- for product in collection.products -%}
+
+                {%- comment -%} Render any banners assigned to this slot, before the product card {%- endcomment -%}
+                {%- for banner in banner_blocks -%}
+                  {%- liquid
+                    assign banner_position = banner.settings.position | default: 0
+                  -%}
+                  {%- if banner_position > 0 and banner_position == forloop.parentloop.index -%}
+                    {%- render 'feed-banner', block: banner -%}
+                  {%- endif -%}
+                {%- endfor -%}
+
+                {%- comment -%} Render any promo-carousels assigned to this slot, before the product card {%- endcomment -%}
+                {%- for carousel in carousel_blocks -%}
+                  {%- liquid
+                    assign carousel_position = carousel.settings.position | default: 0
+                  -%}
+                  {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
+                    {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
+                    {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+                  {%- endif -%}
+                {%- endfor -%}
+
+                {%- render 'product-card', product: product -%}
+
+              {%- else -%}
+                <p class="collection-empty">No products found.</p>
+              {%- endfor -%}
+
+              {%- comment -%}
+                Items positioned at or beyond the total product count
+                render after the last product, in position order, so an
+                item set to "position 999" effectively means "at the end."
+                Position 0 (unset) never renders.
+              {%- endcomment -%}
+              {%- assign product_count = collection.products.size -%}
+              {%- for banner in banner_blocks -%}
+                {%- liquid
+                  assign banner_position = banner.settings.position | default: 0
+                -%}
+                {%- if banner_position > product_count and banner_position > 0 -%}
+                  {%- render 'feed-banner', block: banner -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- for carousel in carousel_blocks -%}
+                {%- liquid
+                  assign carousel_position = carousel.settings.position | default: 0
+                -%}
+                {%- if carousel_position > product_count and carousel_position > 0 -%}
+                  {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
+                  {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+
           </div>
-        {%- endif -%}
-      {%- endif -%}
-    </header>
-  {%- endunless -%}
 
-  {%- comment -%} ── Body: features + functions ───────────────────────────── {%- endcomment -%}
-
-  <div class="collection-section__body">
-
-    {%- if layout == 'sidebar' -%}
-      <aside class="collection-section__sidebar" aria-label="Collection filters">
-        {%- render 'collection-features',
-          collection: collection,
-          blocks:     section.blocks,
-          context:    'sidebar'
-        -%}
-      </aside>
-    {%- endif -%}
-
-    <div class="collection-section__main">
-
-      {%- if layout == 'full' -%}
-        <div class="collection-section__toolbar">
-          {%- render 'collection-features',
-            collection: collection,
-            blocks:     section.blocks,
-            context:    'toolbar'
-          -%}
         </div>
-      {%- endif -%}
 
-      {%- paginate collection.products by products_per_page -%}
-        {%- render 'collection-function',
-          collection: collection,
-          paginate:   paginate
-        -%}
+
+        {%- if paginate.pages > 1 -%}
+          <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+            {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}&tab=products" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>{%- endif -%}
+            {%- for part in paginate.parts -%}
+              {%- if part.is_link -%}
+                <a href="{{ part.url }}&tab=products" class="pagination__link">{{ part.title }}</a>
+              {%- else -%}
+                <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if paginate.next -%}<a href="{{ paginate.next.url }}&tab=products" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>{%- endif -%}
+          </nav>
+        {%- endif -%}
+
       {%- endpaginate -%}
+    </div>
 
+    {%- comment -%} ARTICLES PANEL {%- endcomment -%}
+    <div id="panel-articles" role="tabpanel" aria-labelledby="tab-articles" data-panel="articles" {% if active_tab != 'articles' %}hidden{% endif %}>
+      {%- assign feed_blog = section.settings.blog -%}
+      {%- if feed_blog != blank and feed_blog.articles.size > 0 -%}
+        {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
+          <div class="article-grid" style="--columns: {{ columns }};">
+            {%- for article in feed_blog.articles -%}
+              {%- render 'article-card', article: article -%}
+            {%- endfor -%}
+          </div>
+          {%- if paginate.pages > 1 -%}
+            <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+              {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}&tab=articles" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>{%- endif -%}
+              {%- for part in paginate.parts -%}
+                {%- if part.is_link -%}
+                  <a href="{{ part.url }}&tab=articles" class="pagination__link">{{ part.title }}</a>
+                {%- else -%}
+                  <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if paginate.next -%}<a href="{{ paginate.next.url }}&tab=articles" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>{%- endif -%}
+            </nav>
+          {%- endif -%}
+        {%- endpaginate -%}
+      {%- else -%}
+        <p class="collection-empty">No articles found.</p>
+      {%- endif -%}
     </div>
 
   </div>
+</section>
 
-</div>
+<script>
+  (function () {
+    var page = document.querySelector('[data-collection-page]');
+    if (!page) return;
+
+    var tabs   = page.querySelectorAll('[data-tab]');
+    var panels = page.querySelectorAll('[data-panel]');
+
+    function activateTab(key, push) {
+      tabs.forEach(function (t) {
+        var on = t.dataset.tab === key;
+        t.classList.toggle('tab-switcher__tab--active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.setAttribute('tabindex', on ? '0' : '-1');
+      });
+      panels.forEach(function (p) {
+        p.dataset.panel === key ? p.removeAttribute('hidden') : p.setAttribute('hidden', '');
+      });
+      page.dataset.activeTab = key;
+      if (push) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', key);
+        history.pushState({ tab: key }, '', url.toString());
+      }
+    }
+
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () {
+        if (tab.dataset.tab !== page.dataset.activeTab) activateTab(tab.dataset.tab, true);
+      });
+      tab.addEventListener('keydown', function (e) {
+        var next;
+        if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
+        if (e.key === 'ArrowLeft')  next = tabs[i - 1] || tabs[tabs.length - 1];
+        if (next) { next.focus(); next.click(); }
+      });
+    });
+
+    var sortSelect = page.querySelector('[data-sort]');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', function () {
+        var url = new URL(window.location.href);
+        url.searchParams.set('sort_by', sortSelect.value);
+        window.location.href = url.toString();
+      });
+    }
+
+    var filterForm = document.getElementById('FilterForm');
+    if (filterForm) {
+      filterForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var url = new URL(window.location.href);
+        url.search = '';
+        new FormData(filterForm).forEach(function (val, key) { url.searchParams.append(key, val); });
+        url.searchParams.set('tab', page.dataset.activeTab);
+        window.location.href = url.toString();
+      });
+    }
+
+    window.addEventListener('popstate', function (e) {
+      var key = (e.state && e.state.tab)
+        ? e.state.tab
+        : new URL(window.location.href).searchParams.get('tab') || 'products';
+      activateTab(key, false);
+    });
+
+    // Sub-collections carousel scroll controls
+    document.querySelectorAll('[data-sub-collections]').forEach(function (carousel) {
+      var track = carousel.querySelector('[data-sub-collections-track]');
+      var prev  = carousel.querySelector('[data-sub-collections-prev]');
+      var next  = carousel.querySelector('[data-sub-collections-next]');
+      if (!track) return;
+
+      function updateNavState() {
+        if (prev) prev.disabled = track.scrollLeft <= 4;
+        if (next) next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+      }
+
+      function scrollByAmount(dir) {
+        var cardWidth = track.firstElementChild ? track.firstElementChild.getBoundingClientRect().width : 120;
+        track.scrollBy({ left: dir * (cardWidth * 3 + 32), behavior: 'smooth' });
+      }
+
+      if (prev) prev.addEventListener('click', function () { scrollByAmount(-1); });
+      if (next) next.addEventListener('click', function () { scrollByAmount(1); });
+      track.addEventListener('scroll', updateNavState);
+      updateNavState();
+    });
+  })();
+</script>
+
+<script src="{{ 'promo-carousel.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
 {
@@ -168,70 +383,144 @@ Metafields read:
   "class": "section-collection",
   "settings": [
     {
-      "type": "header",
-      "content": "Layout"
+      "type": "text",
+      "id": "tab_products_label",
+      "label": "Products tab label",
+      "default": "Products"
     },
     {
-      "type": "select",
-      "id": "layout",
-      "label": "Layout",
-      "options": [
-        { "value": "sidebar", "label": "Sidebar filters" },
-        { "value": "full",    "label": "Full width + toolbar" }
-      ],
-      "default": "sidebar"
+      "type": "text",
+      "id": "tab_articles_label",
+      "label": "Articles tab label",
+      "default": "Articles"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
     },
     {
       "type": "range",
       "id": "products_per_page",
       "label": "Products per page",
-      "min": 6,
+      "min": 4,
       "max": 48,
-      "step": 6,
-      "default": 12
-    },
-    {
-      "type": "header",
-      "content": "Header"
+      "step": 4,
+      "default": 16
     },
     {
       "type": "checkbox",
-      "id": "show_breadcrumb",
-      "label": "Show breadcrumb",
+      "id": "show_filters",
+      "label": "Show filters",
       "default": true
     },
     {
       "type": "checkbox",
-      "id": "show_description",
-      "label": "Show collection description",
+      "id": "show_sort",
+      "label": "Show sort",
       "default": true
     },
     {
       "type": "header",
-      "content": "Banner"
+      "content": "Sub-collections"
     },
     {
-      "type": "checkbox",
-      "id": "show_banner",
-      "label": "Show banner image",
-      "info": "Uses collection.metafields.custom.banner_image if set, otherwise falls back to the collection image.",
-      "default": false
+      "type": "select",
+      "id": "sub_collection_shape",
+      "label": "Sub-collection image shape",
+      "options": [
+        { "value": "square", "label": "Square (rounded corners)" },
+        { "value": "circle", "label": "Circle" }
+      ],
+      "default": "square"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add sub-collection blocks below. If a collection has no image, a default placeholder icon is shown automatically — or set a custom image per block."
+    },
+    {
+      "type": "header",
+      "content": "In-feed banners"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add 'In-feed banner' blocks below to place promotional banners inside the product grid. Each banner has its own position number and size — set both per block."
+    },
+    {
+      "type": "header",
+      "content": "Promo carousels"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add a 'Promo carousel' block to insert a tabbed product carousel into the grid, then add one or more 'Carousel tab' blocks set to the same position number to populate it."
+    },
+    {
+      "type": "header",
+      "content": "Articles"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "articles_per_page",
+      "label": "Articles per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
     }
   ],
   "blocks": [
     {
-      "type": "banner",
-      "name": "Banner",
+      "type": "sub_collection",
+      "name": "Sub-collection",
       "settings": [
         {
-          "type": "header",
-          "content": "Content"
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "custom_title",
+          "label": "Custom title",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "image_picker",
+          "id": "custom_image",
+          "label": "Custom image",
+          "info": "Leave blank to use the collection's featured image. If neither is set, a default placeholder is shown."
+        }
+      ]
+    },
+    {
+      "type": "feed_banner",
+      "name": "In-feed banner",
+      "settings": [
+        {
+          "type": "number",
+          "id": "position",
+          "label": "Position in product grid",
+          "info": "Banner appears before the Nth product on the current page. E.g. 5 inserts it right before the 5th product. A number larger than the total product count places it at the end. Leave blank or 0 to hide."
         },
         {
           "type": "image_picker",
           "id": "image",
-          "label": "Image",
-          "info": "Landscape images work best; the banner is always wider than it is tall."
+          "label": "Image (desktop)"
+        },
+        {
+          "type": "image_picker",
+          "id": "mobile_image",
+          "label": "Image (mobile)",
+          "info": "Optional. Falls back to the desktop image if not set."
         },
         {
           "type": "text",
@@ -244,57 +533,120 @@ Metafields read:
           "label": "Subheading"
         },
         {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
           "type": "url",
           "id": "link",
           "label": "Link",
-          "info": "Leave blank for a non-clickable banner."
+          "info": "Makes the entire banner clickable"
+        },
+        {
+          "type": "color",
+          "id": "text_color",
+          "label": "Text color",
+          "default": "#ffffff"
+        },
+        {
+          "type": "range",
+          "id": "overlay_opacity",
+          "label": "Image overlay darkness",
+          "min": 0,
+          "max": 80,
+          "step": 5,
+          "unit": "%",
+          "default": 20
         },
         {
           "type": "header",
           "content": "Size"
         },
         {
-          "type": "select",
-          "id": "width",
-          "label": "Row width",
-          "options": [
-            { "value": "25",  "label": "25% of row" },
-            { "value": "50",  "label": "50% of row" },
-            { "value": "75",  "label": "75% of row" },
-            { "value": "100", "label": "100% of row (full width)" }
-          ],
-          "default": "100"
+          "type": "range",
+          "id": "column_span",
+          "label": "Width (columns spanned)",
+          "min": 1,
+          "max": 4,
+          "step": 1,
+          "default": 2,
+          "info": "Capped automatically on smaller screens so it never exceeds the live column count"
+        },
+        {
+          "type": "range",
+          "id": "row_span",
+          "label": "Height (rows spanned)",
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "default": 1
         }
       ]
     },
     {
-      "type": "carousel",
-      "name": "Carousel",
+      "type": "promo_carousel",
+      "name": "Promo carousel",
       "settings": [
         {
-          "type": "header",
-          "content": "Content"
+          "type": "number",
+          "id": "position",
+          "label": "Position in product grid",
+          "info": "Carousel appears before the Nth product on this page. A number larger than the total product count places it at the end. Leave blank or 0 to hide. Add 'Carousel tab' blocks below with the same position number to populate it."
         },
         {
           "type": "text",
           "id": "heading",
-          "label": "Heading",
-          "default": "Shop the look"
+          "label": "Heading"
         },
         {
-          "type": "header",
-          "content": "Style"
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "range",
+          "id": "products_per_tab",
+          "label": "Products per tab",
+          "min": 4,
+          "max": 24,
+          "step": 1,
+          "default": 12
+        },
+        {
+          "type": "range",
+          "id": "cards_per_row_desktop",
+          "label": "Cards per row (desktop)",
+          "min": 2,
+          "max": 5,
+          "step": 1,
+          "default": 3
+        },
+        {
+          "type": "range",
+          "id": "cards_per_row_mobile",
+          "label": "Cards per row (mobile)",
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "default": 2
+        },
+        {
+          "type": "checkbox",
+          "id": "show_arrows",
+          "label": "Show arrows",
+          "default": true
         },
         {
           "type": "select",
-          "id": "image_shape",
-          "label": "Image shape",
+          "id": "arrow_position",
+          "label": "Arrow position",
           "options": [
-            { "value": "circle",  "label": "Circular" },
-            { "value": "rounded", "label": "Rounded corners" },
-            { "value": "square",  "label": "Square" }
+            { "value": "top", "label": "Top" },
+            { "value": "bottom", "label": "Bottom" },
+            { "value": "side", "label": "Side" }
           ],
-          "default": "rounded"
+          "default": "bottom"
         },
         {
           "type": "checkbox",
@@ -304,43 +656,68 @@ Metafields read:
         },
         {
           "type": "range",
-          "id": "autoplay_speed",
-          "label": "Autoplay speed (seconds)",
-          "min": 3,
+          "id": "autoplay_interval",
+          "label": "Autoplay interval (seconds)",
+          "min": 2,
           "max": 10,
           "step": 1,
-          "default": 5
+          "default": 4
         },
-        { "type": "header", "content": "Slide 1" },
-        { "type": "image_picker", "id": "slide_1", "label": "Image" },
-        { "type": "text", "id": "slide_1_label", "label": "Caption" },
-        { "type": "url", "id": "slide_1_link", "label": "Link" },
-        { "type": "header", "content": "Slide 2" },
-        { "type": "image_picker", "id": "slide_2", "label": "Image" },
-        { "type": "text", "id": "slide_2_label", "label": "Caption" },
-        { "type": "url", "id": "slide_2_link", "label": "Link" },
-        { "type": "header", "content": "Slide 3" },
-        { "type": "image_picker", "id": "slide_3", "label": "Image" },
-        { "type": "text", "id": "slide_3_label", "label": "Caption" },
-        { "type": "url", "id": "slide_3_link", "label": "Link" },
-        { "type": "header", "content": "Slide 4" },
-        { "type": "image_picker", "id": "slide_4", "label": "Image" },
-        { "type": "text", "id": "slide_4_label", "label": "Caption" },
-        { "type": "url", "id": "slide_4_link", "label": "Link" },
-        { "type": "header", "content": "Slide 5" },
-        { "type": "image_picker", "id": "slide_5", "label": "Image" },
-        { "type": "text", "id": "slide_5_label", "label": "Caption" },
-        { "type": "url", "id": "slide_5_link", "label": "Link" },
-        { "type": "header", "content": "Slide 6" },
-        { "type": "image_picker", "id": "slide_6", "label": "Image" },
-        { "type": "text", "id": "slide_6_label", "label": "Caption" },
-        { "type": "url", "id": "slide_6_link", "label": "Link" }
+        {
+          "type": "header",
+          "content": "Banner"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_banner",
+          "label": "Show side banner",
+          "default": false
+        },
+        {
+          "type": "image_picker",
+          "id": "banner_image",
+          "label": "Banner image"
+        },
+        {
+          "type": "url",
+          "id": "banner_link",
+          "label": "Banner link"
+        }
+      ]
+    },
+    {
+      "type": "carousel_tab",
+      "name": "Carousel tab",
+      "settings": [
+        {
+          "type": "number",
+          "id": "parent_position",
+          "label": "Parent carousel position",
+          "info": "Must match the position number set on the 'Promo carousel' block this tab belongs to."
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "tab_label",
+          "label": "Tab label",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon",
+          "label": "Tab icon (emoji or short text)"
+        }
       ]
     }
   ],
   "presets": [
     {
-      "name": "Collection"
+      "name": "Collection",
+      "blocks": []
     }
   ]
 }
