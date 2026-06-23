@@ -1,0 +1,380 @@
+{{ 'collection.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign columns = section.settings.columns | default: 4
+  assign active_tab = request.query_parameters['tab'] | default: 'products'
+  unless active_tab == 'products' or active_tab == 'articles'
+    assign active_tab = 'products'
+  endunless
+  assign feed_blog = section.settings.blog
+-%}
+
+<section class="collection-section">
+  <div class="collection-page" data-collection-page data-active-tab="{{ active_tab }}">
+
+    {%- comment -%} ── TAB SWITCHER ── {%- endcomment -%}
+    <div class="tab-switcher" role="tablist">
+      <button
+        class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+        aria-controls="panel-products"
+        id="tab-products"
+        data-tab="products"
+        tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
+      >
+        {{ section.settings.tab_products_label | default: 'Products' }}
+      </button>
+      <button
+        class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
+        role="tab"
+        aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+        aria-controls="panel-articles"
+        id="tab-articles"
+        data-tab="articles"
+        tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
+      >
+        {{ section.settings.tab_articles_label | default: 'Articles' }}
+      </button>
+    </div>
+
+    {%- comment -%} ── PRODUCTS PANEL ── {%- endcomment -%}
+    <div
+      id="panel-products"
+      role="tabpanel"
+      aria-labelledby="tab-products"
+      data-panel="products"
+      {% if active_tab != 'products' %}hidden{% endif %}
+    >
+      {%- if collection.products.size > 0 -%}
+        <div class="collection-layout" style="--columns: {{ columns }};">
+
+          {%- comment -%} ── FILTERS ── {%- endcomment -%}
+          <aside class="collection-filters">
+            {%- if section.settings.show_filters -%}
+              {%- form 'collection_filter', collection, id: 'CollectionFiltersForm' -%}
+                {%- for filter in collection.filters -%}
+                  <details class="filter-group" {% if filter.active_values.size > 0 %}open{% endif %}>
+                    <summary class="filter-group__label">
+                      {{ filter.label }}
+                      {%- if filter.active_values.size > 0 -%}
+                        <span class="filter-group__count">{{ filter.active_values.size }}</span>
+                      {%- endif -%}
+                    </summary>
+                    <div class="filter-group__options">
+                      {%- case filter.type -%}
+
+                        {%- when 'list' -%}
+                          {%- for value in filter.values -%}
+                            <label class="filter-option {% if value.active %}filter-option--active{% endif %} {% if value.count == 0 and value.active == false %}filter-option--disabled{% endif %}">
+                              <input
+                                type="checkbox"
+                                name="{{ value.param_name }}"
+                                value="{{ value.value }}"
+                                {% if value.active %}checked{% endif %}
+                                {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                              >
+                              <span class="filter-option__label">{{ value.label }}</span>
+                              <span class="filter-option__count">({{ value.count }})</span>
+                            </label>
+                          {%- endfor -%}
+
+                        {%- when 'price_range' -%}
+                          <div class="filter-price">
+                            <label>
+                              <span>Min</span>
+                              <input
+                                type="number"
+                                name="{{ filter.min_value.param_name }}"
+                                value="{{ filter.min_value.value | divided_by: 100.0 }}"
+                                min="0"
+                                max="{{ filter.range_max | divided_by: 100.0 }}"
+                                placeholder="0"
+                              >
+                            </label>
+                            <span>–</span>
+                            <label>
+                              <span>Max</span>
+                              <input
+                                type="number"
+                                name="{{ filter.max_value.param_name }}"
+                                value="{{ filter.max_value.value | divided_by: 100.0 }}"
+                                min="0"
+                                max="{{ filter.range_max | divided_by: 100.0 }}"
+                                placeholder="{{ filter.range_max | divided_by: 100.0 }}"
+                              >
+                            </label>
+                          </div>
+
+                      {%- endcase -%}
+                    </div>
+                  </details>
+                {%- endfor -%}
+
+                {%- comment -%} Active filter pills ── {%- endcomment -%}
+                {%- assign active_count = 0 -%}
+                {%- for filter in collection.filters -%}
+                  {%- assign active_count = active_count | plus: filter.active_values.size -%}
+                {%- endfor -%}
+                {%- if active_count > 0 -%}
+                  <div class="filter-active">
+                    {%- for filter in collection.filters -%}
+                      {%- for value in filter.active_values -%}
+                        <a href="{{ value.url_to_remove }}" class="filter-pill">
+                          {{ value.label }} &times;
+                        </a>
+                      {%- endfor -%}
+                    {%- endfor -%}
+                    <a href="{{ collection.url }}" class="filter-pill filter-pill--clear">Clear all</a>
+                  </div>
+                {%- endif -%}
+
+                <button type="submit" class="filter-submit">Apply</button>
+              {%- endform -%}
+            {%- endif -%}
+
+            {%- comment -%} ── SORT ── {%- endcomment -%}
+            {%- if section.settings.show_sort -%}
+              <div class="collection-sort">
+                <label for="SortBy">Sort</label>
+                <select name="sort_by" id="SortBy" data-sort>
+                  {%- for option in collection.sort_options -%}
+                    <option
+                      value="{{ option.value }}"
+                      {% if option.value == collection.sort_by %}selected{% endif %}
+                    >
+                      {{ option.name }}
+                    </option>
+                  {%- endfor -%}
+                </select>
+              </div>
+            {%- endif -%}
+          </aside>
+
+          {%- comment -%} ── PRODUCT GRID ── {%- endcomment -%}
+          <div class="product-grid">
+            {%- paginate collection.products by section.settings.products_per_page -%}
+              {%- for product in collection.products -%}
+                <div class="product-grid__item">
+                  {%- render 'product-card', product: product -%}
+                </div>
+              {%- endfor -%}
+
+              {%- if paginate.pages > 1 -%}
+                <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+                  {%- if paginate.previous -%}
+                    <a href="{{ paginate.previous.url }}&tab=products" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
+                  {%- endif -%}
+                  {%- for part in paginate.parts -%}
+                    {%- if part.is_link -%}
+                      <a href="{{ part.url }}&tab=products" class="pagination__link">{{ part.title }}</a>
+                    {%- else -%}
+                      <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- if paginate.next -%}
+                    <a href="{{ paginate.next.url }}&tab=products" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
+                  {%- endif -%}
+                </nav>
+              {%- endif -%}
+            {%- endpaginate -%}
+          </div>
+
+        </div>
+      {%- else -%}
+        <p class="collection-empty">No products found.</p>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%} ── ARTICLES PANEL ── {%- endcomment -%}
+    <div
+      id="panel-articles"
+      role="tabpanel"
+      aria-labelledby="tab-articles"
+      data-panel="articles"
+      {% if active_tab != 'articles' %}hidden{% endif %}
+    >
+      {%- if feed_blog != blank and feed_blog.articles.size > 0 -%}
+        {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
+          <div class="article-grid" style="--columns: {{ columns }};">
+            {%- for article in feed_blog.articles -%}
+              <div class="article-grid__item">
+                {%- render 'article-card', article: article -%}
+              </div>
+            {%- endfor -%}
+          </div>
+
+          {%- if paginate.pages > 1 -%}
+            <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+              {%- if paginate.previous -%}
+                <a href="{{ paginate.previous.url }}&tab=articles" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
+              {%- endif -%}
+              {%- for part in paginate.parts -%}
+                {%- if part.is_link -%}
+                  <a href="{{ part.url }}&tab=articles" class="pagination__link">{{ part.title }}</a>
+                {%- else -%}
+                  <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if paginate.next -%}
+                <a href="{{ paginate.next.url }}&tab=articles" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
+              {%- endif -%}
+            </nav>
+          {%- endif -%}
+        {%- endpaginate -%}
+      {%- else -%}
+        <p class="collection-empty">No articles found.</p>
+      {%- endif -%}
+    </div>
+
+  </div>
+</section>
+
+<script>
+  (function () {
+    var page = document.querySelector('[data-collection-page]');
+    if (!page) return;
+
+    var tabs   = page.querySelectorAll('[data-tab]');
+    var panels = page.querySelectorAll('[data-panel]');
+
+    function activateTab(key, push) {
+      tabs.forEach(function (t) {
+        var on = t.dataset.tab === key;
+        t.classList.toggle('tab-switcher__tab--active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.setAttribute('tabindex', on ? '0' : '-1');
+      });
+      panels.forEach(function (p) {
+        p.dataset.panel === key ? p.removeAttribute('hidden') : p.setAttribute('hidden', '');
+      });
+      page.dataset.activeTab = key;
+      if (push) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', key);
+        history.pushState({ tab: key }, '', url.toString());
+      }
+    }
+
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () {
+        if (tab.dataset.tab !== page.dataset.activeTab) activateTab(tab.dataset.tab, true);
+      });
+      tab.addEventListener('keydown', function (e) {
+        var next;
+        if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
+        if (e.key === 'ArrowLeft')  next = tabs[i - 1] || tabs[tabs.length - 1];
+        if (next) { next.focus(); next.click(); }
+      });
+    });
+
+    // Sort — auto-submit on change
+    var sortSelect = page.querySelector('[data-sort]');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', function () {
+        var url = new URL(window.location.href);
+        url.searchParams.set('sort_by', sortSelect.value);
+        window.location.href = url.toString();
+      });
+    }
+
+    // Filter form — preserve tab param on submit
+    var filterForm = document.getElementById('CollectionFiltersForm');
+    if (filterForm) {
+      filterForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var url = new URL(window.location.href);
+        var data = new FormData(filterForm);
+        // Clear existing filter params
+        url.search = '';
+        data.forEach(function (val, key) { url.searchParams.append(key, val); });
+        url.searchParams.set('tab', page.dataset.activeTab);
+        window.location.href = url.toString();
+      });
+    }
+
+    window.addEventListener('popstate', function (e) {
+      var key = (e.state && e.state.tab)
+        ? e.state.tab
+        : new URL(window.location.href).searchParams.get('tab') || 'products';
+      activateTab(key, false);
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Collection",
+  "tag": "section",
+  "class": "section-collection",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tab_products_label",
+      "label": "Products tab label",
+      "default": "Products"
+    },
+    {
+      "type": "text",
+      "id": "tab_articles_label",
+      "label": "Articles tab label",
+      "default": "Articles"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filters",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Articles"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "articles_per_page",
+      "label": "Articles per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 16
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection"
+    }
+  ]
+}
+{% endschema %}
