@@ -2,6 +2,7 @@
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 {{ 'sub-collections.css' | asset_url | stylesheet_tag }}
+{{ 'feed-banner.css' | asset_url | stylesheet_tag }}
 
 <style>
   .collection-feed {
@@ -149,11 +150,51 @@
             {%- comment -%} Sub-collections carousel sits above the product grid only {%- endcomment -%}
             {%- render 'sub-collections-carousel' -%}
 
+            {%- comment -%}
+              Build a position -> banner-blocks map so the loop below can
+              splice banners in at merchant-chosen slots without breaking
+              Liquid's single-pass iteration. Position is 1-based and means
+              "render this banner immediately before the Nth product on
+              this page." Multiple banners can share a position; all render,
+              in block order. Position 0 or blank means "don't show."
+            {%- endcomment -%}
+            {%- liquid
+              assign banner_blocks = section.blocks | where: 'type', 'feed_banner'
+            -%}
+
             <div class="collection-feed__grid">
               {%- for product in collection.products -%}
+
+                {%- comment -%} Render any banners assigned to this slot, before the product card {%- endcomment -%}
+                {%- for banner in banner_blocks -%}
+                  {%- liquid
+                    assign banner_position = banner.settings.position | default: 0
+                  -%}
+                  {%- if banner_position > 0 and banner_position == forloop.parentloop.index -%}
+                    {%- render 'feed-banner', block: banner -%}
+                  {%- endif -%}
+                {%- endfor -%}
+
                 {%- render 'product-card', product: product -%}
+
               {%- else -%}
                 <p class="collection-empty">No products found.</p>
+              {%- endfor -%}
+
+              {%- comment -%}
+                Banners positioned at or beyond the total product count
+                render after the last product, in position order, so a
+                banner set to "position 999" effectively means "at the end."
+                Position 0 (unset) never renders.
+              {%- endcomment -%}
+              {%- assign product_count = collection.products.size -%}
+              {%- for banner in banner_blocks -%}
+                {%- liquid
+                  assign banner_position = banner.settings.position | default: 0
+                -%}
+                {%- if banner_position > product_count and banner_position > 0 -%}
+                  {%- render 'feed-banner', block: banner -%}
+                {%- endif -%}
               {%- endfor -%}
             </div>
 
@@ -369,6 +410,14 @@
     },
     {
       "type": "header",
+      "content": "In-feed banners"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add 'In-feed banner' blocks below to place promotional banners inside the product grid. Each banner has its own position number and size — set both per block."
+    },
+    {
+      "type": "header",
       "content": "Articles"
     },
     {
@@ -407,6 +456,89 @@
           "id": "custom_image",
           "label": "Custom image",
           "info": "Leave blank to use the collection's featured image. If neither is set, a default placeholder is shown."
+        }
+      ]
+    },
+    {
+      "type": "feed_banner",
+      "name": "In-feed banner",
+      "settings": [
+        {
+          "type": "number",
+          "id": "position",
+          "label": "Position in product grid",
+          "info": "Banner appears before the Nth product on the current page. E.g. 5 inserts it right before the 5th product. A number larger than the total product count places it at the end. Leave blank or 0 to hide."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image (desktop)"
+        },
+        {
+          "type": "image_picker",
+          "id": "mobile_image",
+          "label": "Image (mobile)",
+          "info": "Optional. Falls back to the desktop image if not set."
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Makes the entire banner clickable"
+        },
+        {
+          "type": "color",
+          "id": "text_color",
+          "label": "Text color",
+          "default": "#ffffff"
+        },
+        {
+          "type": "range",
+          "id": "overlay_opacity",
+          "label": "Image overlay darkness",
+          "min": 0,
+          "max": 80,
+          "step": 5,
+          "unit": "%",
+          "default": 20
+        },
+        {
+          "type": "header",
+          "content": "Size"
+        },
+        {
+          "type": "range",
+          "id": "column_span",
+          "label": "Width (columns spanned)",
+          "min": 1,
+          "max": 4,
+          "step": 1,
+          "default": 2,
+          "info": "Capped automatically on smaller screens so it never exceeds the live column count"
+        },
+        {
+          "type": "range",
+          "id": "row_span",
+          "label": "Height (rows spanned)",
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "default": 1
         }
       ]
     }
