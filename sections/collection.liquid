@@ -3,31 +3,31 @@
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
 <style>
-  .collection-layout {
+  .collection-feed {
     display: grid;
     grid-template-columns: 260px 1fr;
     gap: 2rem;
     align-items: start;
   }
 
-  .collection-filters {
+  .collection-filter {
     position: sticky;
     top: 2rem;
     max-height: calc(100vh - 4rem);
     overflow-y: auto;
   }
 
-  .product-grid {
+  .collection-feed__grid {
     display: grid;
     grid-template-columns: repeat(var(--columns, 4), 1fr);
     gap: 1.5rem;
   }
 
   @media (max-width: 768px) {
-    .collection-layout {
+    .collection-feed {
       grid-template-columns: 1fr;
     }
-    .collection-filters {
+    .collection-filter {
       position: static;
       max-height: none;
     }
@@ -70,13 +70,13 @@
     <div id="panel-products" role="tabpanel" aria-labelledby="tab-products" data-panel="products" {% if active_tab != 'products' %}hidden{% endif %}>
       {%- paginate collection.products by section.settings.products_per_page -%}
 
-        <div class="collection-layout" style="--columns: {{ columns }};">
+        <div class="collection-feed" style="--columns: {{ columns }};">
 
           {%- if section.settings.show_filters -%}
-            <aside class="collection-filters">
+            <aside class="collection-filter">
 
               {%- if section.settings.show_sort -%}
-                <div class="filter-sort">
+                <div class="collection-filter__sort">
                   <label for="SortBy">Sort</label>
                   <select id="SortBy" data-sort>
                     {%- for option in collection.sort_options -%}
@@ -88,16 +88,16 @@
 
               {%- form 'filter', collection, id: 'FilterForm' -%}
                 {%- for filter in collection.filters -%}
-                  <details class="filter-group"{% if filter.active_values.size > 0 %} open{% endif %}>
-                    <summary class="filter-group__label">
+                  <details class="collection-filter__group"{% if filter.active_values.size > 0 %} open{% endif %}>
+                    <summary class="collection-filter__group-label">
                       {{ filter.label }}
-                      {%- if filter.active_values.size > 0 -%}<span class="filter-group__badge">{{ filter.active_values.size }}</span>{%- endif -%}
+                      {%- if filter.active_values.size > 0 -%}<span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>{%- endif -%}
                     </summary>
-                    <div class="filter-group__body">
+                    <div class="collection-filter__group-body">
                       {%- case filter.type -%}
                         {%- when 'list' -%}
                           {%- for value in filter.values -%}
-                            <label class="filter-option{% if value.active %} filter-option--active{% endif %}{% if value.count == 0 and value.active == false %} filter-option--disabled{% endif %}">
+                            <label class="collection-filter__option{% if value.active %} collection-filter__option--active{% endif %}{% if value.count == 0 and value.active == false %} collection-filter__option--disabled{% endif %}">
                               <input
                                 type="checkbox"
                                 name="{{ value.param_name }}"
@@ -109,7 +109,7 @@
                             </label>
                           {%- endfor -%}
                         {%- when 'price_range' -%}
-                          <div class="filter-price">
+                          <div class="collection-filter__price">
                             <input type="number" name="{{ filter.min_value.param_name }}" value="{{ filter.min_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="0">
                             <span>–</span>
                             <input type="number" name="{{ filter.max_value.param_name }}" value="{{ filter.max_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="{{ filter.range_max | divided_by: 100.0 }}">
@@ -124,22 +124,22 @@
                   {%- assign active_count = active_count | plus: filter.active_values.size -%}
                 {%- endfor -%}
                 {%- if active_count > 0 -%}
-                  <div class="filter-active">
+                  <div class="collection-filter__active">
                     {%- for filter in collection.filters -%}
                       {%- for value in filter.active_values -%}
-                        <a href="{{ value.url_to_remove }}" class="filter-pill">{{ value.label }} &times;</a>
+                        <a href="{{ value.url_to_remove }}" class="collection-filter__pill">{{ value.label }} &times;</a>
                       {%- endfor -%}
                     {%- endfor -%}
-                    <a href="{{ collection.url }}" class="filter-pill filter-pill--clear">Clear all</a>
+                    <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
                   </div>
                 {%- endif -%}
 
-                <button type="submit" class="filter-submit">Apply</button>
+                <button type="submit" class="collection-filter__submit">Apply</button>
               {%- endform -%}
             </aside>
           {%- endif -%}
 
-          <div class="product-grid">
+          <div class="collection-feed__grid">
             {%- for product in collection.products -%}
               {%- render 'product-card', product: product -%}
             {%- else -%}
