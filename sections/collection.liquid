@@ -3,6 +3,7 @@
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 {{ 'sub-collections.css' | asset_url | stylesheet_tag }}
 {{ 'feed-banner.css' | asset_url | stylesheet_tag }}
+{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
 
 <style>
   .collection-feed {
@@ -373,6 +374,8 @@
   })();
 </script>
 
+<script src="{{ 'promo-carousel.js' | asset_url }}" defer="defer"></script>
+
 {% schema %}
 {
   "name": "Collection",
@@ -446,6 +449,14 @@
     {
       "type": "paragraph",
       "content": "Add 'In-feed banner' blocks below to place promotional banners inside the product grid. Each banner has its own position number and size — set both per block."
+    },
+    {
+      "type": "header",
+      "content": "Promo carousels"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add a 'Promo carousel' block to insert a tabbed product carousel into the grid, then add one or more 'Carousel tab' blocks set to the same position number to populate it."
     },
     {
       "type": "header",
@@ -570,6 +581,135 @@
           "max": 3,
           "step": 1,
           "default": 1
+        }
+      ]
+    },
+    {
+      "type": "promo_carousel",
+      "name": "Promo carousel",
+      "settings": [
+        {
+          "type": "number",
+          "id": "position",
+          "label": "Position in product grid",
+          "info": "Carousel appears before the Nth product on this page. A number larger than the total product count places it at the end. Leave blank or 0 to hide. Add 'Carousel tab' blocks below with the same position number to populate it."
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "range",
+          "id": "products_per_tab",
+          "label": "Products per tab",
+          "min": 4,
+          "max": 24,
+          "step": 1,
+          "default": 12
+        },
+        {
+          "type": "range",
+          "id": "cards_per_row_desktop",
+          "label": "Cards per row (desktop)",
+          "min": 2,
+          "max": 5,
+          "step": 1,
+          "default": 3
+        },
+        {
+          "type": "range",
+          "id": "cards_per_row_mobile",
+          "label": "Cards per row (mobile)",
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "default": 2
+        },
+        {
+          "type": "checkbox",
+          "id": "show_arrows",
+          "label": "Show arrows",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "arrow_position",
+          "label": "Arrow position",
+          "options": [
+            { "value": "top", "label": "Top" },
+            { "value": "bottom", "label": "Bottom" },
+            { "value": "side", "label": "Side" }
+          ],
+          "default": "bottom"
+        },
+        {
+          "type": "checkbox",
+          "id": "autoplay",
+          "label": "Autoplay",
+          "default": false
+        },
+        {
+          "type": "range",
+          "id": "autoplay_interval",
+          "label": "Autoplay interval (seconds)",
+          "min": 2,
+          "max": 10,
+          "step": 1,
+          "default": 4
+        },
+        {
+          "type": "header",
+          "content": "Banner"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_banner",
+          "label": "Show side banner",
+          "default": false
+        },
+        {
+          "type": "image_picker",
+          "id": "banner_image",
+          "label": "Banner image"
+        },
+        {
+          "type": "url",
+          "id": "banner_link",
+          "label": "Banner link"
+        }
+      ]
+    },
+    {
+      "type": "carousel_tab",
+      "name": "Carousel tab",
+      "settings": [
+        {
+          "type": "number",
+          "id": "parent_position",
+          "label": "Parent carousel position",
+          "info": "Must match the position number set on the 'Promo carousel' block this tab belongs to."
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "tab_label",
+          "label": "Tab label",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon",
+          "label": "Tab icon (emoji or short text)"
         }
       ]
     }
