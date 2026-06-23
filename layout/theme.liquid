@@ -37,6 +37,11 @@
                               injected into <body> at runtime — the
                               section content CSS (product-quickview.css)
                               still only loads on demand.
+      4. cart-drawer.css    — cart drawer shell + content styles. Same
+                              reasoning as quickview-modal.css: injected
+                              into <body> at runtime by cart-drawer.js,
+                              but needs to be styled from first paint
+                              since it can be triggered from any page.
     product-card.css is NOT loaded here — it's loaded by individual
     sections that use cards (e.g. product-carousel.liquid) to keep it
     scoped to pages that need it.
@@ -45,13 +50,20 @@
   {{ 'critical.css' | asset_url | stylesheet_tag }}
   {{ 'theme.css' | asset_url | stylesheet_tag }}
   {{ 'quickview-modal.css' | asset_url | stylesheet_tag }}
+  {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
 
   {%- comment -%}
-    Global JS — product-card.js owns ATC, Wishlist, Compare, Quick View.
-    Loaded here once; do NOT re-load it inside any section or snippet.
-    Loading it again double-registers all click handlers.
+    Global JS.
+    product-card.js owns ATC, Wishlist, Compare, Quick View.
+    cart-drawer.js owns the cart drawer — listens for the cart:open /
+    cart:updated events product-card.js and main-product.liquid already
+    dispatch, and intercepts the header cart icon click below.
+    Both loaded here once; do NOT re-load either inside any section or
+    snippet. Loading them again double-registers their click handlers
+    (both files guard against this internally, but don't rely on that).
   {%- endcomment -%}
   <script src="{{ 'product-card.js' | asset_url }}" defer></script>
+  <script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
 </head>
 
 <body class="template-{{ template.name }}{% if template.suffix != blank %} template-{{ template.name }}-{{ template.suffix }}{% endif %}">
@@ -94,7 +106,7 @@
             <path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </a>
-        <a href="{{ routes.cart_url }}" class="site-header__icon-btn" aria-label="Cart ({{ cart.item_count }})">
+        <a href="{{ routes.cart_url }}" class="site-header__icon-btn" data-cart-icon-btn aria-label="Cart ({{ cart.item_count }})">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M2 2h2l2.5 10h9l2-7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             <circle cx="8.5" cy="15.5" r="1" fill="currentColor"/>
