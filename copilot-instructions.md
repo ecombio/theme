@@ -1,1 +1,0 @@
-C:/Users/Admin/shopify/theme/main/AGENTS.md
