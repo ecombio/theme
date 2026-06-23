@@ -22,13 +22,28 @@
   {{ content_for_header }}
 
   {%- comment -%}
-    Global stylesheets.
-    quickview-modal.css is here (not in product-quickview.liquid) so
-    the modal shell is styled from first paint — the section CSS only
-    loads on demand when a Quick View is opened.
-    product-card.css is loaded by individual sections that use cards
-    (e.g. product-carousel.liquid) to keep it scoped to pages that need it.
+    Global stylesheets, in dependency order:
+      1. critical.css      — resets, .page-width, .visually-hidden,
+                              :focus-visible. Preloaded since it's
+                              needed to prevent layout shift on first
+                              paint, and main-product.liquid depends
+                              on these classes without redeclaring them.
+      2. theme.css          — site chrome (header/nav/footer) + the
+                              Compare bar (rendered globally at runtime
+                              by product-card.js) + shared utilities.
+      3. quickview-modal.css — modal shell only. Kept separate (not
+                              folded into theme.css) so the modal is
+                              styled from first paint even though it's
+                              injected into <body> at runtime — the
+                              section content CSS (product-quickview.css)
+                              still only loads on demand.
+    product-card.css is NOT loaded here — it's loaded by individual
+    sections that use cards (e.g. product-carousel.liquid) to keep it
+    scoped to pages that need it.
   {%- endcomment -%}
+  <link rel="preload" href="{{ 'critical.css' | asset_url }}" as="style">
+  {{ 'critical.css' | asset_url | stylesheet_tag }}
+  {{ 'theme.css' | asset_url | stylesheet_tag }}
   {{ 'quickview-modal.css' | asset_url | stylesheet_tag }}
 
   {%- comment -%}
@@ -110,146 +125,3 @@
 
 </body>
 </html>
-
-
-{%- comment -%}
-  ── LAYOUT STYLES ──────────────────────────────────────────────────────────
-  Minimal inline styles so the layout works out of the box.
-  Move these to a dedicated assets/theme.css once you're building out the
-  full design system.
-{%- endcomment -%}
-<style>
-  *, *::before, *::after { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    color: #111;
-    background: #fff;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  #main-content:focus { outline: none; }
-
-  /* ── Header ── */
-  .site-header {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .site-header__inner {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 16px;
-    height: 60px;
-  }
-
-  .site-header__logo { text-decoration: none; flex-shrink: 0; }
-  .site-header__logo-img { display: block; height: 36px; width: auto; }
-  .site-header__logo-text {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #111;
-  }
-
-  .site-header__nav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex: 1;
-  }
-
-  .site-header__nav-link {
-    padding: 6px 12px;
-    font-size: 0.875rem;
-    color: #444;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .site-header__nav-link:hover,
-  .site-header__nav-link.is-active {
-    background: #f3f4f6;
-    color: #111;
-  }
-
-  .site-header__icons {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-  }
-
-  .site-header__icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    color: #444;
-    text-decoration: none;
-    position: relative;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .site-header__icon-btn:hover { background: #f3f4f6; color: #111; }
-
-  .site-header__cart-count {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    background: #111;
-    color: #fff;
-    font-size: 0.6rem;
-    font-weight: 700;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-
-  /* ── Main ── */
-  #main-content {
-    min-height: calc(100vh - 60px - 60px);
-  }
-
-  /* ── Footer ── */
-  .site-footer {
-    border-top: 1px solid #e5e7eb;
-    padding: 20px 16px;
-  }
-
-  .site-footer__inner {
-    max-width: 1280px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .site-footer__copy {
-    margin: 0;
-    font-size: 0.8rem;
-    color: #9ca3af;
-  }
-
-  /* ── Mobile ── */
-  @media (max-width: 767px) {
-    .site-header__nav { display: none; }
-
-    .site-header__inner { gap: 12px; }
-  }
-</style>
