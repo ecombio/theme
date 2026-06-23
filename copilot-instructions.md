@@ -1,1 +1,0 @@
-C:/Users/thejo/site/ecombio/AGENTS.md
