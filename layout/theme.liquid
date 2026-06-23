@@ -1,43 +1,255 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="{{ request.locale.iso_code }}">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
 
-    {% render 'meta-tags' %}
+  <title>
+    {{ page_title }}{% if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif %}
+    {% if current_page != 1 %} &ndash; Page {{ current_page }}{% endif %}
+    {% unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless %}
+  </title>
 
-    <!-- ============================================= -->
-    <!-- CRITICAL CSS (above the fold) -->
-    <!-- ============================================= -->
-    {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
+  {%- if page_description -%}
+    <meta name="description" content="{{ page_description | escape }}">
+  {%- endif -%}
 
-    <!-- ============================================= -->
-    <!-- MAIN THEME CSS -->
-    <!-- ============================================= -->
-    {{ 'theme.css' | asset_url | stylesheet_tag }}
+  {%- comment -%} Canonical & hreflang {%- endcomment -%}
+  <link rel="canonical" href="{{ canonical_url }}">
 
-    <!-- ============================================= -->
-    <!-- FONT PRELOADING (only for non-system fonts) -->
-    <!-- ============================================= -->
-    {% unless settings.type_primary_font.system? %}
-      <link rel="preconnect" href="https://fonts.shopifycdn.com" crossorigin>
+  {%- comment -%} Shopify-required head content (analytics, consent, etc.) {%- endcomment -%}
+  {{ content_for_header }}
 
-      {{ settings.type_primary_font | font_url | preload_tag: as: 'font', crossorigin: 'anonymous' }}
-    {% endunless %}
+  {%- comment -%}
+    Global stylesheets.
+    quickview-modal.css is here (not in product-quickview.liquid) so
+    the modal shell is styled from first paint — the section CSS only
+    loads on demand when a Quick View is opened.
+    product-card.css is loaded by individual sections that use cards
+    (e.g. product-carousel.liquid) to keep it scoped to pages that need it.
+  {%- endcomment -%}
+  {{ 'quickview-modal.css' | asset_url | stylesheet_tag }}
 
-    {{ content_for_header }}
-  </head>
+  {%- comment -%}
+    Global JS — product-card.js owns ATC, Wishlist, Compare, Quick View.
+    Loaded here once; do NOT re-load it inside any section or snippet.
+    Loading it again double-registers all click handlers.
+  {%- endcomment -%}
+  <script src="{{ 'product-card.js' | asset_url }}" defer></script>
+</head>
 
-  <body>
-    {% sections 'header-group' %}
+<body class="template-{{ template.name }}{% if template.suffix != blank %} template-{{ template.name }}-{{ template.suffix }}{% endif %}">
 
+  {%- comment -%}── HEADER ──{%- endcomment -%}
+  <header class="site-header" role="banner">
+    <div class="site-header__inner">
+      <a class="site-header__logo" href="{{ routes.root_url }}">
+        {%- if settings.logo != blank -%}
+          {{
+            settings.logo
+            | image_url: width: 200
+            | image_tag:
+              class: 'site-header__logo-img',
+              alt: shop.name,
+              widths: '100, 150, 200',
+              sizes: '150px'
+          }}
+        {%- else -%}
+          <span class="site-header__logo-text">{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+
+      <nav class="site-header__nav" aria-label="Main navigation">
+        {%- for link in linklists.main-menu.links -%}
+          <a
+            class="site-header__nav-link{% if link.active %} is-active{% endif %}"
+            href="{{ link.url }}"
+            {% if link.active %}aria-current="page"{% endif %}
+          >
+            {{ link.title }}
+          </a>
+        {%- endfor -%}
+      </nav>
+
+      <div class="site-header__icons">
+        <a href="{{ routes.account_url }}" class="site-header__icon-btn" aria-label="Account">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </a>
+        <a href="{{ routes.cart_url }}" class="site-header__icon-btn" aria-label="Cart ({{ cart.item_count }})">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M2 2h2l2.5 10h9l2-7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="8.5" cy="15.5" r="1" fill="currentColor"/>
+            <circle cx="15.5" cy="15.5" r="1" fill="currentColor"/>
+          </svg>
+          {%- if cart.item_count > 0 -%}
+            <span class="site-header__cart-count" aria-hidden="true">{{ cart.item_count }}</span>
+          {%- endif -%}
+        </a>
+      </div>
+    </div>
+  </header>
+
+  {%- comment -%}── MAIN CONTENT ──{%- endcomment -%}
+  <main id="main-content" role="main" tabindex="-1">
     {{ content_for_layout }}
+  </main>
 
-    {% sections 'footer-group' %}
+  {%- comment -%}── FOOTER ──{%- endcomment -%}
+  <footer class="site-footer" role="contentinfo">
+    <div class="site-footer__inner">
+      <p class="site-footer__copy">
+        &copy; {{ 'now' | date: '%Y' }} {{ shop.name }}.
+        {{ powered_by_link }}
+      </p>
+    </div>
+  </footer>
 
-    <!-- ============================================= -->
-    <!-- MAIN JAVASCRIPT -->
-    <!-- ============================================= -->
-    {{ 'theme.js' | asset_url | script_tag }}
-  </body>
+</body>
 </html>
+
+
+{%- comment -%}
+  ── LAYOUT STYLES ──────────────────────────────────────────────────────────
+  Minimal inline styles so the layout works out of the box.
+  Move these to a dedicated assets/theme.css once you're building out the
+  full design system.
+{%- endcomment -%}
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    color: #111;
+    background: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #main-content:focus { outline: none; }
+
+  /* ── Header ── */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 16px;
+    height: 60px;
+  }
+
+  .site-header__logo { text-decoration: none; flex-shrink: 0; }
+  .site-header__logo-img { display: block; height: 36px; width: auto; }
+  .site-header__logo-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .site-header__nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .site-header__nav-link {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    color: #444;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .site-header__nav-link:hover,
+  .site-header__nav-link.is-active {
+    background: #f3f4f6;
+    color: #111;
+  }
+
+  .site-header__icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .site-header__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #444;
+    text-decoration: none;
+    position: relative;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .site-header__icon-btn:hover { background: #f3f4f6; color: #111; }
+
+  .site-header__cart-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: #111;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  /* ── Main ── */
+  #main-content {
+    min-height: calc(100vh - 60px - 60px);
+  }
+
+  /* ── Footer ── */
+  .site-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 20px 16px;
+  }
+
+  .site-footer__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .site-footer__copy {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 767px) {
+    .site-header__nav { display: none; }
+
+    .site-header__inner { gap: 12px; }
+  }
+</style>
