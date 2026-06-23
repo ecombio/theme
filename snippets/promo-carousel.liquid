@@ -1,64 +1,292 @@
-{% comment %}
+{%- comment -%}
   snippets/promo-carousel.liquid
-{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
+  In-feed promo carousel — repurposed from sections/product-carousel.liquid
+  for use inside sections/collection.liquid's product grid.
 
-  Renders a horizontal in-feed carousel of either banners or products.
-  No sub-snippets by design — both content types are handled inline.
+  Renders as one full-width row inside .collection-feed__grid (via the
+  promo-carousel-cell wrapper, grid-column: 1 / -1), at a merchant-chosen
+  position — same position-number system as the feed_banner block.
+
+  Tab = collection. Products pulled from each collection directly.
 
   Expects:
-    block - a section block of type 'promo_carousel'
-{% endcomment %}
+    block  -> a `promo_carousel` block from section.blocks (see
+              collection.liquid schema), with settings:
+                position, heading, subheading, products_per_tab,
+                cards_per_row_desktop, cards_per_row_mobile,
+                show_arrows, arrow_position, autoplay, autoplay_interval,
+                show_banner, banner_image, banner_link
+    and block.blocks (nested "Collection Tab" child blocks) — Shopify
+    section blocks don't natively nest, so tabs are supplied as a
+    repeating block type alongside promo_carousel; see collection.liquid
+    for how tab_blocks is assembled and passed in as `tab_blocks`.
+
+  NOTE: product-card.js is loaded globally in theme.liquid.
+  Do NOT re-load it here — doing so double-registers the click handlers
+  for Add to Cart, Wishlist, Compare, and Quick View (each click fires
+  twice: double-add to cart, wishlist toggles cancel out, Quick View
+  fetches the product twice).
+-%}
+{%- endcomment -%}
 
 {%- liquid
-  assign content_type = block.settings.content_type
+  assign heading        = block.settings.heading
+  assign subheading     = block.settings.subheading
+  assign cards_desk     = block.settings.cards_per_row_desktop | default: 3
+  assign cards_mob      = block.settings.cards_per_row_mobile  | default: 2
+  assign show_arrows    = block.settings.show_arrows
+  assign arrow_position = block.settings.arrow_position | default: 'bottom'
+  assign autoplay       = block.settings.autoplay
+  assign autoplay_ms    = block.settings.autoplay_interval | default: 4 | times: 1000
+  assign banner_show    = block.settings.show_banner
+  assign banner_image   = block.settings.banner_image
+  assign banner_link    = block.settings.banner_link
+  assign products_limit = block.settings.products_per_tab | default: 12
+
+  assign show_top_arrows    = false
+  assign show_bottom_arrows = false
+  assign show_side_arrows   = false
+  if show_arrows and arrow_position == 'top'
+    assign show_top_arrows = true
+  elsif show_arrows and arrow_position == 'side'
+    assign show_side_arrows = true
+  elsif show_arrows
+    assign show_bottom_arrows = true
+  endif
 -%}
 
-<div class="promo-carousel" data-content-type="{{ content_type }}" {{ block.shopify_attributes }}>
+<div class="promo-carousel-cell" {{ block.shopify_attributes }}>
+  <section
+    class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %}"
+    id="pc-block-{{ block.id }}"
+    data-section-id="{{ block.id }}"
+    data-cards-desktop="{{ cards_desk }}"
+    data-cards-mobile="{{ cards_mob }}"
+    data-autoplay="{{ autoplay }}"
+    data-autoplay-interval="{{ autoplay_ms }}"
+    data-arrow-style="{{ arrow_position }}"
+  >
 
-  {%- if block.settings.heading != blank -%}
-    <h3 class="promo-carousel__heading">{{ block.settings.heading }}</h3>
-  {%- endif -%}
-
-  <div class="promo-carousel__track">
-    {%- case content_type -%}
-
-      {%- when 'product' -%}
-        {%- if block.settings.source_collection != blank -%}
-          {%- for product in block.settings.source_collection.products limit: block.settings.item_count -%}
-            <div class="promo-carousel__slide">
-              {%- render 'product-card', product: product -%}
-            </div>
-          {%- endfor -%}
+    {%- if heading != blank or subheading != blank or show_top_arrows -%}
+      <div class="product-carousel__header">
+        <div class="product-carousel__heading-group">
+          {%- if heading != blank -%}<h2 class="product-carousel__heading">{{ heading }}</h2>{%- endif -%}
+          {%- if subheading != blank -%}<p class="product-carousel__subheading">{{ subheading }}</p>{%- endif -%}
+        </div>
+        {%- if show_top_arrows -%}
+          <div class="product-carousel__arrows product-carousel__arrows--top" data-carousel-top-arrows>
+            <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-top-prev disabled>
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-top-next>
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
         {%- endif -%}
+      </div>
+    {%- endif -%}
 
-      {%- when 'banner' -%}
-        {%- for i in (1..block.settings.banner_count) -%}
-          {%- assign img_key = 'banner_' | append: i | append: '_image' -%}
-          {%- assign heading_key = 'banner_' | append: i | append: '_heading' -%}
-          {%- assign link_key = 'banner_' | append: i | append: '_link' -%}
-          {%- assign img = block.settings[img_key] -%}
+    <div class="product-carousel__layout{% if banner_show %} product-carousel__layout--has-banner{% endif %}">
 
-          {%- if img != blank -%}
-            <div class="promo-carousel__slide promo-carousel__slide--banner">
-              <a href="{{ block.settings[link_key] | default: '#' }}" class="promo-carousel__banner-link">
-                <img
-                  src="{{ img | image_url: width: 600 }}"
-                  srcset="{{ img | image_url: width: 400 }} 400w, {{ img | image_url: width: 600 }} 600w, {{ img | image_url: width: 900 }} 900w"
-                  sizes="(min-width: 750px) 600px, 90vw"
-                  width="{{ img.width }}"
-                  height="{{ img.height }}"
-                  alt="{{ img.alt | default: block.settings[heading_key] | escape }}"
-                  loading="lazy"
-                >
-                {%- if block.settings[heading_key] != blank -%}
-                  <p class="promo-carousel__slide-heading">{{ block.settings[heading_key] }}</p>
-                {%- endif -%}
-              </a>
+      {%- comment -%}── BANNER ──{%- endcomment -%}
+      {%- if banner_show -%}
+        <div class="product-carousel__banner">
+          {%- if banner_link != blank -%}<a href="{{ banner_link }}" class="product-carousel__banner-link">{%- endif -%}
+          {%- if banner_image != blank -%}
+            {{
+              banner_image
+              | image_url: width: 800
+              | image_tag:
+                class: 'product-carousel__banner-img',
+                loading: 'lazy',
+                widths: '200, 300, 400, 600',
+                sizes: '(max-width: 767px) 100vw, 220px',
+                alt: banner_image.alt | default: heading | escape
+            }}
+          {%- else -%}
+            <div class="product-carousel__banner-placeholder" aria-hidden="true">
+              {{ 'collection-1' | placeholder_svg_tag: 'product-carousel__banner-placeholder-svg' }}
             </div>
           {%- endif -%}
+          {%- if banner_link != blank -%}</a>{%- endif -%}
+        </div>
+      {%- endif -%}
+
+      {%- comment -%}── CAROUSEL COLUMN ──{%- endcomment -%}
+      <div class="product-carousel__carousel-col">
+
+        {%- comment -%}
+          Tabs: only render the tab bar when there are 2+ tab blocks.
+          With exactly 1 block, skip the label entirely — the heading
+          already identifies the content.
+        {%- endcomment -%}
+        {%- if tab_blocks.size > 1 -%}
+          <div class="product-carousel__tabs" role="tablist" aria-label="{{ heading | default: 'Product categories' | escape }}">
+            {%- for tab in tab_blocks -%}
+              {%- assign tab_label = tab.settings.tab_label | default: tab.settings.collection.title -%}
+              <button
+                class="product-carousel__tab{% if forloop.first %} is-active{% endif %}"
+                role="tab"
+                type="button"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-controls="pc-panel-{{ tab.id }}"
+                data-carousel-tab="{{ tab.id }}"
+                {{ tab.shopify_attributes }}
+              >
+                {%- if tab.settings.tab_icon != blank -%}
+                  <span aria-hidden="true">{{ tab.settings.tab_icon }}</span>
+                {%- endif -%}
+                {{ tab_label }}
+              </button>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+
+        {%- comment -%}── ONE PANEL PER TAB ──{%- endcomment -%}
+        {%- for tab in tab_blocks -%}
+          {%- assign col = tab.settings.collection -%}
+
+          <div
+            id="pc-panel-{{ tab.id }}"
+            class="product-carousel__panel{% unless forloop.first %} is-hidden{% endunless %}"
+            role="tabpanel"
+            data-carousel-panel="{{ tab.id }}"
+          >
+            <div class="product-carousel__stage{% if show_side_arrows %} product-carousel__stage--side-arrows{% endif %}">
+
+              {%- if show_side_arrows -%}
+                <button
+                  class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-prev"
+                  type="button"
+                  aria-label="Previous"
+                  data-carousel-prev
+                  disabled
+                >
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              {%- endif -%}
+
+              <div class="product-carousel__track-wrapper" data-carousel-wrapper>
+                <ul
+                  class="product-carousel__track"
+                  data-carousel-track
+                  role="list"
+                  aria-label="{{ tab.settings.tab_label | default: col.title | escape }}"
+                >
+                  {%- if col != blank and col.products_count > 0 -%}
+                    {%- for product in col.products limit: products_limit -%}
+                      <li class="product-carousel__slide" data-carousel-slide>
+                        {%- render 'product-card', product: product -%}
+                      </li>
+                    {%- endfor -%}
+                  {%- else -%}
+                    {%- for i in (1..4) -%}
+                      <li class="product-carousel__slide" data-carousel-slide>
+                        <div class="pc-placeholder-card">
+                          <div class="pc-placeholder-card__image">
+                            {{ 'product-' | append: i | placeholder_svg_tag: 'pc-placeholder-card__svg' }}
+                          </div>
+                          <div class="pc-placeholder-card__body">
+                            <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
+                            <div class="pc-placeholder-card__line pc-placeholder-card__line--title pc-placeholder-card__line--title-short"></div>
+                            <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
+                          </div>
+                        </div>
+                      </li>
+                    {%- endfor -%}
+                  {%- endif -%}
+                </ul>
+              </div>
+
+              {%- if show_side_arrows -%}
+                <button
+                  class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-next"
+                  type="button"
+                  aria-label="Next"
+                  data-carousel-next
+                >
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              {%- endif -%}
+
+            </div>
+
+            {%- if show_bottom_arrows -%}
+              <div class="product-carousel__nav">
+                <div class="product-carousel__dots" data-carousel-dots></div>
+                <div class="product-carousel__arrows">
+                  <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev>
+                    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next>
+                    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            {%- endif -%}
+
+          </div><!-- /.product-carousel__panel -->
         {%- endfor -%}
 
-    {%- endcase -%}
-  </div>
+        {%- comment -%}── Fallback: no tab blocks defined ──{%- endcomment -%}
+        {%- if tab_blocks.size == 0 -%}
+          <div class="product-carousel__stage{% if show_side_arrows %} product-carousel__stage--side-arrows{% endif %}">
 
-</div>
+            {%- if show_side_arrows -%}
+              <button
+                class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-prev"
+                type="button"
+                aria-label="Previous"
+                data-carousel-prev
+                disabled
+              >
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            {%- endif -%}
+
+            <div class="product-carousel__track-wrapper" data-carousel-wrapper>
+              <ul class="product-carousel__track" data-carousel-track role="list">
+                {%- for i in (1..4) -%}
+                  <li class="product-carousel__slide" data-carousel-slide>
+                    <div class="pc-placeholder-card">
+                      <div class="pc-placeholder-card__image">{{ 'product-' | append: i | placeholder_svg_tag: 'pc-placeholder-card__svg' }}</div>
+                      <div class="pc-placeholder-card__body">
+                        <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
+                        <div class="pc-placeholder-card__line pc-placeholder-card__line--title-short"></div>
+                        <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
+                      </div>
+                    </div>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+
+            {%- if show_side_arrows -%}
+              <button
+                class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-next"
+                type="button"
+                aria-label="Next"
+                data-carousel-next
+              >
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            {%- endif -%}
+
+            {%- if show_bottom_arrows -%}
+              <div class="product-carousel__nav">
+                <div class="product-carousel__dots" data-carousel-dots></div>
+                <div class="product-carousel__arrows">
+                  <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+              </div>
+            {%- endif -%}
+
+          </div>
+        {%- endif -%}
+
+      </div><!-- /.product-carousel__carousel-col -->
+    </div><!-- /.product-carousel__layout -->
+
+  </section>
+</div><!-- /.promo-carousel-cell -->
