@@ -151,21 +151,25 @@
             {%- render 'sub-collections-carousel' -%}
 
             {%- comment -%}
-              Build a position -> banner-blocks map so the loop below can
-              splice banners in at merchant-chosen slots without breaking
-              Liquid's single-pass iteration. Position is 1-based and means
-              "render this banner immediately before the Nth product on
-              this page." Multiple banners can share a position; all render,
-              in block order. Position 0 or blank means "don't show."
+              Build position -> block maps so the loop below can splice
+              both static banners and promo-carousels in at merchant-
+              chosen slots without breaking Liquid's single-pass
+              iteration. Position is 1-based and means "render this item
+              immediately before the Nth product on this page." Multiple
+              items can share a position; all render, in block order.
+              Position 0 or blank means "don't show."
 
-              NOTE: in-feed multi-product carousels are handled by the
-              standalone "Product Carousel" section (sections/product-carousel.liquid),
-              added as its own section above/below this one in the theme
-              editor — not as a block here. Keeping that logic out of this
-              file avoids two competing carousel implementations.
+              promo_carousel blocks are tabbed product carousels (see
+              snippets/promo-carousel.liquid). Each promo_carousel block
+              owns zero or more carousel_tab blocks — ownership is by
+              matching carousel_tab.settings.parent_position to the
+              promo_carousel's own settings.position, since Shopify
+              section blocks are a flat list and can't nest natively.
             {%- endcomment -%}
             {%- liquid
               assign banner_blocks = section.blocks | where: 'type', 'feed_banner'
+              assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
+              assign carousel_tab_blocks = section.blocks | where: 'type', 'carousel_tab'
             -%}
 
             <div class="collection-feed__grid">
@@ -181,6 +185,17 @@
                   {%- endif -%}
                 {%- endfor -%}
 
+                {%- comment -%} Render any promo-carousels assigned to this slot, before the product card {%- endcomment -%}
+                {%- for carousel in carousel_blocks -%}
+                  {%- liquid
+                    assign carousel_position = carousel.settings.position | default: 0
+                  -%}
+                  {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
+                    {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
+                    {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+                  {%- endif -%}
+                {%- endfor -%}
+
                 {%- render 'product-card', product: product -%}
 
               {%- else -%}
@@ -188,9 +203,9 @@
               {%- endfor -%}
 
               {%- comment -%}
-                Banners positioned at or beyond the total product count
-                render after the last product, in position order, so a
-                banner set to "position 999" effectively means "at the end."
+                Items positioned at or beyond the total product count
+                render after the last product, in position order, so an
+                item set to "position 999" effectively means "at the end."
                 Position 0 (unset) never renders.
               {%- endcomment -%}
               {%- assign product_count = collection.products.size -%}
@@ -202,11 +217,21 @@
                   {%- render 'feed-banner', block: banner -%}
                 {%- endif -%}
               {%- endfor -%}
+              {%- for carousel in carousel_blocks -%}
+                {%- liquid
+                  assign carousel_position = carousel.settings.position | default: 0
+                -%}
+                {%- if carousel_position > product_count and carousel_position > 0 -%}
+                  {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
+                  {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+                {%- endif -%}
+              {%- endfor -%}
             </div>
 
           </div>
 
         </div>
+
 
         {%- if paginate.pages > 1 -%}
           <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
