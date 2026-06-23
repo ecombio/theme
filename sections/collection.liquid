@@ -2,6 +2,38 @@
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
+<style>
+  .collection-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .collection-filters {
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--columns, 4), 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .collection-layout {
+      grid-template-columns: 1fr;
+    }
+    .collection-filters {
+      position: static;
+      max-height: none;
+    }
+  }
+</style>
+
 {%- liquid
   assign columns = section.settings.columns | default: 4
   assign active_tab = request.query_parameters['tab'] | default: 'products'
