@@ -8,13 +8,11 @@
   unless active_tab == 'products' or active_tab == 'articles'
     assign active_tab = 'products'
   endunless
-  assign feed_blog = section.settings.blog
 -%}
 
 <section class="collection-section">
   <div class="collection-page" data-collection-page data-active-tab="{{ active_tab }}">
 
-    {%- comment -%} ── TAB SWITCHER ── {%- endcomment -%}
     <div class="tab-switcher" role="tablist">
       <button
         class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
@@ -24,9 +22,7 @@
         id="tab-products"
         data-tab="products"
         tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
-      >
-        {{ section.settings.tab_products_label | default: 'Products' }}
-      </button>
+      >{{ section.settings.tab_products_label | default: 'Products' }}</button>
       <button
         class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
         role="tab"
@@ -35,40 +31,41 @@
         id="tab-articles"
         data-tab="articles"
         tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
-      >
-        {{ section.settings.tab_articles_label | default: 'Articles' }}
-      </button>
+      >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
     </div>
 
-    {%- comment -%} ── PRODUCTS PANEL ── {%- endcomment -%}
-    <div
-      id="panel-products"
-      role="tabpanel"
-      aria-labelledby="tab-products"
-      data-panel="products"
-      {% if active_tab != 'products' %}hidden{% endif %}
-    >
-      {%- if collection.products.size > 0 -%}
+    {%- comment -%} PRODUCTS PANEL {%- endcomment -%}
+    <div id="panel-products" role="tabpanel" aria-labelledby="tab-products" data-panel="products" {% if active_tab != 'products' %}hidden{% endif %}>
+      {%- paginate collection.products by section.settings.products_per_page -%}
+
         <div class="collection-layout" style="--columns: {{ columns }};">
 
-          {%- comment -%} ── FILTERS ── {%- endcomment -%}
-          <aside class="collection-filters">
-            {%- if section.settings.show_filters -%}
-              {%- form 'filter', collection, id: 'CollectionFiltersForm' -%}
+          {%- if section.settings.show_filters -%}
+            <aside class="collection-filters">
+
+              {%- if section.settings.show_sort -%}
+                <div class="filter-sort">
+                  <label for="SortBy">Sort</label>
+                  <select id="SortBy" data-sort>
+                    {%- for option in collection.sort_options -%}
+                      <option value="{{ option.value }}"{% if option.value == collection.sort_by %} selected{% endif %}>{{ option.name }}</option>
+                    {%- endfor -%}
+                  </select>
+                </div>
+              {%- endif -%}
+
+              {%- form 'filter', collection, id: 'FilterForm' -%}
                 {%- for filter in collection.filters -%}
-                  <details class="filter-group" {% if filter.active_values.size > 0 %}open{% endif %}>
+                  <details class="filter-group"{% if filter.active_values.size > 0 %} open{% endif %}>
                     <summary class="filter-group__label">
                       {{ filter.label }}
-                      {%- if filter.active_values.size > 0 -%}
-                        <span class="filter-group__count">{{ filter.active_values.size }}</span>
-                      {%- endif -%}
+                      {%- if filter.active_values.size > 0 -%}<span class="filter-group__badge">{{ filter.active_values.size }}</span>{%- endif -%}
                     </summary>
-                    <div class="filter-group__options">
+                    <div class="filter-group__body">
                       {%- case filter.type -%}
-
                         {%- when 'list' -%}
                           {%- for value in filter.values -%}
-                            <label class="filter-option {% if value.active %}filter-option--active{% endif %} {% if value.count == 0 and value.active == false %}filter-option--disabled{% endif %}">
+                            <label class="filter-option{% if value.active %} filter-option--active{% endif %}{% if value.count == 0 and value.active == false %} filter-option--disabled{% endif %}">
                               <input
                                 type="checkbox"
                                 name="{{ value.param_name }}"
@@ -76,44 +73,20 @@
                                 {% if value.active %}checked{% endif %}
                                 {% if value.count == 0 and value.active == false %}disabled{% endif %}
                               >
-                              <span class="filter-option__label">{{ value.label }}</span>
-                              <span class="filter-option__count">({{ value.count }})</span>
+                              {{ value.label }} <span>({{ value.count }})</span>
                             </label>
                           {%- endfor -%}
-
                         {%- when 'price_range' -%}
                           <div class="filter-price">
-                            <label>
-                              <span>Min</span>
-                              <input
-                                type="number"
-                                name="{{ filter.min_value.param_name }}"
-                                value="{{ filter.min_value.value | divided_by: 100.0 }}"
-                                min="0"
-                                max="{{ filter.range_max | divided_by: 100.0 }}"
-                                placeholder="0"
-                              >
-                            </label>
+                            <input type="number" name="{{ filter.min_value.param_name }}" value="{{ filter.min_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="0">
                             <span>–</span>
-                            <label>
-                              <span>Max</span>
-                              <input
-                                type="number"
-                                name="{{ filter.max_value.param_name }}"
-                                value="{{ filter.max_value.value | divided_by: 100.0 }}"
-                                min="0"
-                                max="{{ filter.range_max | divided_by: 100.0 }}"
-                                placeholder="{{ filter.range_max | divided_by: 100.0 }}"
-                              >
-                            </label>
+                            <input type="number" name="{{ filter.max_value.param_name }}" value="{{ filter.max_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="{{ filter.range_max | divided_by: 100.0 }}">
                           </div>
-
                       {%- endcase -%}
                     </div>
                   </details>
                 {%- endfor -%}
 
-                {%- comment -%} Active filter pills ── {%- endcomment -%}
                 {%- assign active_count = 0 -%}
                 {%- for filter in collection.filters -%}
                   {%- assign active_count = active_count | plus: filter.active_values.size -%}
@@ -122,9 +95,7 @@
                   <div class="filter-active">
                     {%- for filter in collection.filters -%}
                       {%- for value in filter.active_values -%}
-                        <a href="{{ value.url_to_remove }}" class="filter-pill">
-                          {{ value.label }} &times;
-                        </a>
+                        <a href="{{ value.url_to_remove }}" class="filter-pill">{{ value.label }} &times;</a>
                       {%- endfor -%}
                     {%- endfor -%}
                     <a href="{{ collection.url }}" class="filter-pill filter-pill--clear">Clear all</a>
@@ -133,84 +104,49 @@
 
                 <button type="submit" class="filter-submit">Apply</button>
               {%- endform -%}
-            {%- endif -%}
+            </aside>
+          {%- endif -%}
 
-            {%- comment -%} ── SORT ── {%- endcomment -%}
-            {%- if section.settings.show_sort -%}
-              <div class="collection-sort">
-                <label for="SortBy">Sort</label>
-                <select name="sort_by" id="SortBy" data-sort>
-                  {%- for option in collection.sort_options -%}
-                    <option
-                      value="{{ option.value }}"
-                      {% if option.value == collection.sort_by %}selected{% endif %}
-                    >
-                      {{ option.name }}
-                    </option>
-                  {%- endfor -%}
-                </select>
-              </div>
-            {%- endif -%}
-          </aside>
-
-          {%- comment -%} ── PRODUCT GRID ── {%- endcomment -%}
           <div class="product-grid">
-            {%- paginate collection.products by section.settings.products_per_page -%}
-              {%- for product in collection.products -%}
-                <div class="product-grid__item">
-                  {%- render 'product-card', product: product -%}
-                </div>
-              {%- endfor -%}
-
-              {%- if paginate.pages > 1 -%}
-                <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
-                  {%- if paginate.previous -%}
-                    <a href="{{ paginate.previous.url }}&tab=products" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
-                  {%- endif -%}
-                  {%- for part in paginate.parts -%}
-                    {%- if part.is_link -%}
-                      <a href="{{ part.url }}&tab=products" class="pagination__link">{{ part.title }}</a>
-                    {%- else -%}
-                      <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
-                    {%- endif -%}
-                  {%- endfor -%}
-                  {%- if paginate.next -%}
-                    <a href="{{ paginate.next.url }}&tab=products" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
-                  {%- endif -%}
-                </nav>
-              {%- endif -%}
-            {%- endpaginate -%}
+            {%- for product in collection.products -%}
+              {%- render 'product-card', product: product -%}
+            {%- else -%}
+              <p class="collection-empty">No products found.</p>
+            {%- endfor -%}
           </div>
 
         </div>
-      {%- else -%}
-        <p class="collection-empty">No products found.</p>
-      {%- endif -%}
+
+        {%- if paginate.pages > 1 -%}
+          <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+            {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}&tab=products" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>{%- endif -%}
+            {%- for part in paginate.parts -%}
+              {%- if part.is_link -%}
+                <a href="{{ part.url }}&tab=products" class="pagination__link">{{ part.title }}</a>
+              {%- else -%}
+                <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if paginate.next -%}<a href="{{ paginate.next.url }}&tab=products" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>{%- endif -%}
+          </nav>
+        {%- endif -%}
+
+      {%- endpaginate -%}
     </div>
 
-    {%- comment -%} ── ARTICLES PANEL ── {%- endcomment -%}
-    <div
-      id="panel-articles"
-      role="tabpanel"
-      aria-labelledby="tab-articles"
-      data-panel="articles"
-      {% if active_tab != 'articles' %}hidden{% endif %}
-    >
+    {%- comment -%} ARTICLES PANEL {%- endcomment -%}
+    <div id="panel-articles" role="tabpanel" aria-labelledby="tab-articles" data-panel="articles" {% if active_tab != 'articles' %}hidden{% endif %}>
+      {%- assign feed_blog = section.settings.blog -%}
       {%- if feed_blog != blank and feed_blog.articles.size > 0 -%}
         {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
           <div class="article-grid" style="--columns: {{ columns }};">
             {%- for article in feed_blog.articles -%}
-              <div class="article-grid__item">
-                {%- render 'article-card', article: article -%}
-              </div>
+              {%- render 'article-card', article: article -%}
             {%- endfor -%}
           </div>
-
           {%- if paginate.pages > 1 -%}
             <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
-              {%- if paginate.previous -%}
-                <a href="{{ paginate.previous.url }}&tab=articles" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
-              {%- endif -%}
+              {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}&tab=articles" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>{%- endif -%}
               {%- for part in paginate.parts -%}
                 {%- if part.is_link -%}
                   <a href="{{ part.url }}&tab=articles" class="pagination__link">{{ part.title }}</a>
@@ -218,9 +154,7 @@
                   <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
                 {%- endif -%}
               {%- endfor -%}
-              {%- if paginate.next -%}
-                <a href="{{ paginate.next.url }}&tab=articles" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
-              {%- endif -%}
+              {%- if paginate.next -%}<a href="{{ paginate.next.url }}&tab=articles" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>{%- endif -%}
             </nav>
           {%- endif -%}
         {%- endpaginate -%}
@@ -270,7 +204,6 @@
       });
     });
 
-    // Sort — auto-submit on change
     var sortSelect = page.querySelector('[data-sort]');
     if (sortSelect) {
       sortSelect.addEventListener('change', function () {
@@ -280,16 +213,13 @@
       });
     }
 
-    // Filter form — preserve tab param on submit
-    var filterForm = document.getElementById('CollectionFiltersForm');
+    var filterForm = document.getElementById('FilterForm');
     if (filterForm) {
       filterForm.addEventListener('submit', function (e) {
         e.preventDefault();
         var url = new URL(window.location.href);
-        var data = new FormData(filterForm);
-        // Clear existing filter params
         url.search = '';
-        data.forEach(function (val, key) { url.searchParams.append(key, val); });
+        new FormData(filterForm).forEach(function (val, key) { url.searchParams.append(key, val); });
         url.searchParams.set('tab', page.dataset.activeTab);
         window.location.href = url.toString();
       });
