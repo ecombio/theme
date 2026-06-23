@@ -1,0 +1,37 @@
+{%- comment -%}
+  snippets/compare-bar.liquid
+
+  Static shell only. All content (thumbnails, counter, remove
+  buttons) and all visibility/state toggling is handled at runtime
+  by assets/product-card.js → initCompare() / renderCompareBar().
+
+  IMPORTANT: render this once, globally — e.g. from layout/theme.liquid
+  right before </body>:
+
+      {% render 'compare-bar' %}
+
+  renderCompareBar() does `document.querySelector('.compare-bar')`
+  and bails out silently if it isn't found, so unlike the Quick View
+  modal (which product-card.js builds and injects itself), this
+  element must already exist in the page markup.
+
+  Do not add Liquid logic, loops, or extra markup here — the JS
+  owns everything inside .compare-bar__list and the counter.
+  Styling already lives in theme.css (no new CSS needed).
+{%- endcomment -%}
+<div class="compare-bar" role="region" aria-label="Compare products">
+  <div class="compare-bar__counter-wrap" aria-live="polite">
+    <span class="compare-bar__counter">0</span> selected
+  </div>
+
+  <ul class="compare-bar__list" aria-label="Products selected for comparison"></ul>
+
+  <div class="compare-bar__actions">
+    <button type="button" data-compare-clear aria-label="Clear all compared products">
+      Clear
+    </button>
+    <button type="button" data-compare-submit disabled aria-label="Compare selected products">
+      Compare
+    </button>
+  </div>
+</div>
