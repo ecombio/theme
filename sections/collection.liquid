@@ -1,6 +1,7 @@
 {{ 'collection.css' | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
+{{ 'sub-collections.css' | asset_url | stylesheet_tag }}
 
 <style>
   .collection-feed {
@@ -15,6 +16,10 @@
     top: 2rem;
     max-height: calc(100vh - 4rem);
     overflow-y: auto;
+  }
+
+  .collection-feed__main {
+    min-width: 0;
   }
 
   .collection-feed__grid {
@@ -139,12 +144,19 @@
             </aside>
           {%- endif -%}
 
-          <div class="collection-feed__grid">
-            {%- for product in collection.products -%}
-              {%- render 'product-card', product: product -%}
-            {%- else -%}
-              <p class="collection-empty">No products found.</p>
-            {%- endfor -%}
+          <div class="collection-feed__main">
+
+            {%- comment -%} Sub-collections carousel sits above the product grid only {%- endcomment -%}
+            {%- render 'sub-collections-carousel' -%}
+
+            <div class="collection-feed__grid">
+              {%- for product in collection.products -%}
+                {%- render 'product-card', product: product -%}
+              {%- else -%}
+                <p class="collection-empty">No products found.</p>
+              {%- endfor -%}
+            </div>
+
           </div>
 
         </div>
@@ -263,6 +275,29 @@
         : new URL(window.location.href).searchParams.get('tab') || 'products';
       activateTab(key, false);
     });
+
+    // Sub-collections carousel scroll controls
+    document.querySelectorAll('[data-sub-collections]').forEach(function (carousel) {
+      var track = carousel.querySelector('[data-sub-collections-track]');
+      var prev  = carousel.querySelector('[data-sub-collections-prev]');
+      var next  = carousel.querySelector('[data-sub-collections-next]');
+      if (!track) return;
+
+      function updateNavState() {
+        if (prev) prev.disabled = track.scrollLeft <= 4;
+        if (next) next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+      }
+
+      function scrollByAmount(dir) {
+        var cardWidth = track.firstElementChild ? track.firstElementChild.getBoundingClientRect().width : 120;
+        track.scrollBy({ left: dir * (cardWidth * 3 + 32), behavior: 'smooth' });
+      }
+
+      if (prev) prev.addEventListener('click', function () { scrollByAmount(-1); });
+      if (next) next.addEventListener('click', function () { scrollByAmount(1); });
+      track.addEventListener('scroll', updateNavState);
+      updateNavState();
+    });
   })();
 </script>
 
@@ -316,6 +351,24 @@
     },
     {
       "type": "header",
+      "content": "Sub-collections"
+    },
+    {
+      "type": "select",
+      "id": "sub_collection_shape",
+      "label": "Sub-collection image shape",
+      "options": [
+        { "value": "square", "label": "Square (rounded corners)" },
+        { "value": "circle", "label": "Circle" }
+      ],
+      "default": "square"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add sub-collection blocks below. If a collection has no image, a default placeholder icon is shown automatically — or set a custom image per block."
+    },
+    {
+      "type": "header",
       "content": "Articles"
     },
     {
@@ -333,9 +386,35 @@
       "default": 16
     }
   ],
+  "blocks": [
+    {
+      "type": "sub_collection",
+      "name": "Sub-collection",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "custom_title",
+          "label": "Custom title",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "image_picker",
+          "id": "custom_image",
+          "label": "Custom image",
+          "info": "Leave blank to use the collection's featured image. If neither is set, a default placeholder is shown."
+        }
+      ]
+    }
+  ],
   "presets": [
     {
-      "name": "Collection"
+      "name": "Collection",
+      "blocks": []
     }
   ]
 }
