@@ -4,6 +4,11 @@
    Keep this file small and focused: resets, box model, and
    anything needed to prevent layout shift on first paint.
    All component styles live in theme.css or their own assets.
+
+   CSS custom properties (--color-*, --font-*) are set on :root
+   by the inline <style> block in theme.liquid, sourced from
+   settings_schema.json. Use them here and in every section/
+   snippet instead of hardcoded values.
    ========================================================== */
 
 /* ── Reset & box model ── */
@@ -19,12 +24,17 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
-               sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  font-size: 16px;
+
+  /* Global theme settings via CSS custom properties */
+  background-color: var(--color-background, #ffffff);
+  color:            var(--color-foreground, #111827);
+  font-family:      var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji');
+  font-weight:      var(--font-primary-weight, 400);
+  font-style:       var(--font-primary-style, normal);
+
+  font-size: var(--font-size-base, 16px);
   line-height: 1.5;
-  color: #111827;
-  background: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
