@@ -1,0 +1,362 @@
+{%- comment -%}
+  sections/promo-banner.liquid
+
+  A full-width promotional banner section designed to be dropped anywhere
+  in a collection template (or any page) as a visual break between content.
+
+  WIDTH STYLES
+  ────────────
+  Controls what fraction of the page-width container the banner occupies:
+    full   — 100% — spans edge to edge (default)
+    75     — 75%  — three-column span on a 4-col grid
+    50     — 50%  — two-column span
+    25     — 25%  — one-column span (portrait card)
+
+  For widths < 100%, POSITION controls horizontal alignment within the row:
+    left / center / right — maps to margin-left: 0 / auto / auto + margin-right: 0
+
+  ASPECT RATIO
+  ────────────
+  Automatically derived from width for the best visual proportion:
+    full  → 28:9  (ultra-wide cinematic strip)
+    75%   → 16:5  (wide landscape)
+    50%   → 16:7  (standard landscape)
+    25%   → 3:4   (portrait card)
+  Merchants can override via the "Custom aspect ratio" text setting
+  (format: "width:height", e.g. "21:9").
+
+  CONTENT LAYERS (all optional)
+  ────────────────────────────
+  • Background image (with focal-point-aware object-position)
+  • Overlay colour + opacity  (default: black 45%)
+  • Eyebrow label (small caps, above headline)
+  • Headline
+  • Subtext
+  • Primary CTA button + URL
+  • Secondary CTA (text link)
+
+  CONTENT ALIGNMENT
+  ─────────────────
+  text_align setting (left / center / right) controls horizontal
+  alignment of the text block within the banner. Independent of the
+  banner's own position on the page.
+
+  CONTENT VERTICAL POSITION
+  ──────────────────────────
+  text_valign setting (top / middle / bottom) controls where the
+  text block sits vertically inside the banner.
+
+  NO JS — pure CSS + Liquid. Reduced motion respected.
+
+  Asset placement:
+    sections/promo-banner.liquid  ← this file
+    assets/promo-banner.css       ← styles
+{%- endcomment -%}
+
+{{ 'promo-banner.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign width     = section.settings.banner_width
+  assign position  = section.settings.banner_position
+  assign text_align  = section.settings.text_align
+  assign text_valign = section.settings.text_valign
+  assign has_image   = section.settings.bg_image
+  assign overlay_color   = section.settings.overlay_color
+  assign overlay_opacity = section.settings.overlay_opacity | divided_by: 100.0
+
+  comment
+    Derive default aspect ratio from width unless merchant overrides
+  endcomment
+  assign custom_ratio = section.settings.custom_ratio | strip
+  if custom_ratio != blank
+    assign ratio_parts = custom_ratio | split: ':'
+    assign ratio_w = ratio_parts[0] | times: 1.0
+    assign ratio_h = ratio_parts[1] | times: 1.0
+    assign aspect  = ratio_w | append: '/' | append: ratio_h
+  elsif width == '25'
+    assign aspect = '3/4'
+  elsif width == '50'
+    assign aspect = '16/7'
+  elsif width == '75'
+    assign aspect = '16/5'
+  else
+    assign aspect = '28/9'
+  endif
+-%}
+
+<div
+  class="promo-banner page-width"
+  data-section-id="{{ section.id }}"
+  data-section-type="promo-banner"
+>
+  <div
+    class="promo-banner__frame promo-banner__frame--w{{ width }} promo-banner__frame--pos-{{ position }}"
+    style="--promo-aspect: {{ aspect }};"
+  >
+
+    {%- comment -%}── Background ────────────────────────────────────────────{%- endcomment -%}
+    <div class="promo-banner__bg">
+      {%- if has_image -%}
+        {%- assign focal = section.settings.bg_image.presentation.focal_point | default: '50% 50%' -%}
+        {%- assign img_alt = section.settings.headline | default: section.settings.eyebrow | escape -%}
+        {{
+          section.settings.bg_image
+          | image_url: width: 2000
+          | image_tag:
+            class: 'promo-banner__img',
+            loading: 'lazy',
+            widths: '600,900,1200,1600,2000',
+            sizes: '100vw',
+            alt: img_alt,
+            style: 'object-position: ' | append: focal
+        }}
+      {%- else -%}
+        {%- comment -%} Fallback: CSS gradient placeholder {%- endcomment -%}
+        <div class="promo-banner__img-placeholder" aria-hidden="true"></div>
+      {%- endif -%}
+
+      {%- comment -%}── Colour overlay ────────────────────────────────────{%- endcomment -%}
+      {%- assign overlay_rgb = overlay_color | color_to_rgb | remove: 'rgb(' | remove: ')' -%}
+      <div
+        class="promo-banner__overlay"
+        aria-hidden="true"
+        style="background: rgba({{ overlay_rgb }}, {{ overlay_opacity }});"
+      ></div>
+    </div>
+
+    {%- comment -%}── Content ───────────────────────────────────────────────{%- endcomment -%}
+    <div class="promo-banner__content promo-banner__content--{{ text_align }} promo-banner__content--{{ text_valign }}">
+
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="promo-banner__eyebrow">{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.headline != blank -%}
+        <{{ section.settings.heading_tag }} class="promo-banner__headline">
+          {{ section.settings.headline }}
+        </{{ section.settings.heading_tag }}>
+      {%- endif -%}
+
+      {%- if section.settings.subtext != blank -%}
+        <p class="promo-banner__subtext">{{ section.settings.subtext }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.cta_label != blank and section.settings.cta_url != blank -%}
+        <div class="promo-banner__ctas">
+          <a
+            class="promo-banner__cta promo-banner__cta--primary"
+            href="{{ section.settings.cta_url }}"
+            {% if section.settings.cta_new_tab %}target="_blank" rel="noopener"{% endif %}
+          >
+            {{ section.settings.cta_label }}
+          </a>
+          {%- if section.settings.cta2_label != blank and section.settings.cta2_url != blank -%}
+            <a
+              class="promo-banner__cta promo-banner__cta--secondary"
+              href="{{ section.settings.cta2_url }}"
+              {% if section.settings.cta_new_tab %}target="_blank" rel="noopener"{% endif %}
+            >
+              {{ section.settings.cta2_label }}
+            </a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+    </div><!-- /.promo-banner__content -->
+
+  </div><!-- /.promo-banner__frame -->
+</div><!-- /.promo-banner -->
+
+{% schema %}
+{
+  "name": "Promo Banner",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Width & position"
+    },
+    {
+      "type": "select",
+      "id": "banner_width",
+      "label": "Banner width",
+      "options": [
+        { "value": "full", "label": "Full row — 100%" },
+        { "value": "75",   "label": "3 cards — 75%" },
+        { "value": "50",   "label": "2 cards — 50%" },
+        { "value": "25",   "label": "1 card — 25%" }
+      ],
+      "default": "full",
+      "info": "Sets how much horizontal space the banner occupies. Percentages align with a standard 4-column product grid."
+    },
+    {
+      "type": "select",
+      "id": "banner_position",
+      "label": "Horizontal position",
+      "options": [
+        { "value": "left",   "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right",  "label": "Right" }
+      ],
+      "default": "left",
+      "info": "Only applies when width is less than Full row."
+    },
+    {
+      "type": "text",
+      "id": "custom_ratio",
+      "label": "Custom aspect ratio",
+      "placeholder": "e.g. 21:9",
+      "info": "Leave blank to use the automatic ratio for the chosen width. Format: width:height"
+    },
+    {
+      "type": "header",
+      "content": "Background"
+    },
+    {
+      "type": "image_picker",
+      "id": "bg_image",
+      "label": "Background image"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay colour",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "default": 45,
+      "unit": "%"
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "select",
+      "id": "text_align",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left",   "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right",  "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "text_valign",
+      "label": "Vertical position",
+      "options": [
+        { "value": "top",    "label": "Top" },
+        { "value": "middle", "label": "Middle" },
+        { "value": "bottom", "label": "Bottom" }
+      ],
+      "default": "bottom"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow label",
+      "placeholder": "e.g. New arrivals"
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Headline",
+      "placeholder": "e.g. Ride further, faster."
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Headline tag",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "text",
+      "id": "subtext",
+      "label": "Subtext",
+      "placeholder": "e.g. Shop the full electric bike range."
+    },
+    {
+      "type": "header",
+      "content": "Call to action"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Primary button label",
+      "placeholder": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "Primary button URL"
+    },
+    {
+      "type": "text",
+      "id": "cta2_label",
+      "label": "Secondary link label",
+      "placeholder": "Learn more"
+    },
+    {
+      "type": "url",
+      "id": "cta2_url",
+      "label": "Secondary link URL"
+    },
+    {
+      "type": "checkbox",
+      "id": "cta_new_tab",
+      "label": "Open links in new tab",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "default": 24,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "default": 24,
+      "unit": "px"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Promo Banner — Full",
+      "settings": { "banner_width": "full", "banner_position": "left" }
+    },
+    {
+      "name": "Promo Banner — Half",
+      "settings": { "banner_width": "50", "banner_position": "left" }
+    },
+    {
+      "name": "Promo Banner — Quarter",
+      "settings": { "banner_width": "25", "banner_position": "left" }
+    }
+  ]
+}
+{% endschema %}
