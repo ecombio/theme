@@ -1,55 +1,23 @@
 <header class="header" data-header>
 
-  {%- comment -%} ── TOP BAR: promo text + account ── {%- endcomment -%}
+  {%- comment -%} ── TOP BAR: account icon only ── {%- endcomment -%}
   <div class="header__top">
     <div class="header__top-inner page-width">
-      {%- if section.settings.promo_text != blank -%}
-        <p class="header__promo">{{ section.settings.promo_text }}</p>
-      {%- endif -%}
-
       <div class="header__top-icons">
         {%- if shop.customer_accounts_enabled -%}
-          <shopify-account menu="{{ section.settings.customer_account_menu }}">
+          <a href="{{ routes.account_url }}" class="header__account" aria-label="Account">
             {{ 'icon-account.svg' | inline_asset_content }}
-          </shopify-account>
+          </a>
         {%- endif -%}
       </div>
     </div>
   </div>
 
-  {%- comment -%} ── MIDDLE BAR: logo + cart ── {%- endcomment -%}
+  {%- comment -%} ── MIDDLE BAR: centered logo + cart ── {%- endcomment -%}
   <div class="header__middle">
     <div class="header__middle-inner page-width">
-      <h2 class="header__title">
-        {{ shop.name | link_to: routes.root_url }}
-      </h2>
 
-      <div class="header__middle-icons">
-        <button
-          class="header__search-toggle"
-          aria-label="Search"
-          aria-expanded="false"
-          aria-controls="header-search-panel"
-          data-search-toggle
-        >
-          {{ 'icon-search.svg' | inline_asset_content }}
-        </button>
-
-        <a
-          href="{{ routes.cart_url }}"
-          class="header__cart"
-          aria-label="Cart ({{ cart.item_count }})"
-          data-cart-icon-btn
-        >
-          {%- if cart.item_count > 0 -%}
-            <span class="header__cart-count" aria-hidden="true" data-cart-count>{{ cart.item_count }}</span>
-          {%- else -%}
-            <span class="header__cart-count header__cart-count--hidden" aria-hidden="true" data-cart-count></span>
-          {%- endif -%}
-          {{ 'icon-cart.svg' | inline_asset_content }}
-        </a>
-
-        {%- comment -%} Mobile menu toggle — visible on small screens only {%- endcomment -%}
+      <div class="header__middle-side header__middle-side--left">
         <button
           class="header__menu-toggle"
           aria-label="Toggle menu"
@@ -62,6 +30,27 @@
           <span class="header__menu-toggle-bar"></span>
         </button>
       </div>
+
+      <h2 class="header__title">
+        {{ shop.name | link_to: routes.root_url }}
+      </h2>
+
+      <div class="header__middle-side header__middle-side--right">
+        <a
+          href="{{ routes.cart_url }}"
+          class="header__cart"
+          aria-label="Cart ({{ cart.item_count }})"
+          data-cart-icon-btn
+        >
+          {{ 'icon-cart.svg' | inline_asset_content }}
+          {%- if cart.item_count > 0 -%}
+            <span class="header__cart-count" aria-hidden="true" data-cart-count>{{ cart.item_count }}</span>
+          {%- else -%}
+            <span class="header__cart-count header__cart-count--hidden" aria-hidden="true" data-cart-count></span>
+          {%- endif -%}
+        </a>
+      </div>
+
     </div>
   </div>
 
@@ -85,72 +74,6 @@
     </div>
   </nav>
 
-  {%- comment -%}
-    ── SEARCH PANEL: flyout below header, opened by the toggle above.
-    Markup is intentionally flat (not nested inside header__bottom) so its
-    z-index/positioning in header.css is independent of the mobile nav state.
-  {%- endcomment -%}
-  <div
-    id="header-search-panel"
-    class="header__search-panel"
-    data-search-panel
-    hidden
-  >
-    <div class="header__search-panel-inner page-width">
-      <form
-        action="{{ routes.search_url }}"
-        method="get"
-        role="search"
-        class="header__search-form"
-        data-search-form
-      >
-        <svg class="header__search-form-icon" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="7"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          type="search"
-          name="q"
-          class="header__search-input"
-          placeholder="Search products, collections, and more"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          aria-label="Search"
-          aria-describedby="header-search-status"
-          data-search-input
-        >
-        <input type="hidden" name="type" value="product,article,page,collection">
-        <input type="hidden" name="options[prefix]" value="last">
-
-        <button type="button" class="header__search-clear" aria-label="Clear search" data-search-clear hidden>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-
-        <button type="button" class="header__search-close" aria-label="Close search" data-search-close>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </form>
-
-      <p id="header-search-status" class="visually-hidden" data-search-status aria-live="polite"></p>
-
-      <div class="header__search-results" data-search-results>
-        <p class="header__search-hint" data-search-hint>
-          Start typing to see suggestions, or press Enter to see all results.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="header__search-backdrop" data-search-backdrop hidden></div>
-
 </header>
 
 {% schema %}
@@ -158,22 +81,10 @@
   "name": "t:general.header",
   "settings": [
     {
-      "type": "text",
-      "id": "promo_text",
-      "label": "Top bar promo text",
-      "placeholder": "Free shipping on orders over $50"
-    },
-    {
       "type": "link_list",
       "id": "menu",
       "label": "t:labels.menu",
       "default": "main-menu"
-    },
-    {
-      "type": "link_list",
-      "id": "customer_account_menu",
-      "label": "t:labels.customer_account_menu",
-      "default": "customer-account-main-menu"
     }
   ]
 }
