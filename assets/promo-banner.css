@@ -251,10 +251,28 @@
    Applied when the banner is embedded as a block inside
    sections/collection.liquid, living inside the product grid.
 
-   The <li class="collection-products__banner-slot"> controls
+   The <div class="collection-products__banner-slot"> controls
    how many grid columns the banner occupies. The frame itself
    just fills whatever space it's given — no width classes needed.
+
+   collection-products must be display:grid for banner slots to
+   participate as grid items alongside product cards.
    ============================================================ */
+
+/* Ensure the product grid container is a CSS grid.
+   collection.css may already set this; declaring it here is
+   safe — identical values are a no-op. */
+.collection-products {
+  display: grid;
+  grid-template-columns: repeat(var(--collection-products-columns-desktop, 4), 1fr);
+  gap: var(--collection-products-gap, 1.5rem);
+}
+
+@media (max-width: 767px) {
+  .collection-products {
+    grid-template-columns: repeat(var(--collection-products-columns-mobile, 2), 1fr);
+  }
+}
 
 /* Frame fills its grid cell completely */
 .promo-banner__frame--in-feed {
