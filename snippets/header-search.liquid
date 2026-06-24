@@ -3,30 +3,44 @@
   snippets/header-search.liquid
   ============================================================================
 
-  Search subsystem entry point and v1 implementation.
+  Search subsystem shell. Renders the form, input, submit button, and the
+  empty results container that predictive-search.js populates at runtime.
 
-  Public interface (caller never changes):
+  PUBLIC INTERFACE (caller in header.liquid never changes this):
     {% render 'header-search', placeholder: section.settings.search_placeholder %}
 
-  Variables:
-    placeholder  {String}  Input placeholder text. Passed from header.liquid.
+  PARAMETERS:
+    placeholder  {String}  Input placeholder text. Falls back to translation.
 
-  Data attributes (JS attachment points — no JS reads these in v1):
-    data-search-root     Subsystem mount point
-    data-search-input    Input field — v2 predictive will listen here
-    data-search-submit   Submit button — v2 predictive may intercept here
-    data-search-results  Hidden results container — v2 populates this
+  DATA ATTRIBUTE CONTRACT (JS attachment points — frozen across v1/v2/v3):
+    data-search-root     Subsystem mount point — both JS files read this
+    data-search-input    Text input
+    data-search-submit   Submit button
+    data-search-results  Results container — predictive-search.js populates this
 
-  V1 scope:
-    - Native Shopify form submit via routes.search_url
-    - No type scoping (searches all resource types)
-    - No JavaScript
-    - No predictive results
-    - Accessible markup
-    - Results container present but hidden — ready for v2 without markup changes
+  ASSET LOADING:
+    header-search.css    Shell styles (form, input, submit button)
+    header-search.js     Shell behaviour (typewriter, form submit)
+    predictive-search.css  Results panel styles
+    predictive-search.js   Fetch, inject, open/close panel
+
+    Loading order matters: CSS before JS, header before predictive.
+    Both JS files share the data-search-* contract; neither calls the other.
+
+  OWNS:
+    .header__search, .header__search-form, .header__search-input,
+    .header__search-submit, .header__search-results (DOM node only —
+    visual styles for .header__search-results live in predictive-search.css
+    because that component owns the panel boundary).
+
+  DOES NOT OWN:
+    .search-results__* — predictive-search.css / predictive-search.liquid
 
   ============================================================================
 {%- endcomment -%}
+
+{{- 'header-search.css'     | asset_url | stylesheet_tag -}}
+{{- 'predictive-search.css' | asset_url | stylesheet_tag -}}
 
 <div class="header__search" data-search-root>
 
@@ -41,7 +55,7 @@
       class="header__search-label visually-hidden"
       for="header-search-input"
     >
-      {{ 'general.search.label' | t }}
+      {{- 'general.search.label' | t -}}
     </label>
 
     <input
@@ -50,12 +64,14 @@
       id="header-search-input"
       type="search"
       name="q"
-      placeholder="{{ placeholder | escape }}"
+      placeholder="{{ placeholder | default: 'general.search.placeholder' | t | escape }}"
       autocomplete="off"
       autocorrect="off"
       autocapitalize="off"
       spellcheck="false"
       aria-label="{{ 'general.search.label' | t }}"
+      aria-owns="header-search-results"
+      aria-autocomplete="list"
     >
 
     <button
@@ -73,6 +89,8 @@
   <div
     class="header__search-results"
     data-search-results
+    id="header-search-results"
+    role="listbox"
     aria-live="polite"
     aria-atomic="true"
     hidden
@@ -80,3 +98,6 @@
   </div>
 
 </div>
+
+<script src="{{ 'header-search.js'     | asset_url }}" defer></script>
+<script src="{{ 'predictive-search.js' | asset_url }}" defer></script>
