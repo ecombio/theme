@@ -26,6 +26,14 @@
     so they align perfectly with the product cards beneath them. No
     separate grid wrapper or column settings are needed for this style.
 
+  PROMO BANNER BLOCKS
+  ───────────────────
+  Merchants can add one or more "Promo Banner" blocks in the theme editor.
+  Each block is rendered as a full-width break inside the product grid,
+  after every N products (controlled by banner_after_product on each block).
+  The block shares all settings with the standalone promo-banner section
+  and delegates markup to snippets/promo-banner.liquid.
+
   DATA SOURCE
   ───────────
   collection.metafields.custom.sub_collections.value
@@ -41,9 +49,10 @@
 
   ASSET OWNERSHIP
   ───────────────
-  collection.css      — layout, sidebar, toolbar, pagination
-  sub-collection.css  — card styles (both styles share the same classes)
-  product-card.css    — product card
+  collection.css       — layout, sidebar, toolbar, pagination
+  sub-collection.css   — card styles (both styles share the same classes)
+  product-card.css     — product card
+  promo-banner.css     — banner styles (loaded when banner blocks exist)
   product-carousel.css/js — loaded only when carousel blocks exist
 {%- endcomment -%}
 
@@ -51,7 +60,8 @@
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign carousel_blocks  = section.blocks | where: 'type', 'carousel'
+  assign carousel_blocks = section.blocks | where: 'type', 'carousel'
+  assign banner_blocks   = section.blocks | where: 'type', 'promo_banner'
   assign show_sub         = section.settings.show_sub_collections
   assign sub_style        = section.settings.sub_display_style
   assign sub_collections  = collection.metafields.custom.sub_collections.value
@@ -62,6 +72,9 @@
 
 {%- if carousel_blocks.size > 0 -%}
   {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+{%- if banner_blocks.size > 0 -%}
+  {{ 'promo-banner.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 {%- if show_sub and sub_collections.size > 0 -%}
   {{ 'sub-collection.css' | asset_url | stylesheet_tag }}
@@ -101,7 +114,7 @@
                   | image_tag:
                     class: 'sub-collection__img',
                     loading: 'lazy',
-                    widths: '200, 300, 400, 600, 800',
+                    widths: '200,300,400,600,800',
                     sizes: _sizes,
                     alt: sub.title
                 }}
@@ -245,7 +258,7 @@
                         | image_tag:
                           class: 'sub-collection__img',
                           loading: 'lazy',
-                          widths: '200, 300, 400, 600, 800',
+                          widths: '200,300,400,600,800',
                           sizes: _sizes,
                           alt: sub.title
                       }}
@@ -275,15 +288,40 @@
           class="collection-products"
           style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
         >
+          {%- comment -%}── Promo banners: render before the product feed if position = 'top' ──{%- endcomment -%}
+          {%- for block in banner_blocks -%}
+            {%- if block.settings.banner_position_in_feed == 'top' -%}
+              <li class="collection-products__banner-slot" {{ block.shopify_attributes }}>
+                {%- render 'promo-banner',
+                  banner_settings:   block.settings,
+                  banner_section_id: block.id
+                -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+
           {%- render 'product-feed',
             products: collection.products,
             show_quickview: section.settings.show_quickview,
             show_compare: section.settings.show_compare,
             show_eta: section.settings.show_eta,
             carousel_blocks: carousel_blocks,
+            banner_blocks: banner_blocks,
             carousel_interval: section.settings.carousel_interval,
             fallback_collection: collection
           -%}
+
+          {%- comment -%}── Promo banners: render after the product feed if position = 'bottom' ──{%- endcomment -%}
+          {%- for block in banner_blocks -%}
+            {%- if block.settings.banner_position_in_feed == 'bottom' -%}
+              <li class="collection-products__banner-slot" {{ block.shopify_attributes }}>
+                {%- render 'promo-banner',
+                  banner_settings:   block.settings,
+                  banner_section_id: block.id
+                -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
 
         </div>
 
@@ -517,6 +555,193 @@
           "type": "url",
           "id": "banner_link",
           "label": "Banner link"
+        }
+      ]
+    },
+    {
+      "type": "promo_banner",
+      "name": "Promo Banner",
+      "settings": [
+        {
+          "type": "select",
+          "id": "banner_position_in_feed",
+          "label": "Position in collection",
+          "options": [
+            { "value": "top",    "label": "Top — before all products" },
+            { "value": "bottom", "label": "Bottom — after all products" }
+          ],
+          "default": "top",
+          "info": "Controls where the banner appears relative to the product grid on this page."
+        },
+        {
+          "type": "header",
+          "content": "Width & position"
+        },
+        {
+          "type": "select",
+          "id": "banner_width",
+          "label": "Banner width",
+          "options": [
+            { "value": "full", "label": "Full row — 100%" },
+            { "value": "75",   "label": "3 cards — 75%" },
+            { "value": "50",   "label": "2 cards — 50%" },
+            { "value": "25",   "label": "1 card — 25%" }
+          ],
+          "default": "full"
+        },
+        {
+          "type": "select",
+          "id": "banner_position",
+          "label": "Horizontal position",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right" }
+          ],
+          "default": "left",
+          "info": "Only applies when width is less than Full row."
+        },
+        {
+          "type": "text",
+          "id": "custom_ratio",
+          "label": "Custom aspect ratio",
+          "placeholder": "e.g. 21:9",
+          "info": "Leave blank to use the automatic ratio. Format: width:height"
+        },
+        {
+          "type": "header",
+          "content": "Background"
+        },
+        {
+          "type": "image_picker",
+          "id": "bg_image",
+          "label": "Background image"
+        },
+        {
+          "type": "color",
+          "id": "overlay_color",
+          "label": "Overlay colour",
+          "default": "#000000"
+        },
+        {
+          "type": "range",
+          "id": "overlay_opacity",
+          "label": "Overlay opacity",
+          "min": 0,
+          "max": 90,
+          "step": 5,
+          "default": 45,
+          "unit": "%"
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "select",
+          "id": "text_align",
+          "label": "Text alignment",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right" }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "select",
+          "id": "text_valign",
+          "label": "Vertical position",
+          "options": [
+            { "value": "top",    "label": "Top" },
+            { "value": "middle", "label": "Middle" },
+            { "value": "bottom", "label": "Bottom" }
+          ],
+          "default": "bottom"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow label",
+          "placeholder": "e.g. New arrivals"
+        },
+        {
+          "type": "text",
+          "id": "headline",
+          "label": "Headline",
+          "placeholder": "e.g. Ride further, faster."
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "Headline tag",
+          "options": [
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "text",
+          "id": "subtext",
+          "label": "Subtext",
+          "placeholder": "e.g. Shop the full electric bike range."
+        },
+        {
+          "type": "header",
+          "content": "Call to action"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "Primary button label",
+          "placeholder": "Shop now"
+        },
+        {
+          "type": "url",
+          "id": "cta_url",
+          "label": "Primary button URL"
+        },
+        {
+          "type": "text",
+          "id": "cta2_label",
+          "label": "Secondary link label",
+          "placeholder": "Learn more"
+        },
+        {
+          "type": "url",
+          "id": "cta2_url",
+          "label": "Secondary link URL"
+        },
+        {
+          "type": "checkbox",
+          "id": "cta_new_tab",
+          "label": "Open links in new tab",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "Spacing"
+        },
+        {
+          "type": "range",
+          "id": "padding_top",
+          "label": "Padding top",
+          "min": 0,
+          "max": 80,
+          "step": 4,
+          "default": 24,
+          "unit": "px"
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "label": "Padding bottom",
+          "min": 0,
+          "max": 80,
+          "step": 4,
+          "default": 24,
+          "unit": "px"
         }
       ]
     }
