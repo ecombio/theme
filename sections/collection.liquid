@@ -217,16 +217,24 @@
       {%- endif -%}
 
       <div class="collection__main">
-        <div
-          class="collection-products"
-          style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
-        >
 
-          {%- comment -%}── STYLE 2: sub-collection cards in-feed, first row(s) of the grid ──{%- endcomment -%}
-          {%- if show_sub and sub_style == 'in-feed' and sub_collections.size > 0 -%}
+        {%- comment -%}── STYLE 2: dedicated sub-collection row above the product grid ──
+          Sits inside collection__main (respects sidebar layout) but
+          outside collection-products so product cards start on a fresh row.
+          Mirrors the product grid column count for perfect visual alignment.
+        {%- endcomment -%}
+        {%- if show_sub and sub_style == 'in-feed' and sub_collections.size > 0 -%}
+          <ul
+            class="sub-collection__grid sub-collection__grid--dedicated"
+            style="
+              --sub-collection-columns-desktop: {{ section.settings.columns_desktop }};
+              --sub-collection-columns-mobile:  {{ section.settings.columns_mobile }};
+            "
+            role="list"
+          >
             {%- for sub in sub_collections -%}
-              <li class="sub-collection__item sub-collection__item--in-feed">
-                <a class="sub-collection__card sub-collection__card--in-feed" href="{{ sub.url }}">
+              <li class="sub-collection__item">
+                <a class="sub-collection__card" href="{{ sub.url }}">
                   <div class="sub-collection__img-zone">
                     {%- if sub.featured_image != blank -%}
                       {%- assign _prod_cols = section.settings.columns_desktop | append: '' -%}
@@ -260,8 +268,13 @@
                 </a>
               </li>
             {%- endfor -%}
-          {%- endif -%}
+          </ul>
+        {%- endif -%}
 
+        <div
+          class="collection-products"
+          style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
+        >
           {%- render 'product-feed',
             products: collection.products,
             show_quickview: section.settings.show_quickview,
@@ -345,7 +358,7 @@
       "label": "Display style",
       "options": [
         { "value": "above", "label": "Style 1 — Above the product grid" },
-        { "value": "in-feed", "label": "Style 2 — In-feed (first row of grid)" }
+        { "value": "in-feed", "label": "Style 2 — Dedicated row above product grid" }
       ],
       "default": "above",
       "info": "Style 1 shows sub-collections as a separate row above the filter toolbar. Style 2 injects them as the first cards inside the product grid, sharing the same column layout."
