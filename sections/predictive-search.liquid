@@ -1,0 +1,131 @@
+{% comment %}
+  ============================================================================
+  sections/predictive-search.liquid
+  ============================================================================
+
+  Fetched by predictive-search.js via:
+    /search/suggest?q=QUERY
+      &resources[type]=product,collection
+      &resources[limit]=4
+      &section_id=predictive-search
+
+  Two divisions: Products (up to 4) and Collections (up to 2).
+  Query suggestions removed — requires Shopify Advanced plan.
+
+  Matched terms: Shopify wraps hits in <em> via highlighted_title.
+  Styled navy in predictive-search.css via em selector.
+  ============================================================================
+{% endcomment %}
+
+<div class="search-results" data-predictive-results>
+
+{%- assign has_products = predictive_search.resources.products.size -%}
+{%- assign has_collections = predictive_search.resources.collections.size -%}
+
+  {%- if has_products == false and has_collections == false -%}
+    <p class="search-results__empty">
+      {{- 'general.search.no_results' | t: terms: predictive_search.terms -}}
+    </p>
+
+  {%- else -%}
+
+    {%- if has_products -%}
+      <div class="search-results__section">
+        <p class="search-results__section-label">
+          {{- 'general.search.products' | t -}}
+        </p>
+        <ul class="search-results__list" role="listbox" aria-label="{{ 'general.search.products' | t }}">
+          {%- for product in predictive_search.resources.products limit: 4 -%}
+            <li class="search-results__item" role="option">
+              <a class="search-results__link" href="{{ product.url }}" data-search-result-item>
+
+                <div class="search-results__image-wrap">
+                  {%- if product.featured_image -%}
+                    <img
+                      class="search-results__image"
+                      src="{{ product.featured_image | image_url: width: 104 }}"
+                      alt="{{ product.featured_image.alt | escape }}"
+                      width="52"
+                      height="52"
+                      loading="lazy"
+                    >
+                  {%- else -%}
+                    <div class="search-results__image-placeholder" aria-hidden="true"></div>
+                  {%- endif -%}
+                </div>
+
+                <div class="search-results__info">
+                  <span class="search-results__title">
+                    {{- product.highlighted_title | default: product.title -}}
+                  </span>
+                  <span class="search-results__price">
+                    {%- if product.price_varies -%}
+                      {{ 'products.price.from' | t }} {{ product.price_min | money }}
+                    {%- else -%}
+                      {{ product.price | money }}
+                    {%- endif -%}
+                    {%- if product.compare_at_price > product.price -%}
+                      <span class="search-results__price--compare">
+                        {{- product.compare_at_price | money -}}
+                      </span>
+                    {%- endif -%}
+                  </span>
+                </div>
+
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    {%- if has_collections -%}
+      <div class="search-results__section">
+        <p class="search-results__section-label">
+          {{- 'general.search.collections' | t -}}
+        </p>
+        <ul class="search-results__list" role="listbox" aria-label="{{ 'general.search.collections' | t }}">
+          {%- for collection in predictive_search.resources.collections limit: 2 -%}
+            <li class="search-results__item" role="option">
+              <a class="search-results__link search-results__link--collection" href="{{ collection.url }}" data-search-result-item>
+                <div class="search-results__collection-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <rect x="3"  y="3"  width="7" height="7" rx="1" />
+                    <rect x="14" y="3"  width="7" height="7" rx="1" />
+                    <rect x="3"  y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                </div>
+                <span class="search-results__collection-title">
+                  {{- collection.highlighted_title | default: collection.title -}}
+                </span>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    <div class="search-results__footer">
+      <a
+        class="search-results__view-all"
+        href="{{ routes.search_url }}?q={{ predictive_search.terms | url_encode }}&type=product"
+      >
+        <span class="search-results__view-all-label">{{ 'general.search.view_all_for' | t }}</span>
+        <span class="search-results__view-all-term">&ldquo;{{ predictive_search.terms }}&rdquo;</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </a>
+    </div>
+
+  {%- endif -%}
+
+</div>
+
+{% schema %}
+{
+  "name": "Predictive search"
+}
+{% endschema %}
