@@ -11,9 +11,9 @@
     collection.url       →  routes.search_url
 
   EXTRA vs collection.liquid:
-    • Search form at the top (re-search without leaving the page)
     • "No results" empty state
     • Articles / Pages results block below the product grid (when present)
+    • No re-query form — header search bar is sticky and always visible
 
   ASSET OWNERSHIP (same as collection.liquid):
     collection.css     — layout, sidebar, toolbar, pagination
@@ -49,36 +49,6 @@
         {{ 'search.title' | t }}
       {%- endif -%}
     </h1>
-
-    {%- comment -%} Re-search form {%- endcomment -%}
-    <form
-      class="search__requery-form"
-      action="{{ routes.search_url }}"
-      method="get"
-      role="search"
-    >
-      <input type="hidden" name="type" value="product,article,page">
-      <div class="search__requery-inner">
-        <label class="visually-hidden" for="search-requery-input">
-          {{- 'general.search.label' | t -}}
-        </label>
-        <input
-          class="search__requery-input"
-          id="search-requery-input"
-          type="search"
-          name="q"
-          value="{{ search.terms | escape }}"
-          placeholder="{{ 'search.placeholder' | t }}"
-          autocomplete="off"
-        >
-        <button class="search__requery-submit" type="submit" aria-label="{{ 'search.submit' | t }}">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="10.5" cy="10.5" r="6.5"/>
-            <line x1="15.5" y1="15.5" x2="21" y2="21"/>
-          </svg>
-        </button>
-      </div>
-    </form>
   </div>
 
   {%- if search.performed == false -%}
@@ -322,6 +292,24 @@
         body.classList.toggle('collection__body--sidebar-closed', isOpen);
         sidebar.setAttribute('aria-hidden', String(isOpen));
       });
+    })();
+  </script>
+{%- endif -%}
+
+
+{%- comment -%}
+  Sync search term → header input
+  When the page loads, populate the sticky header search input with the
+  current search.terms so the user can see and edit their query there
+  rather than needing a second search bar on the page.
+{%- endcomment -%}
+{%- if search.performed and search.terms != blank -%}
+  <script>
+    (function () {
+      var headerInput = document.querySelector('[data-search-input]');
+      if (headerInput && !headerInput.value) {
+        headerInput.value = {{ search.terms | json }};
+      }
     })();
   </script>
 {%- endif -%}
