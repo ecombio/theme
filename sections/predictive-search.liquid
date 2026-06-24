@@ -6,113 +6,170 @@
   Server-side render template for the predictive search results panel.
   Fetched by predictive-search.js via:
     /search/suggest?q=QUERY
-      &resources[type]=product
-      &resources[limit]=5
+      &resources[type]=product,collection,query
+      &resources[limit]=4
       &section_id=predictive-search
 
-  Shopify renders this section and returns the HTML.
-  predictive-search.js injects the [data-predictive-results] node
-  into [data-search-results]. No client-side templating.
+  Three divisions rendered in priority order:
+    1. Query suggestions  — up to 2, with search icon and term highlight
+    2. Products           — up to 4, with image, highlighted title, price
+    3. Collections        — up to 2, with grid icon and highlighted title
 
-  VARIABLES:
-    predictive_search.resources.products  — up to 5 matched products
+  Highlighted matches: Shopify wraps matched text in <em> tags via
+  highlighted_title / highlighted_body_html. We style em with navy.
 
   OWNS:
-    .search-results__* — all styles live in predictive-search.css
-    [data-predictive-results] — JS injection anchor
+    .search-results__*    all styles live in predictive-search.css
+    [data-predictive-results]  JS injection anchor
 
   DOES NOT OWN:
-    .header__search-results — that container is header-search's concern
-    Any layout outside the results list
-
-  EXTENDS:
-    Articles, collections, queries can be added here later without
-    touching predictive-search.js or header-search.liquid.
-
+    .header__search-results   container boundary (predictive-search.css)
   ============================================================================
 {% endcomment %}
 
 <div class="search-results" data-predictive-results>
 
-  {%- if predictive_search.resources.products.size > 0 -%}
+  {%- assign has_queries     = false -%}
+  {%- assign has_products    = false -%}
+  {%- assign has_collections = false -%}
 
-    <ul
-      class="search-results__list"
-      role="listbox"
-      aria-label="{{ 'general.search.results' | t }}"
-    >
-      {%- for product in predictive_search.resources.products -%}
-        <li class="search-results__item" role="option">
+  {%- if predictive_search.resources.queries.size     > 0 -%}{%- assign has_queries     = true -%}{%- endif -%}
+  {%- if predictive_search.resources.products.size    > 0 -%}{%- assign has_products    = true -%}{%- endif -%}
+  {%- if predictive_search.resources.collections.size > 0 -%}{%- assign has_collections = true -%}{%- endif -%}
+
+  {%- unless has_queries or has_products or has_collections -%}
+    <p class="search-results__empty">
+      {{- 'general.search.no_results' | t: terms: predictive_search.terms -}}
+    </p>
+  {%- endunless -%}
+
+
+  {%- comment -%} ── DIVISION 1: QUERY SUGGESTIONS ── {%- endcomment -%}
+  {%- if has_queries -%}
+    <ul class="search-results__list" role="listbox" aria-label="{{ 'general.search.suggestions' | t }}">
+      {%- for query in predictive_search.resources.queries limit: 2 -%}
+        <li class="search-results__item search-results__item--query" role="option">
           <a
-            class="search-results__link"
-            href="{{ product.url }}"
+            class="search-results__link search-results__link--query"
+            href="{{ routes.search_url }}?q={{ query.text | url_encode }}&type=product"
             data-search-result-item
           >
-
-            <div class="search-results__image-wrap">
-              {%- if product.featured_image -%}
-                {%- assign img_url = product.featured_image | image_url: width: 104 -%}
-                {%- assign img_alt = product.featured_image.alt | escape -%}
-                <img
-                  class="search-results__image"
-                  src="{{ img_url }}"
-                  alt="{{ img_alt }}"
-                  width="52"
-                  height="52"
-                  loading="lazy"
-                >
-              {%- else -%}
-                <div
-                  class="search-results__image-placeholder"
-                  aria-hidden="true"
-                ></div>
-              {%- endif -%}
+            <div class="search-results__query-icon">
+              {%- render 'icon', name: 'search', size: 16 -%}
             </div>
-
-            <div class="search-results__info">
-              <span class="search-results__title">
-                {{- product.title | escape -}}
-              </span>
-
-              <span class="search-results__price">
-                {%- if product.price_varies -%}
-                  {{- 'products.price.from' | t }}
-                  {{ product.price_min | money -}}
-                {%- else -%}
-                  {{- product.price | money -}}
-                {%- endif -%}
-
-                {%- if product.compare_at_price > product.price -%}
-                  <span class="search-results__price--compare">
-                    {{- product.compare_at_price | money -}}
-                  </span>
-                {%- endif -%}
-              </span>
-            </div>
-
+            <span class="search-results__query-text">
+              {{- query.highlighted_text -}}
+            </span>
           </a>
         </li>
       {%- endfor -%}
     </ul>
+  {%- endif -%}
 
+
+  {%- comment -%} ── DIVISION 2: PRODUCTS ── {%- endcomment -%}
+  {%- if has_products -%}
+    <div class="search-results__section">
+      <p class="search-results__section-label">
+        {{- 'general.search.products' | t -}}
+      </p>
+      <ul class="search-results__list" role="listbox" aria-label="{{ 'general.search.products' | t }}">
+        {%- for product in predictive_search.resources.products limit: 4 -%}
+          <li class="search-results__item" role="option">
+            <a
+              class="search-results__link"
+              href="{{ product.url }}"
+              data-search-result-item
+            >
+
+              <div class="search-results__image-wrap">
+                {%- if product.featured_image -%}
+                  {%- assign img_url = product.featured_image | image_url: width: 104 -%}
+                  {%- assign img_alt = product.featured_image.alt | escape -%}
+                  <img
+                    class="search-results__image"
+                    src="{{ img_url }}"
+                    alt="{{ img_alt }}"
+                    width="52"
+                    height="52"
+                    loading="lazy"
+                  >
+                {%- else -%}
+                  <div class="search-results__image-placeholder" aria-hidden="true"></div>
+                {%- endif -%}
+              </div>
+
+              <div class="search-results__info">
+                <span class="search-results__title">
+                  {{- product.highlighted_title | default: product.title -}}
+                </span>
+                <span class="search-results__price">
+                  {%- if product.price_varies -%}
+                    {{- 'products.price.from' | t }}
+                    {{ product.price_min | money -}}
+                  {%- else -%}
+                    {{- product.price | money -}}
+                  {%- endif -%}
+                  {%- if product.compare_at_price > product.price -%}
+                    <span class="search-results__price--compare">
+                      {{- product.compare_at_price | money -}}
+                    </span>
+                  {%- endif -%}
+                </span>
+              </div>
+
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+
+
+  {%- comment -%} ── DIVISION 3: COLLECTIONS ── {%- endcomment -%}
+  {%- if has_collections -%}
+    <div class="search-results__section">
+      <p class="search-results__section-label">
+        {{- 'general.search.collections' | t -}}
+      </p>
+      <ul class="search-results__list" role="listbox" aria-label="{{ 'general.search.collections' | t }}">
+        {%- for collection in predictive_search.resources.collections limit: 2 -%}
+          <li class="search-results__item search-results__item--collection" role="option">
+            <a
+              class="search-results__link search-results__link--collection"
+              href="{{ collection.url }}"
+              data-search-result-item
+            >
+              <div class="search-results__collection-icon">
+                {%- render 'icon', name: 'collection', size: 18 -%}
+              </div>
+              <span class="search-results__collection-title">
+                {{- collection.highlighted_title | default: collection.title -}}
+              </span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+
+
+  {%- comment -%} ── FOOTER ── {%- endcomment -%}
+  {%- if has_queries or has_products or has_collections -%}
     <div class="search-results__footer">
       <a
         class="search-results__view-all"
         href="{{ routes.search_url }}?q={{ predictive_search.terms | url_encode }}&type=product"
       >
-        {{- 'general.search.view_all' | t }}
-        <span class="search-results__view-all-count">
-          ({{ predictive_search.resources.products.size }}+)
+        <span class="search-results__view-all-label">
+          {{- 'general.search.view_all_for' | t -}}
         </span>
+        <span class="search-results__view-all-term">
+          &ldquo;{{- predictive_search.terms -}}&rdquo;
+        </span>
+        {%- render 'icon', name: 'arrow-right', size: 16 -%}
       </a>
     </div>
-
-  {%- else -%}
-
-    <p class="search-results__empty">
-      {{- 'general.search.no_results' | t: terms: predictive_search.terms -}}
-    </p>
-
   {%- endif -%}
 
 </div>
