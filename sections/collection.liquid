@@ -288,15 +288,25 @@
           class="collection-products"
           style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
         >
-          {%- comment -%}── Promo banners: render before the product feed if position = 'top' ──{%- endcomment -%}
+          {%- comment -%}── Promo banners: render before the product feed if position = 'top' ──
+            Col-span class keys:
+              banner_width = '1'    → 1 column  (default, product-card sized)
+              banner_width = '2'    → 2 columns  (landscape, half-row)
+              banner_width = '3'    → 3 columns
+              banner_width = 'full' → all columns (full-width break)
+          {%- endcomment -%}
           {%- for block in banner_blocks -%}
             {%- if block.settings.banner_position_in_feed == 'top' -%}
-              <li class="collection-products__banner-slot" {{ block.shopify_attributes }}>
+              <div
+                class="collection-products__banner-slot collection-products__banner-slot--span-{{ block.settings.banner_width }}"
+                {{ block.shopify_attributes }}
+              >
                 {%- render 'promo-banner',
                   banner_settings:   block.settings,
-                  banner_section_id: block.id
+                  banner_section_id: block.id,
+                  banner_mode:       'in-feed'
                 -%}
-              </li>
+              </div>
             {%- endif -%}
           {%- endfor -%}
 
@@ -314,12 +324,16 @@
           {%- comment -%}── Promo banners: render after the product feed if position = 'bottom' ──{%- endcomment -%}
           {%- for block in banner_blocks -%}
             {%- if block.settings.banner_position_in_feed == 'bottom' -%}
-              <li class="collection-products__banner-slot" {{ block.shopify_attributes }}>
+              <div
+                class="collection-products__banner-slot collection-products__banner-slot--span-{{ block.settings.banner_width }}"
+                {{ block.shopify_attributes }}
+              >
                 {%- render 'promo-banner',
                   banner_settings:   block.settings,
-                  banner_section_id: block.id
+                  banner_section_id: block.id,
+                  banner_mode:       'in-feed'
                 -%}
-              </li>
+              </div>
             {%- endif -%}
           {%- endfor -%}
 
@@ -575,38 +589,27 @@
         },
         {
           "type": "header",
-          "content": "Width & position"
+          "content": "Size"
         },
         {
           "type": "select",
           "id": "banner_width",
-          "label": "Banner width",
+          "label": "Width",
           "options": [
-            { "value": "full", "label": "Full row — 100%" },
-            { "value": "75",   "label": "3 cards — 75%" },
-            { "value": "50",   "label": "2 cards — 50%" },
-            { "value": "25",   "label": "1 card — 25%" }
+            { "value": "1",    "label": "1 card — product card size (default)" },
+            { "value": "2",    "label": "2 cards — half row, landscape" },
+            { "value": "3",    "label": "3 cards — three-quarter row" },
+            { "value": "full", "label": "Full row — edge-to-edge banner" }
           ],
-          "default": "full"
-        },
-        {
-          "type": "select",
-          "id": "banner_position",
-          "label": "Horizontal position",
-          "options": [
-            { "value": "left",   "label": "Left" },
-            { "value": "center", "label": "Center" },
-            { "value": "right",  "label": "Right" }
-          ],
-          "default": "left",
-          "info": "Only applies when width is less than Full row."
+          "default": "1",
+          "info": "At 1 card the banner slots seamlessly into the product grid. Wider options create a landscape banner break."
         },
         {
           "type": "text",
           "id": "custom_ratio",
           "label": "Custom aspect ratio",
-          "placeholder": "e.g. 21:9",
-          "info": "Leave blank to use the automatic ratio. Format: width:height"
+          "placeholder": "e.g. 16:9",
+          "info": "Leave blank: 1-card uses square (1:1), wider widths use 16:7. Override with any ratio e.g. 4:3, 16:9."
         },
         {
           "type": "header",
