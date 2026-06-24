@@ -3,57 +3,72 @@
 
   Structure:
     sections/collection.liquid
-      ├─ collection__header          (title + description)
-      ├─ sub-collection__grid        (child collections — NEW, inline, above feed)
-      └─ collection__body            (sidebar + main, flex row)
-           ├─ collection__sidebar    (facet form, inlined — no snippet)
+      ├─ collection__header
+      ├─ sub-collection__grid [Style 1 only — above toolbar]
+      └─ collection__body
+           ├─ collection__sidebar
            └─ collection__main
-                └─ collection-products  (product-feed grid)
+                └─ collection-products
+                     ├─ [Style 2] sub-collection <li> items (first, in-feed)
+                     └─ product-feed <li> items
 
-  The sidebar is open by default. Clicking the "Filter" button in the
-  toolbar collapses it by toggling .collection__body--sidebar-closed on
-  the body element and aria-expanded on the button. The sidebar panel
-  itself also gets aria-hidden when collapsed.
+  SUB-COLLECTION DISPLAY STYLES
+  ──────────────────────────────
+  Style 1 — "Above grid"  (sub_display_style = 'above')
+    A standalone <ul class="sub-collection__grid"> is rendered between
+    the collection header and the toolbar. Uses its own CSS grid whose
+    column count is controlled by sub_columns_desktop / sub_columns_mobile.
 
-  Asset ownership:
-    • collection.css      — loaded HERE. Owns all layout, sidebar, filter UI,
-                            grid wrapper, toolbar, and pagination.
-    • sub-collection.css  — loaded HERE when show_sub_collections is on.
-                            Owns the child-collection card grid only.
-    • product-card.css / product-carousel.css — loaded HERE (section-scoped).
+  Style 2 — "In-feed"  (sub_display_style = 'in-feed')
+    Sub-collection cards are rendered as <li> items directly inside
+    .collection-products, before the product-feed output. They inherit
+    the product grid's column count (--collection-products-columns-*)
+    so they align perfectly with the product cards beneath them. No
+    separate grid wrapper or column settings are needed for this style.
 
-  SUB-COLLECTION GRID:
-  Driven by the custom metafield  collection.metafields.custom.sub_collections
-  (namespace: custom, key: sub_collections, type: list.collection_reference).
-  Merchants populate it in the Shopify admin under the "Sub Collections"
-  metafield definition. When the metafield is blank the grid is skipped
-  entirely (no empty-state markup is rendered inside collection.liquid —
-  the standalone sub-collection.liquid section handles its own empty state).
+  DATA SOURCE
+  ───────────
+  collection.metafields.custom.sub_collections.value
+  Namespace: custom  |  Key: sub_collections
+  Type: List · Collection reference
+  Merchants set this in the Shopify admin. When blank the grid/feed
+  items are silently skipped — no empty state rendered here.
 
-  The section setting "show_sub_collections" acts as an editor toggle so
-  merchants can hide the grid without clearing the metafield data. It also
-  controls whether sub-collection.css is loaded.
+  FALLBACK (no featured_image)
+  ────────────────────────────
+  Coloured tile with the collection's first letter. Colour is keyed
+  deterministically on handle.size mod 8. Pure CSS, no JS.
 
-  Fallback when a referenced collection has no featured_image: a coloured
-  tile with the first letter of the collection title (pure CSS, no JS).
+  ASSET OWNERSHIP
+  ───────────────
+  collection.css      — layout, sidebar, toolbar, pagination
+  sub-collection.css  — card styles (both styles share the same classes)
+  product-card.css    — product card
+  product-carousel.css/js — loaded only when carousel blocks exist
 {%- endcomment -%}
 
-{{ 'collection.css'  | asset_url | stylesheet_tag }}
+{{ 'collection.css'   | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
+
 {%- liquid
-  assign carousel_blocks   = section.blocks | where: 'type', 'carousel'
-  assign show_sub          = section.settings.show_sub_collections
-  assign sub_collections   = collection.metafields.custom.sub_collections.value
-  assign sub_show_count    = section.settings.sub_show_product_count
-  assign sub_cols_desktop  = section.settings.sub_columns_desktop
-  assign sub_cols_mobile   = section.settings.sub_columns_mobile
+  assign carousel_blocks  = section.blocks | where: 'type', 'carousel'
+  assign show_sub         = section.settings.show_sub_collections
+  assign sub_style        = section.settings.sub_display_style
+  assign sub_collections  = collection.metafields.custom.sub_collections.value
+  assign sub_show_count   = section.settings.sub_show_product_count
+  assign sub_cols_desktop = section.settings.sub_columns_desktop
+  assign sub_cols_mobile  = section.settings.sub_columns_mobile
 -%}
+
 {%- if carousel_blocks.size > 0 -%}
   {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 {%- if show_sub and sub_collections.size > 0 -%}
   {{ 'sub-collection.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
+
+{%- comment -%} Shared fallback palette — computed once, reused in both styles {%- endcomment -%}
+{%- assign _palette = '1,e0f2fe,0369a1|2,fef9c3,854d0e|3,dcfce7,166534|4,fce7f3,9d174d|5,ede9fe,5b21b6|6,ffedd5,9a3412|7,e0e7ff,3730a3|8,f0fdf4,15803d' | split: '|' -%}
 
 <div class="collection page-width" data-section-id="{{ section.id }}" data-section-type="collection">
 
@@ -64,8 +79,8 @@
     {%- endif -%}
   </div>
 
-  {%- comment -%}── Sub-collection grid — above toolbar + product feed ──{%- endcomment -%}
-  {%- if show_sub and sub_collections.size > 0 -%}
+  {%- comment -%}── STYLE 1: sub-collection grid above toolbar ──────────────{%- endcomment -%}
+  {%- if show_sub and sub_style == 'above' and sub_collections.size > 0 -%}
     <ul
       class="sub-collection__grid"
       style="
@@ -77,7 +92,6 @@
       {%- for sub in sub_collections -%}
         <li class="sub-collection__item">
           <a class="sub-collection__card" href="{{ sub.url }}">
-
             <div class="sub-collection__img-zone">
               {%- if sub.featured_image != blank -%}
                 {%- assign _sizes = '(max-width: 767px) calc(50vw - 1.5rem), calc((100vw - 4rem) / ' | append: sub_cols_desktop | append: ')' -%}
@@ -92,34 +106,21 @@
                     alt: sub.title
                 }}
               {%- else -%}
-                {%- comment -%}
-                  Fallback: coloured tile with the collection's first letter.
-                  Colour is derived deterministically from the collection handle
-                  using a palette of 8 hues (index = handle length mod 8).
-                  No JS or extra assets required.
-                {%- endcomment -%}
-                {%- assign _palette = '1,e0f2fe,0369a1|2,fef9c3,854d0e|3,dcfce7,166534|4,fce7f3,9d174d|5,ede9fe,5b21b6|6,ffedd5,9a3412|7,e0e7ff,3730a3|8,f0fdf4,15803d' | split: '|' -%}
-                {%- assign _idx = sub.handle.size | modulo: 8 -%}
+                {%- assign _idx  = sub.handle.size | modulo: 8 -%}
                 {%- assign _pair = _palette[_idx] | split: ',' -%}
-                {%- assign _bg = _pair[1] -%}
-                {%- assign _fg = _pair[2] -%}
                 <div
                   class="sub-collection__img-placeholder sub-collection__img-letter"
                   aria-hidden="true"
-                  style="background:#{{ _bg }}; color:#{{ _fg }};"
-                >
-                  {{ sub.title | slice: 0 | upcase }}
-                </div>
+                  style="background:#{{ _pair[1] }}; color:#{{ _pair[2] }};"
+                >{{ sub.title | slice: 0 | upcase }}</div>
               {%- endif -%}
             </div>
-
             <div class="sub-collection__card-body">
               <span class="sub-collection__card-title">{{ sub.title }}</span>
               {%- if sub_show_count -%}
                 <span class="sub-collection__card-count">{{ sub.products_count }} products</span>
               {%- endif -%}
             </div>
-
           </a>
         </li>
       {%- endfor -%}
@@ -127,8 +128,7 @@
   {%- endif -%}
 
   {%- comment -%}
-    Toolbar: lives above the sidebar/main split so it spans full width.
-    Contains the Filter toggle (which controls the sidebar) and the sort form.
+    Toolbar: spans full width above sidebar/main split.
   {%- endcomment -%}
   <div class="collection__toolbar">
     {%- if collection.filters.size > 0 -%}
@@ -161,8 +161,6 @@
             </option>
           {%- endfor -%}
         </select>
-
-        {%- comment -%} Preserve active facets when sort changes {%- endcomment -%}
         {%- for filter in collection.filters -%}
           {%- for value in filter.values -%}
             {%- if value.active -%}
@@ -178,7 +176,6 @@
 
     <div class="collection__body" id="CollectionBody">
 
-      {%- comment -%} SIDEBAR — open by default {%- endcomment -%}
       {%- if collection.filters.size > 0 -%}
         <aside
           class="collection__sidebar"
@@ -208,12 +205,9 @@
                 {%- endfor -%}
               </fieldset>
             {%- endfor -%}
-
-            {%- comment -%} Preserve current sort when filters are applied {%- endcomment -%}
             {%- if collection.sort_by != blank -%}
               <input type="hidden" name="sort_by" value="{{ collection.sort_by }}">
             {%- endif -%}
-
             <div class="product-filter__actions">
               <button type="submit" class="product-filter__apply">Apply</button>
               <a href="{{ collection.url }}" class="product-filter__clear">Clear all</a>
@@ -222,12 +216,52 @@
         </aside>
       {%- endif -%}
 
-      {%- comment -%} MAIN — products grid {%- endcomment -%}
       <div class="collection__main">
         <div
           class="collection-products"
           style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
         >
+
+          {%- comment -%}── STYLE 2: sub-collection cards in-feed, first row(s) of the grid ──{%- endcomment -%}
+          {%- if show_sub and sub_style == 'in-feed' and sub_collections.size > 0 -%}
+            {%- for sub in sub_collections -%}
+              <li class="sub-collection__item sub-collection__item--in-feed">
+                <a class="sub-collection__card sub-collection__card--in-feed" href="{{ sub.url }}">
+                  <div class="sub-collection__img-zone">
+                    {%- if sub.featured_image != blank -%}
+                      {%- assign _prod_cols = section.settings.columns_desktop | append: '' -%}
+                      {%- assign _sizes = '(max-width: 767px) calc(50vw - 1.5rem), calc((100vw - 16rem) / ' | append: _prod_cols | append: ')' -%}
+                      {{
+                        sub.featured_image
+                        | image_url: width: 800
+                        | image_tag:
+                          class: 'sub-collection__img',
+                          loading: 'lazy',
+                          widths: '200, 300, 400, 600, 800',
+                          sizes: _sizes,
+                          alt: sub.title
+                      }}
+                    {%- else -%}
+                      {%- assign _idx  = sub.handle.size | modulo: 8 -%}
+                      {%- assign _pair = _palette[_idx] | split: ',' -%}
+                      <div
+                        class="sub-collection__img-placeholder sub-collection__img-letter"
+                        aria-hidden="true"
+                        style="background:#{{ _pair[1] }}; color:#{{ _pair[2] }};"
+                      >{{ sub.title | slice: 0 | upcase }}</div>
+                    {%- endif -%}
+                  </div>
+                  <div class="sub-collection__card-body">
+                    <span class="sub-collection__card-title">{{ sub.title }}</span>
+                    {%- if sub_show_count -%}
+                      <span class="sub-collection__card-count">{{ sub.products_count }} products</span>
+                    {%- endif -%}
+                  </div>
+                </a>
+              </li>
+            {%- endfor -%}
+          {%- endif -%}
+
           {%- render 'product-feed',
             products: collection.products,
             show_quickview: section.settings.show_quickview,
@@ -237,6 +271,7 @@
             carousel_interval: section.settings.carousel_interval,
             fallback_collection: collection
           -%}
+
         </div>
 
         {%- if paginate.pages > 1 -%}
@@ -244,7 +279,6 @@
             {%- if paginate.previous -%}
               <a href="{{ paginate.previous.url }}" class="collection__pagination-link" rel="prev">&larr; Previous</a>
             {%- endif -%}
-
             {%- for part in paginate.parts -%}
               {%- if part.is_link -%}
                 <a
@@ -256,7 +290,6 @@
                 <span class="collection__pagination-ellipsis">{{ part.title }}</span>
               {%- endif -%}
             {%- endfor -%}
-
             {%- if paginate.next -%}
               <a href="{{ paginate.next.url }}" class="collection__pagination-link" rel="next">Next &rarr;</a>
             {%- endif -%}
@@ -277,11 +310,10 @@
 {%- if collection.filters.size > 0 -%}
   <script>
     (function () {
-      var btn    = document.querySelector('[data-filter-toggle]');
-      var body   = document.getElementById('CollectionBody');
+      var btn     = document.querySelector('[data-filter-toggle]');
+      var body    = document.getElementById('CollectionBody');
       var sidebar = document.getElementById('CollectionSidebar');
       if (!btn || !body || !sidebar) return;
-
       btn.addEventListener('click', function () {
         var isOpen = btn.getAttribute('aria-expanded') === 'true';
         btn.setAttribute('aria-expanded', String(!isOpen));
@@ -305,12 +337,23 @@
       "id": "show_sub_collections",
       "label": "Show sub-collections",
       "default": true,
-      "info": "Displays sub-collections above the product grid. Sub-collections are defined via the 'custom.sub_collections' metafield on each collection. Toggle off to hide without clearing the metafield data."
+      "info": "Sub-collections are set via the 'custom.sub_collections' metafield on each collection. Toggle off to hide without clearing metafield data."
+    },
+    {
+      "type": "select",
+      "id": "sub_display_style",
+      "label": "Display style",
+      "options": [
+        { "value": "above", "label": "Style 1 — Above the product grid" },
+        { "value": "in-feed", "label": "Style 2 — In-feed (first row of grid)" }
+      ],
+      "default": "above",
+      "info": "Style 1 shows sub-collections as a separate row above the filter toolbar. Style 2 injects them as the first cards inside the product grid, sharing the same column layout."
     },
     {
       "type": "range",
       "id": "sub_columns_desktop",
-      "label": "Sub-collection columns (desktop)",
+      "label": "Sub-collection columns — desktop (Style 1 only)",
       "min": 2,
       "max": 6,
       "step": 1,
@@ -319,7 +362,7 @@
     {
       "type": "select",
       "id": "sub_columns_mobile",
-      "label": "Sub-collection columns (mobile)",
+      "label": "Sub-collection columns — mobile (Style 1 only)",
       "options": [
         { "value": "1", "label": "1" },
         { "value": "2", "label": "2" }
