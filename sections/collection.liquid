@@ -8,9 +8,28 @@
       └─ collection__body
            ├─ collection__sidebar
            └─ collection__main
-                └─ collection-products
-                     ├─ [Style 2] sub-collection <li> items (first, in-feed)
-                     └─ product-feed <li> items
+                ├─ collection-products  [tab: products]
+                └─ collection__articles [tab: articles — conditional on custom.articles metafield]
+
+  TAB SWITCHING
+  ─────────────
+  When the collection has articles assigned via the custom.articles metafield,
+  the toolbar gains a Products / Articles tab switcher (role="tablist"). Clicking a tab:
+    • shows/hides #CollectionProducts and #CollectionArticles panels
+    • hides the filter + sort controls while on the Articles tab (they are
+      product-specific and meaningless for articles)
+  The tab UI is rendered only when custom.articles returns one or more articles —
+  collections without assigned articles get the original toolbar with no changes.
+
+  ARTICLE DATA SOURCE
+  ───────────────────
+  collection.metafields.custom.articles.value
+  Namespace : custom
+  Key       : articles
+  Type      : List · Blog post reference
+  Merchants assign specific articles to each collection in the Shopify admin
+  (Metafields › Articles). No schema picker needed — the data lives on the
+  collection object itself, not on the section.
 
   SUB-COLLECTION DISPLAY STYLES
   ──────────────────────────────
@@ -52,6 +71,7 @@
   collection.css       — layout, sidebar, toolbar, pagination
   sub-collection.css   — card styles (both styles share the same classes)
   product-card.css     — product card
+  article-feed.css     — article card + tab UI (loaded when custom.articles has entries)
   promo-banner.css     — banner styles (loaded when banner blocks exist)
   product-carousel.css/js — loaded only when carousel blocks exist
 {%- endcomment -%}
@@ -60,14 +80,22 @@
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign carousel_blocks = section.blocks | where: 'type', 'carousel'
-  assign banner_blocks   = section.blocks | where: 'type', 'promo_banner'
+  assign carousel_blocks  = section.blocks | where: 'type', 'carousel'
+  assign banner_blocks    = section.blocks | where: 'type', 'promo_banner'
   assign show_sub         = section.settings.show_sub_collections
   assign sub_style        = section.settings.sub_display_style
   assign sub_collections  = collection.metafields.custom.sub_collections.value
   assign sub_show_count   = section.settings.sub_show_product_count
   assign sub_cols_desktop = section.settings.sub_columns_desktop
   assign sub_cols_mobile  = section.settings.sub_columns_mobile
+
+  assign articles_tab_label = section.settings.articles_tab_label | default: 'Articles'
+  assign products_tab_label = section.settings.products_tab_label | default: 'Products'
+  assign collection_articles = collection.metafields.custom.articles.value
+  assign show_articles       = false
+  if collection_articles != blank and collection_articles.size > 0
+    assign show_articles = true
+  endif
 -%}
 
 {%- if carousel_blocks.size > 0 -%}
@@ -78,6 +106,9 @@
 {%- endif -%}
 {%- if show_sub and sub_collections.size > 0 -%}
   {{ 'sub-collection.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+{%- if show_articles -%}
+  {{ 'article-feed.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 
 {%- comment -%} Shared fallback palette — computed once, reused in both styles {%- endcomment -%}
@@ -142,8 +173,42 @@
 
   {%- comment -%}
     Toolbar: spans full width above sidebar/main split.
+    When show_articles is true, the left side of the toolbar becomes a
+    tablist (Products / Articles). Filter + sort remain on the right and
+    are hidden via JS while the Articles tab is active.
   {%- endcomment -%}
   <div class="collection__toolbar">
+
+    {%- if show_articles -%}
+      {%- comment -%} Tab switcher — left side of toolbar {%- endcomment -%}
+      <div
+        class="collection__tabs"
+        role="tablist"
+        aria-label="Collection content"
+      >
+        <button
+          class="collection__tab collection__tab--active"
+          role="tab"
+          aria-selected="true"
+          aria-controls="CollectionProducts"
+          id="tab-products"
+          data-tab-target="products"
+          type="button"
+        >{{ products_tab_label }}</button>
+
+        <button
+          class="collection__tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="CollectionArticles"
+          id="tab-articles"
+          data-tab-target="articles"
+          type="button"
+        >{{ articles_tab_label }}</button>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Filter toggle — hidden on articles tab via JS {%- endcomment -%}
     {%- if collection.filters.size > 0 -%}
       <button
         type="button"
@@ -159,6 +224,7 @@
       </button>
     {%- endif -%}
 
+    {%- comment -%} Sort — hidden on articles tab via JS {%- endcomment -%}
     {%- if collection.sort_options.size > 0 -%}
       <form class="product-filter__sort-form" action="{{ collection.url }}" method="get">
         <label for="CollectionSortBy" class="product-filter__sort-label">Sort by</label>
@@ -231,11 +297,7 @@
 
       <div class="collection__main">
 
-        {%- comment -%}── STYLE 2: dedicated sub-collection row above the product grid ──
-          Sits inside collection__main (respects sidebar layout) but
-          outside collection-products so product cards start on a fresh row.
-          Mirrors the product grid column count for perfect visual alignment.
-        {%- endcomment -%}
+        {%- comment -%}── STYLE 2: dedicated sub-collection row above the product grid ──{%- endcomment -%}
         {%- if show_sub and sub_style == 'in-feed' and sub_collections.size > 0 -%}
           <ul
             class="sub-collection__grid sub-collection__grid--dedicated"
@@ -284,82 +346,105 @@
           </ul>
         {%- endif -%}
 
+        {%- comment -%}── Products panel ────────────────────────────────────────────{%- endcomment -%}
         <div
-          class="collection-products"
-          style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
+          id="CollectionProducts"
+          role="tabpanel"
+          aria-labelledby="tab-products"
+          {%- unless show_articles %} aria-hidden="false"{% endunless %}
         >
-          {%- comment -%}── Promo banners: render before the product feed if position = 'top' ──
-            Col-span class keys:
-              banner_width = '1'    → 1 column  (default, product-card sized)
-              banner_width = '2'    → 2 columns  (landscape, half-row)
-              banner_width = '3'    → 3 columns
-              banner_width = 'full' → all columns (full-width break)
-          {%- endcomment -%}
-          {%- for block in banner_blocks -%}
-            {%- if block.settings.banner_position_in_feed == 'top' -%}
-              <div
-                class="collection-products__banner-slot collection-products__banner-slot--span-{{ block.settings.banner_width }}"
-                {{ block.shopify_attributes }}
-              >
-                {%- render 'promo-banner',
-                  banner_settings:   block.settings,
-                  banner_section_id: block.id,
-                  banner_mode:       'in-feed'
-                -%}
-              </div>
-            {%- endif -%}
-          {%- endfor -%}
-
-          {%- render 'product-feed',
-            products: collection.products,
-            show_quickview: section.settings.show_quickview,
-            show_compare: section.settings.show_compare,
-            show_eta: section.settings.show_eta,
-            carousel_blocks: carousel_blocks,
-            banner_blocks: banner_blocks,
-            carousel_interval: section.settings.carousel_interval,
-            fallback_collection: collection
-          -%}
-
-          {%- comment -%}── Promo banners: render after the product feed if position = 'bottom' ──{%- endcomment -%}
-          {%- for block in banner_blocks -%}
-            {%- if block.settings.banner_position_in_feed == 'bottom' -%}
-              <div
-                class="collection-products__banner-slot collection-products__banner-slot--span-{{ block.settings.banner_width }}"
-                {{ block.shopify_attributes }}
-              >
-                {%- render 'promo-banner',
-                  banner_settings:   block.settings,
-                  banner_section_id: block.id,
-                  banner_mode:       'in-feed'
-                -%}
-              </div>
-            {%- endif -%}
-          {%- endfor -%}
-
-        </div>
-
-        {%- if paginate.pages > 1 -%}
-          <nav class="collection__pagination" role="navigation" aria-label="Pagination">
-            {%- if paginate.previous -%}
-              <a href="{{ paginate.previous.url }}" class="collection__pagination-link" rel="prev">&larr; Previous</a>
-            {%- endif -%}
-            {%- for part in paginate.parts -%}
-              {%- if part.is_link -%}
-                <a
-                  href="{{ part.url }}"
-                  class="collection__pagination-link"
-                  {% if part.title == paginate.current_page %}aria-current="page"{% endif %}
-                >{{ part.title }}</a>
-              {%- else -%}
-                <span class="collection__pagination-ellipsis">{{ part.title }}</span>
+          <div
+            class="collection-products"
+            style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
+          >
+            {%- for block in banner_blocks -%}
+              {%- if block.settings.banner_position_in_feed == 'top' -%}
+                <div
+                  class="collection-products__banner-slot collection-products__banner-slot--span-{{ block.settings.banner_width }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {%- render 'promo-banner',
+                    banner_settings:   block.settings,
+                    banner_section_id: block.id,
+                    banner_mode:       'in-feed'
+                  -%}
+                </div>
               {%- endif -%}
             {%- endfor -%}
-            {%- if paginate.next -%}
-              <a href="{{ paginate.next.url }}" class="collection__pagination-link" rel="next">Next &rarr;</a>
-            {%- endif -%}
-          </nav>
+
+            {%- render 'product-feed',
+              products: collection.products,
+              show_quickview: section.settings.show_quickview,
+              show_compare: section.settings.show_compare,
+              show_eta: section.settings.show_eta,
+              carousel_blocks: carousel_blocks,
+              banner_blocks: banner_blocks,
+              carousel_interval: section.settings.carousel_interval,
+              fallback_collection: collection
+            -%}
+
+            {%- for block in banner_blocks -%}
+              {%- if block.settings.banner_position_in_feed == 'bottom' -%}
+                <div
+                  class="collection-products__banner-slot collection-products__banner-slot--span-{{ block.settings.banner_width }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {%- render 'promo-banner',
+                    banner_settings:   block.settings,
+                    banner_section_id: block.id,
+                    banner_mode:       'in-feed'
+                  -%}
+                </div>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+
+          {%- if paginate.pages > 1 -%}
+            <nav class="collection__pagination" role="navigation" aria-label="Pagination">
+              {%- if paginate.previous -%}
+                <a href="{{ paginate.previous.url }}" class="collection__pagination-link" rel="prev">&larr; Previous</a>
+              {%- endif -%}
+              {%- for part in paginate.parts -%}
+                {%- if part.is_link -%}
+                  <a
+                    href="{{ part.url }}"
+                    class="collection__pagination-link"
+                    {% if part.title == paginate.current_page %}aria-current="page"{% endif %}
+                  >{{ part.title }}</a>
+                {%- else -%}
+                  <span class="collection__pagination-ellipsis">{{ part.title }}</span>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if paginate.next -%}
+                <a href="{{ paginate.next.url }}" class="collection__pagination-link" rel="next">Next &rarr;</a>
+              {%- endif -%}
+            </nav>
+          {%- endif -%}
+        </div><!-- /#CollectionProducts -->
+
+        {%- comment -%}── Articles panel — rendered when custom.articles metafield has entries ──{%- endcomment -%}
+        {%- if show_articles -%}
+          <div
+            id="CollectionArticles"
+            class="collection__articles hidden"
+            role="tabpanel"
+            aria-labelledby="tab-articles"
+            aria-hidden="true"
+            style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
+          >
+            <div class="article-feed">
+              {%- for article in collection_articles -%}
+                {%- render 'article-card',
+                  article:      article,
+                  show_excerpt: true,
+                  show_author:  false,
+                  image_ratio:  'landscape'
+                -%}
+              {%- endfor -%}
+            </div>
+          </div>
         {%- endif -%}
+
       </div><!-- /.collection__main -->
 
     </div><!-- /.collection__body -->
@@ -372,6 +457,7 @@
   <script src="{{ 'product-carousel.js' | asset_url }}" defer></script>
 {%- endif -%}
 
+{%- comment -%} Filter sidebar toggle — always present when filters exist {%- endcomment -%}
 {%- if collection.filters.size > 0 -%}
   <script>
     (function () {
@@ -389,10 +475,76 @@
   </script>
 {%- endif -%}
 
+{%- comment -%} Tab switcher — only injected when custom.articles metafield has entries {%- endcomment -%}
+{%- if show_articles -%}
+  <script>
+    (function () {
+      var tabs           = document.querySelectorAll('.collection__tab');
+      var productsPanel  = document.getElementById('CollectionProducts');
+      var articlesPanel  = document.getElementById('CollectionArticles');
+      var filterBtn      = document.querySelector('[data-filter-toggle]');
+      var sortForm       = document.querySelector('.product-filter__sort-form');
+      var sidebar        = document.getElementById('CollectionSidebar');
+
+      if (!tabs.length || !productsPanel || !articlesPanel) return;
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var target = tab.dataset.tabTarget;
+          var isProducts = target === 'products';
+
+          // Update tab state
+          tabs.forEach(function (t) {
+            var active = t === tab;
+            t.classList.toggle('collection__tab--active', active);
+            t.setAttribute('aria-selected', String(active));
+          });
+
+          // Show / hide panels
+          productsPanel.classList.toggle('hidden', !isProducts);
+          articlesPanel.classList.toggle('hidden', isProducts);
+          productsPanel.setAttribute('aria-hidden', String(!isProducts));
+          articlesPanel.setAttribute('aria-hidden', String(isProducts));
+
+          // Show / hide filter + sort (irrelevant on articles tab)
+          var filterDisplay = isProducts ? '' : 'none';
+          if (filterBtn)  filterBtn.style.display  = filterDisplay;
+          if (sortForm)   sortForm.style.display    = filterDisplay;
+
+          // Collapse sidebar when switching to articles
+          if (!isProducts && sidebar) {
+            var body = document.getElementById('CollectionBody');
+            if (body) body.classList.add('collection__body--sidebar-closed');
+            sidebar.setAttribute('aria-hidden', 'true');
+            if (filterBtn) filterBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      });
+    })();
+  </script>
+{%- endif -%}
+
 {% schema %}
 {
   "name": "Collection",
   "settings": [
+    {
+      "type": "header",
+      "content": "Article feed",
+      "info": "Articles are assigned per-collection via the custom.articles metafield (Shopify admin › Collection › Metafields). No configuration needed here — the tab appears automatically when articles are assigned."
+    },
+    {
+      "type": "text",
+      "id": "products_tab_label",
+      "label": "Products tab label",
+      "default": "Products"
+    },
+    {
+      "type": "text",
+      "id": "articles_tab_label",
+      "label": "Articles tab label",
+      "default": "Articles"
+    },
     {
       "type": "header",
       "content": "Sub-collections"
@@ -409,7 +561,7 @@
       "id": "sub_display_style",
       "label": "Display style",
       "options": [
-        { "value": "above", "label": "Style 1 — Above the product grid" },
+        { "value": "above",   "label": "Style 1 — Above the product grid" },
         { "value": "in-feed", "label": "Style 2 — Dedicated row above product grid" }
       ],
       "default": "above",
