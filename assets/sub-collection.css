@@ -106,13 +106,6 @@
 }
 
 /* ── Placeholder — letter tile (collection.liquid inline) ─── */
-/*
-  When a sub-collection has no featured_image, collection.liquid
-  renders a coloured tile with the first letter of the collection
-  title. The bg/fg colours are set inline via style="" attributes
-  using a deterministic palette keyed on handle.size mod 8.
-  This block only adds the typography — the colours come from Liquid.
-*/
 .sub-collection__img-letter {
   font-size: clamp(1.75rem, 6cqi, 3.5rem);
   font-weight: 700;
@@ -161,41 +154,20 @@
 }
 
 /* ── Style 2: in-feed cards ───────────────────────────────── */
-/*
-  When sub_display_style = 'in-feed', sub-collection <li> items are
-  rendered directly inside .collection-products (which is a CSS grid).
-  They inherit the product grid's column layout automatically — no
-  separate grid wrapper or column CSS needed.
-
-  .sub-collection__item--in-feed  resets list styles (collection-products
-  may use <ul>/<ol> internally) and ensures the card fills its grid cell.
-
-  .sub-collection__card--in-feed  keeps the same card appearance as
-  Style 1 but removes the bottom margin that the standalone grid uses
-  to separate itself from the toolbar.
-*/
 .sub-collection__item--in-feed {
   list-style: none;
-  display: flex;          /* fill the grid cell like a product card would */
+  display: flex;
 }
 
 .sub-collection__card--in-feed {
-  width: 100%;            /* fill the flex item */
+  width: 100%;
 }
 
 /* ── Style 2: dedicated row modifier ─────────────────────── */
 /*
-  .sub-collection__grid--dedicated is used when sub_display_style
-  = 'in-feed'. The grid sits inside collection__main, directly above
-  .collection-products. It mirrors the product grid's column count
-  via --sub-collection-columns-* set inline from section.settings.
-  columns_desktop / columns_mobile, so the cards align with the
-  product cards below without any extra config.
-
-  Tightens the bottom margin so the gap between the sub-collection
-  row and the first product row matches the product grid's own gap
-  rather than the larger section-level spacing used in Style 1.
+  Adds whitespace between the sub-collection row and the product
+  grid below it so the two sections read as distinct content areas.
 */
 .sub-collection__grid--dedicated {
-  margin-bottom: 0;   /* gap to product grid comes from collection-products' own top margin/gap */
+  margin-bottom: 2rem;
 }
