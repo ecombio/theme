@@ -1,0 +1,233 @@
+/* ==========================================================
+   theme.css
+   Global styles loaded by layout/theme.liquid.
+
+   What lives here:
+     1. Header / nav / footer  — footer chrome only. Header is
+        fully managed by assets/header.css and its subsystem
+        files (header-account.css, header-cart.css, etc.).
+     2. Compare bar             — global because it's injected into
+        <body> at runtime by product-card.js, outside any section.
+     3. Shared utility classes  — used across multiple sections.
+
+   What does NOT live here:
+     • Header styles            — lives in header.css + subsystems.
+     • Quick View modal shell   — lives in quickview-modal.css.
+     • product-card.css         — loaded by product-carousel.liquid.
+     • product-carousel.css     — loaded by product-carousel.liquid.
+     • product-quickview.css    — loaded by product-quickview.liquid
+       (on demand when a Quick View is first opened).
+
+   Load order in theme.liquid <head>: critical.css (preload) →
+   theme.css → header.css → header-account.css → header-cart.css
+   → header-search.css → predictive-search.css →
+   quickview-modal.css → cart-drawer.css.
+   ========================================================== */
+
+
+/* ==========================================================
+   1. HEADER / NAV / FOOTER
+   Header fully managed by assets/header.css and subsystems.
+   Only footer and main-content floor height live here.
+   ========================================================== */
+
+#main-content:focus { outline: none; }
+
+#main-content {
+  min-height: calc(100vh - 60px - 60px);
+}
+
+.site-footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 20px 16px;
+}
+
+.site-footer__inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-footer__copy {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+
+/* ==========================================================
+   2. COMPARE BAR
+   Sticky bottom bar that appears when products are compared.
+   Injected into the page by product-card.js → renderCompareBar().
+   ========================================================== */
+
+.compare-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9000;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.compare-bar.is-active {
+  transform: translateY(0);
+}
+
+/* Flash red border briefly when hitting the 5-item limit */
+.compare-bar.is-limit {
+  border-top-color: #dc2626;
+  transition: border-top-color 0s;
+}
+
+.compare-bar__counter-wrap {
+  font-size: 0.8rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.compare-bar__counter {
+  font-weight: 700;
+  color: #111827;
+}
+
+.compare-bar__list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.compare-bar__list::-webkit-scrollbar { display: none; }
+
+.compare-bar__item {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1.5px dashed #d1d5db;
+  flex-shrink: 0;
+  background: #f9fafb;
+}
+
+.compare-bar__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.compare-bar__item-placeholder {
+  /* empty slot — dashed border shows via .compare-bar__item base */
+}
+
+.compare-bar__item-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.compare-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+[data-compare-submit] {
+  padding: 8px 16px;
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+[data-compare-submit]:hover:not(:disabled) {
+  background: #374151;
+}
+
+[data-compare-submit]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+[data-compare-clear] {
+  padding: 8px 12px;
+  background: none;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+[data-compare-clear]:hover {
+  color: #111827;
+  border-color: #9ca3af;
+}
+
+
+/* ==========================================================
+   3. SHARED UTILITIES
+   Small helpers used across sections.
+   ========================================================== */
+
+/* Prevent body scroll when a modal is open */
+body.overflow-hidden,
+body[style*="overflow: hidden"] {
+  overflow: hidden;
+}
+
+/* Generic section spacing */
+.section-spacing {
+  padding-block: 40px;
+}
+
+@media (min-width: 768px) {
+  .section-spacing {
+    padding-block: 64px;
+  }
+}
+
+
+/* ==========================================================
+   4. REDUCED MOTION
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .compare-bar {
+    transition: none !important;
+    animation: none !important;
+  }
+}
