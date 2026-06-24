@@ -1,0 +1,42 @@
+{{- comment -}}
+  snippets/header-logo.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  ROW 3a: Logo — image uploaded in Theme Editor, or shop name as italic text.
+
+  VARIABLES (passed in via `with` from sections/header.liquid):
+    logo  {image object | blank}  — section.settings.logo image picker value.
+                                    Pass blank (or omit) to use text fallback.
+
+  GLOBALS READ DIRECTLY (available everywhere in Shopify):
+    shop.name    — used as aria-label on the link and as alt text fallback.
+    routes.root_url — homepage href.
+
+  CALLER (sections/header.liquid):
+    {% render 'header-logo', logo: section.settings.logo %}
+
+  OUTPUTS:
+    Image variant  → <a><img …></a>  (eager-loaded, fetchpriority high —
+                                       logo is always above the fold)
+    Text variant   → <a>Shop name</a> (italic bold, matches screenshot)
+  ─────────────────────────────────────────────────────────────────────────────
+{{- endcomment -}}
+
+<a
+  href="{{ routes.root_url }}"
+  class="header__logo"
+  aria-label="{{ shop.name }}"
+>
+  {%- if logo != blank -%}
+    {{
+      logo
+      | image_url: width: 300
+      | image_tag:
+          class: 'header__logo-img',
+          alt: logo.alt | default: shop.name,
+          loading: 'eager',
+          fetchpriority: 'high'
+    }}
+  {%- else -%}
+    {{- shop.name -}}
+  {%- endif -%}
+</a>

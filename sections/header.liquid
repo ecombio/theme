@@ -30,40 +30,14 @@
 <header class="header" data-header>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       ROW 1: PROMO BAR
-       - Entire row hidden when merchant turns off "Show promo bar" in editor.
-       - Promo text and sale end date come from theme settings.
-       - header.js reads data-end-time and counts down live.
+       ROW 1: PROMO BAR → snippets/header-promo.liquid
+       Guard lives here so the snippet stays unconditional and testable.
   ════════════════════════════════════════════════════════════════════════════ -->
   {% if section.settings.show_promo %}
-    <div class="header__promo">
-      <div class="header__promo-inner page-width">
-
-        <span class="header__promo-text">
-          {{ section.settings.promo_text | escape }}
-        </span>
-
-        <!--
-          data-end-time: ISO 8601 timestamp the JS reads to calculate
-          remaining seconds. Set it in the theme customizer.
-        -->
-        <span
-          class="header__promo-timer"
-          data-end-time="{{ section.settings.sale_end_time | escape }}"
-          aria-live="polite"
-          aria-label="Countdown timer"
-        >
-          <span class="header__promo-timer-unit" aria-hidden="true">00D</span>
-          <span class="header__promo-timer-sep" aria-hidden="true">:</span>
-          <span class="header__promo-timer-unit" aria-hidden="true">00H</span>
-          <span class="header__promo-timer-sep" aria-hidden="true">:</span>
-          <span class="header__promo-timer-unit" aria-hidden="true">00M</span>
-          <span class="header__promo-timer-sep" aria-hidden="true">:</span>
-          <span class="header__promo-timer-unit" aria-hidden="true">00S</span>
-        </span>
-
-      </div>
-    </div>
+    {% render 'header-promo',
+       promo_text:    section.settings.promo_text,
+       sale_end_time: section.settings.sale_end_time
+    %}
   {% endif %}
 
 
@@ -173,22 +147,8 @@
   <div class="header__main">
     <div class="header__main-inner page-width">
 
-      <!-- LOGO ──────────────────────────────────────────────────────────── -->
-      <a href="{{ routes.root_url }}" class="header__logo" aria-label="{{ shop.name }}">
-        {%- if section.settings.logo != blank -%}
-          {{
-            section.settings.logo
-            | image_url: width: 300
-            | image_tag:
-                class: 'header__logo-img',
-                alt: section.settings.logo.alt | default: shop.name,
-                loading: 'eager',
-                fetchpriority: 'high'
-          }}
-        {%- else -%}
-          {{ shop.name }}
-        {%- endif -%}
-      </a>
+      <!-- LOGO → snippets/header-logo.liquid ──────────────────────────────── -->
+      {% render 'header-logo', logo: section.settings.logo %}
 
       <!-- SEARCH ─────────────────────────────────────────────────────────── -->
       <!--
