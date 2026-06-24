@@ -3,39 +3,15 @@
   snippets/header-search.liquid
   ============================================================================
 
-  Search subsystem shell. Renders the form, input, submit button, and the
-  empty results container that predictive-search.js populates at runtime.
+  Search subsystem shell. SVGs are inlined directly — no icon snippet
+  dependency, so this file is entirely self-contained.
 
-  PUBLIC INTERFACE (caller in header.liquid never changes this):
-    {% render 'header-search', placeholder: section.settings.search_placeholder %}
-
-  PARAMETERS:
-    placeholder  {String}  Input placeholder text. Falls back to translation.
-
-  DATA ATTRIBUTE CONTRACT (JS attachment points — frozen across v1/v2/v3):
-    data-search-root     Subsystem mount point — both JS files read this
+  DATA ATTRIBUTE CONTRACT:
+    data-search-root     Subsystem mount point
     data-search-input    Text input
     data-search-submit   Submit button
+    data-search-mic      Voice search button (revealed by JS if supported)
     data-search-results  Results container — predictive-search.js populates this
-
-  ASSET LOADING:
-    header-search.css    Shell styles (form, input, submit button)
-    header-search.js     Shell behaviour (typewriter, form submit)
-    predictive-search.css  Results panel styles
-    predictive-search.js   Fetch, inject, open/close panel
-
-    Loading order matters: CSS before JS, header before predictive.
-    Both JS files share the data-search-* contract; neither calls the other.
-
-  OWNS:
-    .header__search, .header__search-form, .header__search-input,
-    .header__search-submit, .header__search-results (DOM node only —
-    visual styles for .header__search-results live in predictive-search.css
-    because that component owns the panel boundary).
-
-  DOES NOT OWN:
-    .search-results__* — predictive-search.css / predictive-search.liquid
-
   ============================================================================
 {%- endcomment -%}
 
@@ -48,10 +24,7 @@
     role="search"
   >
 
-    <label
-      class="header__search-label visually-hidden"
-      for="header-search-input"
-    >
+    <label class="header__search-label visually-hidden" for="header-search-input">
       {{- 'general.search.label' | t -}}
     </label>
 
@@ -71,6 +44,7 @@
       aria-autocomplete="list"
     >
 
+    <!-- Mic button — hidden until JS confirms SpeechRecognition support -->
     <button
       class="header__search-mic"
       data-search-mic
@@ -78,18 +52,34 @@
       aria-label="{{ 'general.search.voice' | t }}"
       hidden
     >
-      {%- render 'icon', name: 'mic', size: 18 -%}
-      {%- render 'icon', name: 'mic-listening', size: 18 -%}
+      <!-- mic idle -->
+      <svg class="icon icon--mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <rect x="9" y="2" width="6" height="11" rx="3" />
+        <path d="M5 10a7 7 0 0014 0" />
+        <line x1="12" y1="21" x2="12" y2="17" />
+        <line x1="9"  y1="21" x2="15" y2="21" />
+      </svg>
+      <!-- mic listening (filled) -->
+      <svg class="icon icon--mic-listening" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor" stroke="none" />
+        <path d="M5 10a7 7 0 0014 0" />
+        <line x1="12" y1="21" x2="12" y2="17" />
+        <line x1="9"  y1="21" x2="15" y2="21" />
+      </svg>
       <span class="visually-hidden">{{ 'general.search.voice' | t }}</span>
     </button>
 
+    <!-- Submit button -->
     <button
       class="header__search-submit"
       data-search-submit
       type="submit"
       aria-label="{{ 'general.search.submit' | t }}"
     >
-      {%- render 'icon', name: 'search', size: 18 -%}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <line x1="15.5" y1="15.5" x2="21" y2="21" />
+      </svg>
       <span class="visually-hidden">{{ 'general.search.submit' | t }}</span>
     </button>
 
@@ -103,8 +93,6 @@
     aria-live="polite"
     aria-atomic="true"
     hidden
-  >
-  </div>
+  ></div>
 
 </div>
-
