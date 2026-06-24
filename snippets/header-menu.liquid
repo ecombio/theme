@@ -1,0 +1,32 @@
+{% comment %}
+  snippets/header-menu.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  ROW 4: Menu bar — <nav> wrapper + block loop.
+
+  Loops section.blocks and delegates each one to header-menu-item.liquid,
+  which handles the type dispatch. This file owns nothing except the wrapper
+  and the empty-state fallback shown in the theme editor.
+
+  VARIABLES (passed from sections/header.liquid):
+    blocks  {array}  — section.blocks
+
+  CALLER:
+    {% render 'header-menu', blocks: section.blocks %}
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<nav class="header__menu" aria-label="Main navigation">
+  <div class="header__menu-inner page-width">
+
+    {%- if blocks.size > 0 -%}
+      {%- for block in blocks -%}
+        {%- render 'header-menu-item', block: block -%}
+      {%- endfor -%}
+    {%- else -%}
+      <span class="header__menu-link" style="opacity: 0.4;">
+        No menu items yet — add blocks in the theme editor.
+      </span>
+    {%- endif -%}
+
+  </div>
+</nav>

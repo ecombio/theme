@@ -1,0 +1,52 @@
+{% comment %}
+  snippets/header-menu-item--linklist.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Block type: linklist
+  A button that opens a dropdown <ul> of links from a Shopify menu object.
+  header.js handles open/close via data-menu-dropdown / data-menu-toggle.
+
+  BLOCK SETTINGS:
+    label  {string}    — trigger button text
+    menu   {linklist}  — Shopify menu object; exposes .links
+
+  VARIABLES:
+    block  {block object}
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- assign menu = block.settings.menu -%}
+
+<div
+  class="header__menu-item header__menu-item--dropdown"
+  data-menu-dropdown
+  {{ block.shopify_attributes }}
+>
+
+  <button
+    type="button"
+    class="header__menu-link header__menu-link--dropdown"
+    aria-haspopup="true"
+    aria-expanded="false"
+    data-menu-toggle
+  >
+    {{- block.settings.label | escape -}}
+    <span class="header__menu-caret" aria-hidden="true">▾</span>
+  </button>
+
+  {%- if menu != blank and menu.links.size > 0 -%}
+    <ul class="header__menu-dropdown" role="list" hidden>
+      {%- for link in menu.links -%}
+        <li>
+          <a
+            href="{{ link.url }}"
+            class="header__menu-dropdown-link{% if link.active %} header__menu-dropdown-link--active{% endif %}"
+            {% if link.current %}aria-current="page"{% endif %}
+          >
+            {{- link.title -}}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+
+</div>

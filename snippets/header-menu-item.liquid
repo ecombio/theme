@@ -1,0 +1,37 @@
+{% comment %}
+  snippets/header-menu-item.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Dispatcher — reads block.type and renders the correct sub-snippet.
+
+  This is the single composability seam in the menu system:
+    - Add a new block type → add one sub-snippet + one branch here.
+    - Swap a sub-snippet → everything else stays untouched.
+
+  VARIABLES (passed from snippets/header-menu.liquid):
+    block  {block object}  — one item from section.blocks.
+                             block.type is the routing key.
+                             block.settings holds all merchant inputs.
+
+  BLOCK TYPES → SUB-SNIPPETS:
+    link      → header-menu-item--link.liquid
+    linklist  → header-menu-item--linklist.liquid
+    mega      → header-menu-item--mega.liquid
+    promo     → header-menu-item--promo.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- case block.type -%}
+
+  {%- when 'link' -%}
+    {%- render 'header-menu-item--link', block: block -%}
+
+  {%- when 'linklist' -%}
+    {%- render 'header-menu-item--linklist', block: block -%}
+
+  {%- when 'mega' -%}
+    {%- render 'header-menu-item--mega', block: block -%}
+
+  {%- when 'promo' -%}
+    {%- render 'header-menu-item--promo', block: block -%}
+
+{%- endcase -%}

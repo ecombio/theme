@@ -1,0 +1,57 @@
+{% comment %}
+  snippets/header-menu-item--promo.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Block type: promo
+  An inline promo card that sits directly in the menu bar.
+  Typically pushed to the right with margin-left: auto via CSS.
+
+  BLOCK SETTINGS:
+    image      {image}   — optional promo image
+    heading    {string}  — bold headline
+    subtext    {string}  — supporting line
+    cta_label  {string}  — button text
+    cta_url    {url}     — button destination
+
+  VARIABLES:
+    block  {block object}
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<div
+  class="header__menu-promo"
+  {{ block.shopify_attributes }}
+>
+  <a href="{{ block.settings.cta_url }}" class="header__menu-promo-inner">
+
+    {%- if block.settings.image != blank -%}
+      <div class="header__menu-promo-image">
+        {{
+          block.settings.image
+          | image_url: width: 120
+          | image_tag: loading: 'lazy', widths: '60, 120'
+        }}
+      </div>
+    {%- endif -%}
+
+    <div class="header__menu-promo-text">
+      {%- if block.settings.heading != blank -%}
+        <span class="header__menu-promo-heading">
+          {{- block.settings.heading | escape -}}
+        </span>
+      {%- endif -%}
+
+      {%- if block.settings.subtext != blank -%}
+        <span class="header__menu-promo-subtext">
+          {{- block.settings.subtext | escape -}}
+        </span>
+      {%- endif -%}
+
+      {%- if block.settings.cta_label != blank -%}
+        <span class="header__menu-promo-cta">
+          {{- block.settings.cta_label | escape -}}
+        </span>
+      {%- endif -%}
+    </div>
+
+  </a>
+</div>

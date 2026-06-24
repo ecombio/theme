@@ -1,0 +1,142 @@
+{% comment %}
+  snippets/header-menu-item--mega.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Block type: mega
+  Full-width panel. Left side: text columns from a 3-level linklist.
+  Right side: optional product grid from a merchant-chosen collection.
+
+  NAV STRUCTURE (3 levels via the linked menu):
+    Level 1  →  column heading    (menu.links)
+    Level 2  →  subheading or direct link  (column.links)
+    Level 3  →  links under subheading     (item.links)
+
+  BLOCK SETTINGS:
+    label          {string}      — trigger button text
+    menu           {linklist}    — mega menu source (3-level)
+    show_products  {bool}        — toggle product grid
+    collection     {collection}  — collection to pull products from
+    product_limit  {int}         — how many products to show (2–6)
+
+  VARIABLES:
+    block  {block object}
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- assign mega_menu       = block.settings.menu -%}
+{%- assign show_products   = block.settings.show_products -%}
+{%- assign col             = block.settings.collection -%}
+{%- assign product_limit   = block.settings.product_limit | default: 4 -%}
+
+<div
+  class="header__menu-item header__menu-item--mega"
+  data-menu-dropdown
+  {{ block.shopify_attributes }}
+>
+
+  <!-- Trigger ────────────────────────────────────────────────────────────── -->
+  <button
+    type="button"
+    class="header__menu-link header__menu-link--dropdown"
+    aria-haspopup="true"
+    aria-expanded="false"
+    data-menu-toggle
+  >
+    {{- block.settings.label | escape -}}
+    <span class="header__menu-caret" aria-hidden="true">▾</span>
+  </button>
+
+  <!-- Panel ──────────────────────────────────────────────────────────────── -->
+  {%- if mega_menu != blank and mega_menu.links.size > 0 -%}
+    <div
+      class="header__mega-panel{% if show_products %} header__mega-panel--with-products{% endif %}"
+      hidden
+    >
+      <div class="header__mega-inner page-width">
+
+        <!-- LEFT: TEXT COLUMNS ─────────────────────────────────────────── -->
+        <div
+          class="header__mega-columns"
+          style="--mega-col-count: {{ mega_menu.links.size }};"
+        >
+          {%- for column in mega_menu.links -%}
+            <div class="header__mega-column">
+
+              <a href="{{ column.url }}" class="header__mega-heading">
+                {{- column.title -}}
+              </a>
+
+              {%- for item in column.links -%}
+                {%- if item.links.size > 0 -%}
+
+                  <p class="header__mega-subheading">{{ item.title }}</p>
+                  <ul class="header__mega-list" role="list">
+                    {%- for child in item.links -%}
+                      <li>
+                        <a href="{{ child.url }}" class="header__mega-link">
+                          {{- child.title -}}
+                        </a>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+
+                {%- else -%}
+
+                  <a href="{{ item.url }}" class="header__mega-link">
+                    {{- item.title -}}
+                  </a>
+
+                {%- endif -%}
+              {%- endfor -%}
+
+            </div>
+          {%- endfor -%}
+        </div>
+
+        <!-- RIGHT: PRODUCT GRID (optional) ─────────────────────────────── -->
+        {%- if show_products and col != blank -%}
+          <div class="header__mega-products">
+
+            <p class="header__mega-heading">Trending in {{ col.title }}</p>
+
+            <div class="header__mega-product-grid">
+              {%- for product in col.products limit: product_limit -%}
+                <a href="{{ product.url }}" class="header__mega-product-card">
+
+                  <div class="header__mega-product-image">
+                    {%- if product.featured_image -%}
+                      <img
+                        src="{{ product.featured_image | image_url: width: 400 }}"
+                        alt="{{ product.title | escape }}"
+                        loading="lazy"
+                        width="400"
+                      >
+                    {%- endif -%}
+                    {%- if product.compare_at_price > product.price -%}
+                      <span class="header__mega-badge">Sale</span>
+                    {%- endif -%}
+                  </div>
+
+                  <div class="header__mega-product-info">
+                    <span class="header__mega-product-title">{{ product.title }}</span>
+                    <span class="header__mega-product-price">
+                      {%- if product.compare_at_price > product.price -%}
+                        <span class="price--sale">{{ product.price | money }}</span>
+                        <s class="price--compare">{{ product.compare_at_price | money }}</s>
+                      {%- else -%}
+                        {{ product.price | money }}
+                      {%- endif -%}
+                    </span>
+                  </div>
+
+                </a>
+              {%- endfor -%}
+            </div>
+
+          </div>
+        {%- endif -%}
+
+      </div>
+    </div>
+  {%- endif -%}
+
+</div>

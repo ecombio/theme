@@ -1,37 +1,24 @@
 <!--
   ============================================================================
-  header.liquid — LIQUID VERSION (Step 2 of 2)
+  sections/header.liquid
   ============================================================================
-
-  All 4 rows are now fully dynamic. Every hardcoded string from the static
-  version has been replaced with a Liquid variable, route, or setting.
-
-  HOW TO WIRE IT UP:
-    1. Copy this file to sections/header.liquid.
-    2. Copy header.css into assets/header.css and add this to <head>:
-         {{ 'header.css' | asset_url | stylesheet_tag }}
-    3. Copy header.js into assets/header.js and add before </body>:
-         {{ 'header.js' | asset_url | script_tag }}
-    4. In the Shopify Theme Editor, set:
-         - Header menu  → pick a navigation menu
-         - Promo text   → e.g. "🛎️ Hurry! Sale ends in..."
-         - Sale end date/time → ISO 8601 string, e.g. "2025-12-31T23:59:59"
-         - Show promo   → toggle on/off
 
   4 ROWS, TOP TO BOTTOM:
     1. .header__promo   — navy bar, live countdown (hidden when toggled off)
     2. .header__utility — page links + Shopify localization form
-    3. .header__main    — shop name/logo, search form, account, cart
-    4. .header__nav     — real menu loop with sub-menu caret support
+    3. .header__main    — logo, search, account, cart
+    4. .header__menu    — block-driven nav (link / linklist / mega / promo)
+
+  NAV BLOCKS:
+    Each block in section.blocks becomes one item in the menu bar.
+    Merchants add, remove, and reorder blocks in the theme editor.
+    Types: link | linklist | mega | promo
   ============================================================================
 -->
 
 <header class="header" data-header>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       ROW 1: PROMO BAR → snippets/header-promo.liquid
-       Guard lives here so the snippet stays unconditional and testable.
-  ════════════════════════════════════════════════════════════════════════════ -->
+  <!-- ROW 1: PROMO BAR ───────────────────────────────────────────────────── -->
   {% if section.settings.show_promo %}
     {% render 'header-promo',
        promo_text:    section.settings.promo_text,
@@ -39,26 +26,13 @@
     %}
   {% endif %}
 
-
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       ROW 2: UTILITY BAR → snippets/header-utility.liquid
-       Service links + localization form. No variables needed — reads
-       pages[] and localization globals directly inside the snippet.
-  ════════════════════════════════════════════════════════════════════════════ -->
+  <!-- ROW 2: UTILITY BAR ─────────────────────────────────────────────────── -->
   {% render 'header-utility' %}
 
-
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       ROW 3: MAIN BAR
-       - Logo: shows uploaded image if set, otherwise falls back to shop name.
-       - Search: real <form> so Enter key and submit button both work.
-       - Account: changes label when customer is logged in.
-       - Cart badge: pulls live item count; hidden when cart is empty.
-  ════════════════════════════════════════════════════════════════════════════ -->
+  <!-- ROW 3: MAIN BAR ────────────────────────────────────────────────────── -->
   <div class="header__main">
     <div class="header__main-inner page-width">
 
-      <!-- LOGO → snippets/header-logo.liquid ──────────────────────────────── -->
       {% render 'header-logo',
          logo:               settings.logo,
          logo_width_desktop: settings.logo_width_desktop,
@@ -66,29 +40,20 @@
          logo_width_mobile:  settings.logo_width_mobile
       %}
 
-      <!-- SEARCH → snippets/header-search.liquid ──────────────────────────── -->
       {% render 'header-search',
          placeholder: section.settings.search_placeholder
       %}
 
-      <!-- ACCOUNT + CART ─────────────────────────────────────────────────── -->
       <div class="header__main-right">
         {% render 'header-account' %}
         {% render 'header-cart' %}
       </div>
+
     </div>
   </div>
 
-
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       ROW 4: NAV BAR → snippets/header-nav.liquid
-       Loop lives in header-nav; each item rendered by header-nav-item.
-       Swap header-nav-item alone for mega-menu or mobile accordion.
-  ════════════════════════════════════════════════════════════════════════════ -->
-  {% render 'header-nav',
-     menu:         section.settings.menu,
-     deals_handle: 'great-deals'
-  %}
+  <!-- ROW 4: MENU BAR ────────────────────────────────────────────────────── -->
+  {% render 'header-menu', blocks: section.blocks %}
 
 </header>
 
@@ -98,17 +63,6 @@
   "name": "Header",
   "class": "section-header",
   "settings": [
-
-    {
-      "type": "header",
-      "content": "Navigation"
-    },
-    {
-      "type": "link_list",
-      "id": "menu",
-      "label": "Main menu",
-      "default": "main-menu"
-    },
 
     {
       "type": "header",
@@ -141,14 +95,134 @@
       "type": "text",
       "id": "sale_end_time",
       "label": "Sale end date/time",
-      "info": "ISO 8601 format, e.g. 2025-12-31T23:59:59. Used by the countdown timer in header.js.",
+      "info": "ISO 8601 format, e.g. 2025-12-31T23:59:59",
       "default": "2027-12-31T23:59:59"
     }
 
   ],
+
+  "blocks": [
+
+    {
+      "type": "link",
+      "name": "Single link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link"
+        },
+        {
+          "type": "checkbox",
+          "id": "highlight",
+          "label": "Highlight (deals styling)",
+          "default": false
+        }
+      ]
+    },
+
+    {
+      "type": "linklist",
+      "name": "Link list",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu source"
+        }
+      ]
+    },
+
+    {
+      "type": "mega",
+      "name": "Mega menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Mega menu source",
+          "info": "3 levels: column → subheading → links"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_products",
+          "label": "Show product grid",
+          "default": false
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Products collection",
+          "info": "Shown when 'Show product grid' is enabled"
+        },
+        {
+          "type": "range",
+          "id": "product_limit",
+          "label": "Number of products",
+          "min": 2,
+          "max": 6,
+          "step": 1,
+          "default": 4
+        }
+      ]
+    },
+
+    {
+      "type": "promo",
+      "name": "In-menu promo",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "subtext",
+          "label": "Subtext"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "cta_url",
+          "label": "Button link"
+        }
+      ]
+    }
+
+  ],
+
   "presets": [
     {
-      "name": "Header"
+      "name": "Header",
+      "blocks": [
+        { "type": "link" },
+        { "type": "linklist" }
+      ]
     }
   ]
 }
