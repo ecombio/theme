@@ -39,12 +39,18 @@
 
   function setMenuBottom() {
     if (!header) return;
-    const bottom = header.getBoundingClientRect().bottom + window.scrollY;
+    // getBoundingClientRect().bottom is viewport-relative — do NOT add scrollY.
+    // position:fixed panels are placed relative to the viewport, so adding
+    // scrollY makes the panel drift down by exactly how far the page is scrolled.
+    const bottom = header.getBoundingClientRect().bottom;
     document.documentElement.style.setProperty('--menu-bottom', `${Math.round(bottom)}px`);
   }
 
   setMenuBottom();
   window.addEventListener('resize', setMenuBottom, { passive: true });
+  // Also update on scroll in case the header is position:sticky and moves
+  // with the viewport as the user scrolls.
+  window.addEventListener('scroll', setMenuBottom, { passive: true });
 
   const promoEl = document.querySelector('.header__promo');
   if (promoEl && typeof ResizeObserver !== 'undefined') {
