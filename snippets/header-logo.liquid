@@ -4,20 +4,26 @@
   ROW 3a: Logo — image uploaded in Theme Editor, or shop name as italic text.
 
   VARIABLES (passed in via `with` from sections/header.liquid):
-    logo  {image object | blank}  — section.settings.logo image picker value.
-                                    Pass blank (or omit) to use text fallback.
+    logo               {image object | blank}  — section.settings.logo
+    logo_width_desktop {number}                — settings.logo_width_desktop
+    logo_width_tablet  {number}                — settings.logo_width_tablet
+    logo_width_mobile  {number}                — settings.logo_width_mobile
 
-  GLOBALS READ DIRECTLY (available everywhere in Shopify):
-    shop.name    — used as aria-label on the link and as alt text fallback.
-    routes.root_url — homepage href.
+  GLOBALS READ DIRECTLY:
+    shop.name         — aria-label + alt text fallback
+    routes.root_url   — homepage href
 
   CALLER (sections/header.liquid):
-    {% render 'header-logo', logo: section.settings.logo %}
+    {% render 'header-logo',
+       logo:               section.settings.logo,
+       logo_width_desktop: settings.logo_width_desktop,
+       logo_width_tablet:  settings.logo_width_tablet,
+       logo_width_mobile:  settings.logo_width_mobile
+    %}
 
   OUTPUTS:
-    Image variant  → <a><img …></a>  (eager-loaded, fetchpriority high —
-                                       logo is always above the fold)
-    Text variant   → <a>Shop name</a> (italic bold, matches screenshot)
+    Image variant → <a><img …></a>  (eager-loaded, fetchpriority high)
+    Text variant  → <a>Shop name</a> (italic bold fallback)
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
@@ -29,7 +35,7 @@
   {%- if logo != blank -%}
     {{
       logo
-      | image_url: width: 300
+      | image_url: width: 600
       | image_tag:
           class: 'header__logo-img',
           alt: logo.alt | default: shop.name,
@@ -40,3 +46,11 @@
     {{- shop.name -}}
   {%- endif -%}
 </a>
+
+{%- if logo != blank -%}
+  <style>
+    .header__logo-img { width: {{ logo_width_mobile | default: 100 }}px; }
+    @media (min-width: 768px)  { .header__logo-img { width: {{ logo_width_tablet  | default: 130 }}px; } }
+    @media (min-width: 1024px) { .header__logo-img { width: {{ logo_width_desktop | default: 160 }}px; } }
+  </style>
+{%- endif -%}
