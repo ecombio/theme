@@ -1,0 +1,57 @@
+{% comment %}
+  snippets/header-promo.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  ROW 1: Promo bar — navy background, message text, live countdown timer.
+
+  VARIABLES (passed in via `render` from sections/header.liquid):
+    promo_text    {string}  — the promotional message, e.g. "🔔 Hurry! Sale ends in..."
+    sale_end_time {string}  — ISO 8601 end date, e.g. "2025-12-31T23:59:59"
+                              read by header.js to drive the countdown.
+
+  DOES NOT READ:
+    section.settings — all values are passed in; snippet is section-agnostic.
+
+  CALLER EXAMPLE (in sections/header.liquid):
+    {% if section.settings.show_promo %}
+      {% render 'header-promo',
+         promo_text:    section.settings.promo_text,
+         sale_end_time: section.settings.sale_end_time
+      %}
+    {% endif %}
+
+  NOTE: The {% if show_promo %} guard lives in the caller, not here.
+  That keeps this snippet unconditional and independently testable.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<div class="header__promo">
+  <div class="header__promo-inner page-width">
+
+    <span class="header__promo-text">
+      {{- promo_text | escape -}}
+    </span>
+
+    {% comment %}
+      data-end-time is the handoff point to header.js.
+      The JS reads this attribute, calculates remaining seconds from now,
+      and ticks the four unit spans down every second.
+      Initial values (00D / 00H / 00M / 00S) are placeholders — JS overwrites
+      them on the first tick, so there is no visible flash.
+    {% endcomment %}
+    <span
+      class="header__promo-timer"
+      data-end-time="{{ sale_end_time | escape }}"
+      aria-live="polite"
+      aria-label="Sale countdown timer"
+    >
+      <span class="header__promo-timer-unit" aria-hidden="true">00D</span>
+      <span class="header__promo-timer-sep"  aria-hidden="true">:</span>
+      <span class="header__promo-timer-unit" aria-hidden="true">00H</span>
+      <span class="header__promo-timer-sep"  aria-hidden="true">:</span>
+      <span class="header__promo-timer-unit" aria-hidden="true">00M</span>
+      <span class="header__promo-timer-sep"  aria-hidden="true">:</span>
+      <span class="header__promo-timer-unit" aria-hidden="true">00S</span>
+    </span>
+
+  </div>
+</div>
