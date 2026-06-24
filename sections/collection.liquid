@@ -5,10 +5,8 @@
     sections/collection.liquid
       ├─ collection__header          (title + description)
       └─ collection__body            (sidebar + main, flex row)
-           ├─ collection__sidebar    (filter toggle btn + sidebar panel)
-           │    └─ render 'product-filter'
+           ├─ collection__sidebar    (facet form, inlined — no snippet)
            └─ collection__main
-                ├─ collection__toolbar   (sort form + result count)
                 └─ collection-products  (product-feed grid)
 
   The sidebar is open by default. Clicking the "Filter" button in the
@@ -109,7 +107,40 @@
           id="CollectionSidebar"
           aria-label="Product filters"
         >
-          {%- render 'product-filter', collection: collection -%}
+          <form
+            id="ProductFilterFacetsForm"
+            class="product-filter__form"
+            action="{{ collection.url }}"
+            method="get"
+          >
+            {%- for filter in collection.filters -%}
+              <fieldset class="product-filter__group">
+                <legend class="product-filter__group-label">{{ filter.label }}</legend>
+                {%- for value in filter.values -%}
+                  <label class="product-filter__option">
+                    <input
+                      type="checkbox"
+                      name="{{ value.param_name }}"
+                      value="{{ value.value }}"
+                      {% if value.active %}checked{% endif %}
+                      {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                    >
+                    <span>{{ value.label }} ({{ value.count }})</span>
+                  </label>
+                {%- endfor -%}
+              </fieldset>
+            {%- endfor -%}
+
+            {%- comment -%} Preserve current sort when filters are applied {%- endcomment -%}
+            {%- if collection.sort_by != blank -%}
+              <input type="hidden" name="sort_by" value="{{ collection.sort_by }}">
+            {%- endif -%}
+
+            <div class="product-filter__actions">
+              <button type="submit" class="product-filter__apply">Apply</button>
+              <a href="{{ collection.url }}" class="product-filter__clear">Clear all</a>
+            </div>
+          </form>
         </aside>
       {%- endif -%}
 
