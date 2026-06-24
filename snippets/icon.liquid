@@ -1,0 +1,139 @@
+{%- comment -%}
+  ============================================================================
+  snippets/icon.liquid — Icon registry
+  ============================================================================
+
+  Single entry point for all theme icons. Renders inline SVG so icons
+  inherit CSS `color` via `currentColor` and require no HTTP requests.
+
+  USAGE:
+    {% render 'icon', name: 'search' %}
+    {% render 'icon', name: 'cart' %}
+    {% render 'icon', name: 'account' %}
+    {% render 'icon', name: 'close' %}
+    {% render 'icon', name: 'chevron-down' %}
+
+  VARIABLES:
+    name    {string}  Icon identifier. Required.
+    size    {number}  Width and height in pixels. Default: 20.
+    class   {string}  Additional CSS classes. Optional.
+
+  ADDING A NEW ICON:
+    1. Add a new `when` block to the case statement below.
+    2. Use `currentColor` for all fill/stroke values.
+    3. Remove all hardcoded colours from the SVG source.
+    4. Set viewBox to match the source artboard.
+
+  All paths are original artwork. No third-party license required.
+  ============================================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign icon_size = size | default: 20
+-%}
+
+{%- case name -%}
+
+  {%- when 'search' -%}
+    <svg
+      class="icon icon--search{% if class != blank %} {{ class }}{% endif %}"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="{{ icon_size }}"
+      height="{{ icon_size }}"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <line x1="15.5" y1="15.5" x2="21" y2="21" />
+    </svg>
+
+  {%- when 'account' -%}
+    <svg
+      class="icon icon--account{% if class != blank %} {{ class }}{% endif %}"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="{{ icon_size }}"
+      height="{{ icon_size }}"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+    </svg>
+
+  {%- when 'cart' -%}
+    <svg
+      class="icon icon--cart{% if class != blank %} {{ class }}{% endif %}"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="{{ icon_size }}"
+      height="{{ icon_size }}"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 01-8 0" />
+    </svg>
+
+  {%- when 'close' -%}
+    <svg
+      class="icon icon--close{% if class != blank %} {{ class }}{% endif %}"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="{{ icon_size }}"
+      height="{{ icon_size }}"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+
+  {%- when 'chevron-down' -%}
+    <svg
+      class="icon icon--chevron-down{% if class != blank %} {{ class }}{% endif %}"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="{{ icon_size }}"
+      height="{{ icon_size }}"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+
+  {%- else -%}
+    {%- comment -%}
+      Unknown icon name. Renders nothing but leaves a comment in source
+      so developers can catch missing icons during QA without a thrown error.
+    {%- endcomment -%}
+    <!-- icon "{{ name }}" not found in snippets/icon.liquid -->
+
+{%- endcase -%}
