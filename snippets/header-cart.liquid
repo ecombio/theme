@@ -1,40 +1,11 @@
-{% comment %}
-  snippets/header-cart.liquid
-  ─────────────────────────────────────────────────────────────────────────────
-  ROW 3d: Cart icon + live item-count badge.
-
-  VARIABLES PASSED IN: none.
-
-  GLOBALS READ DIRECTLY:
-    cart.item_count   — total number of items currently in the cart.
-                        Shopify keeps this in sync on every page load.
-    routes.cart_url   — resolves to /cart.
-
-  CALLER (sections/header.liquid):
-    {% render 'header-cart' %}
-
-  BADGE BEHAVIOUR:
-    - Visible only when cart.item_count > 0 (no empty red circle).
-    - aria-label on the <a> reads the count aloud for screen readers,
-      e.g. "Cart, 3 items".
-
-  STEP 3 NOTE:
-    When you add an Ajax cart drawer, attach the open event to
-    [data-cart-trigger] rather than following the href. The badge count
-    can then be updated via a targeted innerHTML swap on .header__cart-badge
-    after each add-to-cart response — no full page reload needed.
-    The [data-cart-count] attribute on the badge span is the update target.
-  ─────────────────────────────────────────────────────────────────────────────
-{% endcomment %}
-
-<a
-  href="{{ routes.cart_url }}"
-  class="header__cart"
-  aria-label="Cart, {{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}"
-  data-cart-trigger
+{% comment %} snippets/header-cart.liquid {% endcomment %}
+<a href="{{ routes.cart_url }}"
+   class="header__cart"
+   aria-label="Cart{% if cart.item_count > 0 %}, {{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}{% endif %}"
+   data-cart-trigger
 >
   <span class="header__cart-icon-wrap" aria-hidden="true">
-    🛍️
+    {% render 'icon', name: 'cart', size: 20, class: 'header__cart-icon' %}
     {%- if cart.item_count > 0 -%}
       <span class="header__cart-badge" data-cart-count>
         {{- cart.item_count -}}
