@@ -8,9 +8,9 @@
   context-switcher will swap this for an article-card feed. Don't
   rename or over-fit this to products-only assumptions.
 
-  IN-FEED CAROUSEL BLOCKS (optional):
+  IN-FEED PROMO CAROUSEL BLOCKS (optional):
   When carousel_blocks is passed (repeatable schema blocks from
-  sections/collection.liquid, type "carousel"), one in-feed-carousel
+  sections/collection.liquid, type "carousel"), one promo-carousel
   is inserted after every `interval` products. Blocks cycle in order
   if there are more carousel blocks than insertion points, and repeat
   from the start if there are fewer. A block with no collection
@@ -54,7 +54,7 @@
     -%}
 
     {%- comment -%}
-      Insert a carousel after every Nth product (1-indexed forloop.index),
+      Insert a promo carousel after every Nth product (1-indexed forloop.index),
       but never after the very last product in the list.
     {%- endcomment -%}
     {%- liquid
@@ -73,13 +73,16 @@
         assign feed_block     = feed_carousel_blocks[feed_block_idx]
         assign feed_block_col = feed_block.settings.collection | default: fallback_collection
       -%}
-      {%- render 'in-feed-carousel',
-        collection: feed_block_col,
-        block_id: feed_block.id,
-        heading: feed_block.settings.heading,
+      {%- render 'promo-carousel',
+        collection:     feed_block_col,
+        block_id:       feed_block.id,
+        heading:        feed_block.settings.heading,
         products_limit: feed_block.settings.products_per_carousel,
-        cards_desktop: feed_block.settings.cards_per_row_desktop,
-        cards_mobile: feed_block.settings.cards_per_row_mobile
+        cards_desktop:  feed_block.settings.cards_per_row_desktop,
+        cards_mobile:   feed_block.settings.cards_per_row_mobile,
+        show_banner:    feed_block.settings.show_banner,
+        banner_image:   feed_block.settings.banner_image,
+        banner_link:    feed_block.settings.banner_link
       -%}
     {%- endif -%}
   {%- endfor -%}
