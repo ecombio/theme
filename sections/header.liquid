@@ -25,6 +25,16 @@
       </h2>
 
       <div class="header__middle-icons">
+        <button
+          class="header__search-toggle"
+          aria-label="Search"
+          aria-expanded="false"
+          aria-controls="header-search-panel"
+          data-search-toggle
+        >
+          {{ 'icon-search.svg' | inline_asset_content }}
+        </button>
+
         <a
           href="{{ routes.cart_url }}"
           class="header__cart"
@@ -74,6 +84,72 @@
       {%- endfor -%}
     </div>
   </nav>
+
+  {%- comment -%}
+    ── SEARCH PANEL: flyout below header, opened by the toggle above.
+    Markup is intentionally flat (not nested inside header__bottom) so its
+    z-index/positioning in header.css is independent of the mobile nav state.
+  {%- endcomment -%}
+  <div
+    id="header-search-panel"
+    class="header__search-panel"
+    data-search-panel
+    hidden
+  >
+    <div class="header__search-panel-inner page-width">
+      <form
+        action="{{ routes.search_url }}"
+        method="get"
+        role="search"
+        class="header__search-form"
+        data-search-form
+      >
+        <svg class="header__search-form-icon" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="search"
+          name="q"
+          class="header__search-input"
+          placeholder="Search products, collections, and more"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-label="Search"
+          aria-describedby="header-search-status"
+          data-search-input
+        >
+        <input type="hidden" name="type" value="product,article,page,collection">
+        <input type="hidden" name="options[prefix]" value="last">
+
+        <button type="button" class="header__search-clear" aria-label="Clear search" data-search-clear hidden>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <button type="button" class="header__search-close" aria-label="Close search" data-search-close>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </form>
+
+      <p id="header-search-status" class="visually-hidden" data-search-status aria-live="polite"></p>
+
+      <div class="header__search-results" data-search-results>
+        <p class="header__search-hint" data-search-hint>
+          Start typing to see suggestions, or press Enter to see all results.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="header__search-backdrop" data-search-backdrop hidden></div>
 
 </header>
 
