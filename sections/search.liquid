@@ -1,70 +1,390 @@
-{% comment %}
-  This section is used in the search template to render search results for
-  products, articles, and pages.
+{%- comment -%}
+  sections/search.liquid
+  ============================================================================
+  Mirrors sections/collection.liquid exactly — same grid, same sidebar,
+  same toolbar, same product-card.liquid, same pagination.
 
-  https://shopify.dev/docs/storefronts/themes/architecture/templates/search
-{% endcomment %}
+  DATA SOURCE SWAP:
+    collection.products  →  search.results (filtered to type == 'product')
+    collection.filters   →  search.filters
+    collection.sort_*    →  search.sort_*
+    collection.url       →  routes.search_url
 
-<h1>{{ 'search.title' | t }}</h1>
+  EXTRA vs collection.liquid:
+    • Search form at the top (re-search without leaving the page)
+    • "No results" empty state
+    • Articles / Pages results block below the product grid (when present)
 
-<form action="{{ routes.search_url }}" method="get" role="search">
-  <input
-    type="search"
-    size="50"
-    name="q"
-    value="{{ search.terms | escape }}"
-    placeholder="{{ 'search.placeholder' | t }}"
-  >
-  <button type="submit">{{ 'search.submit' | t }}</button>
-</form>
+  ASSET OWNERSHIP (same as collection.liquid):
+    collection.css     — layout, sidebar, toolbar, pagination
+    product-card.css   — product card
+  ============================================================================
+{%- endcomment -%}
 
-{% if search.performed %}
-  {% if search.results_count == 0 %}
-    <p>{{ 'search.no_results_html' | t: terms: search.terms }}</p>
-  {% else %}
-    <p>{{ 'search.results_for_html' | t: terms: search.terms, count: search.results_count }}</p>
+{{ 'collection.css'   | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+{{ 'search.css'       | asset_url | stylesheet_tag }}
 
-    <div class="search-results">
-      {% paginate search.results by 20 %}
-        {% # Search result items may be an article, a page, or a product. %}
-        {% for result in search.results %}
-          <div class="search-result">
-            {% assign featured_image = result.featured_image | default: result.image %}
-            {% if featured_image %}
-              {% render 'image', class: 'search-result__image', image: featured_image, url: result.url, width: 400 %}
-            {% endif %}
-            <div class="search-result__content">
-              <p>
-                {{ result.title | link_to: result.url }}
-                {% if result.price %}
-                  {{ result.price | money_with_currency }}
-                {% endif %}
-              </p>
+{%- liquid
+  assign search_products = search.results | where: 'object_type', 'product'
+  assign search_articles = search.results | where: 'object_type', 'article'
+  assign search_pages    = search.results | where: 'object_type', 'page'
+
+  assign has_products = search_products.size
+  assign has_articles = search_articles.size
+  assign has_pages    = search_pages.size
+
+  assign columns_desktop  = section.settings.columns_desktop
+  assign columns_mobile   = section.settings.columns_mobile
+-%}
+
+<div class="collection page-width" data-section-id="{{ section.id }}" data-section-type="search">
+
+  {%- comment -%}── HEADER ──────────────────────────────────────────────────{%- endcomment -%}
+  <div class="collection__header">
+    <h1 class="collection__title">
+      {%- if search.performed -%}
+        {{ 'search.results_for_html' | t: terms: search.terms, count: search.results_count }}
+      {%- else -%}
+        {{ 'search.title' | t }}
+      {%- endif -%}
+    </h1>
+
+    {%- comment -%} Re-search form {%- endcomment -%}
+    <form
+      class="search__requery-form"
+      action="{{ routes.search_url }}"
+      method="get"
+      role="search"
+    >
+      <input type="hidden" name="type" value="product,article,page">
+      <div class="search__requery-inner">
+        <label class="visually-hidden" for="search-requery-input">
+          {{- 'general.search.label' | t -}}
+        </label>
+        <input
+          class="search__requery-input"
+          id="search-requery-input"
+          type="search"
+          name="q"
+          value="{{ search.terms | escape }}"
+          placeholder="{{ 'search.placeholder' | t }}"
+          autocomplete="off"
+        >
+        <button class="search__requery-submit" type="submit" aria-label="{{ 'search.submit' | t }}">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5"/>
+            <line x1="15.5" y1="15.5" x2="21" y2="21"/>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {%- if search.performed == false -%}
+
+    {%- comment -%} Not yet searched — just show the form above, nothing else {%- endcomment -%}
+
+  {%- elsif search.results_count == 0 -%}
+
+    {%- comment -%}── EMPTY STATE ─────────────────────────────────────────────{%- endcomment -%}
+    <p class="search__no-results">
+      {{ 'search.no_results_html' | t: terms: search.terms }}
+    </p>
+
+  {%- else -%}
+
+    {%- comment -%}── TOOLBAR ─────────────────────────────────────────────────
+      Mirrors collection__toolbar: filter toggle on the left, sort on the right.
+      Filter toggle only appears when search.filters has entries.
+      Sort only appears when search.sort_options has entries.
+    {%- endcomment -%}
+    <div class="collection__toolbar">
+
+      {%- if search.filters.size > 0 -%}
+        <button
+          type="button"
+          class="product-filter__toggle-btn"
+          aria-expanded="true"
+          aria-controls="SearchSidebar"
+          data-filter-toggle
+        >
+          <svg class="product-filter__toggle-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          Filter
+        </button>
+      {%- endif -%}
+
+      {%- if search.sort_options.size > 0 -%}
+        <form
+          class="product-filter__sort-form"
+          action="{{ routes.search_url }}"
+          method="get"
+        >
+          <input type="hidden" name="q" value="{{ search.terms | escape }}">
+          <input type="hidden" name="type" value="product,article,page">
+          <label for="SearchSortBy" class="product-filter__sort-label">Sort by</label>
+          <select
+            name="sort_by"
+            id="SearchSortBy"
+            class="product-filter__sort-select"
+            onchange="this.form.submit()"
+          >
+            {%- for option in search.sort_options -%}
+              <option value="{{ option.value }}" {% if option.value == search.sort_by %}selected{% endif %}>
+                {{ option.name }}
+              </option>
+            {%- endfor -%}
+          </select>
+          {%- for filter in search.filters -%}
+            {%- for value in filter.active_values -%}
+              <input type="hidden" name="{{ value.param_name }}" value="{{ value.value }}">
+            {%- endfor -%}
+          {%- endfor -%}
+        </form>
+      {%- endif -%}
+
+    </div><!-- /.collection__toolbar -->
+
+    {%- paginate search.results by section.settings.products_per_page -%}
+
+      <div class="collection__body" id="SearchBody">
+
+        {%- comment -%}── SIDEBAR ────────────────────────────────────────────{%- endcomment -%}
+        {%- if search.filters.size > 0 -%}
+          <aside
+            class="collection__sidebar"
+            id="SearchSidebar"
+            aria-label="Search filters"
+          >
+            <form
+              id="SearchFilterForm"
+              class="product-filter__form"
+              action="{{ routes.search_url }}"
+              method="get"
+            >
+              <input type="hidden" name="q" value="{{ search.terms | escape }}">
+              <input type="hidden" name="type" value="product,article,page">
+
+              {%- for filter in search.filters -%}
+                <fieldset class="product-filter__group">
+                  <legend class="product-filter__group-label">{{ filter.label }}</legend>
+                  {%- for value in filter.values -%}
+                    <label class="product-filter__option">
+                      <input
+                        type="checkbox"
+                        name="{{ value.param_name }}"
+                        value="{{ value.value }}"
+                        {% if value.active %}checked{% endif %}
+                        {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                      >
+                      <span>{{ value.label }} ({{ value.count }})</span>
+                    </label>
+                  {%- endfor -%}
+                </fieldset>
+              {%- endfor -%}
+
+              {%- if search.sort_by != blank -%}
+                <input type="hidden" name="sort_by" value="{{ search.sort_by }}">
+              {%- endif -%}
+
+              <div class="product-filter__actions">
+                <button type="submit" class="product-filter__apply">Apply</button>
+                <a href="{{ routes.search_url }}?q={{ search.terms | url_encode }}&type=product,article,page" class="product-filter__clear">Clear all</a>
+              </div>
+            </form>
+          </aside>
+        {%- endif -%}
+
+        {%- comment -%}── MAIN ───────────────────────────────────────────────{%- endcomment -%}
+        <div class="collection__main">
+
+          {%- comment -%}── PRODUCTS ─────────────────────────────────────────{%- endcomment -%}
+          {%- if has_products > 0 -%}
+            <div
+              class="collection-products"
+              style="
+                --collection-products-columns-desktop: {{ columns_desktop }};
+                --collection-products-columns-mobile:  {{ columns_mobile }};
+              "
+            >
+              {%- for product in search_products -%}
+                {%- render 'product-card',
+                  product:        product,
+                  show_quickview: section.settings.show_quickview,
+                  show_compare:   section.settings.show_compare,
+                  show_eta:       section.settings.show_eta
+                -%}
+              {%- endfor -%}
             </div>
-          </div>
-        {% endfor %}
+          {%- endif -%}
 
-        {{ paginate | default_pagination }}
-      {% endpaginate %}
-    </div>
-  {% endif %}
-{% endif %}
+          {%- comment -%}── ARTICLES ─────────────────────────────────────────{%- endcomment -%}
+          {%- if has_articles > 0 -%}
+            <div class="search__extra-section">
+              <h2 class="search__extra-heading">{{ 'blog.article_comments' | t | replace: 'Comments', 'Articles' }}</h2>
+              <ul class="search__extra-list" role="list">
+                {%- for article in search_articles -%}
+                  <li class="search__extra-item">
+                    <a class="search__extra-link" href="{{ article.url }}">
+                      {%- if article.image -%}
+                        <div class="search__extra-img-wrap">
+                          {{
+                            article.image
+                            | image_url: width: 200
+                            | image_tag:
+                              class: 'search__extra-img',
+                              loading: 'lazy',
+                              widths: '100,200',
+                              alt: article.image.alt | default: article.title | escape
+                          }}
+                        </div>
+                      {%- endif -%}
+                      <div class="search__extra-info">
+                        <span class="search__extra-title">{{ article.title }}</span>
+                        {%- if article.excerpt != blank -%}
+                          <span class="search__extra-excerpt">{{ article.excerpt | strip_html | truncate: 100 }}</span>
+                        {%- endif -%}
+                      </div>
+                    </a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
 
-{% stylesheet %}
-  .search-results {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-  .search-results .prev,
-  .search-results .page,
-  .search-results .next {
-    grid-column: 1 / -1;
-  }
-{% endstylesheet %}
+          {%- comment -%}── PAGES ────────────────────────────────────────────{%- endcomment -%}
+          {%- if has_pages > 0 -%}
+            <div class="search__extra-section">
+              <h2 class="search__extra-heading">Pages</h2>
+              <ul class="search__extra-list" role="list">
+                {%- for page in search_pages -%}
+                  <li class="search__extra-item">
+                    <a class="search__extra-link search__extra-link--page" href="{{ page.url }}">
+                      <div class="search__extra-info">
+                        <span class="search__extra-title">{{ page.title }}</span>
+                        {%- if page.content != blank -%}
+                          <span class="search__extra-excerpt">{{ page.content | strip_html | truncate: 100 }}</span>
+                        {%- endif -%}
+                      </div>
+                    </a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
+
+          {%- comment -%}── PAGINATION ───────────────────────────────────────{%- endcomment -%}
+          {%- if paginate.pages > 1 -%}
+            <nav class="collection__pagination" role="navigation" aria-label="Pagination">
+              {%- if paginate.previous -%}
+                <a href="{{ paginate.previous.url }}" class="collection__pagination-link" rel="prev">&larr; Previous</a>
+              {%- endif -%}
+              {%- for part in paginate.parts -%}
+                {%- if part.is_link -%}
+                  <a
+                    href="{{ part.url }}"
+                    class="collection__pagination-link"
+                    {% if part.title == paginate.current_page %}aria-current="page"{% endif %}
+                  >{{ part.title }}</a>
+                {%- else -%}
+                  <span class="collection__pagination-ellipsis">{{ part.title }}</span>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if paginate.next -%}
+                <a href="{{ paginate.next.url }}" class="collection__pagination-link" rel="next">Next &rarr;</a>
+              {%- endif -%}
+            </nav>
+          {%- endif -%}
+
+        </div><!-- /.collection__main -->
+
+      </div><!-- /.collection__body -->
+
+    {%- endpaginate -%}
+
+  {%- endif -%}
+
+</div><!-- /.collection -->
+
+{%- comment -%} Filter sidebar toggle — mirrors collection.liquid exactly {%- endcomment -%}
+{%- if search.filters.size > 0 -%}
+  <script>
+    (function () {
+      var btn     = document.querySelector('[data-filter-toggle]');
+      var body    = document.getElementById('SearchBody');
+      var sidebar = document.getElementById('SearchSidebar');
+      if (!btn || !body || !sidebar) return;
+      btn.addEventListener('click', function () {
+        var isOpen = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!isOpen));
+        body.classList.toggle('collection__body--sidebar-closed', isOpen);
+        sidebar.setAttribute('aria-hidden', String(isOpen));
+      });
+    })();
+  </script>
+{%- endif -%}
 
 {% schema %}
 {
-  "name": "t:general.search",
-  "settings": []
+  "name": "Search",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Product grid"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns (desktop)",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Columns (mobile)",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Results per page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quickview",
+      "label": "Show quick view button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_compare",
+      "label": "Show compare checkbox",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_eta",
+      "label": "Show delivery ETA",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Search"
+    }
+  ]
 }
 {% endschema %}
