@@ -5,21 +5,53 @@
   A single anchor. No children, no dropdown.
 
   BLOCK SETTINGS:
-    label      {string}  — link text
-    url        {url}     — destination
-    highlight  {bool}    — accent colour styling
+    label            {string}  — link text
+    url              {url}     — destination
+    highlight        {bool}    — accent colour styling
+    fancy_highlight  {bool}    — pill + animated stars (requires highlight on)
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
-{%- assign classes = 'header__menu-link' -%}
-{%- if block.settings.highlight -%}
-  {%- assign classes = 'header__menu-link header__menu-link--highlight' -%}
+{%- assign is_fancy = false -%}
+{%- if block.settings.highlight and block.settings.fancy_highlight -%}
+  {%- assign is_fancy = true -%}
 {%- endif -%}
 
-<a
-  href="{{ block.settings.url }}"
-  class="{{ classes }}"
-  {{ block.shopify_attributes }}
->
-  {{- block.settings.label | escape -}}
-</a>
+{%- if is_fancy -%}
+
+  <a
+    href="{{ block.settings.url }}"
+    class="header__menu-link header__menu-link--highlight header__menu-link--fancy"
+    {{ block.shopify_attributes }}
+  >
+    <span class="header__menu-fancy-label">
+      {{- block.settings.label | escape -}}
+    </span>
+
+    <svg class="header__menu-star header__menu-star--1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
+    </svg>
+    <svg class="header__menu-star header__menu-star--2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
+    </svg>
+    <svg class="header__menu-star header__menu-star--3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
+    </svg>
+  </a>
+
+{%- else -%}
+
+  {%- assign link_classes = 'header__menu-link' -%}
+  {%- if block.settings.highlight -%}
+    {%- assign link_classes = 'header__menu-link header__menu-link--highlight' -%}
+  {%- endif -%}
+
+  <a
+    href="{{ block.settings.url }}"
+    class="{{ link_classes }}"
+    {{ block.shopify_attributes }}
+  >
+    {{- block.settings.label | escape -}}
+  </a>
+
+{%- endif -%}
