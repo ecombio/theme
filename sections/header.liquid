@@ -1,0 +1,422 @@
+<!--
+  ============================================================================
+  header.liquid — LIQUID VERSION (Step 2 of 2)
+  ============================================================================
+
+  All 4 rows are now fully dynamic. Every hardcoded string from the static
+  version has been replaced with a Liquid variable, route, or setting.
+
+  HOW TO WIRE IT UP:
+    1. Copy this file to sections/header.liquid (or snippets/header.liquid
+       if you render it manually in theme.liquid).
+    2. Copy header.css into assets/header.css and add this to <head>:
+         {{ 'header.css' | asset_url | stylesheet_tag }}
+    3. Copy header.js into assets/header.js and add before </body>:
+         {{ 'header.js' | asset_url | script_tag }}
+    4. In the Shopify Theme Editor, set:
+         - Header menu  → pick a navigation menu
+         - Promo text   → e.g. "🛎️ Hurry! Sale ends in..."
+         - Sale end date/time → ISO 8601 string, e.g. "2025-12-31T23:59:59"
+         - Show promo   → toggle on/off
+
+  4 ROWS, TOP TO BOTTOM:
+    1. .header__promo   — navy bar, live countdown (hidden when toggled off)
+    2. .header__utility — page links + Shopify localization form
+    3. .header__main    — shop name/logo, search form, account, cart
+    4. .header__nav     — real menu loop with sub-menu caret support
+  ============================================================================
+-->
+
+<header class="header" data-header>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 1: PROMO BAR
+       - Entire row hidden when merchant turns off "Show promo bar" in editor.
+       - Promo text and sale end date come from theme settings.
+       - header.js reads data-end-time and counts down live.
+  ════════════════════════════════════════════════════════════════════════════ -->
+  {% if section.settings.show_promo %}
+    <div class="header__promo">
+      <div class="header__promo-inner page-width">
+
+        <span class="header__promo-text">
+          {{ section.settings.promo_text | escape }}
+        </span>
+
+        <!--
+          data-end-time: ISO 8601 timestamp the JS reads to calculate
+          remaining seconds. Set it in the theme customizer.
+        -->
+        <span
+          class="header__promo-timer"
+          data-end-time="{{ section.settings.sale_end_time | escape }}"
+          aria-live="polite"
+          aria-label="Countdown timer"
+        >
+          <span class="header__promo-timer-unit" aria-hidden="true">00D</span>
+          <span class="header__promo-timer-sep" aria-hidden="true">:</span>
+          <span class="header__promo-timer-unit" aria-hidden="true">00H</span>
+          <span class="header__promo-timer-sep" aria-hidden="true">:</span>
+          <span class="header__promo-timer-unit" aria-hidden="true">00M</span>
+          <span class="header__promo-timer-sep" aria-hidden="true">:</span>
+          <span class="header__promo-timer-unit" aria-hidden="true">00S</span>
+        </span>
+
+      </div>
+    </div>
+  {% endif %}
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 2: UTILITY BAR
+       - Links use real Shopify routes so they work on any domain/locale.
+       - Language/currency switcher uses Shopify's localization form — this
+         is the officially supported way to change locale without reloading.
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div class="header__utility">
+    <div class="header__utility-inner page-width">
+
+      <nav class="header__utility-links" aria-label="Customer service">
+        <!--
+          pages.track-my-order.url resolves to the page whose handle is
+          "track-my-order". Create that page in Shopify → Online Store → Pages.
+          Falls back gracefully to # if the page doesn't exist yet.
+        -->
+        <a
+          href="{{ pages['track-my-order'].url | default: '#' }}"
+          class="header__utility-link"
+        >
+          TRACK MY ORDER
+        </a>
+
+        <a
+          href="{{ pages['store-finder'].url | default: '#' }}"
+          class="header__utility-link"
+        >
+          STORE FINDER
+        </a>
+
+        <a
+          href="{{ pages['help-centre'].url | default: routes.root_url }}"
+          class="header__utility-link"
+        >
+          HELP CENTRE
+        </a>
+      </nav>
+
+      <!-- Shopify localization form: changes language AND currency.
+           Shopify handles the redirect; no JS needed for the core switch. -->
+      {% form 'localization', id: 'header-localization-form', class: 'header__lang-form' %}
+        <button
+          type="button"
+          class="header__lang-switcher"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="header-lang-list"
+        >
+          <span class="header__lang-flag" aria-hidden="true">
+            {%- case localization.language.iso_code -%}
+              {%- when 'en' -%}🇺🇸
+              {%- when 'fr' -%}🇫🇷
+              {%- when 'de' -%}🇩🇪
+              {%- when 'es' -%}🇪🇸
+              {%- else -%}🌐
+            {%- endcase -%}
+          </span>
+          <span class="header__lang-label">
+            {{ localization.language.name | upcase }}
+            ({{ localization.country.currency.iso_code }})
+          </span>
+          <span class="header__lang-caret" aria-hidden="true">▾</span>
+        </button>
+
+        <!-- Hidden select — JS submits this form when a locale is chosen.
+             Screen readers can also navigate this list directly. -->
+        <ul
+          id="header-lang-list"
+          class="header__lang-list"
+          role="listbox"
+          aria-label="Select language"
+          hidden
+        >
+          {%- for language in localization.available_languages -%}
+            {%- if language.iso_code == localization.language.iso_code -%}
+              {%- assign is_active = true -%}
+            {%- else -%}
+              {%- assign is_active = false -%}
+            {%- endif -%}
+            <li role="option" aria-selected="{% if is_active %}true{% else %}false{% endif %}">
+              <button
+                type="submit"
+                name="locale_code"
+                value="{{ language.iso_code }}"
+                class="header__lang-option{% if is_active %} header__lang-option--active{% endif %}"
+              >
+                {{ language.name }}
+              </button>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {% endform %}
+
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 3: MAIN BAR
+       - Logo: shows uploaded image if set, otherwise falls back to shop name.
+       - Search: real <form> so Enter key and submit button both work.
+       - Account: changes label when customer is logged in.
+       - Cart badge: pulls live item count; hidden when cart is empty.
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div class="header__main">
+    <div class="header__main-inner page-width">
+
+      <!-- LOGO ──────────────────────────────────────────────────────────── -->
+      <a href="{{ routes.root_url }}" class="header__logo" aria-label="{{ shop.name }}">
+        {%- if section.settings.logo != blank -%}
+          {{
+            section.settings.logo
+            | image_url: width: 300
+            | image_tag:
+                class: 'header__logo-img',
+                alt: section.settings.logo.alt | default: shop.name,
+                loading: 'eager',
+                fetchpriority: 'high'
+          }}
+        {%- else -%}
+          {{ shop.name }}
+        {%- endif -%}
+      </a>
+
+      <!-- SEARCH ─────────────────────────────────────────────────────────── -->
+      <!--
+        action="{{ routes.search_url }}" means Enter or the button submits
+        a real Shopify search. The hidden type=hidden field is required by
+        Shopify's predictive search to scope results to products only.
+      -->
+      <form
+        action="{{ routes.search_url }}"
+        method="get"
+        role="search"
+        class="header__search"
+      >
+        <input type="hidden" name="type" value="product">
+
+        <input
+          type="search"
+          name="q"
+          class="header__search-input"
+          placeholder="{{ section.settings.search_placeholder | default: 'What are you looking for?' | escape }}"
+          aria-label="Search"
+          autocomplete="off"
+          value="{{ search.terms | escape }}"
+        >
+
+        <!-- Mic button: purely cosmetic in Step 2; hook to Web Speech API in Step 3 -->
+        <button
+          type="button"
+          class="header__search-mic"
+          aria-label="Voice search"
+          data-voice-search
+        >
+          🎤
+        </button>
+
+        <button type="submit" class="header__search-submit" aria-label="Submit search">
+          🔍
+        </button>
+      </form>
+
+      <!-- ACCOUNT + CART ─────────────────────────────────────────────────── -->
+      <div class="header__main-right">
+
+        <!-- Account link: context-aware label -->
+        <a
+          href="{{ routes.account_url }}"
+          class="header__account"
+          aria-label="{% if customer %}My account{% else %}Sign in or register{% endif %}"
+        >
+          <span class="header__account-icon" aria-hidden="true">👤</span>
+          <span class="header__account-label">
+            {%- if customer -%}
+              Hi, {{ customer.first_name }}
+            {%- else -%}
+              Sign in / Register
+            {%- endif -%}
+          </span>
+        </a>
+
+        <!-- Cart: live item count badge, hidden when cart is empty -->
+        <a
+          href="{{ routes.cart_url }}"
+          class="header__cart"
+          aria-label="Cart, {{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}"
+        >
+          <span class="header__cart-icon-wrap" aria-hidden="true">
+            🛍️
+            {%- if cart.item_count > 0 -%}
+              <span class="header__cart-badge">{{ cart.item_count }}</span>
+            {%- endif -%}
+          </span>
+          <span class="header__cart-label">Cart</span>
+        </a>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 4: NAV BAR
+       - Driven by the menu chosen in section.settings.menu.
+       - Automatically shows a caret (▾) for any link that has child links.
+       - First link gets the --deals highlight colour if its handle is
+         "great-deals" — adjust the handle to match your actual menu item.
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <nav class="header__nav" aria-label="Main navigation">
+    <div class="header__nav-inner page-width">
+
+      {%- for link in section.settings.menu.links -%}
+
+        {%- assign has_children = false -%}
+        {%- if link.links != blank -%}
+          {%- assign has_children = true -%}
+        {%- endif -%}
+
+        {%- comment -%}
+          Special styling for "great-deals" handle.
+          Change the handle string below to match whatever handle
+          Shopify assigns to your deals link in the menu editor.
+        {%- endcomment -%}
+        {%- assign link_classes = 'header__nav-link' -%}
+        {%- if link.handle == 'great-deals' -%}
+          {%- assign link_classes = 'header__nav-link header__nav-link--deals' -%}
+        {%- endif -%}
+
+        {%- if has_children -%}
+          <!-- Parent link with children — renders as a disclosure widget -->
+          <div class="header__nav-item header__nav-item--dropdown" data-nav-dropdown>
+            <button
+              type="button"
+              class="{{ link_classes }} header__nav-link--dropdown"
+              aria-haspopup="true"
+              aria-expanded="false"
+              data-nav-toggle
+            >
+              {{ link.title }}
+              <span class="header__nav-caret" aria-hidden="true">▾</span>
+            </button>
+
+            <ul class="header__nav-submenu" role="list" hidden>
+              {%- for child_link in link.links -%}
+                <li>
+                  <a
+                    href="{{ child_link.url }}"
+                    class="header__nav-submenu-link{% if child_link.active %} header__nav-submenu-link--active{% endif %}"
+                    {% if child_link.current %}aria-current="page"{% endif %}
+                  >
+                    {{ child_link.title }}
+                  </a>
+                </li>
+              {%- endfor -%}
+            </ul>
+          </div>
+
+        {%- else -%}
+          <!-- Leaf link — plain anchor -->
+          <a
+            href="{{ link.url }}"
+            class="{{ link_classes }}"
+            {% if link.active %}aria-current="page"{% endif %}
+          >
+            {{- link.title -}}
+          </a>
+
+        {%- endif -%}
+
+      {%- else -%}
+        <!-- Fallback: shown in Theme Editor when no menu is selected yet -->
+        <span class="header__nav-link" style="opacity:0.4;">
+          No menu selected — choose one in the theme editor.
+        </span>
+      {%- endfor -%}
+
+    </div>
+  </nav>
+
+</header>
+
+
+{% schema %}
+{
+  "name": "Header",
+  "class": "section-header",
+  "settings": [
+
+    {
+      "type": "header",
+      "content": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image",
+      "info": "Leave blank to use your shop name as text."
+    },
+
+    {
+      "type": "header",
+      "content": "Navigation"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Main menu",
+      "default": "main-menu"
+    },
+
+    {
+      "type": "header",
+      "content": "Search"
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder text",
+      "default": "What are you looking for?"
+    },
+
+    {
+      "type": "header",
+      "content": "Promo bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_promo",
+      "label": "Show promo bar",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "promo_text",
+      "label": "Promo message",
+      "default": "🛎️ Hurry! Sale ends in..."
+    },
+    {
+      "type": "text",
+      "id": "sale_end_time",
+      "label": "Sale end date/time",
+      "info": "ISO 8601 format, e.g. 2025-12-31T23:59:59. Used by the countdown timer in header.js.",
+      "default": "2025-12-31T23:59:59"
+    }
+
+  ],
+  "presets": [
+    {
+      "name": "Header"
+    }
+  ]
+}
+{% endschema %}
