@@ -1,0 +1,247 @@
+/* ============================================================
+   promo-banner.css
+   Scope: .promo-banner (section root)
+   Loaded by sections/promo-banner.liquid
+
+   WIDTH SYSTEM
+   ─────────────
+   Four width variants keyed on --w suffix:
+     --wfull  100%  full row
+     --w75    75%   3-of-4 columns
+     --w50    50%   2-of-4 columns
+     --w25    25%   1-of-4 columns
+
+   POSITION SYSTEM
+   ────────────────
+   Three position variants for sub-full widths:
+     --pos-left    margin-right: auto
+     --pos-center  margin-inline: auto
+     --pos-right   margin-left: auto
+
+   ASPECT RATIO
+   ─────────────
+   --promo-aspect is set inline by Liquid and consumed here.
+   Defaults derived per width:
+     full  28/9  •  75% 16/5  •  50% 16/7  •  25% 3/4
+
+   TEXT LAYERS
+   ───────────
+   .promo-banner__content--{left|center|right}  horizontal alignment
+   .promo-banner__content--{top|middle|bottom}   vertical alignment
+   ============================================================ */
+
+/* ── Section wrapper ──────────────────────────────────────── */
+.promo-banner {
+  padding-top:    var(--promo-pt, 24px);
+  padding-bottom: var(--promo-pb, 24px);
+}
+
+/* ── Frame — the visible banner box ──────────────────────── */
+.promo-banner__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--promo-aspect, 28/9);
+  border-radius: 12px;
+  overflow: hidden;
+  /* GPU compositing layer so overlay + img don't repaint on hover */
+  will-change: transform;
+}
+
+/* Width variants */
+.promo-banner__frame--wfull  { width: 100%; }
+.promo-banner__frame--w75    { width: 75%; }
+.promo-banner__frame--w50    { width: 50%; }
+.promo-banner__frame--w25    { width: 25%; }
+
+/* Position variants — only meaningful when width < 100% */
+.promo-banner__frame--pos-left   { margin-right: auto; }
+.promo-banner__frame--pos-center { margin-inline: auto; }
+.promo-banner__frame--pos-right  { margin-left: auto; }
+
+/* ── Background layer ─────────────────────────────────────── */
+.promo-banner__bg {
+  position: absolute;
+  inset: 0;
+}
+
+.promo-banner__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* object-position set inline via Liquid focal point */
+  transition: transform 0.6s ease;
+}
+
+.promo-banner__frame:hover .promo-banner__img {
+  transform: scale(1.03);
+}
+
+/* Gradient placeholder when no image is set */
+.promo-banner__img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+}
+
+/* ── Overlay ──────────────────────────────────────────────── */
+.promo-banner__overlay {
+  position: absolute;
+  inset: 0;
+  /* rgba() colour set inline by Liquid */
+  pointer-events: none;
+}
+
+/* ── Content block ────────────────────────────────────────── */
+.promo-banner__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: clamp(1rem, 5%, 2.5rem);
+  color: #fff;
+  /* vertical alignment */
+  justify-content: flex-end; /* default: bottom */
+}
+
+/* Vertical position modifiers */
+.promo-banner__content--top    { justify-content: flex-start; }
+.promo-banner__content--middle { justify-content: center; }
+.promo-banner__content--bottom { justify-content: flex-end; }
+
+/* Horizontal alignment modifiers */
+.promo-banner__content--left   { align-items: flex-start; text-align: left; }
+.promo-banner__content--center { align-items: center;     text-align: center; }
+.promo-banner__content--right  { align-items: flex-end;   text-align: right; }
+
+/* ── Eyebrow ──────────────────────────────────────────────── */
+.promo-banner__eyebrow {
+  font-size: clamp(0.65rem, 1.2cqi, 0.8rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  /* Subtle pill background for legibility on busy images */
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 0.25em 0.65em;
+  border-radius: 100px;
+  width: fit-content;
+}
+
+/* center/right alignment adjusts pill to match */
+.promo-banner__content--center .promo-banner__eyebrow,
+.promo-banner__content--right  .promo-banner__eyebrow {
+  width: auto;
+}
+
+/* ── Headline ─────────────────────────────────────────────── */
+.promo-banner__headline {
+  font-size: clamp(1.1rem, 4cqi, 2.6rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #fff;
+  /* Subtle text shadow for readability on any background */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* Scale back slightly for portrait (25%) card */
+.promo-banner__frame--w25 .promo-banner__headline {
+  font-size: clamp(1rem, 5cqi, 1.6rem);
+}
+
+/* ── Subtext ──────────────────────────────────────────────── */
+.promo-banner__subtext {
+  font-size: clamp(0.8rem, 1.8cqi, 1rem);
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  line-height: 1.45;
+  max-width: 48ch;
+}
+
+.promo-banner__content--center .promo-banner__subtext,
+.promo-banner__content--right  .promo-banner__subtext {
+  max-width: none;
+}
+
+/* ── CTAs ─────────────────────────────────────────────────── */
+.promo-banner__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25em;
+  align-items: center;
+}
+
+.promo-banner__content--center .promo-banner__ctas { justify-content: center; }
+.promo-banner__content--right  .promo-banner__ctas { justify-content: flex-end; }
+
+.promo-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-size: clamp(0.75rem, 1.5cqi, 0.9rem);
+  font-weight: 600;
+  border-radius: 6px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.promo-banner__cta:hover { transform: translateY(-1px); }
+
+/* Primary button */
+.promo-banner__cta--primary {
+  background: #fff;
+  color: #111827;
+  padding: 0.55em 1.2em;
+  border: 2px solid #fff;
+}
+
+.promo-banner__cta--primary:hover {
+  background: transparent;
+  color: #fff;
+}
+
+/* Secondary text link */
+.promo-banner__cta--secondary {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.55em 0.5em;
+  border: 2px solid transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.promo-banner__cta--secondary:hover {
+  color: #fff;
+  text-decoration-color: #fff;
+}
+
+/* ── Mobile: collapse sub-full widths to full width ───────── */
+@media (max-width: 767px) {
+  .promo-banner__frame--w75,
+  .promo-banner__frame--w50,
+  .promo-banner__frame--w25 {
+    width: 100%;
+    /* restore portrait ratio to landscape on small screens */
+    aspect-ratio: 16/7;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .promo-banner__img,
+  .promo-banner__cta {
+    transition: none;
+  }
+  .promo-banner__frame:hover .promo-banner__img {
+    transform: none;
+  }
+  .promo-banner__cta:hover {
+    transform: none;
+  }
+}
