@@ -1,0 +1,185 @@
+/* ============================================================
+   sub-collection.css
+   Scope: .sub-collection (standalone section root)
+         .sub-collection__grid (embedded in collection.liquid)
+   Loaded by:
+     • sections/sub-collection.liquid  (standalone section)
+     • sections/collection.liquid      (inline grid above product feed)
+
+   Owns ONLY the collection-card grid and card internals.
+   Header styles (.collection__header / .collection__title /
+   .collection__description) come from collection.css — do not
+   redeclare them here.
+
+   No JS is used or needed: every card is a plain <a> tag.
+   ============================================================ */
+
+/* ── Section root (standalone use only) ───────────────────── */
+.sub-collection {
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+/* ── Card grid ────────────────────────────────────────────── */
+.sub-collection__grid {
+  display: grid;
+  grid-template-columns: repeat(
+    var(--sub-collection-columns-mobile, 2),
+    minmax(0, 1fr)
+  );
+  gap: 1rem;
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .sub-collection__grid {
+    grid-template-columns: repeat(
+      var(--sub-collection-columns-desktop, 4),
+      minmax(0, 1fr)
+    );
+    gap: 1.5rem;
+  }
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+/*
+  Distinct from product cards in three ways:
+    1. No border — uses a softer background + shadow instead
+    2. Inner padding around the image (image floats inside the card,
+       not edge-to-edge) giving a curated, editorial feel
+    3. Tighter text hierarchy — title-only, no price/badge clutter
+*/
+.sub-collection__card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 14px;
+  border: none;
+  overflow: visible;           /* allow image to cast shadow outside */
+  background: #F8F9FB;         /* off-white — distinct from product card #fff */
+  height: 100%;
+  padding: 10px 10px 0;        /* whitespace: image floats inside the card */
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
+}
+
+.sub-collection__card:hover {
+  background: #F1F3F7;
+  box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* ── Image zone ───────────────────────────────────────────── */
+/*
+  Rounded on all four corners + a subtle inner shadow so the image
+  reads as a "floating" photo rather than a flush product shot.
+  The outer card padding + this border-radius create the whitespace
+  margin that separates the image from the card edge.
+*/
+.sub-collection__img-zone {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #E9ECF1;
+  flex-shrink: 0;
+  border-radius: 8px;          /* inner rounding, smaller than card radius */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* lift the image off the bg */
+}
+
+.sub-collection__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.sub-collection__card:hover .sub-collection__img {
+  transform: scale(1.05);
+}
+
+/* ── Placeholder — SVG (sub-collection.liquid standalone) ─── */
+.sub-collection__img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F3F4F6;
+}
+
+.sub-collection__placeholder-svg {
+  width: 55%;
+  height: auto;
+  opacity: 0.2;
+}
+
+/* ── Placeholder — letter tile (collection.liquid inline) ─── */
+.sub-collection__img-letter {
+  font-size: clamp(1.75rem, 6cqi, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+/* ── Card body ────────────────────────────────────────────── */
+/*
+  Sits below the floated image, inside the card's padding.
+  Extra horizontal padding aligns text with the image inset.
+*/
+.sub-collection__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 4px 12px;      /* top gap from image, bottom breathing room */
+}
+
+.sub-collection__card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.sub-collection__card-count {
+  font-size: 0.72rem;
+  color: #6B7280;
+  font-weight: 400;
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.sub-collection__empty {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: #6B7280;
+  font-size: 0.95rem;
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sub-collection__card,
+  .sub-collection__img {
+    transition: none;
+  }
+  .sub-collection__card:hover {
+    transform: none;
+  }
+}
+
+/* ── Style 2: in-feed cards ───────────────────────────────── */
+.sub-collection__item--in-feed {
+  list-style: none;
+  display: flex;
+}
+
+.sub-collection__card--in-feed {
+  width: 100%;
+}
+
+/* ── Style 2: dedicated row modifier ─────────────────────── */
+.sub-collection__grid--dedicated {
+  margin-bottom: 0;
+}
