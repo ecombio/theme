@@ -274,14 +274,122 @@
   }
 }
 
-/* Frame fills its grid cell completely */
+/* ── In-feed frame ────────────────────────────────────────── */
+/*
+  The in-feed banner must feel editorially distinct from product
+  cards. Product cards: white bg, product photo top, text below.
+  In-feed banner: full-bleed image, overlaid text, cinematic feel.
+
+  Key differentiators applied here:
+    • Larger border-radius → softer, content-card feel vs card's sharp corners
+    • Dedicated gradient scrim always present (on top of Liquid overlay)
+      so text is always legible even without a merchant-set overlay
+    • Outline/ring border so it reads as a "feature" slot, not a product
+    • Hover: pan the image + lift the frame (product cards only pan)
+    • No white background — fully immersive
+*/
 .promo-banner__frame--in-feed {
   width: 100%;
   /* aspect-ratio set inline by Liquid — 1/1 default, widens with span */
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   position: relative;
   will-change: transform;
+  /* Subtle ring to distinguish from flat product cards */
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.12),
+    0 4px 24px rgba(0, 0, 0, 0.18);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.promo-banner__frame--in-feed:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.28);
+}
+
+/* Always-on gradient scrim — ensures text legibility independent of
+   the merchant-controlled overlay. Sits between image and content. */
+.promo-banner__frame--in-feed .promo-banner__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.72) 0%,
+      rgba(0, 0, 0, 0.28) 45%,
+      rgba(0, 0, 0, 0.04) 100%
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Override: when text is top-aligned, flip the scrim direction */
+.promo-banner__frame--in-feed .promo-banner__content--top
+  ~ .promo-banner__bg::after,
+.promo-banner__content--top
+  .promo-banner__frame--in-feed .promo-banner__bg::after {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.72) 0%,
+      rgba(0, 0, 0, 0.1) 60%,
+      transparent 100%
+    );
+}
+
+/* Tighter padding for 1-col card size — less real estate */
+.collection-products__banner-slot--span-1 .promo-banner__content,
+.collection-products__banner-slot:not([class*="--span-"])
+  .promo-banner__content {
+  padding: clamp(0.75rem, 8%, 1.25rem);
+  gap: 0.35em;
+}
+
+/* Scale typography down for 1-col card — matches product card proportions */
+.collection-products__banner-slot--span-1 .promo-banner__headline,
+.collection-products__banner-slot:not([class*="--span-"])
+  .promo-banner__headline {
+  font-size: clamp(0.95rem, 5cqi, 1.4rem);
+}
+
+.collection-products__banner-slot--span-1 .promo-banner__subtext,
+.collection-products__banner-slot:not([class*="--span-"])
+  .promo-banner__subtext {
+  font-size: clamp(0.7rem, 2.5cqi, 0.85rem);
+}
+
+/* Eyebrow pill: slightly more opaque in-feed for small-card legibility */
+.promo-banner__frame--in-feed .promo-banner__eyebrow {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-size: clamp(0.6rem, 1.8cqi, 0.75rem);
+}
+
+/* CTA: ghost style with stronger border in-feed so it reads
+   clearly at small card sizes */
+.promo-banner__frame--in-feed .promo-banner__cta--primary {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+  padding: 0.45em 1em;
+}
+
+.promo-banner__frame--in-feed .promo-banner__cta--primary:hover {
+  background: #fff;
+  color: #111827;
+  border-color: #fff;
+}
+
+/* Suppress hover image pan on in-feed — frame lift handles the
+   hover feedback; double-motion on a small card feels jittery */
+.promo-banner__frame--in-feed:hover .promo-banner__img {
+  transform: none;
 }
 
 /* ── Col-span slots ────────────────────────────────────────── */
