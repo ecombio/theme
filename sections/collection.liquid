@@ -3,46 +3,36 @@
 
   Structure:
     sections/collection.liquid
-      ├─ render 'product-filter'                 (facets + sort, plain form)
-      └─ div.collection-products
-           └─ render 'product-feed'               (loop → product-card ×N,
-                                                     interleaved with
-                                                     promo-carousel blocks)
+      ├─ collection__header          (title + description)
+      └─ collection__body            (sidebar + main, flex row)
+           ├─ collection__sidebar    (filter toggle btn + sidebar panel)
+           │    └─ render 'product-filter'
+           └─ collection__main
+                ├─ collection__toolbar   (sort form + result count)
+                └─ collection-products  (product-feed grid)
+
+  The sidebar is open by default. Clicking the "Filter" button in the
+  toolbar collapses it by toggling .collection__body--sidebar-closed on
+  the body element and aria-expanded on the button. The sidebar panel
+  itself also gets aria-hidden when collapsed.
 
   Asset ownership:
-    • collection.css — loaded HERE. Covers product-filter UI and the
-      .collection-products grid wrapper only. Does not touch
-      .product-card internals (that's product-card.css, loaded
-      separately by this section since that file is section-scoped,
-      not global per theme.liquid).
-    • product-card.js — global, loaded once in theme.liquid. Not
-      re-linked here.
+    • collection.css  — loaded HERE. Owns all layout, sidebar, filter UI,
+      grid wrapper, toolbar, and pagination. Does not touch .product-card.
+    • product-card.css / product-card.js — product-card.js is global
+      (theme.liquid). product-card.css is loaded HERE (section-scoped).
     • product-carousel.css / product-carousel.js — loaded HERE, once,
-      only when at least one "carousel" block is configured. These
-      files are reused AS-IS from sections/product-carousel.liquid —
-      do not fork them. snippets/promo-carousel.liquid emits the
-      same .product-carousel / data-carousel-* markup contract those
-      files already expect.
-    • No collection.js yet — filtering/sorting is plain <form> submit
-      (full page reload), so there's no collection-specific JS to
-      own yet. Add it only when AJAX filtering or the article-card
-      tab-switcher lands.
-
-  The .collection-products class is deliberately generic (not
-  .product-grid) since a future tab/context-switcher will let this
-  same wrapper hold an article-card feed instead. Keep it that way
-  until that work starts.
+      only when at least one "carousel" block is configured. Reused AS-IS;
+      do not fork them.
 
   PROMO CAROUSEL BLOCKS:
-  Repeatable "carousel" blocks (section.blocks) let a merchant insert
-  a horizontally-scrolling promo carousel every `carousel_interval`
-  products inside the feed. Each block can pick its own collection; if
-  left blank, it falls back to the current page's collection. Blocks
-  cycle in order across insertion points. Each block optionally
-  supports a side banner (show_banner / banner_image / banner_link).
+  Repeatable "carousel" blocks let a merchant insert a horizontally-
+  scrolling promo carousel every `carousel_interval` products inside
+  the feed. Each block can pick its own collection (falls back to the
+  current collection if blank) and optionally shows a side banner.
 {%- endcomment -%}
 
-{{ 'collection.css' | asset_url | stylesheet_tag }}
+{{ 'collection.css'  | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign carousel_blocks = section.blocks | where: 'type', 'carousel'
@@ -60,55 +50,137 @@
     {%- endif -%}
   </div>
 
-  {%- render 'product-filter', collection: collection -%}
+  {%- comment -%}
+    Toolbar: lives above the sidebar/main split so it spans full width.
+    Contains the Filter toggle (which controls the sidebar) and the sort form.
+  {%- endcomment -%}
+  <div class="collection__toolbar">
+    {%- if collection.filters.size > 0 -%}
+      <button
+        type="button"
+        class="product-filter__toggle-btn"
+        aria-expanded="true"
+        aria-controls="CollectionSidebar"
+        data-filter-toggle
+      >
+        <svg class="product-filter__toggle-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Filter
+      </button>
+    {%- endif -%}
+
+    {%- if collection.sort_options.size > 0 -%}
+      <form class="product-filter__sort-form" action="{{ collection.url }}" method="get">
+        <label for="CollectionSortBy" class="product-filter__sort-label">Sort by</label>
+        <select
+          name="sort_by"
+          id="CollectionSortBy"
+          class="product-filter__sort-select"
+          onchange="this.form.submit()"
+        >
+          {%- for option in collection.sort_options -%}
+            <option value="{{ option.value }}" {% if option.value == collection.sort_by %}selected{% endif %}>
+              {{ option.name }}
+            </option>
+          {%- endfor -%}
+        </select>
+
+        {%- comment -%} Preserve active facets when sort changes {%- endcomment -%}
+        {%- for filter in collection.filters -%}
+          {%- for value in filter.values -%}
+            {%- if value.active -%}
+              <input type="hidden" name="{{ value.param_name }}" value="{{ value.value }}">
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      </form>
+    {%- endif -%}
+  </div>
 
   {%- paginate collection.products by section.settings.products_per_page -%}
 
-    <div
-      class="collection-products"
-      style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
-    >
-      {%- render 'product-feed',
-        products: collection.products,
-        show_quickview: section.settings.show_quickview,
-        show_compare: section.settings.show_compare,
-        show_eta: section.settings.show_eta,
-        carousel_blocks: carousel_blocks,
-        carousel_interval: section.settings.carousel_interval,
-        fallback_collection: collection
-      -%}
-    </div>
+    <div class="collection__body" id="CollectionBody">
 
-    {%- if paginate.pages > 1 -%}
-      <nav class="collection__pagination" role="navigation" aria-label="Pagination">
-        {%- if paginate.previous -%}
-          <a href="{{ paginate.previous.url }}" class="collection__pagination-link" rel="prev">&larr; Previous</a>
+      {%- comment -%} SIDEBAR — open by default {%- endcomment -%}
+      {%- if collection.filters.size > 0 -%}
+        <aside
+          class="collection__sidebar"
+          id="CollectionSidebar"
+          aria-label="Product filters"
+        >
+          {%- render 'product-filter', collection: collection -%}
+        </aside>
+      {%- endif -%}
+
+      {%- comment -%} MAIN — products grid {%- endcomment -%}
+      <div class="collection__main">
+        <div
+          class="collection-products"
+          style="--collection-products-columns-desktop: {{ section.settings.columns_desktop }}; --collection-products-columns-mobile: {{ section.settings.columns_mobile }};"
+        >
+          {%- render 'product-feed',
+            products: collection.products,
+            show_quickview: section.settings.show_quickview,
+            show_compare: section.settings.show_compare,
+            show_eta: section.settings.show_eta,
+            carousel_blocks: carousel_blocks,
+            carousel_interval: section.settings.carousel_interval,
+            fallback_collection: collection
+          -%}
+        </div>
+
+        {%- if paginate.pages > 1 -%}
+          <nav class="collection__pagination" role="navigation" aria-label="Pagination">
+            {%- if paginate.previous -%}
+              <a href="{{ paginate.previous.url }}" class="collection__pagination-link" rel="prev">&larr; Previous</a>
+            {%- endif -%}
+
+            {%- for part in paginate.parts -%}
+              {%- if part.is_link -%}
+                <a
+                  href="{{ part.url }}"
+                  class="collection__pagination-link"
+                  {% if part.title == paginate.current_page %}aria-current="page"{% endif %}
+                >{{ part.title }}</a>
+              {%- else -%}
+                <span class="collection__pagination-ellipsis">{{ part.title }}</span>
+              {%- endif -%}
+            {%- endfor -%}
+
+            {%- if paginate.next -%}
+              <a href="{{ paginate.next.url }}" class="collection__pagination-link" rel="next">Next &rarr;</a>
+            {%- endif -%}
+          </nav>
         {%- endif -%}
+      </div><!-- /.collection__main -->
 
-        {%- for part in paginate.parts -%}
-          {%- if part.is_link -%}
-            <a
-              href="{{ part.url }}"
-              class="collection__pagination-link"
-              {% if part.title == paginate.current_page %}aria-current="page"{% endif %}
-            >{{ part.title }}</a>
-          {%- else -%}
-            <span class="collection__pagination-ellipsis">{{ part.title }}</span>
-          {%- endif -%}
-        {%- endfor -%}
-
-        {%- if paginate.next -%}
-          <a href="{{ paginate.next.url }}" class="collection__pagination-link" rel="next">Next &rarr;</a>
-        {%- endif -%}
-      </nav>
-    {%- endif -%}
+    </div><!-- /.collection__body -->
 
   {%- endpaginate -%}
 
-</div>
+</div><!-- /.collection -->
 
 {%- if carousel_blocks.size > 0 -%}
   <script src="{{ 'product-carousel.js' | asset_url }}" defer></script>
+{%- endif -%}
+
+{%- if collection.filters.size > 0 -%}
+  <script>
+    (function () {
+      var btn    = document.querySelector('[data-filter-toggle]');
+      var body   = document.getElementById('CollectionBody');
+      var sidebar = document.getElementById('CollectionSidebar');
+      if (!btn || !body || !sidebar) return;
+
+      btn.addEventListener('click', function () {
+        var isOpen = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!isOpen));
+        body.classList.toggle('collection__body--sidebar-closed', isOpen);
+        sidebar.setAttribute('aria-hidden', String(isOpen));
+      });
+    })();
+  </script>
 {%- endif -%}
 
 {% schema %}
