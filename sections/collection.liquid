@@ -4,6 +4,7 @@
   Structure:
     sections/collection.liquid
       ├─ collection__header          (title + description)
+      ├─ sub-collection__grid        (child collections — NEW, inline, above feed)
       └─ collection__body            (sidebar + main, flex row)
            ├─ collection__sidebar    (facet form, inlined — no snippet)
            └─ collection__main
@@ -15,28 +16,43 @@
   itself also gets aria-hidden when collapsed.
 
   Asset ownership:
-    • collection.css  — loaded HERE. Owns all layout, sidebar, filter UI,
-      grid wrapper, toolbar, and pagination. Does not touch .product-card.
-    • product-card.css / product-card.js — product-card.js is global
-      (theme.liquid). product-card.css is loaded HERE (section-scoped).
-    • product-carousel.css / product-carousel.js — loaded HERE, once,
-      only when at least one "carousel" block is configured. Reused AS-IS;
-      do not fork them.
+    • collection.css      — loaded HERE. Owns all layout, sidebar, filter UI,
+                            grid wrapper, toolbar, and pagination.
+    • sub-collection.css  — loaded HERE when show_sub_collections is on.
+                            Owns the child-collection card grid only.
+    • product-card.css / product-carousel.css — loaded HERE (section-scoped).
 
-  PROMO CAROUSEL BLOCKS:
-  Repeatable "carousel" blocks let a merchant insert a horizontally-
-  scrolling promo carousel every `carousel_interval` products inside
-  the feed. Each block can pick its own collection (falls back to the
-  current collection if blank) and optionally shows a side banner.
+  SUB-COLLECTION GRID:
+  Driven by the custom metafield  collection.metafields.custom.sub_collections
+  (namespace: custom, key: sub_collections, type: list.collection_reference).
+  Merchants populate it in the Shopify admin under the "Sub Collections"
+  metafield definition. When the metafield is blank the grid is skipped
+  entirely (no empty-state markup is rendered inside collection.liquid —
+  the standalone sub-collection.liquid section handles its own empty state).
+
+  The section setting "show_sub_collections" acts as an editor toggle so
+  merchants can hide the grid without clearing the metafield data. It also
+  controls whether sub-collection.css is loaded.
+
+  Fallback when a referenced collection has no featured_image: a coloured
+  tile with the first letter of the collection title (pure CSS, no JS).
 {%- endcomment -%}
 
 {{ 'collection.css'  | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 {%- liquid
-  assign carousel_blocks = section.blocks | where: 'type', 'carousel'
+  assign carousel_blocks   = section.blocks | where: 'type', 'carousel'
+  assign show_sub          = section.settings.show_sub_collections
+  assign sub_collections   = collection.metafields.custom.sub_collections.value
+  assign sub_show_count    = section.settings.sub_show_product_count
+  assign sub_cols_desktop  = section.settings.sub_columns_desktop
+  assign sub_cols_mobile   = section.settings.sub_columns_mobile
 -%}
 {%- if carousel_blocks.size > 0 -%}
   {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+{%- if show_sub and sub_collections.size > 0 -%}
+  {{ 'sub-collection.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 
 <div class="collection page-width" data-section-id="{{ section.id }}" data-section-type="collection">
@@ -47,6 +63,67 @@
       <div class="collection__description">{{ collection.description }}</div>
     {%- endif -%}
   </div>
+
+  {%- comment -%}── Sub-collection grid — above toolbar + product feed ──{%- endcomment -%}
+  {%- if show_sub and sub_collections.size > 0 -%}
+    <ul
+      class="sub-collection__grid"
+      style="
+        --sub-collection-columns-desktop: {{ sub_cols_desktop }};
+        --sub-collection-columns-mobile:  {{ sub_cols_mobile }};
+      "
+      role="list"
+    >
+      {%- for sub in sub_collections -%}
+        <li class="sub-collection__item">
+          <a class="sub-collection__card" href="{{ sub.url }}">
+
+            <div class="sub-collection__img-zone">
+              {%- if sub.featured_image != blank -%}
+                {{
+                  sub.featured_image
+                  | image_url: width: 800
+                  | image_tag:
+                    class: 'sub-collection__img',
+                    loading: 'lazy',
+                    widths: '200, 300, 400, 600, 800',
+                    sizes: '(max-width: 767px) calc(50vw - 1.5rem), calc((100vw - 4rem) / ' | append: sub_cols_desktop | append: ')',
+                    alt: sub.title | escape
+                }}
+              {%- else -%}
+                {%- comment -%}
+                  Fallback: coloured tile with the collection's first letter.
+                  Colour is derived deterministically from the collection handle
+                  using a palette of 8 hues (index = handle length mod 8).
+                  No JS or extra assets required.
+                {%- endcomment -%}
+                {%- assign _palette = '1,e0f2fe,0369a1|2,fef9c3,854d0e|3,dcfce7,166534|4,fce7f3,9d174d|5,ede9fe,5b21b6|6,ffedd5,9a3412|7,e0e7ff,3730a3|8,f0fdf4,15803d' | split: '|' -%}
+                {%- assign _idx = sub.handle.size | modulo: 8 -%}
+                {%- assign _pair = _palette[_idx] | split: ',' -%}
+                {%- assign _bg = _pair[1] -%}
+                {%- assign _fg = _pair[2] -%}
+                <div
+                  class="sub-collection__img-placeholder sub-collection__img-letter"
+                  aria-hidden="true"
+                  style="background:#{{ _bg }}; color:#{{ _fg }};"
+                >
+                  {{ sub.title | slice: 0 | upcase }}
+                </div>
+              {%- endif -%}
+            </div>
+
+            <div class="sub-collection__card-body">
+              <span class="sub-collection__card-title">{{ sub.title }}</span>
+              {%- if sub_show_count -%}
+                <span class="sub-collection__card-count">{{ sub.products_count }} products</span>
+              {%- endif -%}
+            </div>
+
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
 
   {%- comment -%}
     Toolbar: lives above the sidebar/main split so it spans full width.
@@ -218,6 +295,46 @@
 {
   "name": "Collection",
   "settings": [
+    {
+      "type": "header",
+      "content": "Sub-collections"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sub_collections",
+      "label": "Show sub-collections",
+      "default": true,
+      "info": "Displays sub-collections above the product grid. Sub-collections are defined via the 'custom.sub_collections' metafield on each collection. Toggle off to hide without clearing the metafield data."
+    },
+    {
+      "type": "range",
+      "id": "sub_columns_desktop",
+      "label": "Sub-collection columns (desktop)",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "sub_columns_mobile",
+      "label": "Sub-collection columns (mobile)",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "checkbox",
+      "id": "sub_show_product_count",
+      "label": "Show product count on sub-collection cards",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Product grid"
+    },
     {
       "type": "range",
       "id": "columns_desktop",
