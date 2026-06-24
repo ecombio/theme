@@ -1,0 +1,1992 @@
+{%- comment -%}
+  sections/main-collection.liquid  v2
+  Primary section for templates/collection.json.
+
+  v2 changes (see PRD-main-collection-v2-blocks.md):
+    • Section content is now composed from ordered blocks:
+        – "products"  — the paginated product grid (limit: 1)
+        – "carousel"  — an in-feed product carousel band
+    • Section-level header (breadcrumb, hero, title, description) and
+      filter toolbar remain as section settings, always rendered first.
+    • Default preset: one "products" block → identical page to v1.
+    • templates/collection.json is unchanged.
+
+  Invariants carried over from v1:
+    • CSS scoped to .mc--{{ section.id }} — zero global bleed.
+    • product-card.js and cart-drawer.js NOT re-loaded here.
+    • compare-bar snippet NOT rendered here (lives in theme.liquid).
+    • Filter/sort uses Shopify's native collection.filters + URL params.
+    • Mobile filter drawer + load-more wired by the inline <script>.
+
+  New in v2:
+    • product-carousel.css loaded conditionally when carousel blocks exist.
+    • product-carousel.js loaded conditionally via guarded dynamic loader
+      (window.__carouselJsLoaded) — safe even if product-carousel.liquid
+      is also on the page.
+    • .mc__carousel-band handles the full-width breakout between grid blocks.
+    • {% paginate %} lives inside the "products" block render path.
+      Only one products block is permitted (schema "limit": 1) because
+      Liquid allows only one {% paginate %} tag per page render.
+{%- endcomment -%}
+
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign carousel_blocks = section.blocks | where: 'type', 'carousel'
+  assign products_blocks  = section.blocks | where: 'type', 'products'
+-%}
+
+{%- if carousel_blocks.size > 0 -%}
+  {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+
+{%- liquid
+  assign show_breadcrumb   = section.settings.show_breadcrumb
+  assign show_hero         = section.settings.show_collection_image
+  assign show_desc         = section.settings.show_collection_description
+  assign show_filters      = section.settings.show_filters
+  assign show_sort         = section.settings.show_sort
+  assign collapse_filters  = section.settings.collapse_filters_desktop
+
+  comment
+    Section-level defaults — used when a products block setting is 0 / blank
+    (meaning "inherit"), preserving v1 merchant configuration exactly.
+  endcomment
+  assign sec_products_per_page = section.settings.products_per_page  | default: 24
+  assign sec_cols_desk         = section.settings.cols_desktop        | default: 3
+  assign sec_cols_mob          = section.settings.cols_mobile         | default: '2'
+  assign sec_pagination_style  = section.settings.pagination_style    | default: 'pages'
+  assign sec_show_quickview    = section.settings.show_quickview
+  assign sec_show_compare      = section.settings.show_compare
+  assign sec_show_eta          = section.settings.show_eta
+
+  assign has_active_filters = false
+  if collection.active_filters.size > 0
+    assign has_active_filters = true
+  endif
+
+  assign results_count = collection.products_count
+-%}
+
+{%- comment -%} ── STYLES ────────────────────────────────────────── {%- endcomment -%}
+<style>
+/*
+   Scope guard: every rule lives under .mc--{{ section.id }}.
+   No :root declarations — tokens are local to this scope.
+*/
+.mc--{{ section.id }} {
+  --mc-text:         #111827;
+  --mc-text-muted:   #6B7280;
+  --mc-border:       #E5E7EB;
+  --mc-surface:      #F9FAFB;
+  --mc-accent:       #4F46E5;
+  --mc-accent-hover: #4338CA;
+  --mc-sale:         #DC2626;
+  --mc-radius:       8px;
+  --mc-radius-sm:    4px;
+  --mc-trans:        0.18s ease;
+  --mc-sidebar-w:    240px;
+  --mc-gap:          20px;
+}
+
+/* ── Outer wrapper ── */
+.mc--{{ section.id }} .mc__inner {
+  padding-block: 1.25rem 3rem;
+}
+
+/* ── Breadcrumb ── */
+.mc--{{ section.id }} .mc__breadcrumb {
+  padding-bottom: 0.75rem;
+}
+.mc--{{ section.id }} .mc__breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.78rem;
+  color: var(--mc-text-muted);
+}
+.mc--{{ section.id }} .mc__breadcrumb-list a {
+  color: var(--mc-text-muted);
+  text-decoration: none;
+}
+.mc--{{ section.id }} .mc__breadcrumb-list a:hover { color: var(--mc-text); }
+.mc--{{ section.id }} .mc__breadcrumb-sep { margin-inline: 0.15rem; user-select: none; }
+
+/* ── Hero ── */
+.mc--{{ section.id }} .mc__hero {
+  position: relative;
+  width: 100%;
+  max-height: 300px;
+  overflow: hidden;
+  border-radius: var(--mc-radius);
+  margin-bottom: 1.25rem;
+  background: var(--mc-surface);
+}
+.mc--{{ section.id }} .mc__hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  max-height: 300px;
+}
+.mc--{{ section.id }} .mc__hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  padding: 1.5rem;
+}
+.mc--{{ section.id }} .mc__hero-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* ── Page header (no hero) ── */
+.mc--{{ section.id }} .mc__header {
+  margin-bottom: 1.25rem;
+}
+.mc--{{ section.id }} .mc__title {
+  margin: 0 0 0.375rem;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 700;
+  color: var(--mc-text);
+  line-height: 1.2;
+}
+.mc--{{ section.id }} .mc__desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--mc-text-muted);
+  line-height: 1.6;
+  max-width: 65ch;
+}
+
+/* ── Toolbar ── */
+.mc--{{ section.id }} .mc__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--mc-border);
+  border-bottom: 1px solid var(--mc-border);
+  margin-bottom: 0.875rem;
+}
+.mc--{{ section.id }} .mc__filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.875rem;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-sm);
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mc-text);
+  cursor: pointer;
+  transition: background var(--mc-trans), border-color var(--mc-trans);
+  white-space: nowrap;
+}
+.mc--{{ section.id }} .mc__filter-toggle:hover {
+  background: var(--mc-surface);
+  border-color: #9CA3AF;
+}
+.mc--{{ section.id }} .mc__filter-toggle[aria-expanded="true"] {
+  background: var(--mc-text);
+  color: #fff;
+  border-color: var(--mc-text);
+}
+
+/* Sort */
+.mc--{{ section.id }} .mc__sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.mc--{{ section.id }} .mc__sort-label {
+  font-size: 0.82rem;
+  color: var(--mc-text-muted);
+  white-space: nowrap;
+}
+.mc--{{ section.id }} .mc__sort-select {
+  padding: 0.4rem 2rem 0.4rem 0.6rem;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-sm);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.5rem center;
+  background-size: 12px;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 0.82rem;
+  color: var(--mc-text);
+  cursor: pointer;
+  min-width: 170px;
+}
+.mc--{{ section.id }} .mc__sort-select:focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 2px;
+}
+
+/* Count */
+.mc--{{ section.id }} .mc__count {
+  font-size: 0.78rem;
+  color: var(--mc-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Active filter chips ── */
+.mc--{{ section.id }} .mc__active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.mc--{{ section.id }} .mc__active-filters-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mc-text-muted);
+}
+.mc--{{ section.id }} .mc__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.625rem;
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  color: var(--mc-text);
+  text-decoration: none;
+  line-height: 1;
+  transition: background var(--mc-trans), border-color var(--mc-trans);
+}
+.mc--{{ section.id }} .mc__chip:hover {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  color: var(--mc-sale);
+}
+.mc--{{ section.id }} .mc__chip-remove {
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0.6;
+}
+.mc--{{ section.id }} .mc__chip-clear {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mc-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0.3rem 0.25rem;
+}
+.mc--{{ section.id }} .mc__chip-clear:hover { color: var(--mc-text); }
+
+/* ── Body: sidebar + grid column ── */
+.mc--{{ section.id }} .mc__body {
+  display: flex;
+  gap: var(--mc-gap);
+  align-items: flex-start;
+}
+
+/* ── Sidebar ── */
+.mc--{{ section.id }} .mc__sidebar {
+  flex: 0 0 var(--mc-sidebar-w);
+  width: var(--mc-sidebar-w);
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mc-border) transparent;
+}
+.mc--{{ section.id }} .mc__sidebar::-webkit-scrollbar { width: 4px; }
+.mc--{{ section.id }} .mc__sidebar::-webkit-scrollbar-thumb { background: var(--mc-border); border-radius: 4px; }
+
+.mc--{{ section.id }} .mc__filter-group {
+  border-bottom: 1px solid var(--mc-border);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+.mc--{{ section.id }} .mc__filter-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Filter group heading (acts as accordion toggle) */
+.mc--{{ section.id }} .mc__filter-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0 0 0.625rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--mc-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+}
+.mc--{{ section.id }} .mc__filter-chevron {
+  transition: transform var(--mc-trans);
+  flex-shrink: 0;
+}
+.mc--{{ section.id }} .mc__filter-heading[aria-expanded="false"] .mc__filter-chevron {
+  transform: rotate(-90deg);
+}
+
+.mc--{{ section.id }} .mc__filter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.mc--{{ section.id }} .mc__filter-body.is-collapsed { display: none; }
+
+/* Checkbox filter values */
+.mc--{{ section.id }} .mc__filter-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mc--{{ section.id }} .mc__filter-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--mc-text);
+  text-decoration: none;
+  line-height: 1.3;
+  flex: 1;
+}
+.mc--{{ section.id }} .mc__filter-link:hover { color: var(--mc-accent); }
+.mc--{{ section.id }} .mc__filter-link.is-active {
+  font-weight: 700;
+  color: var(--mc-accent);
+}
+.mc--{{ section.id }} .mc__filter-checkbox {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  accent-color: var(--mc-accent);
+  pointer-events: none;
+}
+.mc--{{ section.id }} .mc__filter-count {
+  font-size: 0.72rem;
+  color: var(--mc-text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Price range filter */
+.mc--{{ section.id }} .mc__price-range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.mc--{{ section.id }} .mc__price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mc--{{ section.id }} .mc__price-input {
+  width: 80px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.82rem;
+  color: var(--mc-text);
+  background: #fff;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.mc--{{ section.id }} .mc__price-input::-webkit-inner-spin-button,
+.mc--{{ section.id }} .mc__price-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.mc--{{ section.id }} .mc__price-input:focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 1px;
+}
+.mc--{{ section.id }} .mc__price-sep {
+  font-size: 0.78rem;
+  color: var(--mc-text-muted);
+}
+.mc--{{ section.id }} .mc__price-apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.875rem;
+  background: var(--mc-text);
+  color: #fff;
+  border: none;
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--mc-trans);
+  align-self: flex-start;
+}
+.mc--{{ section.id }} .mc__price-apply:hover { background: #374151; }
+
+/* ── Grid column (fills remaining space next to sidebar) ── */
+.mc--{{ section.id }} .mc__grid-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Product grid ── */
+.mc--{{ section.id }} .mc__grid {
+  display: grid;
+  gap: var(--mc-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Column count set inline by the products block via CSS custom properties */
+  grid-template-columns: repeat(var(--mc-cols-mob), 1fr);
+}
+@media (min-width: 768px) {
+  .mc--{{ section.id }} .mc__grid {
+    grid-template-columns: repeat(var(--mc-cols-desk), 1fr);
+  }
+}
+
+/* ── Optional grid heading ── */
+.mc--{{ section.id }} .mc__block-heading {
+  margin: 0 0 1rem;
+  font-size: clamp(1rem, 2.5vw, 1.375rem);
+  font-weight: 700;
+  color: var(--mc-text);
+  line-height: 1.2;
+}
+
+/* ── Empty state ── */
+.mc--{{ section.id }} .mc__empty {
+  padding: 4rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+}
+.mc--{{ section.id }} .mc__empty-icon { color: var(--mc-border); }
+.mc--{{ section.id }} .mc__empty-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--mc-text);
+}
+.mc--{{ section.id }} .mc__empty-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mc-text-muted);
+}
+.mc--{{ section.id }} .mc__empty-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1.25rem;
+  background: var(--mc-text);
+  color: #fff;
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--mc-trans);
+}
+.mc--{{ section.id }} .mc__empty-link:hover { background: #374151; }
+
+/* ── Pagination ── */
+.mc--{{ section.id }} .mc__pagination {
+  padding-top: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+.mc--{{ section.id }} .mc__page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding-inline: 0.5rem;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mc-text);
+  text-decoration: none;
+  background: #fff;
+  transition: background var(--mc-trans), border-color var(--mc-trans), color var(--mc-trans);
+}
+.mc--{{ section.id }} .mc__page-link:hover {
+  background: var(--mc-surface);
+  border-color: #9CA3AF;
+}
+.mc--{{ section.id }} .mc__page-link[aria-current="page"],
+.mc--{{ section.id }} .mc__page-link.is-current {
+  background: var(--mc-text);
+  border-color: var(--mc-text);
+  color: #fff;
+  pointer-events: none;
+}
+.mc--{{ section.id }} .mc__page-link.is-disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.mc--{{ section.id }} .mc__page-ellipsis {
+  font-size: 0.82rem;
+  color: var(--mc-text-muted);
+  padding-inline: 0.25rem;
+  line-height: 36px;
+}
+
+/* Load more */
+.mc--{{ section.id }} .mc__load-more-wrap {
+  padding-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.mc--{{ section.id }} .mc__load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 2rem;
+  border: 2px solid var(--mc-border);
+  border-radius: var(--mc-radius-sm);
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--mc-text);
+  cursor: pointer;
+  transition: border-color var(--mc-trans), background var(--mc-trans);
+}
+.mc--{{ section.id }} .mc__load-more-btn:hover {
+  border-color: var(--mc-text);
+  background: var(--mc-surface);
+}
+.mc--{{ section.id }} .mc__load-more-btn.is-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.mc--{{ section.id }} .mc__load-more-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0,0,0,0.15);
+  border-top-color: var(--mc-text);
+  border-radius: 50%;
+  animation: mc-spin 0.7s linear infinite;
+  flex-shrink: 0;
+  display: none;
+}
+.mc--{{ section.id }} .mc__load-more-btn.is-loading .mc__load-more-spinner { display: block; }
+.mc--{{ section.id }} .mc__load-more-progress {
+  font-size: 0.78rem;
+  color: var(--mc-text-muted);
+}
+@keyframes mc-spin { to { transform: rotate(360deg); } }
+
+/* ── Carousel band (v2) ── */
+/*
+   Breaks out of the page-width padding to fill the full container width.
+   margin-inline values cancel the padding-inline set by .page-width.
+   When full_bleed is enabled the negative margin reaches viewport edge
+   because .page-width is the only horizontal padding source.
+*/
+.mc--{{ section.id }} .mc__carousel-band {
+  margin-inline: -16px;
+  padding-inline: 16px;
+  padding-block: 40px;
+  box-sizing: border-box;
+}
+@media (min-width: 768px) {
+  .mc--{{ section.id }} .mc__carousel-band {
+    margin-inline: -24px;
+    padding-inline: 24px;
+  }
+}
+/* When the carousel is inside the sidebar+grid flex row we need to break
+   out of that too. The products block closes its .mc__body before a carousel
+   block renders, so carousel bands are always siblings of .mc__body, not
+   children — no extra override is needed. */
+.mc--{{ section.id }} .mc__carousel-band--full-bleed {
+  /* Full-bleed: already at viewport edges via the negative margins above.
+     No further rule needed — the comment above explains the architecture. */
+}
+
+/* ── Mobile filter drawer ── */
+.mc-filter-drawer--{{ section.id }} {
+  position: fixed;
+  inset: 0;
+  z-index: 99997;
+  display: flex;
+  justify-content: flex-start;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.mc-filter-drawer--{{ section.id }}.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-panel {
+  position: relative;
+  background: #fff;
+  width: min(320px, 88vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+.mc-filter-drawer--{{ section.id }}.is-open .mc__drawer-panel {
+  transform: translateX(0);
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--mc-border, #E5E7EB);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #111827;
+  font-size: 1.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-close:hover { background: #e5e5e5; }
+.mc-filter-drawer--{{ section.id }} .mc__drawer-body {
+  flex: 1;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-footer {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--mc-border, #E5E7EB);
+  display: flex;
+  gap: 0.625rem;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-apply {
+  flex: 1;
+  padding: 0.75rem;
+  background: #f5c518;
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-apply:hover { background: #e6b800; }
+.mc-filter-drawer--{{ section.id }} .mc__drawer-clear {
+  padding: 0.75rem 1rem;
+  background: none;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #6B7280;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.mc-filter-drawer--{{ section.id }} .mc__drawer-clear:hover { color: #111827; border-color: #9CA3AF; }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .mc--{{ section.id }} .mc__sidebar       { display: none; }
+  .mc--{{ section.id }} .mc__filter-toggle { display: inline-flex; }
+}
+@media (min-width: 768px) {
+  .mc--{{ section.id }} .mc__filter-toggle--mobile-only { display: none; }
+  .mc--{{ section.id }}.mc--has-filters .mc__sidebar { display: block; }
+  .mc--{{ section.id }}:not(.mc--has-filters) .mc__sidebar { display: none; }
+  .mc--{{ section.id }} .mc__filter-toggle { display: inline-flex; }
+  .mc--{{ section.id }}.mc--sidebar-hidden .mc__sidebar { display: none; }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .mc-filter-drawer--{{ section.id }},
+  .mc-filter-drawer--{{ section.id }} .mc__drawer-panel,
+  .mc--{{ section.id }} .mc__load-more-spinner {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+</style>
+
+{%- comment -%} ── MOBILE FILTER DRAWER SHELL ────────────────────── {%- endcomment -%}
+{%- comment -%}
+  Only rendered when a products block is present (filter sidebar belongs
+  to the products block's layout). If the merchant removes all products
+  blocks, the sidebar, toolbar and filter drawer are suppressed entirely.
+{%- endcomment -%}
+{%- if products_blocks.size > 0 and show_filters and collection.filters.size > 0 -%}
+<div
+  class="mc-filter-drawer--{{ section.id }}"
+  id="mc-drawer-{{ section.id }}"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Filter products"
+>
+  <div class="mc__drawer-backdrop"></div>
+  <div class="mc__drawer-panel">
+    <div class="mc__drawer-header">
+      <h2 class="mc__drawer-title">Filters</h2>
+      <button type="button" class="mc__drawer-close" aria-label="Close filters">&times;</button>
+    </div>
+    <div class="mc__drawer-body">
+      {%- for filter in collection.filters -%}
+        <div class="mc__filter-group">
+          <button
+            type="button"
+            class="mc__filter-heading"
+            aria-expanded="true"
+            aria-controls="mc-drawer-filter-{{ section.id }}-{{ forloop.index }}"
+          >
+            {{ filter.label }}
+            <svg class="mc__filter-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="mc__filter-body" id="mc-drawer-filter-{{ section.id }}-{{ forloop.index }}">
+            {%- if filter.type == 'price_range' -%}
+              {%- liquid
+                assign price_min = filter.min_value.value | default: 0
+                assign price_max = filter.max_value.value | default: filter.range_max
+              -%}
+              <div class="mc__price-range">
+                <div class="mc__price-inputs">
+                  <input
+                    type="number"
+                    name="{{ filter.min_value.param_name }}"
+                    class="mc__price-input"
+                    value="{{ price_min | money_without_currency | remove: ',' }}"
+                    min="0"
+                    max="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                    placeholder="Min"
+                    data-mc-price-min
+                    aria-label="Minimum price"
+                  >
+                  <span class="mc__price-sep">–</span>
+                  <input
+                    type="number"
+                    name="{{ filter.max_value.param_name }}"
+                    class="mc__price-input"
+                    value="{{ price_max | money_without_currency | remove: ',' }}"
+                    min="0"
+                    max="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                    placeholder="Max"
+                    data-mc-price-max
+                    aria-label="Maximum price"
+                  >
+                </div>
+                <button
+                  type="button"
+                  class="mc__price-apply"
+                  data-mc-price-apply
+                  data-filter-min-param="{{ filter.min_value.param_name }}"
+                  data-filter-max-param="{{ filter.max_value.param_name }}"
+                >Apply</button>
+              </div>
+            {%- elsif filter.type == 'list' -%}
+              {%- for value in filter.values -%}
+                {%- if value.active -%}
+                  {%- assign filter_url   = value.url_to_remove -%}
+                  {%- assign filter_label = 'Remove filter: ' -%}
+                {%- else -%}
+                  {%- assign filter_url   = value.url_to_add -%}
+                  {%- assign filter_label = 'Filter by ' -%}
+                {%- endif -%}
+                <div class="mc__filter-item">
+                  <a
+                    href="{{ filter_url }}"
+                    class="mc__filter-link{% if value.active %} is-active{% endif %}"
+                    aria-label="{{ filter_label }}{{ filter.label }}: {{ value.label }}{% if value.count > 0 %} ({{ value.count }}){% endif %}"
+                  >
+                    <input
+                      type="checkbox"
+                      class="mc__filter-checkbox"
+                      {% if value.active %}checked{% endif %}
+                      aria-hidden="true"
+                      tabindex="-1"
+                      readonly
+                    >
+                    {{ value.label }}
+                    {%- if value.count > 0 -%}
+                      <span class="mc__filter-count">({{ value.count }})</span>
+                    {%- endif -%}
+                  </a>
+                </div>
+              {%- endfor -%}
+            {%- endif -%}
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+    <div class="mc__drawer-footer">
+      {%- if has_active_filters -%}
+        <a href="{{ collection.url }}" class="mc__drawer-clear">Clear all</a>
+      {%- endif -%}
+      <button type="button" class="mc__drawer-apply" data-mc-drawer-close-apply>
+        View results
+      </button>
+    </div>
+  </div>
+</div>
+{%- endif -%}
+
+{%- comment -%} ── SECTION WRAPPER ───────────────────────────────── {%- endcomment -%}
+<div
+  class="mc--{{ section.id }}{% if show_filters and collection.filters.size > 0 %} mc--has-filters{% endif %}"
+  data-section-id="{{ section.id }}"
+  data-section-type="main-collection"
+>
+  <div class="mc__inner page-width">
+
+    {%- comment -%}── Breadcrumb ──{%- endcomment -%}
+    {%- if show_breadcrumb -%}
+      <nav class="mc__breadcrumb" aria-label="Breadcrumb">
+        <ol class="mc__breadcrumb-list">
+          <li><a href="{{ routes.root_url }}">Home</a></li>
+          <li aria-hidden="true" class="mc__breadcrumb-sep">›</li>
+          <li aria-current="page">{{ collection.title }}</li>
+        </ol>
+      </nav>
+    {%- endif -%}
+
+    {%- comment -%}── Hero or plain header ──{%- endcomment -%}
+    {%- if show_hero and collection.image != blank -%}
+      <div class="mc__hero">
+        {{
+          collection.image
+          | image_url: width: 1440
+          | image_tag:
+            class: 'mc__hero-img',
+            loading: 'eager',
+            fetchpriority: 'high',
+            widths: '640, 900, 1200, 1440',
+            sizes: '100vw',
+            alt: collection.image.alt | default: collection.title | escape
+        }}
+        <div class="mc__hero-overlay">
+          <h1 class="mc__hero-title">{{ collection.title }}</h1>
+        </div>
+      </div>
+      {%- if show_desc and collection.description != blank -%}
+        <div class="mc__header">
+          <div class="mc__desc">{{ collection.description }}</div>
+        </div>
+      {%- endif -%}
+    {%- else -%}
+      <div class="mc__header">
+        <h1 class="mc__title">{{ collection.title }}</h1>
+        {%- if show_desc and collection.description != blank -%}
+          <div class="mc__desc">{{ collection.description }}</div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%}
+      Toolbar and active-filter chips are scoped to the products block context.
+      They render once here (before blocks) when a products block is present,
+      matching v1 layout exactly — the toolbar always sits above the grid.
+    {%- endcomment -%}
+    {%- if products_blocks.size > 0 -%}
+
+      {%- comment -%}── Toolbar ──{%- endcomment -%}
+      <div class="mc__toolbar" role="toolbar" aria-label="Collection controls">
+
+        {%- if show_filters -%}
+          <button
+            type="button"
+            class="mc__filter-toggle"
+            aria-expanded="true"
+            aria-controls="mc-sidebar-{{ section.id }}"
+            data-mc-filter-toggle
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M1 3h12M3 7h8M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Filters
+            {%- if has_active_filters -%}
+              <span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;background:#111827;color:#fff;font-size:0.6rem;font-weight:700;border-radius:8px;line-height:1;" aria-label="{{ collection.active_filters.size }} active">{{ collection.active_filters.size }}</span>
+            {%- endif -%}
+          </button>
+        {%- endif -%}
+
+        <span class="mc__count" aria-live="polite">
+          {%- if has_active_filters -%}
+            {{ results_count }} result{% if results_count != 1 %}s{% endif %}
+          {%- else -%}
+            {{ collection.products_count }} product{% if collection.products_count != 1 %}s{% endif %}
+          {%- endif -%}
+        </span>
+
+        {%- if show_sort -%}
+          <div class="mc__sort-wrap">
+            <label for="mc-sort-{{ section.id }}" class="mc__sort-label visually-hidden">Sort by</label>
+            <select
+              id="mc-sort-{{ section.id }}"
+              class="mc__sort-select"
+              data-mc-sort
+              aria-label="Sort products"
+            >
+              {%- assign current_sort = collection.sort_by | default: collection.default_sort_by -%}
+              {%- assign sort_options = 'manual,best-selling,title-ascending,title-descending,price-ascending,price-descending,created-descending' | split: ',' -%}
+              {%- assign sort_labels  = 'Featured,Best selling,Name: A–Z,Name: Z–A,Price: low to high,Price: high to low,Newest' | split: ',' -%}
+              {%- for opt in sort_options -%}
+                <option value="{{ opt }}" {% if opt == current_sort %}selected{% endif %}>{{ sort_labels[forloop.index0] }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+        {%- endif -%}
+
+      </div>
+      {%- comment -%}/mc__toolbar{%- endcomment -%}
+
+      {%- comment -%}── Active filter chips ──{%- endcomment -%}
+      {%- if has_active_filters -%}
+        <div class="mc__active-filters" aria-label="Active filters">
+          <span class="mc__active-filters-label">Active:</span>
+          {%- for filter in collection.active_filters -%}
+            <a
+              class="mc__chip"
+              href="{{ filter.url_to_remove }}"
+              aria-label="Remove filter: {{ filter.label }}: {{ filter.value.label | default: filter.value }}"
+            >
+              <span>{{ filter.label }}: {{ filter.value.label | default: filter.value }}</span>
+              <span class="mc__chip-remove" aria-hidden="true">&times;</span>
+            </a>
+          {%- endfor -%}
+          <a href="{{ collection.url }}" class="mc__chip-clear">Clear all</a>
+        </div>
+      {%- endif -%}
+
+    {%- endif -%}
+    {%- comment -%}/products_blocks guard{%- endcomment -%}
+
+    {%- comment -%}
+    ═══════════════════════════════════════════════════════════
+      BLOCK LOOP — render blocks in theme-editor order.
+
+      products block: paginated grid with optional sidebar.
+        • Limit 1 enforced in schema (Liquid allows only one
+          {% paginate %} per page render).
+        • Block settings override section defaults when non-zero
+          / non-empty; otherwise section defaults apply.
+
+      carousel block: full-width band with its own collection.
+        • No tabs / tab bar — simpler single-panel markup.
+        • Renders nothing if block.settings.collection is blank.
+        • .mc__carousel-band breaks out of page-width padding.
+    ═══════════════════════════════════════════════════════════
+    {%- endcomment -%}
+
+    {%- for block in section.blocks -%}
+
+      {%- case block.type -%}
+
+        {%- comment -%}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PRODUCTS BLOCK ━━{%- endcomment -%}
+        {%- when 'products' -%}
+
+          {%- liquid
+            comment
+              Resolve effective column counts and per-page value.
+              Block settings of 0 / "0" / "" mean "inherit section default".
+            endcomment
+
+            assign blk_ppp        = block.settings.products_per_page | default: 0
+            assign blk_cols_desk  = block.settings.cols_desktop       | default: 0
+            assign blk_cols_mob   = block.settings.cols_mobile        | default: '0'
+            assign blk_pag_style  = block.settings.pagination_style   | default: ''
+            assign blk_quickview  = block.settings.show_quickview
+            assign blk_compare    = block.settings.show_compare
+            assign blk_eta        = block.settings.show_eta
+            assign blk_heading    = block.settings.heading
+
+            assign eff_ppp       = blk_ppp       | plus: 0
+            if eff_ppp == 0
+              assign eff_ppp = sec_products_per_page
+            endif
+
+            assign eff_cols_desk = blk_cols_desk | plus: 0
+            if eff_cols_desk == 0
+              assign eff_cols_desk = sec_cols_desk
+            endif
+
+            assign eff_cols_mob  = blk_cols_mob
+            if eff_cols_mob == '0' or eff_cols_mob == ''
+              assign eff_cols_mob = sec_cols_mob
+            endif
+
+            assign eff_pag_style = blk_pag_style
+            if eff_pag_style == ''
+              assign eff_pag_style = sec_pagination_style
+            endif
+
+            comment
+              Card feature flags: block settings are checkboxes, always
+              true/false. No inheritance needed — they default to true in
+              the schema, matching the section-level defaults.
+            endcomment
+          -%}
+
+          {%- comment -%}
+            Inline style sets CSS custom properties so the grid's
+            grid-template-columns rule (scoped to .mc--{{ section.id }})
+            picks up the correct column counts without extra class variants.
+          {%- endcomment -%}
+          <div
+            class="mc__body"
+            style="--mc-cols-desk:{{ eff_cols_desk }};--mc-cols-mob:{{ eff_cols_mob }};"
+            {{ block.shopify_attributes }}
+          >
+
+            {%- comment -%}── Desktop filter sidebar ──{%- endcomment -%}
+            {%- if show_filters and collection.filters.size > 0 -%}
+              <aside
+                class="mc__sidebar"
+                id="mc-sidebar-{{ section.id }}"
+                role="search"
+                aria-label="Filter products"
+              >
+                {%- for filter in collection.filters -%}
+                  {%- assign group_expanded = true -%}
+                  {%- if collapse_filters -%}{%- assign group_expanded = false -%}{%- endif -%}
+                  <div class="mc__filter-group">
+                    <button
+                      type="button"
+                      class="mc__filter-heading"
+                      aria-expanded="{{ group_expanded }}"
+                      aria-controls="mc-filter-{{ section.id }}-{{ forloop.index }}"
+                    >
+                      {{ filter.label }}
+                      <svg class="mc__filter-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <div
+                      class="mc__filter-body{% if collapse_filters %} is-collapsed{% endif %}"
+                      id="mc-filter-{{ section.id }}-{{ forloop.index }}"
+                    >
+                      {%- if filter.type == 'price_range' -%}
+                        {%- liquid
+                          assign price_min = filter.min_value.value | default: 0
+                          assign price_max = filter.max_value.value | default: filter.range_max
+                        -%}
+                        <div class="mc__price-range">
+                          <div class="mc__price-inputs">
+                            <input
+                              type="number"
+                              name="{{ filter.min_value.param_name }}"
+                              class="mc__price-input"
+                              value="{{ price_min | money_without_currency | remove: ',' }}"
+                              min="0"
+                              max="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                              placeholder="Min"
+                              data-mc-price-min
+                              aria-label="Minimum price"
+                            >
+                            <span class="mc__price-sep">–</span>
+                            <input
+                              type="number"
+                              name="{{ filter.max_value.param_name }}"
+                              class="mc__price-input"
+                              value="{{ price_max | money_without_currency | remove: ',' }}"
+                              min="0"
+                              max="{{ filter.range_max | money_without_currency | remove: ',' }}"
+                              placeholder="Max"
+                              data-mc-price-max
+                              aria-label="Maximum price"
+                            >
+                          </div>
+                          <button
+                            type="button"
+                            class="mc__price-apply"
+                            data-mc-price-apply
+                            data-filter-min-param="{{ filter.min_value.param_name }}"
+                            data-filter-max-param="{{ filter.max_value.param_name }}"
+                          >Apply</button>
+                        </div>
+                      {%- elsif filter.type == 'list' -%}
+                        {%- for value in filter.values -%}
+                          {%- if value.active -%}
+                            {%- assign filter_url   = value.url_to_remove -%}
+                            {%- assign filter_label = 'Remove filter: ' -%}
+                          {%- else -%}
+                            {%- assign filter_url   = value.url_to_add -%}
+                            {%- assign filter_label = 'Filter by ' -%}
+                          {%- endif -%}
+                          <div class="mc__filter-item">
+                            <a
+                              href="{{ filter_url }}"
+                              class="mc__filter-link{% if value.active %} is-active{% endif %}"
+                              aria-label="{{ filter_label }}{{ filter.label }}: {{ value.label }}{% if value.count > 0 %} ({{ value.count }}){% endif %}"
+                            >
+                              <input
+                                type="checkbox"
+                                class="mc__filter-checkbox"
+                                {% if value.active %}checked{% endif %}
+                                aria-hidden="true"
+                                tabindex="-1"
+                                readonly
+                              >
+                              {{ value.label }}
+                              {%- if value.count > 0 -%}
+                                <span class="mc__filter-count">({{ value.count }})</span>
+                              {%- endif -%}
+                            </a>
+                          </div>
+                        {%- endfor -%}
+                      {%- endif -%}
+                    </div>
+                  </div>
+                {%- endfor -%}
+
+                {%- if has_active_filters -%}
+                  <a
+                    href="{{ collection.url }}"
+                    style="display:block;margin-top:0.5rem;font-size:0.8rem;color:#6B7280;text-decoration:underline;text-underline-offset:2px;"
+                  >Clear all filters</a>
+                {%- endif -%}
+              </aside>
+            {%- endif -%}
+
+            {%- comment -%}── Grid column ──{%- endcomment -%}
+            <div class="mc__grid-col">
+
+              {%- if blk_heading != blank -%}
+                <h2 class="mc__block-heading">{{ blk_heading }}</h2>
+              {%- endif -%}
+
+              {%- paginate collection.products by eff_ppp -%}
+
+                {%- if collection.products_count == 0 -%}
+
+                  <div class="mc__empty" role="status">
+                    <svg class="mc__empty-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <rect x="6" y="6" width="36" height="36" rx="6" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M6 18h36" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M17 30h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <h2 class="mc__empty-title">No products here yet</h2>
+                    <p class="mc__empty-text">Check back soon or browse our other collections.</p>
+                    <a href="{{ routes.root_url }}" class="mc__empty-link">Continue shopping</a>
+                  </div>
+
+                {%- elsif paginate.items == 0 -%}
+
+                  <div class="mc__empty" role="status">
+                    <svg class="mc__empty-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M30.5 30.5L42 42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M15 21h12M21 15v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <h2 class="mc__empty-title">No products match your filters</h2>
+                    <p class="mc__empty-text">Try removing a filter or clearing them all.</p>
+                    <a href="{{ collection.url }}" class="mc__empty-link">Clear all filters</a>
+                  </div>
+
+                {%- else -%}
+
+                  <ul
+                    class="mc__grid"
+                    id="mc-grid-{{ section.id }}"
+                    role="list"
+                    aria-label="{{ collection.title }} products"
+                  >
+                    {%- for product in collection.products -%}
+                      <li class="mc__grid-item">
+                        {%- render 'product-card',
+                          product:        product,
+                          show_quickview: blk_quickview,
+                          show_compare:   blk_compare,
+                          show_eta:       blk_eta
+                        -%}
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+
+                  {%- if paginate.pages > 1 -%}
+
+                    {%- if eff_pag_style == 'load_more' -%}
+
+                      <div class="mc__load-more-wrap" id="mc-load-more-{{ section.id }}">
+                        <button
+                          type="button"
+                          class="mc__load-more-btn"
+                          data-mc-load-more
+                          data-next-url="{% if paginate.next %}{{ paginate.next.url }}{% endif %}"
+                          data-grid-id="mc-grid-{{ section.id }}"
+                          {% unless paginate.next %}hidden{% endunless %}
+                        >
+                          <span class="mc__load-more-spinner" aria-hidden="true"></span>
+                          <span data-mc-load-more-label>Load more</span>
+                        </button>
+                        <p class="mc__load-more-progress" aria-live="polite">
+                          Showing {{ paginate.items | at_most: eff_ppp }} of {{ paginate.items }} products
+                        </p>
+                      </div>
+
+                    {%- else -%}
+
+                      <nav class="mc__pagination" aria-label="Pagination" role="navigation">
+
+                        {%- if paginate.previous -%}
+                          <a href="{{ paginate.previous.url }}" class="mc__page-link" aria-label="Previous page">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </a>
+                        {%- else -%}
+                          <span class="mc__page-link is-disabled" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </span>
+                        {%- endif -%}
+
+                        {%- for part in paginate.parts -%}
+                          {%- if part.is_link -%}
+                            <a href="{{ part.url }}" class="mc__page-link" aria-label="Page {{ part.title }}">{{ part.title }}</a>
+                          {%- elsif part.title == paginate.current_page -%}
+                            <span class="mc__page-link is-current" aria-current="page" aria-label="Page {{ part.title }}, current">{{ part.title }}</span>
+                          {%- else -%}
+                            <span class="mc__page-ellipsis" aria-hidden="true">&hellip;</span>
+                          {%- endif -%}
+                        {%- endfor -%}
+
+                        {%- if paginate.next -%}
+                          <a href="{{ paginate.next.url }}" class="mc__page-link" aria-label="Next page">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </a>
+                        {%- else -%}
+                          <span class="mc__page-link is-disabled" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </span>
+                        {%- endif -%}
+
+                      </nav>
+
+                    {%- endif -%}
+
+                  {%- endif -%}
+
+                {%- endif -%}
+
+              {%- endpaginate -%}
+
+            </div>
+            {%- comment -%}/mc__grid-col{%- endcomment -%}
+
+          </div>
+          {%- comment -%}/mc__body (products block){%- endcomment -%}
+
+        {%- comment -%}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ CAROUSEL BLOCK ━━{%- endcomment -%}
+        {%- when 'carousel' -%}
+
+          {%- liquid
+            assign cb_collection      = block.settings.collection
+            assign cb_heading         = block.settings.heading        | default: 'You might also like'
+            assign cb_subheading      = block.settings.subheading
+            assign cb_products_limit  = block.settings.products_limit | default: 12
+            assign cb_cols_desk       = block.settings.cols_desktop   | default: 4
+            assign cb_cols_mob        = block.settings.cols_mobile    | default: '2'
+            assign cb_show_arrows     = block.settings.show_arrows
+            assign cb_autoplay        = block.settings.autoplay
+            assign cb_autoplay_ms     = block.settings.autoplay_interval | default: 4 | times: 1000
+            assign cb_bg_color        = block.settings.background_color | default: '#F9FAFB'
+            assign cb_full_bleed      = block.settings.full_bleed
+          -%}
+
+          {%- comment -%}
+            Skip this block entirely when no collection is assigned.
+            Prevents an empty band appearing during initial theme setup.
+          {%- endcomment -%}
+          {%- if cb_collection != blank -%}
+
+            {%- comment -%}
+              The carousel band uses a unique id derived from block.id so
+              multiple carousel blocks on the same page don't share a root.
+              product-carousel.js finds carousels by .product-carousel class —
+              the block id is purely for scoping.
+            {%- endcomment -%}
+            <div
+              class="mc__carousel-band{% if cb_full_bleed %} mc__carousel-band--full-bleed{% endif %}"
+              style="background:{{ cb_bg_color }};"
+              {{ block.shopify_attributes }}
+            >
+              <section
+                class="product-carousel"
+                id="mc-carousel-{{ block.id }}"
+                data-section-id="{{ block.id }}"
+                data-cards-desktop="{{ cb_cols_desk }}"
+                data-cards-mobile="{{ cb_cols_mob }}"
+                data-autoplay="{{ cb_autoplay }}"
+                data-autoplay-interval="{{ cb_autoplay_ms }}"
+                data-arrow-style="bottom"
+              >
+                {%- comment -%}── Header ──{%- endcomment -%}
+                {%- if cb_heading != blank or cb_subheading != blank -%}
+                  <div class="product-carousel__header">
+                    <div class="product-carousel__heading-group">
+                      {%- if cb_heading != blank -%}
+                        <h2 class="product-carousel__heading">{{ cb_heading }}</h2>
+                      {%- endif -%}
+                      {%- if cb_subheading != blank -%}
+                        <p class="product-carousel__subheading">{{ cb_subheading }}</p>
+                      {%- endif -%}
+                    </div>
+                  </div>
+                {%- endif -%}
+
+                <div class="product-carousel__layout">
+                  <div class="product-carousel__carousel-col">
+
+                    {%- comment -%}
+                      Single panel — no tab bar needed (the block heading
+                      already identifies the content). data-carousel-panel
+                      is still required by initPanelCarousel for the fallback
+                      path in product-carousel.js (panels.length === 0 → it
+                      calls initPanelCarousel directly on the section root).
+                      We use the no-tab path: panels.length === 0 triggers
+                      the fallback single-carousel init in initCarousel().
+                    {%- endcomment -%}
+                    <div class="product-carousel__stage">
+
+                      <div class="product-carousel__track-wrapper" data-carousel-wrapper>
+                        <ul
+                          class="product-carousel__track"
+                          data-carousel-track
+                          role="list"
+                          aria-label="{{ cb_heading | escape }}"
+                        >
+                          {%- for product in cb_collection.products limit: cb_products_limit -%}
+                            <li class="product-carousel__slide" data-carousel-slide>
+                              {%- render 'product-card', product: product -%}
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      </div>
+
+                    </div>
+                    {%- comment -%}/product-carousel__stage{%- endcomment -%}
+
+                    {%- comment -%}── Bottom nav: dots + arrows ──{%- endcomment -%}
+                    {%- if cb_show_arrows -%}
+                      <div class="product-carousel__nav">
+                        <div class="product-carousel__dots" data-carousel-dots></div>
+                        <div class="product-carousel__arrows">
+                          <button
+                            class="product-carousel__arrow product-carousel__arrow--prev"
+                            type="button"
+                            aria-label="Previous"
+                            data-carousel-prev
+                            disabled
+                          >
+                            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </button>
+                          <button
+                            class="product-carousel__arrow product-carousel__arrow--next"
+                            type="button"
+                            aria-label="Next"
+                            data-carousel-next
+                          >
+                            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    {%- else -%}
+                      <div class="product-carousel__nav">
+                        <div class="product-carousel__dots" data-carousel-dots></div>
+                      </div>
+                    {%- endif -%}
+
+                  </div>
+                  {%- comment -%}/product-carousel__carousel-col{%- endcomment -%}
+                </div>
+                {%- comment -%}/product-carousel__layout{%- endcomment -%}
+
+              </section>
+            </div>
+            {%- comment -%}/mc__carousel-band{%- endcomment -%}
+
+          {%- endif -%}
+          {%- comment -%}/cb_collection != blank guard{%- endcomment -%}
+
+      {%- endcase -%}
+
+    {%- endfor -%}
+    {%- comment -%}/block loop{%- endcomment -%}
+
+  </div>
+  {%- comment -%}/mc__inner page-width{%- endcomment -%}
+</div>
+{%- comment -%}/mc--{{ section.id }}{%- endcomment -%}
+
+{%- comment -%} ── INLINE SCRIPT ─────────────────────────────────── {%- endcomment -%}
+<script>
+(function () {
+  'use strict';
+
+  var sectionId  = {{ section.id | json }};
+  var DRAWER_ID  = 'mc-drawer-'  + sectionId;
+  var SIDEBAR_ID = 'mc-sidebar-' + sectionId;
+  var ROOT_CLS   = 'mc--'        + sectionId;
+
+  /* ── Helpers ── */
+  function qs(sel, root)  { return (root || document).querySelector(sel); }
+  function qsa(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+
+  var root       = qs('.' + ROOT_CLS);
+  var drawer     = qs('#' + DRAWER_ID);
+  var drawerBody = drawer && qs('.mc__drawer-body', drawer);
+
+  /* ── Filter accordion (sidebar + drawer) ──────────────────── */
+  function initAccordions() {
+    qsa('[aria-expanded]', document).forEach(function (btn) {
+      if (!btn.dataset.mcFilterHeading && btn.closest('.mc--' + sectionId + ', #' + DRAWER_ID)) {
+        btn.dataset.mcFilterHeading = '1';
+        btn.addEventListener('click', function () {
+          var expanded = this.getAttribute('aria-expanded') === 'true';
+          var bodyId   = this.getAttribute('aria-controls');
+          var body     = bodyId && qs('#' + bodyId);
+          this.setAttribute('aria-expanded', String(!expanded));
+          if (body) body.classList.toggle('is-collapsed', expanded);
+        });
+      }
+    });
+  }
+
+  /* ── Sort select ──────────────────────────────────────────── */
+  function initSort() {
+    var sel = qs('[data-mc-sort]');
+    if (!sel) return;
+    sel.addEventListener('change', function () {
+      var url = new URL(window.location.href);
+      url.searchParams.set('sort_by', this.value);
+      url.searchParams.delete('page');
+      window.location.assign(url.toString());
+    });
+  }
+
+  /* ── Price range ──────────────────────────────────────────── */
+  function initPriceFilters() {
+    qsa('[data-mc-price-apply]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var wrap     = btn.closest('.mc__price-range');
+        if (!wrap) return;
+        var minInput = qs('[data-mc-price-min]', wrap);
+        var maxInput = qs('[data-mc-price-max]', wrap);
+        var minParam = btn.getAttribute('data-filter-min-param');
+        var maxParam = btn.getAttribute('data-filter-max-param');
+        if (!minParam || !maxParam) return;
+
+        var url = new URL(window.location.href);
+        url.searchParams.delete('page');
+        if (minInput && minInput.value !== '') {
+          url.searchParams.set(minParam, parseFloat(minInput.value) * 100);
+        } else {
+          url.searchParams.delete(minParam);
+        }
+        if (maxInput && maxInput.value !== '') {
+          url.searchParams.set(maxParam, parseFloat(maxInput.value) * 100);
+        } else {
+          url.searchParams.delete(maxParam);
+        }
+        window.location.assign(url.toString());
+      });
+    });
+  }
+
+  /* ── Desktop sidebar toggle ───────────────────────────────── */
+  var lastFocusedFilterTrigger = null;
+
+  function openDrawer() {
+    if (!drawer) return;
+    lastFocusedFilterTrigger = document.activeElement;
+    drawer.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    var closeBtn = qs('.mc__drawer-close', drawer);
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove('is-open');
+    document.body.style.overflow = '';
+    if (lastFocusedFilterTrigger && typeof lastFocusedFilterTrigger.focus === 'function') {
+      lastFocusedFilterTrigger.focus();
+    }
+  }
+
+  function initFilterToggle() {
+    var toggle = qs('[data-mc-filter-toggle]');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', function () {
+      var isDesktop = window.innerWidth >= 768;
+
+      if (isDesktop) {
+        var hidden = root && root.classList.toggle('mc--sidebar-hidden');
+        this.setAttribute('aria-expanded', String(!hidden));
+      } else {
+        openDrawer();
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  }
+
+  function initDrawerClose() {
+    if (!drawer) return;
+    qs('.mc__drawer-backdrop', drawer).addEventListener('click', closeDrawer);
+    qs('.mc__drawer-close',    drawer).addEventListener('click', closeDrawer);
+    var applyBtn = qs('[data-mc-drawer-close-apply]', drawer);
+    if (applyBtn) applyBtn.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
+    });
+  }
+
+  /* ── Load more ────────────────────────────────────────────── */
+  function initLoadMore() {
+    var btn = qs('[data-mc-load-more]');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+      var nextUrl = btn.getAttribute('data-next-url');
+      var gridId  = btn.getAttribute('data-grid-id');
+      var grid    = gridId && qs('#' + gridId);
+      if (!nextUrl || !grid) return;
+
+      var label = qs('[data-mc-load-more-label]', btn);
+      btn.classList.add('is-loading');
+      if (label) label.textContent = 'Loading…';
+
+      fetch(nextUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (res) { return res.ok ? res.text() : Promise.reject(res.status); })
+        .then(function (html) {
+          var parser  = new DOMParser();
+          var doc     = parser.parseFromString(html, 'text/html');
+          var newGrid = doc.querySelector('#' + gridId);
+          if (!newGrid) return;
+
+          Array.from(newGrid.children).forEach(function (item) {
+            grid.appendChild(item.cloneNode(true));
+          });
+
+          var newBtn  = doc.querySelector('[data-mc-load-more]');
+          var newUrl  = newBtn ? newBtn.getAttribute('data-next-url') : null;
+          var progress = qs('.mc__load-more-progress');
+
+          if (newUrl) {
+            btn.setAttribute('data-next-url', newUrl);
+          } else {
+            btn.setAttribute('hidden', '');
+          }
+
+          if (progress) {
+            var newProgress = doc.querySelector('.mc__load-more-progress');
+            if (newProgress) progress.textContent = newProgress.textContent;
+          }
+
+          if (window.__productCardLoaded) {
+            document.dispatchEvent(new CustomEvent('shopify:section:load', { bubbles: true }));
+          }
+        })
+        .catch(function () { /* Non-critical — button restores in finally */ })
+        .finally(function () {
+          btn.classList.remove('is-loading');
+          if (label) label.textContent = 'Load more';
+        });
+    });
+  }
+
+  /* ── Carousel JS: guarded dynamic loader (v2) ─────────────── */
+  /*
+     product-carousel.js is loaded by sections/product-carousel.liquid
+     via a <script defer> tag at the bottom of that section file.
+     If that section is not on this page, the JS will not be present.
+
+     We load it here when carousel blocks are present, using the same
+     guard flag pattern as product-card.js (window.__productCardLoaded)
+     to prevent a double-load if product-carousel.liquid also appears
+     on the same page (e.g. a "You might also like" standalone section).
+  */
+  {%- if carousel_blocks.size > 0 -%}
+  if (!window.__carouselJsLoaded) {
+    window.__carouselJsLoaded = true;
+    var _cs = document.createElement('script');
+    _cs.src   = {{ 'product-carousel.js' | asset_url | json }};
+    _cs.defer = true;
+    document.head.appendChild(_cs);
+  }
+  {%- endif -%}
+
+  /* ── Init ── */
+  document.addEventListener('DOMContentLoaded', function () {
+    initSort();
+    initAccordions();
+    initPriceFilters();
+    initFilterToggle();
+    initDrawerClose();
+    initLoadMore();
+  });
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Collection",
+  "tag": "section",
+  "class": "section-main-collection",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Page header"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_breadcrumb",
+      "label": "Show breadcrumb",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_image",
+      "label": "Show collection image as hero",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_description",
+      "label": "Show collection description",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Products (defaults)"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 12,
+      "max": 48,
+      "step": 12,
+      "default": 24,
+      "info": "Can be overridden per Products block."
+    },
+    {
+      "type": "range",
+      "id": "cols_desktop",
+      "label": "Columns — desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "info": "Can be overridden per Products block."
+    },
+    {
+      "type": "select",
+      "id": "cols_mobile",
+      "label": "Columns — mobile",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" }
+      ],
+      "default": "2",
+      "info": "Can be overridden per Products block."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quickview",
+      "label": "Show Quick View button on cards",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_compare",
+      "label": "Show Compare checkbox on cards",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_eta",
+      "label": "Show ETA on cards",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Filters & sort"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filters",
+      "default": true,
+      "info": "Requires Storefront Filtering to be enabled in Shopify admin (Online Store › Navigation › Filters)."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort dropdown",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "collapse_filters_desktop",
+      "label": "Collapse filter groups by default (desktop)",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Pagination (default)"
+    },
+    {
+      "type": "select",
+      "id": "pagination_style",
+      "label": "Pagination style",
+      "options": [
+        { "value": "pages",     "label": "Page links" },
+        { "value": "load_more", "label": "Load more button" }
+      ],
+      "default": "pages",
+      "info": "Can be overridden per Products block."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "products",
+      "name": "Product grid",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading above grid",
+          "info": "Optional. Displays above the product grid."
+        },
+        {
+          "type": "header",
+          "content": "Layout overrides"
+        },
+        {
+          "type": "range",
+          "id": "products_per_page",
+          "label": "Products per page",
+          "min": 0,
+          "max": 48,
+          "step": 12,
+          "default": 0,
+          "info": "Set to 0 to inherit the section default."
+        },
+        {
+          "type": "range",
+          "id": "cols_desktop",
+          "label": "Columns — desktop",
+          "min": 0,
+          "max": 4,
+          "step": 1,
+          "default": 0,
+          "info": "Set to 0 to inherit the section default."
+        },
+        {
+          "type": "select",
+          "id": "cols_mobile",
+          "label": "Columns — mobile",
+          "options": [
+            { "value": "0", "label": "Inherit section default" },
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" }
+          ],
+          "default": "0"
+        },
+        {
+          "type": "select",
+          "id": "pagination_style",
+          "label": "Pagination style",
+          "options": [
+            { "value": "",           "label": "Inherit section default" },
+            { "value": "pages",     "label": "Page links" },
+            { "value": "load_more", "label": "Load more button" }
+          ],
+          "default": ""
+        },
+        {
+          "type": "header",
+          "content": "Card features"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_quickview",
+          "label": "Quick View on cards",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_compare",
+          "label": "Compare on cards",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_eta",
+          "label": "ETA on cards",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "carousel",
+      "name": "Product carousel",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "You might also like"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "header",
+          "content": "Products"
+        },
+        {
+          "type": "range",
+          "id": "products_limit",
+          "label": "Max products",
+          "min": 4,
+          "max": 20,
+          "step": 2,
+          "default": 12
+        },
+        {
+          "type": "header",
+          "content": "Layout"
+        },
+        {
+          "type": "range",
+          "id": "cols_desktop",
+          "label": "Cards visible — desktop",
+          "min": 2,
+          "max": 5,
+          "step": 1,
+          "default": 4
+        },
+        {
+          "type": "select",
+          "id": "cols_mobile",
+          "label": "Cards visible — mobile",
+          "options": [
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" }
+          ],
+          "default": "2"
+        },
+        {
+          "type": "header",
+          "content": "Controls"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_arrows",
+          "label": "Show arrows",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "autoplay",
+          "label": "Autoplay",
+          "default": false
+        },
+        {
+          "type": "range",
+          "id": "autoplay_interval",
+          "label": "Autoplay interval (seconds)",
+          "min": 2,
+          "max": 10,
+          "step": 1,
+          "default": 4
+        },
+        {
+          "type": "header",
+          "content": "Style"
+        },
+        {
+          "type": "color",
+          "id": "background_color",
+          "label": "Background color",
+          "default": "#F9FAFB"
+        },
+        {
+          "type": "checkbox",
+          "id": "full_bleed",
+          "label": "Full-bleed band",
+          "default": false,
+          "info": "Extends the carousel band to the viewport edges."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection",
+      "blocks": [
+        { "type": "products" }
+      ]
+    }
+  ]
+}
+{% endschema %}
