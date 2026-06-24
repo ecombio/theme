@@ -1,0 +1,161 @@
+{%- comment -%}
+  sections/sub-collection.liquid
+
+  Standalone section — displays the sub-collections of the current
+  collection as a visual grid of clickable cards (image + title +
+  optional product count).
+
+  Data source:
+    collection.metafields.custom.sub_collections.value
+    Namespace: custom  |  Key: sub_collections
+    Type: List · Collection reference
+    Merchants populate this via the "Sub Collections" metafield
+    definition in the Shopify admin. Falls back gracefully to an
+    empty-state message when the metafield is blank.
+
+  Fallback when a referenced collection has no featured_image:
+    A coloured tile showing the first letter of the collection
+    title. Colour is derived deterministically from the collection
+    handle (handle.size mod 8), so the same collection always gets
+    the same hue. Pure CSS — no JS, no extra assets.
+
+  Deliberately minimal:
+    • No product feed, no filters, no sort, no pagination.
+    • No JS — every card is a plain <a> tag.
+    • Loads collection.css for .collection__header / .collection__title
+      / .collection__description (already correct, no duplication).
+    • Loads sub-collection.css for the card grid (new classes only).
+    • Does NOT load product-card.css, product-carousel.css/.js —
+      none of those are used here.
+
+  Asset placement:
+    sections/sub-collection.liquid   ← this file
+    assets/sub-collection.css        ← card grid only
+{%- endcomment -%}
+
+{{ 'collection.css'     | asset_url | stylesheet_tag }}
+{{ 'sub-collection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign sub_collections = collection.metafields.custom.sub_collections.value
+  assign show_count      = section.settings.show_product_count
+  assign columns_desktop = section.settings.columns_desktop
+  assign columns_mobile  = section.settings.columns_mobile
+-%}
+
+<div
+  class="sub-collection page-width"
+  data-section-id="{{ section.id }}"
+  data-section-type="sub-collection"
+>
+
+  {%- comment -%}── Header (reuses .collection__header styles) ──{%- endcomment -%}
+  <div class="collection__header">
+    <h1 class="collection__title">{{ collection.title }}</h1>
+    {%- if collection.description != blank -%}
+      <div class="collection__description">{{ collection.description }}</div>
+    {%- endif -%}
+  </div>
+
+  {%- if sub_collections.size > 0 -%}
+    <ul
+      class="sub-collection__grid"
+      style="
+        --sub-collection-columns-desktop: {{ columns_desktop }};
+        --sub-collection-columns-mobile:  {{ columns_mobile }};
+      "
+      role="list"
+    >
+      {%- for sub in sub_collections -%}
+        <li class="sub-collection__item">
+          <a class="sub-collection__card" href="{{ sub.url }}">
+
+            <div class="sub-collection__img-zone">
+              {%- if sub.featured_image != blank -%}
+                {{
+                  sub.featured_image
+                  | image_url: width: 800
+                  | image_tag:
+                    class: 'sub-collection__img',
+                    loading: 'lazy',
+                    widths: '200, 300, 400, 600, 800',
+                    sizes: '(max-width: 767px) calc(50vw - 1.5rem), calc((100vw - 4rem) / ' | append: columns_desktop | append: ')',
+                    alt: sub.title | escape
+                }}
+              {%- else -%}
+                {%- comment -%}
+                  Fallback: coloured tile with the collection's first letter.
+                  Colour is derived deterministically from the collection handle
+                  using a palette of 8 hues (index = handle.size mod 8).
+                  No JS or extra assets required.
+                {%- endcomment -%}
+                {%- assign _palette = '1,e0f2fe,0369a1|2,fef9c3,854d0e|3,dcfce7,166534|4,fce7f3,9d174d|5,ede9fe,5b21b6|6,ffedd5,9a3412|7,e0e7ff,3730a3|8,f0fdf4,15803d' | split: '|' -%}
+                {%- assign _idx = sub.handle.size | modulo: 8 -%}
+                {%- assign _pair = _palette[_idx] | split: ',' -%}
+                {%- assign _bg = _pair[1] -%}
+                {%- assign _fg = _pair[2] -%}
+                <div
+                  class="sub-collection__img-placeholder sub-collection__img-letter"
+                  aria-hidden="true"
+                  style="background:#{{ _bg }}; color:#{{ _fg }};"
+                >
+                  {{ sub.title | slice: 0 | upcase }}
+                </div>
+              {%- endif -%}
+            </div>
+
+            <div class="sub-collection__card-body">
+              <span class="sub-collection__card-title">{{ sub.title }}</span>
+              {%- if show_count -%}
+                <span class="sub-collection__card-count">{{ sub.products_count }} products</span>
+              {%- endif -%}
+            </div>
+
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+
+  {%- else -%}
+    <p class="sub-collection__empty">No sub-collections found.</p>
+  {%- endif -%}
+
+</div>
+
+{% schema %}
+{
+  "name": "Sub-collections",
+  "settings": [
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns (desktop)",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Columns (mobile)",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_count",
+      "label": "Show product count",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Sub-collections"
+    }
+  ]
+}
+{% endschema %}
