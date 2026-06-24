@@ -1,0 +1,156 @@
+{% comment %} sections/main-cart.liquid {% endcomment %}
+
+<section class="cart-page page-width">
+
+  {%- if cart.item_count == 0 -%}
+
+    <div class="cart-page__empty">
+      <p class="cart-page__empty-title">Your cart is empty</p>
+      <p class="cart-page__empty-sub">Looks like you haven't added anything yet.</p>
+      <a href="/collections/all" class="cart-page__btn cart-page__btn--primary">Shop now</a>
+    </div>
+
+  {%- else -%}
+
+    <h1 class="cart-page__heading">
+      Your cart
+      <span class="cart-page__count">{{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}</span>
+    </h1>
+
+    <div class="cart-page__layout">
+
+      <!-- ── ITEMS ─────────────────────────────────────────────────────── -->
+      <form action="{{ routes.cart_url }}" method="post" class="cart-page__form" id="cart-form">
+
+        <div class="cart-page__items">
+          {%- for item in cart.items -%}
+            <div class="cart-item" data-cart-item="{{ item.key }}">
+
+              <!-- Thumbnail -->
+              <a href="{{ item.url }}" class="cart-item__img-wrap" tabindex="-1" aria-hidden="true">
+                {%- if item.image -%}
+                  <img
+                    class="cart-item__img"
+                    src="{{ item.image | image_url: width: 200 }}"
+                    alt="{{ item.image.alt | escape }}"
+                    width="100"
+                    height="100"
+                    loading="lazy"
+                  >
+                {%- endif -%}
+              </a>
+
+              <!-- Details -->
+              <div class="cart-item__details">
+                <a href="{{ item.url }}" class="cart-item__title">{{ item.product.title }}</a>
+                {%- unless item.variant.title == 'Default Title' -%}
+                  <p class="cart-item__variant">{{ item.variant.title }}</p>
+                {%- endunless -%}
+                <p class="cart-item__unit-price">{{ item.original_price | money }} each</p>
+
+                <!-- Qty + remove -->
+                <div class="cart-item__controls">
+                  <div class="cart-item__qty">
+                    <button
+                      type="button"
+                      class="cart-item__qty-btn"
+                      aria-label="Decrease quantity"
+                      data-qty-change="-1"
+                      data-item-key="{{ item.key }}"
+                    >{% render 'icon', name: 'minus', size: 14 %}</button>
+                    <input
+                      class="cart-item__qty-input"
+                      type="number"
+                      name="updates[]"
+                      value="{{ item.quantity }}"
+                      min="0"
+                      aria-label="Quantity for {{ item.product.title | escape }}"
+                      data-qty-input="{{ item.key }}"
+                    >
+                    <button
+                      type="button"
+                      class="cart-item__qty-btn"
+                      aria-label="Increase quantity"
+                      data-qty-change="1"
+                      data-item-key="{{ item.key }}"
+                    >{% render 'icon', name: 'plus', size: 14 %}</button>
+                  </div>
+                  <a
+                    href="{{ item.url_to_remove }}"
+                    class="cart-item__remove"
+                    aria-label="Remove {{ item.product.title | escape }} from cart"
+                  >Remove</a>
+                </div>
+              </div>
+
+              <!-- Line total -->
+              <p class="cart-item__line-price">{{ item.final_line_price | money }}</p>
+
+            </div>
+          {%- endfor -%}
+        </div>
+
+        <!-- Hidden update submit (JS triggers this) -->
+        <input type="submit" name="update" value="Update cart" class="visually-hidden" id="cart-update-submit">
+
+      </form>
+
+      <!-- ── ORDER SUMMARY ──────────────────────────────────────────────── -->
+      <aside class="cart-page__summary" aria-label="Order summary">
+
+        <h2 class="cart-page__summary-title">Order summary</h2>
+
+        <dl class="cart-page__totals">
+          <div class="cart-page__totals-row">
+            <dt>Subtotal</dt>
+            <dd>{{ cart.total_price | money }}</dd>
+          </div>
+          {%- if cart.total_discount > 0 -%}
+            <div class="cart-page__totals-row cart-page__totals-row--discount">
+              <dt>Savings</dt>
+              <dd>−{{ cart.total_discount | money }}</dd>
+            </div>
+          {%- endif -%}
+          <div class="cart-page__totals-row cart-page__totals-row--shipping">
+            <dt>Shipping</dt>
+            <dd>Calculated at checkout</dd>
+          </div>
+        </dl>
+
+        <div class="cart-page__divider"></div>
+
+        <dl class="cart-page__grand-total">
+          <div class="cart-page__totals-row">
+            <dt>Total</dt>
+            <dd>{{ cart.total_price | money }}</dd>
+          </div>
+        </dl>
+
+        <p class="cart-page__tax-note">Tax included where applicable.</p>
+
+        <form action="{{ routes.cart_url }}" method="post">
+          <button
+            type="submit"
+            name="checkout"
+            class="cart-page__btn cart-page__btn--primary cart-page__btn--full"
+          >
+            Proceed to checkout
+          </button>
+        </form>
+
+        <a href="/collections/all" class="cart-page__continue">← Continue shopping</a>
+
+      </aside>
+
+    </div>
+
+  {%- endif -%}
+
+</section>
+
+{% schema %}
+{
+  "name": "Cart",
+  "settings": []
+}
+{% endschema %}
