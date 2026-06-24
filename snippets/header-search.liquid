@@ -1,0 +1,79 @@
+{% comment %}
+  snippets/header-search.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  ROW 3b: Search form — text input, voice mic button, submit button.
+
+  VARIABLES (passed in via `with` from sections/header.liquid):
+    placeholder  {string}  — input placeholder text.
+                             e.g. "What are you looking for?"
+                             Falls back to that string if blank.
+
+  GLOBALS READ DIRECTLY:
+    routes.search_url  — Shopify's /search endpoint. Required as form action.
+    search.terms       — pre-fills the input on the /search results page so
+                         the query stays visible after submitting.
+
+  CALLER (sections/header.liquid):
+    {% render 'header-search',
+       placeholder: section.settings.search_placeholder
+    %}
+
+  CRITICAL SHOPIFY REQUIREMENTS (do not remove):
+    - action="{{ routes.search_url }}"  — must point to Shopify search route.
+    - method="get"                      — Shopify search only accepts GET.
+    - <input type="hidden" name="type" value="product"> — scopes results to
+      products only. Change to "article" or "page" or remove for all results.
+    - <input name="q">                  — Shopify reads this param for the
+                                          search query. Name must be "q".
+
+  STEP 3 NOTES (predictive search):
+    - Add aria-controls="search-results-listbox" to the text input and
+      aria-expanded on the form once a results panel exists.
+    - The mic button (data-voice-search) is cosmetic now. Wire to the
+      Web Speech API in header.js when ready — no markup changes needed,
+      just a JS event listener on [data-voice-search].
+    - For predictive search, add data-search-input to the text input so
+      header.js can debounce keystrokes and fetch /search/suggest.json.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<form
+  action="{{ routes.search_url }}"
+  method="get"
+  role="search"
+  class="header__search"
+  data-search-form
+>
+  {% comment %} Scopes Shopify search results to products only {% endcomment %}
+  <input type="hidden" name="type" value="product">
+
+  <input
+    type="search"
+    name="q"
+    class="header__search-input"
+    placeholder="{{ placeholder | default: 'What are you looking for?' | escape }}"
+    aria-label="Search"
+    autocomplete="off"
+    spellcheck="false"
+    value="{{ search.terms | escape }}"
+    data-search-input
+  >
+
+  {% comment %} Cosmetic now — data-voice-search is the JS hook for Step 3 {% endcomment %}
+  <button
+    type="button"
+    class="header__search-mic"
+    aria-label="Voice search"
+    data-voice-search
+  >
+    🎤
+  </button>
+
+  <button
+    type="submit"
+    class="header__search-submit"
+    aria-label="Submit search"
+  >
+    🔍
+  </button>
+</form>

@@ -62,44 +62,10 @@
       <!-- LOGO → snippets/header-logo.liquid ──────────────────────────────── -->
       {% render 'header-logo', logo: section.settings.logo %}
 
-      <!-- SEARCH ─────────────────────────────────────────────────────────── -->
-      <!--
-        action="{{ routes.search_url }}" means Enter or the button submits
-        a real Shopify search. The hidden type=hidden field is required by
-        Shopify's predictive search to scope results to products only.
-      -->
-      <form
-        action="{{ routes.search_url }}"
-        method="get"
-        role="search"
-        class="header__search"
-      >
-        <input type="hidden" name="type" value="product">
-
-        <input
-          type="search"
-          name="q"
-          class="header__search-input"
-          placeholder="{{ section.settings.search_placeholder | default: 'What are you looking for?' | escape }}"
-          aria-label="Search"
-          autocomplete="off"
-          value="{{ search.terms | escape }}"
-        >
-
-        <!-- Mic button: purely cosmetic in Step 2; hook to Web Speech API in Step 3 -->
-        <button
-          type="button"
-          class="header__search-mic"
-          aria-label="Voice search"
-          data-voice-search
-        >
-          🎤
-        </button>
-
-        <button type="submit" class="header__search-submit" aria-label="Submit search">
-          🔍
-        </button>
-      </form>
+      <!-- SEARCH → snippets/header-search.liquid ──────────────────────────── -->
+      {% render 'header-search',
+         placeholder: section.settings.search_placeholder
+      %}
 
       <!-- ACCOUNT + CART ─────────────────────────────────────────────────── -->
       <div class="header__main-right">
@@ -111,82 +77,14 @@
 
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       ROW 4: NAV BAR
-       - Driven by the menu chosen in section.settings.menu.
-       - Automatically shows a caret (▾) for any link that has child links.
-       - First link gets the --deals highlight colour if its handle is
-         "great-deals" — adjust the handle to match your actual menu item.
+       ROW 4: NAV BAR → snippets/header-nav.liquid
+       Loop lives in header-nav; each item rendered by header-nav-item.
+       Swap header-nav-item alone for mega-menu or mobile accordion.
   ════════════════════════════════════════════════════════════════════════════ -->
-  <nav class="header__nav" aria-label="Main navigation">
-    <div class="header__nav-inner page-width">
-
-      {%- for link in section.settings.menu.links -%}
-
-        {%- assign has_children = false -%}
-        {%- if link.links != blank -%}
-          {%- assign has_children = true -%}
-        {%- endif -%}
-
-        {%- comment -%}
-          Special styling for "great-deals" handle.
-          Change the handle string below to match whatever handle
-          Shopify assigns to your deals link in the menu editor.
-        {%- endcomment -%}
-        {%- assign link_classes = 'header__nav-link' -%}
-        {%- if link.handle == 'great-deals' -%}
-          {%- assign link_classes = 'header__nav-link header__nav-link--deals' -%}
-        {%- endif -%}
-
-        {%- if has_children -%}
-          <!-- Parent link with children — renders as a disclosure widget -->
-          <div class="header__nav-item header__nav-item--dropdown" data-nav-dropdown>
-            <button
-              type="button"
-              class="{{ link_classes }} header__nav-link--dropdown"
-              aria-haspopup="true"
-              aria-expanded="false"
-              data-nav-toggle
-            >
-              {{ link.title }}
-              <span class="header__nav-caret" aria-hidden="true">▾</span>
-            </button>
-
-            <ul class="header__nav-submenu" role="list" hidden>
-              {%- for child_link in link.links -%}
-                <li>
-                  <a
-                    href="{{ child_link.url }}"
-                    class="header__nav-submenu-link{% if child_link.active %} header__nav-submenu-link--active{% endif %}"
-                    {% if child_link.current %}aria-current="page"{% endif %}
-                  >
-                    {{ child_link.title }}
-                  </a>
-                </li>
-              {%- endfor -%}
-            </ul>
-          </div>
-
-        {%- else -%}
-          <!-- Leaf link — plain anchor -->
-          <a
-            href="{{ link.url }}"
-            class="{{ link_classes }}"
-            {% if link.active %}aria-current="page"{% endif %}
-          >
-            {{- link.title -}}
-          </a>
-
-        {%- endif -%}
-
-      {%- else -%}
-        <!-- Fallback: shown in Theme Editor when no menu is selected yet -->
-        <span class="header__nav-link" style="opacity:0.4;">
-          No menu selected — choose one in the theme editor.
-        </span>
-      {%- endfor -%}
-
-    </div>
-  </nav>
+  {% render 'header-nav',
+     menu:         section.settings.menu,
+     deals_handle: 'great-deals'
+  %}
 
 </header>
 
@@ -251,7 +149,7 @@
       "id": "sale_end_time",
       "label": "Sale end date/time",
       "info": "ISO 8601 format, e.g. 2025-12-31T23:59:59. Used by the countdown timer in header.js.",
-      "default": "2025-12-31T23:59:59"
+      "default": "2027-12-31T23:59:59"
     }
 
   ],

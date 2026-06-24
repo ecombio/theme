@@ -1,0 +1,129 @@
+{% comment %}
+  snippets/header-utility.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  ROW 2: Utility bar — customer service links (left) + language/currency
+  switcher (right).
+
+  VARIABLES PASSED IN: none.
+
+  GLOBALS READ DIRECTLY:
+    pages[]              — resolves page URLs by handle. Each page must exist
+                           in Shopify → Online Store → Pages with the matching
+                           handle, or the link falls back to '#' / root_url.
+    routes.root_url      — homepage fallback for Help Centre.
+    localization         — current language, currency, and available languages.
+                           Shopify populates this on every request.
+
+  CALLER (sections/header.liquid):
+    {% render 'header-utility' %}
+
+  LOCALIZATION FORM NOTES:
+    - {% form 'localization' %} is Shopify's official locale/currency switcher.
+    - Selecting a language submits the form; Shopify handles the redirect.
+    - The form id 'header-localization-form' must be unique on the page.
+      If you ever render this snippet a second time (e.g. mobile drawer),
+      pass a unique id_suffix variable and append it:
+        id: 'header-localization-form--{{ id_suffix }}'
+    - The <ul> is hidden by default; header.js toggles it open/closed.
+    - aria-expanded on the trigger button is also managed by header.js.
+
+  PAGE HANDLE MAP (update if your page handles differ):
+    track-my-order  →  TRACK MY ORDER
+    store-finder    →  STORE FINDER
+    help-centre     →  HELP CENTRE
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<div class="header__utility">
+  <div class="header__utility-inner page-width">
+
+    {% comment %}
+      LEFT: Customer service links.
+      pages['handle'].url returns the full path if the page exists,
+      blank otherwise — the | default filter catches the blank case.
+    {% endcomment %}
+    <nav class="header__utility-links" aria-label="Customer service">
+      <a
+        href="{{ pages['track-my-order'].url | default: '#' }}"
+        class="header__utility-link"
+      >
+        TRACK MY ORDER
+      </a>
+
+      <a
+        href="{{ pages['store-finder'].url | default: '#' }}"
+        class="header__utility-link"
+      >
+        STORE FINDER
+      </a>
+
+      <a
+        href="{{ pages['help-centre'].url | default: routes.root_url }}"
+        class="header__utility-link"
+      >
+        HELP CENTRE
+      </a>
+    </nav>
+
+    {% comment %}
+      RIGHT: Language + currency switcher.
+      Uses Shopify's {% form 'localization' %} — the only officially supported
+      way to switch locale without a custom redirect handler.
+      header.js handles open/close of the dropdown list.
+    {% endcomment %}
+    {% form 'localization', id: 'header-localization-form', class: 'header__lang-form' %}
+
+      <button
+        type="button"
+        class="header__lang-switcher"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-controls="header-lang-list"
+      >
+        <span class="header__lang-flag" aria-hidden="true">
+          {%- case localization.language.iso_code -%}
+            {%- when 'en' -%}🇺🇸
+            {%- when 'fr' -%}🇫🇷
+            {%- when 'de' -%}🇩🇪
+            {%- when 'es' -%}🇪🇸
+            {%- else -%}🌐
+          {%- endcase -%}
+        </span>
+        <span class="header__lang-label">
+          {{- localization.language.name | upcase -}}
+          ({{ localization.country.currency.iso_code }})
+        </span>
+        <span class="header__lang-caret" aria-hidden="true">▾</span>
+      </button>
+
+      <ul
+        id="header-lang-list"
+        class="header__lang-list"
+        role="listbox"
+        aria-label="Select language"
+        hidden
+      >
+        {%- for language in localization.available_languages -%}
+          {%- if language.iso_code == localization.language.iso_code -%}
+            {%- assign is_active = true -%}
+          {%- else -%}
+            {%- assign is_active = false -%}
+          {%- endif -%}
+
+          <li role="option" aria-selected="{% if is_active %}true{% else %}false{% endif %}">
+            <button
+              type="submit"
+              name="locale_code"
+              value="{{ language.iso_code }}"
+              class="header__lang-option{% if is_active %} header__lang-option--active{% endif %}"
+            >
+              {{- language.name -}}
+            </button>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+    {% endform %}
+
+  </div>
+</div>

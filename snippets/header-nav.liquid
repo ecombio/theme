@@ -1,0 +1,53 @@
+{% comment %}
+  snippets/header-nav.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  ROW 4: Main navigation bar — <nav> wrapper + menu link loop.
+
+  This snippet owns the loop and the fallback. It delegates every individual
+  link to header-nav-item.liquid, which owns the leaf/dropdown branching.
+
+  VARIABLES (passed in via `with` from sections/header.liquid):
+    menu          {linklist}  — the Shopify menu object from section.settings.
+                                Exposes .links (array of link objects).
+    deals_handle  {string}    — handle of the link that gets red/bold deals
+                                styling, e.g. "great-deals".
+                                Passed straight through to header-nav-item.
+                                Pass "" or omit to disable special styling.
+
+  GLOBALS READ DIRECTLY: none.
+
+  CALLER (sections/header.liquid):
+    {% render 'header-nav',
+       menu:         section.settings.menu,
+       deals_handle: 'great-deals'
+    %}
+
+  LOOP PATTERN:
+    {% for link in menu.links %}
+      {% render 'header-nav-item', link: link, deals_handle: deals_handle %}
+    {% else %}
+      fallback shown when no menu is selected in Theme Editor
+    {% endfor %}
+
+  STEP 3 NOTE (mobile):
+    When you build the mobile drawer, create snippets/header-nav--mobile.liquid
+    with its own loop and call header-nav-item from there too — or a separate
+    header-nav-item--mobile.liquid if the mobile layout needs different markup.
+    This file stays desktop-only and untouched.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<nav class="header__nav" aria-label="Main navigation">
+  <div class="header__nav-inner page-width">
+
+    {%- for link in menu.links -%}
+      {%- render 'header-nav-item', link: link, deals_handle: deals_handle -%}
+    {%- else -%}
+      {% comment %} Shown in Theme Editor when no menu is assigned yet {% endcomment %}
+      <span class="header__nav-link" style="opacity:0.4;">
+        No menu selected — choose one in the theme editor.
+      </span>
+    {%- endfor -%}
+
+  </div>
+</nav>
