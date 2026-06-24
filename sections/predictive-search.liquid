@@ -5,30 +5,89 @@
 
   Fetched by predictive-search.js via:
     /search/suggest?q=QUERY
-      &resources[type]=product,collection
+      &resources[type]=product,collection,query
       &resources[limit]=4
       &section_id=predictive-search
 
-  Two divisions: Products (up to 4) and Collections (up to 2).
-  Query suggestions removed — requires Shopify Advanced plan.
+  Three divisions:
+    1. Query suggestions (up to 2) — requires Shopify Advanced plan.
+       If not on Advanced, these simply won't appear; everything else works.
+    2. Products (up to 4)
+    3. Collections (up to 2)
 
-  Matched terms: Shopify wraps hits in <em> via highlighted_title.
-  Styled navy in predictive-search.css via em selector.
+  Matched terms: Shopify wraps hits in <em> via highlighted_title /
+  highlighted_text. Styled navy in predictive-search.css via em selector.
+
+  CHANGES FROM PREVIOUS VERSION:
+    - Added query suggestions block (Advanced plan; gracefully absent otherwise)
+    - Collection icon changed from 4-rect grid → folder SVG (matches target UI)
+    - Price filter changed from `money` → `money_without_trailing_zeros`
+      (renders $1,899 instead of $1,899.00)
   ============================================================================
 {% endcomment %}
 
 <div class="search-results" data-predictive-results>
 
-{%- assign has_products = predictive_search.resources.products.size -%}
+{%- assign has_queries     = predictive_search.resources.queries.size -%}
+{%- assign has_products    = predictive_search.resources.products.size -%}
 {%- assign has_collections = predictive_search.resources.collections.size -%}
 
-  {%- if has_products == false and has_collections == false -%}
+  {%- if has_queries == false and has_products == false and has_collections == false -%}
     <p class="search-results__empty">
       {{- 'general.search.no_results' | t: terms: predictive_search.terms -}}
     </p>
 
   {%- else -%}
 
+    {%- comment -%} ── 1. QUERY SUGGESTIONS ────────────────────────────────
+      Requires Shopify Advanced plan (resources[type]=query in the fetch URL).
+      If the plan doesn't support it, `has_queries` is 0 and this block is
+      silently skipped — no errors, no empty section label.
+    {%- endcomment -%}
+    {%- if has_queries -%}
+      <ul
+        class="search-results__list search-results__suggestions"
+        role="listbox"
+        aria-label="{{ 'general.search.suggestions' | t }}"
+      >
+        {%- for suggestion in predictive_search.resources.queries limit: 2 -%}
+          <li class="search-results__item search-results__suggestion-item" role="option">
+            <a
+              class="search-results__link search-results__link--suggestion"
+              href="{{ routes.search_url }}?q={{ suggestion.text | url_encode }}&type=product"
+              data-search-result-item
+            >
+              <!-- Search / magnifier icon -->
+              <svg
+                class="search-results__suggestion-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <line x1="15.5" y1="15.5" x2="21" y2="21" />
+              </svg>
+              <span class="search-results__suggestion-text">
+                {{- suggestion.highlighted_text | default: suggestion.text -}}
+              </span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+
+    {%- comment -%} ── 2. PRODUCTS ─────────────────────────────────────────
+      Price uses money_without_trailing_zeros so $1,899.00 renders as $1,899.
+    {%- endcomment -%}
     {%- if has_products -%}
       <div class="search-results__section">
         <p class="search-results__section-label">
@@ -60,13 +119,13 @@
                   </span>
                   <span class="search-results__price">
                     {%- if product.price_varies -%}
-                      {{ 'products.price.from' | t }} {{ product.price_min | money }}
+                      {{ 'products.price.from' | t }} {{ product.price_min | money_without_trailing_zeros }}
                     {%- else -%}
-                      {{ product.price | money }}
+                      {{ product.price | money_without_trailing_zeros }}
                     {%- endif -%}
                     {%- if product.compare_at_price > product.price -%}
                       <span class="search-results__price--compare">
-                        {{- product.compare_at_price | money -}}
+                        {{- product.compare_at_price | money_without_trailing_zeros -}}
                       </span>
                     {%- endif -%}
                   </span>
@@ -79,6 +138,10 @@
       </div>
     {%- endif -%}
 
+
+    {%- comment -%} ── 3. COLLECTIONS ──────────────────────────────────────
+      Icon changed to folder SVG to match the target UI design.
+    {%- endcomment -%}
     {%- if has_collections -%}
       <div class="search-results__section">
         <p class="search-results__section-label">
@@ -89,11 +152,21 @@
             <li class="search-results__item" role="option">
               <a class="search-results__link search-results__link--collection" href="{{ collection.url }}" data-search-result-item>
                 <div class="search-results__collection-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                    <rect x="3"  y="3"  width="7" height="7" rx="1" />
-                    <rect x="14" y="3"  width="7" height="7" rx="1" />
-                    <rect x="3"  y="14" width="7" height="7" rx="1" />
-                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <!-- Folder icon (replaces previous 4-rect grid icon) -->
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
                   </svg>
                 </div>
                 <span class="search-results__collection-title">
@@ -106,6 +179,8 @@
       </div>
     {%- endif -%}
 
+
+    {%- comment -%} ── FOOTER ──────────────────────────────────────────────{%- endcomment -%}
     <div class="search-results__footer">
       <a
         class="search-results__view-all"
