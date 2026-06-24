@@ -1,0 +1,315 @@
+/*
+  assets/article-feed.css
+
+  Styles the article feed tab on collection pages.
+  Loaded conditionally only when collection.metafields.custom.articles.value
+  is non-empty (see sections/collection.liquid — no schema setting required).
+
+  Depends on: collection.css for grid/layout base variables.
+
+  Token strategy
+  ──────────────
+  Article-specific tokens are defined here under :root so they can be
+  overridden by the theme's global token sheet without specificity fights.
+  Where a Dawn-compatible theme already exposes a matching global token
+  (e.g. --color-background, --color-foreground, --color-border) we consume
+  it directly. Article-specific values fall back to sensible standalone
+  defaults so the file works in isolation too.
+
+  Tokens defined here:
+  --color-article-surface  : card background  (falls back to --color-background-2)
+  --color-article-accent   : CTA / indicator  (falls back to --color-button / brand)
+  --color-article-meta     : date / read-time muted text
+  --color-article-border   : hairline border  (falls back to --color-border)
+  --article-img-ratio      : set inline per-card by the snippet
+*/
+
+/* ── Tokens ─────────────────────────────────────────────────────
+   Consume Dawn-compatible globals where available; own values as
+   fallbacks so the file is self-contained if tokens aren't present.
+   ─────────────────────────────────────────────────────────────── */
+:root {
+  --color-article-surface  : var(--color-background-2, #F7F4EF);
+  --color-article-accent   : var(--color-button, #2D5A3D);
+  --color-article-meta     : var(--color-foreground-muted, #8A8A7A);
+  --color-article-border   : var(--color-border, rgba(0, 0, 0, 0.08));
+  --article-card-radius    : var(--media-radius, 4px);
+  --article-transition     : 200ms ease;
+}
+
+/* ── Feed wrapper ────────────────────────────────────────────── */
+.collection__articles {
+  width: 100%;
+}
+
+.article-feed {
+  display: grid;
+  grid-template-columns: repeat(var(--collection-products-columns-mobile, 2), 1fr);
+  gap: 1.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .article-feed {
+    grid-template-columns: repeat(var(--collection-products-columns-desktop, 3), 1fr);
+    gap: 2rem;
+  }
+}
+
+/* ── Card shell ──────────────────────────────────────────────── */
+.article-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-article-surface);
+  border: 1px solid var(--color-article-border);
+  border-radius: var(--article-card-radius);
+  overflow: hidden;
+  transition: box-shadow var(--article-transition);
+}
+
+.article-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.09);
+}
+
+/* ── Image zone ──────────────────────────────────────────────── */
+.article-card__link {
+  display: block;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.article-card__img-zone {
+  position: relative;
+  aspect-ratio: var(--article-img-ratio, 16 / 9);
+  overflow: hidden;
+  background: #E8E4DC;
+}
+
+.article-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 400ms ease;
+}
+
+.article-card:hover .article-card__img {
+  transform: scale(1.03);
+}
+
+/* Placeholder when no article image */
+.article-card__img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-article-meta);
+  background: #E8E4DC;
+}
+
+/* ── Signature element: hover progress bar ───────────────────── */
+/*
+  A thin line that draws across the top of the image on hover,
+  replacing the generic zoom-only hover pattern. Editorial, purposeful.
+*/
+.article-card__progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: var(--color-article-accent);
+  transition: width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+}
+
+.article-card:hover .article-card__progress-bar {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-card__progress-bar {
+    transition: none;
+  }
+  .article-card__img {
+    transition: none;
+  }
+}
+
+/* ── Card body ───────────────────────────────────────────────── */
+.article-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1.25rem;
+  gap: 0.5rem;
+}
+
+/* ── Meta line: tag · date · read-time ──────────────────────── */
+.article-card__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-article-meta);
+  line-height: 1;
+}
+
+.article-card__tag {
+  color: var(--color-article-accent);
+  font-weight: 600;
+}
+
+.article-card__meta-sep {
+  opacity: 0.45;
+}
+
+/* ── Title ───────────────────────────────────────────────────── */
+.article-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 768px) {
+  .article-card__title {
+    font-size: 1.05rem;
+  }
+}
+
+.article-card__title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--article-transition);
+}
+
+.article-card__title-link:hover,
+.article-card__title-link:focus-visible {
+  color: var(--color-article-accent);
+}
+
+.article-card__title-link:focus-visible {
+  outline: 2px solid var(--color-article-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Excerpt ─────────────────────────────────────────────────── */
+.article-card__excerpt {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #4A4A42;
+  flex: 1;
+
+  /* Clamp to 3 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── CTA ─────────────────────────────────────────────────────── */
+.article-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-article-accent);
+  text-decoration: none;
+  border-top: 1px solid var(--color-article-border);
+  transition: gap var(--article-transition), color var(--article-transition);
+}
+
+.article-card__cta:hover {
+  gap: 0.6rem;
+}
+
+.article-card__cta:focus-visible {
+  outline: 2px solid var(--color-article-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.article-card__cta-arrow {
+  flex-shrink: 0;
+  transition: transform var(--article-transition);
+}
+
+.article-card__cta:hover .article-card__cta-arrow {
+  transform: translateX(3px);
+}
+
+/* ── Tab UI (toolbar tabs) ───────────────────────────────────── */
+.collection__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  border-bottom: 2px solid var(--color-article-border);
+  margin-right: auto; /* push sort/filter to the right */
+}
+
+.collection__tab {
+  position: relative;
+  padding: 0.6rem 1.1rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-article-meta);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--article-transition);
+  white-space: nowrap;
+}
+
+.collection__tab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-article-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection__tab::after {
+    transition: none;
+  }
+}
+
+.collection__tab:hover {
+  color: inherit;
+}
+
+.collection__tab--active {
+  color: inherit;
+}
+
+.collection__tab--active::after {
+  transform: scaleX(1);
+}
+
+/* ── Utility: hidden panel ───────────────────────────────────── */
+.hidden {
+  display: none !important;
+}
