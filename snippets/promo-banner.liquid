@@ -1,0 +1,132 @@
+{%- comment -%}
+  snippets/promo-banner.liquid
+
+  Shared markup for the promo banner. Used by:
+    • sections/promo-banner.liquid  (standalone section)
+    • sections/collection.liquid    (in-feed block)
+
+  Required variables — set before rendering:
+    banner_settings   — a settings object (section.settings or block.settings)
+                        Must expose all the keys listed in the section schema.
+    banner_section_id — a unique string for data-section-id (pass section.id
+                        from the caller so theme editor targeting still works)
+{%- endcomment -%}
+
+{%- liquid
+  assign width     = banner_settings.banner_width
+  assign position  = banner_settings.banner_position
+  assign text_align  = banner_settings.text_align
+  assign text_valign = banner_settings.text_valign
+  assign has_image   = banner_settings.bg_image
+  assign overlay_color   = banner_settings.overlay_color
+  assign overlay_opacity = banner_settings.overlay_opacity | divided_by: 100.0
+
+  comment
+    Derive default aspect ratio from width unless merchant overrides
+  endcomment
+  assign custom_ratio = banner_settings.custom_ratio | strip
+  if custom_ratio != blank
+    assign ratio_parts = custom_ratio | split: ':'
+    assign ratio_w = ratio_parts[0] | times: 1.0
+    assign ratio_h = ratio_parts[1] | times: 1.0
+    assign aspect  = ratio_w | append: '/' | append: ratio_h
+  elsif width == '25'
+    assign aspect = '3/4'
+  elsif width == '50'
+    assign aspect = '16/7'
+  elsif width == '75'
+    assign aspect = '16/5'
+  else
+    assign aspect = '28/9'
+  endif
+-%}
+
+{%- assign _palette = '1,e0f2fe,0369a1|2,fef9c3,854d0e|3,dcfce7,166534|4,fce7f3,9d174d|5,ede9fe,5b21b6|6,ffedd5,9a3412|7,e0e7ff,3730a3|8,f0fdf4,15803d' | split: '|' -%}
+
+<div
+  class="promo-banner page-width"
+  data-section-id="{{ banner_section_id }}"
+  data-section-type="promo-banner"
+  style="--promo-pt: {{ banner_settings.padding_top }}px; --promo-pb: {{ banner_settings.padding_bottom }}px;"
+>
+  <div
+    class="promo-banner__frame promo-banner__frame--w{{ width }} promo-banner__frame--pos-{{ position }}"
+    style="--promo-aspect: {{ aspect }};"
+  >
+
+    {%- comment -%}── Background ────────────────────────────────────────────{%- endcomment -%}
+    <div class="promo-banner__bg">
+      {%- if has_image -%}
+        {%- assign focal = banner_settings.bg_image.presentation.focal_point | default: '50% 50%' -%}
+        {%- assign img_alt = banner_settings.headline | default: banner_settings.eyebrow | escape -%}
+        {{
+          banner_settings.bg_image
+          | image_url: width: 2000
+          | image_tag:
+            class: 'promo-banner__img',
+            loading: 'lazy',
+            widths: '600,900,1200,1600,2000',
+            sizes: '100vw',
+            alt: img_alt,
+            style: 'object-position: ' | append: focal
+        }}
+      {%- else -%}
+        {%- assign _idx  = banner_section_id.size | modulo: 8 -%}
+        {%- assign _pair = _palette[_idx] | split: ',' -%}
+        <div
+          class="promo-banner__img-placeholder"
+          aria-hidden="true"
+          style="background: linear-gradient(135deg, #{{ _pair[1] }} 0%, #{{ _pair[2] }}44 100%);"
+        ></div>
+      {%- endif -%}
+
+      {%- assign overlay_rgb = overlay_color | color_to_rgb | remove: 'rgb(' | remove: ')' -%}
+      <div
+        class="promo-banner__overlay"
+        aria-hidden="true"
+        style="background: rgba({{ overlay_rgb }}, {{ overlay_opacity }});"
+      ></div>
+    </div>
+
+    {%- comment -%}── Content ───────────────────────────────────────────────{%- endcomment -%}
+    <div class="promo-banner__content promo-banner__content--{{ text_align }} promo-banner__content--{{ text_valign }}">
+
+      {%- if banner_settings.eyebrow != blank -%}
+        <p class="promo-banner__eyebrow">{{ banner_settings.eyebrow }}</p>
+      {%- endif -%}
+
+      {%- if banner_settings.headline != blank -%}
+        <{{ banner_settings.heading_tag }} class="promo-banner__headline">
+          {{ banner_settings.headline }}
+        </{{ banner_settings.heading_tag }}>
+      {%- endif -%}
+
+      {%- if banner_settings.subtext != blank -%}
+        <p class="promo-banner__subtext">{{ banner_settings.subtext }}</p>
+      {%- endif -%}
+
+      {%- if banner_settings.cta_label != blank and banner_settings.cta_url != blank -%}
+        <div class="promo-banner__ctas">
+          <a
+            class="promo-banner__cta promo-banner__cta--primary"
+            href="{{ banner_settings.cta_url }}"
+            {% if banner_settings.cta_new_tab %}target="_blank" rel="noopener"{% endif %}
+          >
+            {{ banner_settings.cta_label }}
+          </a>
+          {%- if banner_settings.cta2_label != blank and banner_settings.cta2_url != blank -%}
+            <a
+              class="promo-banner__cta promo-banner__cta--secondary"
+              href="{{ banner_settings.cta2_url }}"
+              {% if banner_settings.cta_new_tab %}target="_blank" rel="noopener"{% endif %}
+            >
+              {{ banner_settings.cta2_label }}
+            </a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+    </div><!-- /.promo-banner__content -->
+
+  </div><!-- /.promo-banner__frame -->
+</div><!-- /.promo-banner -->
