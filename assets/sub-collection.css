@@ -21,6 +21,11 @@
 }
 
 /* ── Card grid ────────────────────────────────────────────── */
+/*
+  Used both inside .sub-collection (standalone section) and
+  directly inside .collection (inline above the product feed).
+  No extra wrapper class is needed — the grid handles itself.
+*/
 .sub-collection__grid {
   display: grid;
   grid-template-columns: repeat(
@@ -29,7 +34,7 @@
   );
   gap: 1rem;
   list-style: none;
-  margin: 0 0 2rem;
+  margin: 0 0 2rem;   /* bottom margin separates grid from toolbar below */
   padding: 0;
 }
 
@@ -44,49 +49,32 @@
 }
 
 /* ── Card ─────────────────────────────────────────────────── */
-/*
-  Distinct from product cards in three ways:
-    1. No border — uses a softer background + shadow instead
-    2. Inner padding around the image (image floats inside the card,
-       not edge-to-edge) giving a curated, editorial feel
-    3. Tighter text hierarchy — title-only, no price/badge clutter
-*/
 .sub-collection__card {
   display: flex;
   flex-direction: column;
   text-decoration: none;
   color: inherit;
-  border-radius: 14px;
-  border: none;
-  overflow: visible;           /* allow image to cast shadow outside */
-  background: #F8F9FB;         /* off-white — distinct from product card #fff */
+  border-radius: 10px;
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+  background: #fff;
   height: 100%;
-  padding: 10px 10px 0;        /* whitespace: image floats inside the card */
-  transition: box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .sub-collection__card:hover {
-  background: #F1F3F7;
-  box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
 }
 
 /* ── Image zone ───────────────────────────────────────────── */
-/*
-  Rounded on all four corners + a subtle inner shadow so the image
-  reads as a "floating" photo rather than a flush product shot.
-  The outer card padding + this border-radius create the whitespace
-  margin that separates the image from the card edge.
-*/
 .sub-collection__img-zone {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  background: #E9ECF1;
+  background: #F9FAFB;
   flex-shrink: 0;
-  border-radius: 8px;          /* inner rounding, smaller than card radius */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* lift the image off the bg */
 }
 
 .sub-collection__img {
@@ -98,7 +86,7 @@
 }
 
 .sub-collection__card:hover .sub-collection__img {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 /* ── Placeholder — SVG (sub-collection.liquid standalone) ─── */
@@ -118,36 +106,39 @@
 }
 
 /* ── Placeholder — letter tile (collection.liquid inline) ─── */
+/*
+  When a sub-collection has no featured_image, collection.liquid
+  renders a coloured tile with the first letter of the collection
+  title. The bg/fg colours are set inline via style="" attributes
+  using a deterministic palette keyed on handle.size mod 8.
+  This block only adds the typography — the colours come from Liquid.
+*/
 .sub-collection__img-letter {
   font-size: clamp(1.75rem, 6cqi, 3.5rem);
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1;
+  /* background and color set inline by Liquid */
 }
 
 /* ── Card body ────────────────────────────────────────────── */
-/*
-  Sits below the floated image, inside the card's padding.
-  Extra horizontal padding aligns text with the image inset.
-*/
 .sub-collection__card-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 4px 12px;      /* top gap from image, bottom breathing room */
+  gap: 3px;
+  padding: 12px 12px 14px;
 }
 
 .sub-collection__card-title {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #111827;
   line-height: 1.3;
 }
 
 .sub-collection__card-count {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: #6B7280;
-  font-weight: 400;
 }
 
 /* ── Empty state ──────────────────────────────────────────── */
@@ -170,16 +161,41 @@
 }
 
 /* ── Style 2: in-feed cards ───────────────────────────────── */
+/*
+  When sub_display_style = 'in-feed', sub-collection <li> items are
+  rendered directly inside .collection-products (which is a CSS grid).
+  They inherit the product grid's column layout automatically — no
+  separate grid wrapper or column CSS needed.
+
+  .sub-collection__item--in-feed  resets list styles (collection-products
+  may use <ul>/<ol> internally) and ensures the card fills its grid cell.
+
+  .sub-collection__card--in-feed  keeps the same card appearance as
+  Style 1 but removes the bottom margin that the standalone grid uses
+  to separate itself from the toolbar.
+*/
 .sub-collection__item--in-feed {
   list-style: none;
-  display: flex;
+  display: flex;          /* fill the grid cell like a product card would */
 }
 
 .sub-collection__card--in-feed {
-  width: 100%;
+  width: 100%;            /* fill the flex item */
 }
 
 /* ── Style 2: dedicated row modifier ─────────────────────── */
+/*
+  .sub-collection__grid--dedicated is used when sub_display_style
+  = 'in-feed'. The grid sits inside collection__main, directly above
+  .collection-products. It mirrors the product grid's column count
+  via --sub-collection-columns-* set inline from section.settings.
+  columns_desktop / columns_mobile, so the cards align with the
+  product cards below without any extra config.
+
+  Tightens the bottom margin so the gap between the sub-collection
+  row and the first product row matches the product grid's own gap
+  rather than the larger section-level spacing used in Style 1.
+*/
 .sub-collection__grid--dedicated {
-  margin-bottom: 0;
+  margin-bottom: 0;   /* gap to product grid comes from collection-products' own top margin/gap */
 }
