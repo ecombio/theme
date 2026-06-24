@@ -4,19 +4,30 @@
   ============================================================================
 
   Server-side render template for the predictive search results panel.
-  Fetched by header-search.js via:
-    /search/suggest?q=QUERY&resources[type]=product&resources[limit]=5&section_id=predictive-search
+  Fetched by predictive-search.js via:
+    /search/suggest?q=QUERY
+      &resources[type]=product
+      &resources[limit]=5
+      &section_id=predictive-search
 
-  Shopify renders this section and returns the HTML. header-search.js injects
-  the response directly into [data-search-results]. No client-side templating.
+  Shopify renders this section and returns the HTML.
+  predictive-search.js injects the [data-predictive-results] node
+  into [data-search-results]. No client-side templating.
 
   VARIABLES:
     predictive_search.resources.products  — up to 5 matched products
 
-  THIS SECTION:
-    - Renders product results only (v2 scope)
-    - Articles and collections can be added here later without touching JS
-    - Is never rendered as a standalone page — only via section_id param
+  OWNS:
+    .search-results__* — all styles live in predictive-search.css
+    [data-predictive-results] — JS injection anchor
+
+  DOES NOT OWN:
+    .header__search-results — that container is header-search's concern
+    Any layout outside the results list
+
+  EXTENDS:
+    Articles, collections, queries can be added here later without
+    touching predictive-search.js or header-search.liquid.
 
   ============================================================================
 {% endcomment %}
@@ -25,7 +36,11 @@
 
   {%- if predictive_search.resources.products.size > 0 -%}
 
-    <ul class="search-results__list" role="listbox" aria-label="{{ 'general.search.results' | t }}">
+    <ul
+      class="search-results__list"
+      role="listbox"
+      aria-label="{{ 'general.search.results' | t }}"
+    >
       {%- for product in predictive_search.resources.products -%}
         <li class="search-results__item" role="option">
           <a
@@ -36,33 +51,40 @@
 
             <div class="search-results__image-wrap">
               {%- if product.featured_image -%}
-                {%- assign img_url = product.featured_image | image_url: width: 80 -%}
+                {%- assign img_url = product.featured_image | image_url: width: 104 -%}
                 {%- assign img_alt = product.featured_image.alt | escape -%}
                 <img
                   class="search-results__image"
                   src="{{ img_url }}"
                   alt="{{ img_alt }}"
-                  width="80"
-                  height="80"
+                  width="52"
+                  height="52"
                   loading="lazy"
                 >
               {%- else -%}
-                <div class="search-results__image-placeholder" aria-hidden="true"></div>
+                <div
+                  class="search-results__image-placeholder"
+                  aria-hidden="true"
+                ></div>
               {%- endif -%}
             </div>
 
             <div class="search-results__info">
-              <span class="search-results__title">{{ product.title | escape }}</span>
+              <span class="search-results__title">
+                {{- product.title | escape -}}
+              </span>
+
               <span class="search-results__price">
                 {%- if product.price_varies -%}
-                  {{ 'products.price.from' | t }}
-                  {{ product.price_min | money }}
+                  {{- 'products.price.from' | t }}
+                  {{ product.price_min | money -}}
                 {%- else -%}
-                  {{ product.price | money }}
+                  {{- product.price | money -}}
                 {%- endif -%}
+
                 {%- if product.compare_at_price > product.price -%}
                   <span class="search-results__price--compare">
-                    {{ product.compare_at_price | money }}
+                    {{- product.compare_at_price | money -}}
                   </span>
                 {%- endif -%}
               </span>
@@ -78,7 +100,7 @@
         class="search-results__view-all"
         href="{{ routes.search_url }}?q={{ predictive_search.terms | url_encode }}&type=product"
       >
-        {{ 'general.search.view_all' | t }}
+        {{- 'general.search.view_all' | t }}
         <span class="search-results__view-all-count">
           ({{ predictive_search.resources.products.size }}+)
         </span>
@@ -88,7 +110,7 @@
   {%- else -%}
 
     <p class="search-results__empty">
-      {{ 'general.search.no_results' | t: terms: predictive_search.terms }}
+      {{- 'general.search.no_results' | t: terms: predictive_search.terms -}}
     </p>
 
   {%- endif -%}
