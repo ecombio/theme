@@ -93,10 +93,22 @@
   assign products_tab_label = section.settings.products_tab_label | default: 'Products'
   assign collection_articles = collection.metafields.custom.articles.value
   assign show_articles       = false
-  if collection_articles != blank and collection_articles.size > 0
+  if collection_articles.size > 0
     assign show_articles = true
   endif
 -%}
+
+{%- comment -%}
+  DEBUG — uncomment the pre block below to verify metafield data on the storefront.
+  Remove entirely before go-live.
+  {%- endcomment -%}
+{%- comment -%}
+<pre style="background:#fffbe6;border:1px solid #f0c36d;padding:1rem;font-size:0.75rem;margin:1rem 0;white-space:pre-wrap;">
+  show_articles: {{ show_articles }}
+  collection_articles.size: {{ collection_articles.size }}
+  raw metafield: {{ collection.metafields.custom.articles | json }}
+</pre>
+{%- endcomment -%}
 
 {%- if carousel_blocks.size > 0 -%}
   {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
