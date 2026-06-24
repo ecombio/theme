@@ -1,0 +1,90 @@
+{%- comment -%}
+  snippets/product-feed.liquid
+  Pure feed: takes a product list, renders product-card per item.
+  Owns no filtering, sorting, or pagination logic — that's
+  product-filter's job and the parent section's job respectively.
+
+  Kept generic ("feed", not "product-grid") since a future tab /
+  context-switcher will swap this for an article-card feed. Don't
+  rename or over-fit this to products-only assumptions.
+
+  IN-FEED CAROUSEL BLOCKS (optional):
+  When carousel_blocks is passed (repeatable schema blocks from
+  sections/collection.liquid, type "carousel"), one in-feed-carousel
+  is inserted after every `interval` products. Blocks cycle in order
+  if there are more carousel blocks than insertion points, and repeat
+  from the start if there are fewer. A block with no collection
+  picked falls back to render the current page's collection
+  (fallback_collection) instead of being skipped — per spec, both a
+  merchant-picked collection AND an auto/current-collection fallback
+  must work.
+
+  This snippet does not load product-carousel.css/.js — that's the
+  parent section's job (sections/collection.liquid), same pattern as
+  product-card.css.
+
+  Params:
+    products            {Array}   required — already-paginated product list
+    show_quickview       {Boolean} optional — passed through to product-card
+    show_compare         {Boolean} optional — passed through to product-card
+    show_eta             {Boolean} optional — passed through to product-card
+    carousel_blocks      {Array}   optional — section.blocks filtered to type "carousel"
+    carousel_interval    {Number}  optional — insert a carousel every N products (default 8; 0 disables)
+    fallback_collection  {Object}  optional — used when a carousel block has no collection picked
+{%- endcomment -%}
+
+{%- liquid
+  assign feed_products = products
+  assign feed_carousel_blocks = carousel_blocks
+  assign feed_interval = carousel_interval | default: 8
+
+  assign feed_carousel_count = 0
+  if feed_carousel_blocks.size > 0
+    assign feed_carousel_count = feed_carousel_blocks.size
+  endif
+-%}
+
+{%- if feed_products.size > 0 -%}
+  {%- for product in feed_products -%}
+    {%- render 'product-card',
+      product: product,
+      show_quickview: show_quickview,
+      show_compare: show_compare,
+      show_eta: show_eta
+    -%}
+
+    {%- comment -%}
+      Insert a carousel after every Nth product (1-indexed forloop.index),
+      but never after the very last product in the list.
+    {%- endcomment -%}
+    {%- liquid
+      assign feed_should_insert = false
+      if feed_carousel_count > 0 and feed_interval > 0 and forloop.last != true
+        assign feed_remainder = forloop.index | modulo: feed_interval
+        if feed_remainder == 0
+          assign feed_should_insert = true
+        endif
+      endif
+    -%}
+    {%- if feed_should_insert -%}
+      {%- liquid
+        assign feed_block_idx = forloop.index | divided_by: feed_interval | minus: 1
+        assign feed_block_idx = feed_block_idx | modulo: feed_carousel_count
+        assign feed_block     = feed_carousel_blocks[feed_block_idx]
+        assign feed_block_col = feed_block.settings.collection | default: fallback_collection
+      -%}
+      {%- render 'in-feed-carousel',
+        collection: feed_block_col,
+        block_id: feed_block.id,
+        heading: feed_block.settings.heading,
+        products_limit: feed_block.settings.products_per_carousel,
+        cards_desktop: feed_block.settings.cards_per_row_desktop,
+        cards_mobile: feed_block.settings.cards_per_row_mobile
+      -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- else -%}
+  <div class="product-feed__empty">
+    <p>No products found.</p>
+  </div>
+{%- endif -%}

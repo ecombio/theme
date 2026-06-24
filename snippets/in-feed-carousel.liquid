@@ -1,0 +1,90 @@
+{%- comment -%}
+  snippets/in-feed-carousel.liquid
+
+  A single-collection, no-tabs carousel row meant to be interleaved
+  inside snippets/product-feed.liquid (breaks the .collection-products
+  grid every N items — full-width row, not a grid cell).
+
+  Reuses product-carousel.js / product-carousel.css AS-IS. This
+  snippet emits the same markup contract that file already expects
+  (.product-carousel root + data-carousel-* hooks), just without the
+  outer <section>, schema, tabs, or banner machinery from
+  sections/product-carousel.liquid. Do NOT fork the JS/CSS — if the
+  carousel behavior needs to change, change it once in
+  product-carousel.js/.css and both the standalone section and this
+  in-feed block inherit the fix.
+
+  Asset loading: product-carousel.css and product-carousel.js are
+  NOT loaded here. They must be loaded once by the parent
+  (sections/collection.liquid) — same pattern already used for
+  product-card.css. Loading them per-snippet-instance would duplicate
+  <script> tags every time this renders inside the feed loop.
+
+  Params:
+    collection     {Object}  required — the collection to pull products from
+    block_id       {String}  required — unique id for this instance (section.blocks[n].id)
+    products_limit {Number}  optional — default 12
+    cards_desktop  {Number}  optional — default 3
+    cards_mobile   {Number}  optional — default 2
+    heading        {String}  optional
+{%- endcomment -%}
+
+{%- liquid
+  assign ifc_collection = collection
+  assign ifc_limit       = products_limit | default: 12
+  assign ifc_cards_desk  = cards_desktop  | default: 3
+  assign ifc_cards_mob   = cards_mobile   | default: 2
+  assign ifc_heading     = heading
+-%}
+
+{%- if ifc_collection != blank and ifc_collection.products_count > 0 -%}
+  <div
+    class="product-carousel in-feed-carousel"
+    id="ifc-{{ block_id }}"
+    data-section-id="ifc-{{ block_id }}"
+    data-cards-desktop="{{ ifc_cards_desk }}"
+    data-cards-mobile="{{ ifc_cards_mob }}"
+    data-autoplay="false"
+    data-arrow-style="bottom"
+    style="grid-column: 1 / -1;"
+  >
+
+    {%- if ifc_heading != blank -%}
+      <div class="product-carousel__header">
+        <div class="product-carousel__heading-group">
+          <h2 class="product-carousel__heading">{{ ifc_heading }}</h2>
+        </div>
+      </div>
+    {%- endif -%}
+
+    <div class="product-carousel__stage">
+      <div class="product-carousel__track-wrapper" data-carousel-wrapper>
+        <ul
+          class="product-carousel__track"
+          data-carousel-track
+          role="list"
+          aria-label="{{ ifc_heading | default: ifc_collection.title | escape }}"
+        >
+          {%- for product in ifc_collection.products limit: ifc_limit -%}
+            <li class="product-carousel__slide" data-carousel-slide>
+              {%- render 'product-card', product: product -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    </div>
+
+    <div class="product-carousel__nav">
+      <div class="product-carousel__dots" data-carousel-dots></div>
+      <div class="product-carousel__arrows">
+        <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev>
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next>
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+{%- endif -%}
