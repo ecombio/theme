@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#ffffff">
 
   <title>
-    {{ page_title }}{% if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif %}
-    {% if current_page != 1 %} &ndash; Page {{ current_page }}{% endif %}
-    {% unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless %}
+    {{ page_title }}
+    {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif %}
+    {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif %}
+    {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless %}
   </title>
 
   {%- if page_description -%}
@@ -20,41 +21,56 @@
   {{ content_for_header }}
 
   {%- comment -%}
-    Global stylesheets, in dependency order:
-      1. critical.css        — resets, .page-width, .visually-hidden, :focus-visible.
-                               Preloaded to prevent layout shift on first paint.
-      2. theme.css           — site chrome + Compare bar + shared utilities.
-      3. header.css          — three-row header (top bar / middle bar / bottom nav),
-                               mobile menu, sticky state. Kept separate from theme.css
-                               so header styles are co-located with header.liquid and
-                               header.js.
-      4. quickview-modal.css — modal shell. Separate so it's styled from first paint
-                               even though it's injected into <body> at runtime.
-      5. cart-drawer.css     — cart drawer shell + content. Same reasoning as above.
+    ── STYLESHEETS ─────────────────────────────────────────────────────────────
+    Loaded in dependency order. Each file is co-located with its subsystem.
+
+    critical.css          Resets, .page-width, .visually-hidden, :focus-visible.
+                          Preloaded to eliminate layout shift on first paint.
+
+    theme.css             Site chrome, compare bar, shared utilities.
+
+    header.css            Header layout: rows, logo, account, cart, nav.
+    header-search.css     Search subsystem styles. Owned by header-search.liquid.
+                          Kept separate so the search subsystem is self-contained.
+
+    quickview-modal.css   Modal shell. Separate so it is styled from first paint
+                          even though it is injected into <body> at runtime.
+
+    cart-drawer.css       Cart drawer shell and content. Same reasoning as above.
+
     product-card.css is NOT loaded here — loaded by sections that use cards.
   {%- endcomment -%}
+
   <link rel="preload" href="{{ 'critical.css' | asset_url }}" as="style">
-  {{ 'critical.css'        | asset_url | stylesheet_tag }}
-  {{ 'theme.css'           | asset_url | stylesheet_tag }}
-  {{ 'header.css'          | asset_url | stylesheet_tag }}
-  {{ 'quickview-modal.css' | asset_url | stylesheet_tag }}
-  {{ 'cart-drawer.css'     | asset_url | stylesheet_tag }}
+  {{ 'critical.css'          | asset_url | stylesheet_tag }}
+  {{ 'theme.css'             | asset_url | stylesheet_tag }}
+  {{ 'header.css'            | asset_url | stylesheet_tag }}
+  {{ 'header-search.css'     | asset_url | stylesheet_tag }}
+  {{ 'quickview-modal.css'   | asset_url | stylesheet_tag }}
+  {{ 'cart-drawer.css'       | asset_url | stylesheet_tag }}
 
   {%- comment -%}
-    Global JS.
-    product-card.js — owns ATC, Wishlist, Compare, Quick View.
-    cart-drawer.js  — owns the cart drawer; listens for cart:open / cart:updated.
-    header.js       — mobile menu toggle, sticky behaviour, cart count badge sync.
-    All three loaded once here. Do NOT re-load inside any section or snippet.
+    ── SCRIPTS ─────────────────────────────────────────────────────────────────
+    All deferred. Each file is co-located with its subsystem.
+    Do NOT re-load any of these inside a section or snippet.
+
+    product-card.js   ATC, Wishlist, Compare, Quick View.
+    cart-drawer.js    Cart drawer; listens for cart:open and cart:updated.
+    header.js         Mobile menu toggle, sticky behaviour, cart count badge sync.
+    header-search.js  Search subsystem. V1: mount point only, no behaviour.
+                      V2 will add predictive search without touching this file.
   {%- endcomment -%}
-  <script src="{{ 'product-card.js' | asset_url }}" defer></script>
-  <script src="{{ 'cart-drawer.js'  | asset_url }}" defer></script>
-  <script src="{{ 'header.js'       | asset_url }}" defer></script>
+
+  <script src="{{ 'product-card.js'   | asset_url }}" defer></script>
+  <script src="{{ 'cart-drawer.js'    | asset_url }}" defer></script>
+  <script src="{{ 'header.js'         | asset_url }}" defer></script>
+  <script src="{{ 'header-search.js'  | asset_url }}" defer></script>
+
 </head>
 
 <body class="template-{{ template.name }}{% if template.suffix != blank %} template-{{ template.name }}-{{ template.suffix }}{% endif %}">
 
-  {%- comment -%} ── HEADER (rendered via section) ── {%- endcomment -%}
+  {%- comment -%} ── HEADER ── {%- endcomment -%}
   {% section 'header' %}
 
   {%- comment -%} ── MAIN CONTENT ── {%- endcomment -%}
