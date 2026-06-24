@@ -1,4 +1,4 @@
-<header class="header">
+<header class="header" data-header>
 
   {%- comment -%} ── TOP BAR: promo text + account ── {%- endcomment -%}
   <div class="header__top">
@@ -24,18 +24,45 @@
         {{ shop.name | link_to: routes.root_url }}
       </h2>
 
-      <a href="{{ routes.cart_url }}" class="header__cart" aria-label="Cart ({{ cart.item_count }})">
-        {%- if cart.item_count > 0 -%}
-          <sup class="header__cart-count" aria-hidden="true">{{ cart.item_count }}</sup>
-        {%- endif -%}
-        {{ 'icon-cart.svg' | inline_asset_content }}
-      </a>
+      <div class="header__middle-icons">
+        <a
+          href="{{ routes.cart_url }}"
+          class="header__cart"
+          aria-label="Cart ({{ cart.item_count }})"
+          data-cart-icon-btn
+        >
+          {%- if cart.item_count > 0 -%}
+            <span class="header__cart-count" aria-hidden="true" data-cart-count>{{ cart.item_count }}</span>
+          {%- else -%}
+            <span class="header__cart-count header__cart-count--hidden" aria-hidden="true" data-cart-count></span>
+          {%- endif -%}
+          {{ 'icon-cart.svg' | inline_asset_content }}
+        </a>
+
+        {%- comment -%} Mobile menu toggle — visible on small screens only {%- endcomment -%}
+        <button
+          class="header__menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+          aria-controls="header-nav"
+          data-menu-toggle
+        >
+          <span class="header__menu-toggle-bar"></span>
+          <span class="header__menu-toggle-bar"></span>
+          <span class="header__menu-toggle-bar"></span>
+        </button>
+      </div>
     </div>
   </div>
 
   {%- comment -%} ── BOTTOM BAR: primary nav ── {%- endcomment -%}
-  <div class="header__bottom">
-    <nav class="header__bottom-inner page-width" aria-label="Main navigation">
+  <nav
+    id="header-nav"
+    class="header__bottom"
+    aria-label="Main navigation"
+    data-nav
+  >
+    <div class="header__bottom-inner page-width">
       {%- for link in section.settings.menu.links -%}
         <a
           class="header__nav-link{% if link.active %} is-active{% endif %}"
@@ -45,104 +72,10 @@
           {{ link.title }}
         </a>
       {%- endfor -%}
-    </nav>
-  </div>
+    </div>
+  </nav>
 
 </header>
-
-{% stylesheet %}
-  /* ── TOP BAR ── */
-  .header__top {
-    background-color: var(--color-background-secondary, #f5f5f5);
-    font-size: 0.8rem;
-  }
-  .header__top-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-block: 0.5rem;
-  }
-  .header__promo {
-    margin: 0;
-    color: var(--color-foreground);
-  }
-  .header__top-icons {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-
-  /* ── MIDDLE BAR ── */
-  .header__middle {
-    border-bottom: 1px solid var(--color-border, #e5e5e5);
-  }
-  .header__middle-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-block: 1.25rem;
-  }
-  .header__title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-  .header__title a {
-    text-decoration: none;
-    color: var(--color-foreground);
-  }
-  .header__cart {
-    position: relative;
-    display: flex;
-    align-items: center;
-    color: var(--color-foreground);
-    text-decoration: none;
-  }
-  .header__cart svg {
-    width: 2rem;
-  }
-  .header__cart-count {
-    position: absolute;
-    left: 100%;
-    font-size: 0.7rem;
-    overflow: hidden;
-    max-width: var(--page-margin);
-  }
-
-  /* ── BOTTOM BAR ── */
-  .header__bottom {
-    border-bottom: 1px solid var(--color-border, #e5e5e5);
-  }
-  .header__bottom-inner {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    padding-block: 0.75rem;
-  }
-  .header__nav-link {
-    text-decoration: none;
-    color: var(--color-foreground);
-    font-size: 0.9rem;
-    white-space: nowrap;
-  }
-  .header__nav-link.is-active {
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .header__nav-link:hover {
-    opacity: 0.7;
-  }
-
-  /* ── SHARED ── */
-  .header__top-inner,
-  .header__middle-inner,
-  .header__bottom-inner {
-    max-width: var(--page-width, 1200px);
-    margin-inline: auto;
-    padding-inline: var(--page-margin, 1.5rem);
-  }
-{% endstylesheet %}
 
 {% schema %}
 {
