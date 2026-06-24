@@ -1,59 +1,146 @@
-<header>
-  <h2 class="header__title">
-    {{ shop.name | link_to: routes.root_url }}
-  </h2>
+<header class="header">
 
-  <div class="header__menu">
-    {% for link in section.settings.menu.links %}
-      {{ link.title | link_to: link.url }}
-    {% endfor %}
+  {%- comment -%} ── TOP BAR: promo text + account ── {%- endcomment -%}
+  <div class="header__top">
+    <div class="header__top-inner page-width">
+      {%- if section.settings.promo_text != blank -%}
+        <p class="header__promo">{{ section.settings.promo_text }}</p>
+      {%- endif -%}
+
+      <div class="header__top-icons">
+        {%- if shop.customer_accounts_enabled -%}
+          <shopify-account menu="{{ section.settings.customer_account_menu }}">
+            {{ 'icon-account.svg' | inline_asset_content }}
+          </shopify-account>
+        {%- endif -%}
+      </div>
+    </div>
   </div>
 
-  <div class="header__icons">
-    {% if shop.customer_accounts_enabled %}
-      <shopify-account menu="{{ section.settings.customer_account_menu }}">
-        {{ 'icon-account.svg' | inline_asset_content }}
-      </shopify-account>
-    {% endif %}
+  {%- comment -%} ── MIDDLE BAR: logo + cart ── {%- endcomment -%}
+  <div class="header__middle">
+    <div class="header__middle-inner page-width">
+      <h2 class="header__title">
+        {{ shop.name | link_to: routes.root_url }}
+      </h2>
 
-    <a href="{{ routes.cart_url }}">
-      {% if cart.item_count > 0 %}
-        <sup>{{ cart.item_count }}</sup>
-      {% endif %}
-
-      {{ 'icon-cart.svg' | inline_asset_content }}
-    </a>
+      <a href="{{ routes.cart_url }}" class="header__cart" aria-label="Cart ({{ cart.item_count }})">
+        {%- if cart.item_count > 0 -%}
+          <sup class="header__cart-count" aria-hidden="true">{{ cart.item_count }}</sup>
+        {%- endif -%}
+        {{ 'icon-cart.svg' | inline_asset_content }}
+      </a>
+    </div>
   </div>
+
+  {%- comment -%} ── BOTTOM BAR: primary nav ── {%- endcomment -%}
+  <div class="header__bottom">
+    <nav class="header__bottom-inner page-width" aria-label="Main navigation">
+      {%- for link in section.settings.menu.links -%}
+        <a
+          class="header__nav-link{% if link.active %} is-active{% endif %}"
+          href="{{ link.url }}"
+          {%- if link.active %} aria-current="page"{% endif %}
+        >
+          {{ link.title }}
+        </a>
+      {%- endfor -%}
+    </nav>
+  </div>
+
 </header>
 
 {% stylesheet %}
-  header {
-    height: 5rem;
+  /* ── TOP BAR ── */
+  .header__top {
+    background-color: var(--color-background-secondary, #f5f5f5);
+    font-size: 0.8rem;
+  }
+  .header__top-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-block: 0.5rem;
   }
-  header a {
-    position: relative;
-    text-decoration: none;
+  .header__promo {
+    margin: 0;
     color: var(--color-foreground);
+  }
+  .header__top-icons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  /* ── MIDDLE BAR ── */
+  .header__middle {
+    border-bottom: 1px solid var(--color-border, #e5e5e5);
+  }
+  .header__middle-inner {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    padding-block: 1.25rem;
   }
-  header a sup {
+  .header__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .header__title a {
+    text-decoration: none;
+    color: var(--color-foreground);
+  }
+  .header__cart {
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: var(--color-foreground);
+    text-decoration: none;
+  }
+  .header__cart svg {
+    width: 2rem;
+  }
+  .header__cart-count {
     position: absolute;
     left: 100%;
+    font-size: 0.7rem;
     overflow: hidden;
     max-width: var(--page-margin);
   }
-  header svg {
-    width: 2rem;
+
+  /* ── BOTTOM BAR ── */
+  .header__bottom {
+    border-bottom: 1px solid var(--color-border, #e5e5e5);
   }
-  header .header__menu,
-  header .header__icons {
+  .header__bottom-inner {
     display: flex;
-    gap: 1rem;
+    align-items: center;
+    gap: 2rem;
+    padding-block: 0.75rem;
+  }
+  .header__nav-link {
+    text-decoration: none;
+    color: var(--color-foreground);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .header__nav-link.is-active {
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .header__nav-link:hover {
+    opacity: 0.7;
+  }
+
+  /* ── SHARED ── */
+  .header__top-inner,
+  .header__middle-inner,
+  .header__bottom-inner {
+    max-width: var(--page-width, 1200px);
+    margin-inline: auto;
+    padding-inline: var(--page-margin, 1.5rem);
   }
 {% endstylesheet %}
 
@@ -62,9 +149,16 @@
   "name": "t:general.header",
   "settings": [
     {
+      "type": "text",
+      "id": "promo_text",
+      "label": "Top bar promo text",
+      "placeholder": "Free shipping on orders over $50"
+    },
+    {
       "type": "link_list",
       "id": "menu",
-      "label": "t:labels.menu"
+      "label": "t:labels.menu",
+      "default": "main-menu"
     },
     {
       "type": "link_list",
