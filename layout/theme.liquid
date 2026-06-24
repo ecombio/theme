@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#ffffff">
-
+  <meta name="theme-color" content="{{ settings.color_background }}">
   <title>
     {{ page_title }}
     {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif %}
@@ -18,6 +17,10 @@
 
   <link rel="canonical" href="{{ canonical_url }}">
 
+  {%- if settings.favicon != blank -%}
+    <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32 }}">
+  {%- endif -%}
+
   {{ content_for_header }}
 
   {%- comment -%}
@@ -29,9 +32,14 @@
 
     theme.css                 Site chrome, compare bar, shared utilities.
 
+    header-logo.css           Logo image + text fallback. Responsive width via
+                              settings.logo_width_desktop/tablet/mobile.
+
     header.css                Header layout: rows, logo, account, cart, nav.
 
     header-account.css        Account trigger link. Scoped to .header__account.
+
+    header-cart.css           Cart trigger link + badge. Scoped to .header__cart.
 
     header-search.css         Search shell styles: form, input, submit button.
                               Owned by the header-search subsystem.
@@ -49,18 +57,62 @@
     product-card.css is NOT loaded here — loaded by sections that use cards.
   {%- endcomment -%}
 
+  {%- comment -%}
+    ── GLOBAL CSS CUSTOM PROPERTIES ────────────────────────────────────────────
+    All theme settings are exposed as CSS variables on :root so every section
+    and snippet can consume them without knowing about Liquid settings directly.
+    Add new settings to settings_schema.json, then wire them up here.
+  {%- endcomment -%}
+  {{ settings.type_primary_font | font_face: font_display: 'swap' }}
+  <style>
+    :root {
+      /* ── Colors ── */
+      --color-background: {{ settings.color_background }};
+      --color-foreground: {{ settings.color_foreground }};
+      --color-accent:     {{ settings.color_accent }};
+
+      /* ── Typography ── */
+      --font-primary:        {{ settings.type_primary_font.family }}, {{ settings.type_primary_font.fallback_families }};
+      --font-primary-weight: {{ settings.type_primary_font.weight }};
+      --font-primary-style:  {{ settings.type_primary_font.style }};
+
+      /* ── Font size — mobile first ── */
+      --font-size-base: {{ settings.type_base_size | minus: 2 }}px;
+
+      /* ── Spacing — mobile first ── */
+      --spacing-section: {{ settings.spacing_section | times: 0.6 | round }}px;
+    }
+
+    /* ── Tablet (768px+) ── */
+    @media (min-width: 768px) {
+      :root {
+        --font-size-base:  {{ settings.type_base_size | minus: 1 }}px;
+        --spacing-section: {{ settings.spacing_section | times: 0.8 | round }}px;
+      }
+    }
+
+    /* ── Desktop (1024px+) ── */
+    @media (min-width: 1024px) {
+      :root {
+        --font-size-base:  {{ settings.type_base_size }}px;
+        --spacing-section: {{ settings.spacing_section }}px;
+      }
+    }
+  </style>
+
   <link rel="preload" href="{{ 'critical.css' | asset_url }}" as="style">
-  {{ 'critical.css'             | asset_url | stylesheet_tag }}
-  {{ 'theme.css'                | asset_url | stylesheet_tag }}
-  {{ 'header-logo.css'          | asset_url | stylesheet_tag }}
-  {{ 'header.css'               | asset_url | stylesheet_tag }}
-  {{ 'header-cart.css'          | asset_url | stylesheet_tag }}
-  {{ 'header-account.css'       | asset_url | stylesheet_tag }}
-  {{ 'header-search.css'        | asset_url | stylesheet_tag }}
-  {{ 'predictive-search.css'    | asset_url | stylesheet_tag }}
-  {{ 'quickview-modal.css'      | asset_url | stylesheet_tag }}
-  {{ 'cart-drawer.css'          | asset_url | stylesheet_tag }}
-  {{ 'cart-page.css'            | asset_url | stylesheet_tag }}
+  {{ 'critical.css'          | asset_url | stylesheet_tag }}
+  {{ 'theme.css'             | asset_url | stylesheet_tag }}
+  {{ 'header-logo.css'       | asset_url | stylesheet_tag }}
+  {{ 'header.css'            | asset_url | stylesheet_tag }}
+  {{ 'header-cart.css'       | asset_url | stylesheet_tag }}
+  {{ 'header-account.css'    | asset_url | stylesheet_tag }}
+  {{ 'header-search.css'     | asset_url | stylesheet_tag }}
+  {{ 'predictive-search.css' | asset_url | stylesheet_tag }}
+  {{ 'quickview-modal.css'   | asset_url | stylesheet_tag }}
+  {{ 'cart-drawer.css'       | asset_url | stylesheet_tag }}
+  {{ 'cart-page.css'         | asset_url | stylesheet_tag }}
+
   {%- comment -%}
     ── SCRIPTS ─────────────────────────────────────────────────────────────────
     All deferred. Each file is co-located with its subsystem.
@@ -71,19 +123,21 @@
     header.js                 Mobile menu toggle, sticky behaviour, cart count badge sync.
     header-account.js         Account trigger → drawer open/close. Loaded after
                               header.js so the header DOM is fully initialised.
+    header-cart.js            Cart trigger → drawer open/close.
     header-search.js          Search shell: typewriter placeholder animation.
     predictive-search.js      Debounced fetch, results injection, panel open/close.
                               Loaded after header-search.js — both share the
                               data-search-* contract but neither calls the other.
   {%- endcomment -%}
-  <script src="{{ 'cart-page.js' | asset_url }}" defer></script>
-  <script src="{{ 'product-card.js'         | asset_url }}" defer></script>
-  <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
-  <script src="{{ 'header.js'               | asset_url }}" defer></script>
-  <script src="{{ 'header-account.js'       | asset_url }}" defer></script>
-  <script src="{{ 'header-cart.js' | asset_url }}" defer></script>
-  <script src="{{ 'header-search.js'        | asset_url }}" defer></script>
-  <script src="{{ 'predictive-search.js'    | asset_url }}" defer></script>
+
+  <script src="{{ 'cart-page.js'         | asset_url }}" defer></script>
+  <script src="{{ 'product-card.js'      | asset_url }}" defer></script>
+  <script src="{{ 'cart-drawer.js'       | asset_url }}" defer></script>
+  <script src="{{ 'header.js'            | asset_url }}" defer></script>
+  <script src="{{ 'header-account.js'    | asset_url }}" defer></script>
+  <script src="{{ 'header-cart.js'       | asset_url }}" defer></script>
+  <script src="{{ 'header-search.js'     | asset_url }}" defer></script>
+  <script src="{{ 'predictive-search.js' | asset_url }}" defer></script>
 
 </head>
 
