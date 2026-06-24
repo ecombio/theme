@@ -11,6 +11,12 @@
   CALLER:
     {% render 'header-menu', blocks: section.blocks %}
 
+  OVERFLOW FIX:
+    overflow-x: auto must NOT be on .header__menu-inner because it creates a
+    clipping context that hides position:absolute dropdown panels.
+    Instead, a .header__menu-scroll child handles horizontal scrolling while
+    .header__menu-inner stays overflow:visible.
+
   BLOCK TYPES:
     link      — single anchor
     linklist  — dropdown from a Shopify menu
@@ -20,16 +26,18 @@
 
 <nav class="header__menu" aria-label="Main navigation">
   <div class="header__menu-inner page-width">
+    <div class="header__menu-scroll">
 
-    {%- if blocks.size > 0 -%}
-      {%- for block in blocks -%}
-        {%- render 'header-menu-item', block: block -%}
-      {%- endfor -%}
-    {%- else -%}
-      <span class="header__menu-link" style="opacity: 0.4;">
-        No menu items yet — add blocks in the theme editor.
-      </span>
-    {%- endif -%}
+      {%- if blocks.size > 0 -%}
+        {%- for block in blocks -%}
+          {%- render 'header-menu-item', block: block -%}
+        {%- endfor -%}
+      {%- else -%}
+        <span class="header__menu-link" style="opacity: 0.4;">
+          No menu items yet — add blocks in the theme editor.
+        </span>
+      {%- endif -%}
 
+    </div>
   </div>
 </nav>
