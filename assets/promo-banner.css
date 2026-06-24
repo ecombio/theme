@@ -245,3 +245,65 @@
     transform: none;
   }
 }
+
+/* ============================================================
+   IN-FEED MODE
+   Applied when the banner is embedded as a block inside
+   sections/collection.liquid, living inside the product grid.
+
+   The <li class="collection-products__banner-slot"> controls
+   how many grid columns the banner occupies. The frame itself
+   just fills whatever space it's given — no width classes needed.
+   ============================================================ */
+
+/* Frame fills its grid cell completely */
+.promo-banner__frame--in-feed {
+  width: 100%;
+  /* aspect-ratio set inline by Liquid — 1/1 default, widens with span */
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  will-change: transform;
+}
+
+/* ── Col-span slots ────────────────────────────────────────── */
+/*
+  The product grid uses CSS grid with column count from
+  --collection-products-columns-desktop / mobile.
+  These modifier classes span the appropriate number of columns.
+*/
+
+/* 1-col: natural product card slot — no span override needed */
+.collection-products__banner-slot {
+  /* inherits one grid column by default */
+}
+
+/* 2-col: landscape half-row */
+.collection-products__banner-slot--span-2 {
+  grid-column: span 2;
+}
+
+/* 3-col: three-quarter row */
+.collection-products__banner-slot--span-3 {
+  grid-column: span 3;
+}
+
+/* full: edge-to-edge, spans all columns */
+.collection-products__banner-slot--span-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Mobile: collapse multi-col spans ─────────────────────── */
+@media (max-width: 767px) {
+  /* 2-col and 3-col collapse to full-width on mobile */
+  .collection-products__banner-slot--span-2,
+  .collection-products__banner-slot--span-3 {
+    grid-column: 1 / -1;
+  }
+
+  /* Update aspect ratio for collapsed landscape banners */
+  .collection-products__banner-slot--span-2 .promo-banner__frame--in-feed,
+  .collection-products__banner-slot--span-3 .promo-banner__frame--in-feed {
+    aspect-ratio: 16/7;
+  }
+}
