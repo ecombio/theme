@@ -8,7 +8,12 @@
     label            {string}  — link text
     url              {url}     — destination
     highlight        {bool}    — accent colour styling
-    fancy_highlight  {bool}    — pill + animated stars (requires highlight on)
+    fancy_highlight  {bool}    — red text + animated sparkle stars
+                                 (requires highlight to also be enabled)
+
+  Stars are rendered via snippets/icon.liquid (name: 'menu-star') so the
+  path lives in one place. The modifier class passed through `class` drives
+  position and size via header-menu.css.
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
@@ -28,15 +33,9 @@
       {{- block.settings.label | escape -}}
     </span>
 
-    <svg class="header__menu-star header__menu-star--1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-      <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
-    </svg>
-    <svg class="header__menu-star header__menu-star--2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-      <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
-    </svg>
-    <svg class="header__menu-star header__menu-star--3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-      <path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/>
-    </svg>
+    {%- render 'icon', name: 'menu-star', size: 10, class: 'header__menu-star--1' -%}
+    {%- render 'icon', name: 'menu-star', size: 6,  class: 'header__menu-star--2' -%}
+    {%- render 'icon', name: 'menu-star', size: 7,  class: 'header__menu-star--3' -%}
   </a>
 
 {%- else -%}
