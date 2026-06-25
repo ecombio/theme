@@ -1,0 +1,425 @@
+{% comment %}
+  ============================================================
+  snippets/product-detail.liquid
+  Right-column info panel for the PDP.
+
+  Parameters (all required — snippets have no parent scope):
+    product          {Object}   Shopify product object
+    section_id       {String}   section.id — used for scoped IDs
+    current_variant  {Object}   product.selected_or_first_available_variant
+    product_form_id  {String}   e.g. 'mp-form-{section.id}'
+    sticky_panel     {Boolean}  section.settings.enable_sticky_panel
+    show_vendor      {Boolean}  section.settings.show_vendor
+    show_rating      {Boolean}  section.settings.show_rating
+    show_eta         {Boolean}  section.settings.show_eta
+    show_badges      {Boolean}  section.settings.show_trust_badges
+    show_share       {Boolean}  section.settings.show_share_buttons
+    show_quantity    {Boolean}  section.settings.show_quantity
+    eta_text         {String}   product.metafields.custom.eta_text
+    rating_value     {String}   product.metafields.reviews.rating.value
+    rating_count     {String}   product.metafields.reviews.rating_count.value
+    badge_blocks     {Array}    section.blocks filtered to type 'trust_badge'
+    accordion_blocks {Array}    section.blocks filtered to type 'accordion'
+  ============================================================
+{% endcomment %}
+
+<div class="mp__info{% if sticky_panel %} mp__info--sticky{% endif %}">
+
+  {%- comment -%}── Vendor ──{%- endcomment -%}
+  {%- if show_vendor and product.vendor != blank -%}
+    <p class="mp__vendor">{{ product.vendor }}</p>
+  {%- endif -%}
+
+  {%- comment -%}── Title ──{%- endcomment -%}
+  <h1 class="mp__title">{{ product.title }}</h1>
+
+  {%- comment -%}── Rating ──{%- endcomment -%}
+  {%- if show_rating -%}
+    {%- if rating_value != blank -%}
+      <div
+        class="mp__rating"
+        aria-label="{{ rating_value }} out of 5 stars from {{ rating_count }} reviews"
+      >
+        <span class="mp__stars" aria-hidden="true">
+          {%- for i in (1..5) -%}
+            <svg class="mp__star{% if i <= rating_value %} mp__star--full{% endif %}" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1l1.5 3.5L12 5l-2.5 2.5.6 3.5L7 9.5 3.9 11l.6-3.5L2 5l3.5-.5L7 1z" stroke="#C8991A" stroke-width="1.2" {% if i <= rating_value %}fill="#C8991A"{% else %}fill="none"{% endif %}/>
+            </svg>
+          {%- endfor -%}
+        </span>
+        {%- if rating_count != blank -%}
+          <a class="mp__rating-count" href="#mp-reviews-{{ section_id }}">
+            {{ rating_count }} review{% if rating_count != 1 %}s{% endif %}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- else -%}
+      {%- comment -%} Judge.me / Yotpo widget fallback {%- endcomment -%}
+      <div class="mp__rating-widget">
+        <div class="jdgm-widget jdgm-preview-badge" data-id="{{ product.id }}" data-auto-install="false"></div>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- comment -%}── Price block ──{%- endcomment -%}
+  <div class="mp__price-block" id="mp-price-{{ section_id }}">
+    {%- if current_variant.compare_at_price > current_variant.price -%}
+      {%- assign save_amount = current_variant.compare_at_price | minus: current_variant.price -%}
+      {%- assign save_pct    = save_amount | times: 100 | divided_by: current_variant.compare_at_price -%}
+      <div class="mp__price-row">
+        <span class="mp__price mp__price--sale">{{ current_variant.price | money }}</span>
+        <s class="mp__price mp__price--compare">{{ current_variant.compare_at_price | money }}</s>
+        <span class="mp__price-badge">Save {{ save_pct }}%</span>
+      </div>
+    {%- else -%}
+      <div class="mp__price-row">
+        <span class="mp__price">{{ current_variant.price | money }}</span>
+      </div>
+    {%- endif -%}
+    {%- if shop.taxes_included -%}
+      <p class="mp__tax-note">Tax included{% if shop.shipping_policy.body != blank %}. <a href="{{ shop.shipping_policy.url }}">Shipping</a> calculated at checkout.{% endif %}</p>
+    {%- else -%}
+      {%- if shop.shipping_policy.body != blank -%}
+        <p class="mp__tax-note"><a href="{{ shop.shipping_policy.url }}">Shipping</a> calculated at checkout.</p>
+      {%- endif -%}
+    {%- endif -%}
+  </div>
+
+  {%- comment -%}── ETA badge ──{%- endcomment -%}
+  {%- if show_eta and eta_text != blank -%}
+    <div class="mp__eta" aria-label="Estimated delivery">
+      <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <rect x="1" y="4" width="9" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M10 6.5h1.5l1.5 2V11h-3V6.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <circle cx="3.5" cy="11.5" r="1" fill="currentColor"/>
+        <circle cx="10.5" cy="11.5" r="1" fill="currentColor"/>
+      </svg>
+      <span>{{ eta_text }}</span>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%}── Product form ──{%- endcomment -%}
+  {%- form 'product', product,
+        id: product_form_id,
+        class: 'mp__form',
+        novalidate: 'novalidate',
+        data-mp-form: ''
+  -%}
+
+    <input
+      type="hidden"
+      name="id"
+      value="{{ current_variant.id }}"
+      id="mp-variant-input-{{ section_id }}"
+    >
+
+    {%- comment -%}── Variant selectors ──{%- endcomment -%}
+    {%- unless product.has_only_default_variant -%}
+      <div class="mp__options">
+
+        {%- for option in product.options_with_values -%}
+          {%- assign opt_name_down = option.name | downcase -%}
+          {%- assign is_color = false -%}
+          {%- if opt_name_down == 'color' or opt_name_down == 'colour' -%}
+            {%- assign is_color = true -%}
+          {%- endif -%}
+
+          <fieldset
+            class="mp__option-group"
+            data-option-index="{{ forloop.index0 }}"
+            id="mp-option-{{ section_id }}-{{ forloop.index }}"
+          >
+            <legend class="mp__option-legend">
+              <span class="mp__option-name">{{ option.name }}</span>
+              {%- if is_color -%}
+                <span class="mp__option-selected" data-selected-label>: {{ option.selected_value }}</span>
+              {%- endif -%}
+              {%- if opt_name_down == 'size' -%}
+                <button
+                  type="button"
+                  class="mp__size-guide-trigger"
+                  data-mp-size-guide
+                  aria-expanded="false"
+                >Size guide</button>
+              {%- endif -%}
+            </legend>
+
+            {%- if is_color -%}
+              {%- comment -%}── Color swatches ──{%- endcomment -%}
+              <div class="mp__swatches" role="radiogroup" aria-label="{{ option.name }}">
+                {%- for value in option.values -%}
+                  {%- assign val_down = value | downcase -%}
+                  {%- case val_down -%}
+                    {%- when 'glacier'      -%}{%- assign sw_hex = '#a9c4cf' -%}
+                    {%- when 'polar'        -%}{%- assign sw_hex = '#e8e9ea' -%}
+                    {%- when 'himalayan'    -%}{%- assign sw_hex = '#3a3f47' -%}
+                    {%- when 'clay'         -%}{%- assign sw_hex = '#9c8c7c' -%}
+                    {%- when 'black'        -%}{%- assign sw_hex = '#1a1a1a' -%}
+                    {%- when 'white'        -%}{%- assign sw_hex = '#ffffff' -%}
+                    {%- when 'navy'         -%}{%- assign sw_hex = '#1f3354' -%}
+                    {%- when 'red'          -%}{%- assign sw_hex = '#c0392b' -%}
+                    {%- when 'green'        -%}{%- assign sw_hex = '#3a6b4f' -%}
+                    {%- when 'gray', 'grey' -%}{%- assign sw_hex = '#8c8c8c' -%}
+                    {%- when 'silver'       -%}{%- assign sw_hex = '#c7c9cb' -%}
+                    {%- when 'teal'         -%}{%- assign sw_hex = '#2fa8a0' -%}
+                    {%- else                -%}{%- assign sw_hex = blank -%}
+                  {%- endcase -%}
+                  {%- assign light_vals = 'polar,white,silver' | split: ',' -%}
+                  {%- assign sw_light = false -%}
+                  {%- if light_vals contains val_down -%}{%- assign sw_light = true -%}{%- endif -%}
+
+                  {%- assign is_selected = false -%}
+                  {%- if value == option.selected_value -%}{%- assign is_selected = true -%}{%- endif -%}
+
+                  <label
+                    class="mp__swatch-label{% if is_selected %} is-active{% endif %}{% if sw_light %} mp__swatch--light{% endif %}"
+                    title="{{ value }}"
+                    aria-label="{{ value }}"
+                  >
+                    <input
+                      class="visually-hidden"
+                      type="radio"
+                      name="options[{{ option.name | escape }}]"
+                      value="{{ value | escape }}"
+                      {% if is_selected %}checked{% endif %}
+                      data-mp-option-input
+                    >
+                    <span
+                      class="mp__swatch-dot"
+                      aria-hidden="true"
+                      {%- if sw_hex != blank %}style="background-color: {{ sw_hex }};"{% endif -%}
+                    ></span>
+                  </label>
+                {%- endfor -%}
+              </div>
+
+            {%- else -%}
+              {%- comment -%}── Pill buttons (size / other) ──{%- endcomment -%}
+              <div class="mp__pills" role="radiogroup" aria-label="{{ option.name }}">
+                {%- for value in option.values -%}
+                  {%- assign is_selected = false -%}
+                  {%- if value == option.selected_value -%}{%- assign is_selected = true -%}{%- endif -%}
+                  <label
+                    class="mp__pill-label{% if is_selected %} is-active{% endif %}"
+                    aria-label="{{ value }}"
+                  >
+                    <input
+                      class="visually-hidden"
+                      type="radio"
+                      name="options[{{ option.name | escape }}]"
+                      value="{{ value | escape }}"
+                      {% if is_selected %}checked{% endif %}
+                      data-mp-option-input
+                    >
+                    <span class="mp__pill-text">{{ value }}</span>
+                  </label>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+
+          </fieldset>
+        {%- endfor -%}
+
+        {%- comment -%} Hidden select — non-JS fallback {%- endcomment -%}
+        <select
+          class="visually-hidden"
+          name="id"
+          id="mp-variant-select-{{ section_id }}"
+          data-mp-variant-select
+          aria-label="Selected variant"
+        >
+          {%- for variant in product.variants -%}
+            <option
+              value="{{ variant.id }}"
+              data-price="{{ variant.price }}"
+              data-compare-at="{{ variant.compare_at_price }}"
+              data-available="{{ variant.available }}"
+              data-featured-media="{{ variant.featured_media.id }}"
+              {% if variant == current_variant %}selected{% endif %}
+            >{{ variant.title }}</option>
+          {%- endfor -%}
+        </select>
+      </div>
+    {%- endunless -%}
+
+    {%- comment -%}── Quantity stepper ──{%- endcomment -%}
+    {%- if show_quantity -%}
+      <div class="mp__qty-wrap">
+        <label class="mp__qty-label" for="mp-qty-{{ section_id }}">Quantity</label>
+        <div class="mp__stepper" role="group" aria-label="Quantity">
+          <button type="button" class="mp__stepper-btn" data-mp-qty="dec" aria-label="Decrease quantity">−</button>
+          <input
+            type="number"
+            id="mp-qty-{{ section_id }}"
+            name="quantity"
+            value="1"
+            min="1"
+            class="mp__stepper-input"
+            data-mp-qty-input
+            aria-label="Quantity"
+          >
+          <button type="button" class="mp__stepper-btn" data-mp-qty="inc" aria-label="Increase quantity">+</button>
+        </div>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%}── CTAs ──{%- endcomment -%}
+    <div class="mp__ctas">
+      <button
+        type="submit"
+        id="mp-atc-{{ section_id }}"
+        class="mp__btn mp__btn--primary"
+        data-atc-btn
+        data-variant-id="{{ current_variant.id }}"
+        {% unless current_variant.available %}disabled aria-disabled="true"{% endunless %}
+        aria-label="{% if current_variant.available %}Add {{ product.title | escape }} to cart{% else %}Sold out{% endif %}"
+      >
+        <span data-atc-label>
+          {%- if current_variant.available -%}Add to Cart{%- else -%}Sold Out{%- endif -%}
+        </span>
+        <span class="mp__btn-spinner" aria-hidden="true" hidden></span>
+      </button>
+
+      {%- if additional_checkout_buttons -%}
+        <div class="mp__dynamic-checkout">
+          {{ content_for_additional_checkout_buttons }}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%}── Toast notification ──{%- endcomment -%}
+    <div
+      class="mp__toast"
+      id="mp-toast-{{ section_id }}"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      hidden
+    ></div>
+
+  {%- endform -%}
+
+  {%- comment -%}── Wishlist (standalone, outside form) ──{%- endcomment -%}
+  <button
+    class="mp__wishlist-btn"
+    type="button"
+    aria-label="Add {{ product.title | escape }} to wishlist"
+    aria-pressed="false"
+    data-wishlist-btn
+    data-product-id="{{ product.id }}"
+    data-product-handle="{{ product.handle }}"
+  >
+    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path class="product-card__wishlist-path" d="M9 15.5S2 11 2 6a4 4 0 0 1 7-2.65A4 4 0 0 1 16 6c0 5-7 9.5-7 9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+    <span class="mp__wishlist-label">Save to wishlist</span>
+  </button>
+
+  {%- comment -%}── Trust badges ──{%- endcomment -%}
+  {%- if show_badges -%}
+    <ul class="mp__badges" aria-label="Shopping assurances">
+      {%- if badge_blocks.size > 0 -%}
+        {%- for block in badge_blocks -%}
+          <li class="mp__badge-item" {{ block.shopify_attributes }}>
+            {%- if block.settings.icon != blank -%}
+              <span class="mp__badge-icon" aria-hidden="true">{{ block.settings.icon }}</span>
+            {%- endif -%}
+            <span class="mp__badge-label">{{ block.settings.label }}</span>
+          </li>
+        {%- endfor -%}
+      {%- else -%}
+        <li class="mp__badge-item">
+          <svg class="mp__badge-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1" y="4" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M11 7h1.5l1.5 2.5V13h-3V7z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="4" cy="13" r="1.1" fill="currentColor"/><circle cx="11" cy="13" r="1.1" fill="currentColor"/></svg>
+          <span class="mp__badge-label">Free shipping over $75</span>
+        </li>
+        <li class="mp__badge-item">
+          <svg class="mp__badge-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 3h12l-1.5 7H3.5L2 3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2 3L1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 13a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM12 13a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" fill="currentColor"/></svg>
+          <span class="mp__badge-label">30-day returns</span>
+        </li>
+        <li class="mp__badge-item">
+          <svg class="mp__badge-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="7" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5a3 3 0 1 1 6 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+          <span class="mp__badge-label">Secure checkout</span>
+        </li>
+      {%- endif -%}
+    </ul>
+  {%- endif -%}
+
+  {%- comment -%}── Share buttons ──{%- endcomment -%}
+  {%- if show_share -%}
+    <div class="mp__share">
+      <span class="mp__share-label">Share:</span>
+      <a
+        class="mp__share-link"
+        href="https://www.facebook.com/sharer/sharer.php?u={{ shop.url }}{{ product.url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Share on Facebook"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 8A6 6 0 1 0 2 8a6 6 0 0 0 5 5.92V10H5.5V8H7V6.5c0-1.5.9-2.3 2.2-2.3.64 0 1.3.1 1.3.1V6h-.73c-.72 0-.97.45-.97.91V8h1.65l-.26 2H9.8v3.92A6 6 0 0 0 14 8z"/></svg>
+      </a>
+      <a
+        class="mp__share-link"
+        href="https://twitter.com/intent/tweet?text={{ product.title | url_encode }}&url={{ shop.url }}{{ product.url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Share on X (Twitter)"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M12.6 1h2.3L9.9 6.9 16 15H11L7.2 9.8 2.8 15H.5l5.4-6.1L0 1h5.1l3.5 4.9L12.6 1zm-.8 12.6h1.3L4.2 2.4H2.8l9 11.2z"/></svg>
+      </a>
+      <button
+        type="button"
+        class="mp__share-link mp__share-copy"
+        data-mp-copy-link="{{ shop.url }}{{ product.url }}"
+        aria-label="Copy product link"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%}── Accordions ──{%- endcomment -%}
+  <div class="mp__accordions">
+
+    {%- comment -%} Product description (always first) {%- endcomment -%}
+    {%- unless product.description == blank -%}
+      <details class="mp__accordion" open>
+        <summary class="mp__accordion-header">
+          Description
+          <span class="mp__accordion-icon" aria-hidden="true"></span>
+        </summary>
+        <div class="mp__accordion-body">
+          {{ product.description }}
+        </div>
+      </details>
+    {%- endunless -%}
+
+    {%- comment -%} Schema-driven accordion blocks {%- endcomment -%}
+    {%- for block in accordion_blocks -%}
+      <details
+        class="mp__accordion"
+        {% if block.settings.open_by_default %}open{% endif %}
+        id="mp-accordion-{{ block.id }}"
+        {{ block.shopify_attributes }}
+      >
+        <summary class="mp__accordion-header">
+          {{ block.settings.heading | escape }}
+          <span class="mp__accordion-icon" aria-hidden="true"></span>
+        </summary>
+        <div class="mp__accordion-body">
+          {{ block.settings.content }}
+        </div>
+      </details>
+    {%- endfor -%}
+  </div>
+
+  {%- comment -%}── Reviews anchor (for rating link) ──{%- endcomment -%}
+  <div id="mp-reviews-{{ section_id }}" class="mp__reviews-anchor" aria-label="Reviews section">
+    {%- comment -%}
+      Wire your review app widget here.
+      Judge.me example: {% render 'judgeme_widgets', widget_type: 'judgeme_reviews', ... %}
+      Yotpo example:    {{ product.metafields.yotpo.reviews_widget }}
+    {%- endcomment -%}
+  </div>
+
+</div>
+{%- comment -%}/mp__info{%- endcomment -%}

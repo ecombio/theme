@@ -1,0 +1,120 @@
+{% comment %}
+  ============================================================
+  snippets/product-media.liquid
+  Left-column media gallery for the PDP.
+
+  Parameters (all required — snippets have no parent scope):
+    product     {Object}  Shopify product object
+    section_id  {String}  section.id — used for scoped IDs
+  ============================================================
+{% endcomment %}
+
+<div class="mp__gallery" aria-label="Product images">
+
+  {%- comment -%}── Main viewer ──{%- endcomment -%}
+  <div class="mp__main-viewer" id="mp-viewer-{{ section_id }}">
+    {%- for media in product.media -%}
+      <div
+        class="mp__media-item{% if forloop.first %} is-active{% endif %}"
+        data-media-id="{{ media.id }}"
+        aria-hidden="{% unless forloop.first %}true{% endunless %}"
+      >
+        {%- case media.media_type -%}
+
+          {%- when 'image' -%}
+            <img
+              src="{{ media | image_url: width: 900 }}"
+              srcset="
+                {{ media | image_url: width: 480 }}  480w,
+                {{ media | image_url: width: 720 }}  720w,
+                {{ media | image_url: width: 900 }}  900w,
+                {{ media | image_url: width: 1200 }} 1200w
+              "
+              sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 55vw"
+              alt="{{ media.alt | escape | default: product.title }}"
+              width="{{ media.width }}"
+              height="{{ media.height }}"
+              loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+              fetchpriority="{% if forloop.first %}high{% else %}auto{% endif %}"
+              class="mp__media-img"
+            >
+
+          {%- when 'video' -%}
+            <div class="mp__video-wrap">
+              {{ media | video_tag:
+                  autoplay: false,
+                  loop: false,
+                  controls: true,
+                  class: 'mp__video'
+              }}
+            </div>
+
+          {%- when 'external_video' -%}
+            <div class="mp__video-wrap">
+              {{ media | external_video_tag: class: 'mp__video' }}
+            </div>
+
+          {%- when 'model' -%}
+            <div class="mp__model-wrap">
+              {{ media | model_viewer_tag:
+                  reveal: 'interaction',
+                  toggleable: true,
+                  style: 'width: 100%; height: 100%;'
+              }}
+            </div>
+
+        {%- endcase -%}
+      </div>
+    {%- endfor -%}
+
+    {%- comment -%} Zoom hint — desktop only {%- endcomment -%}
+    <span class="mp__zoom-hint" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M9.5 9.5L12.5 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 4v4M4 6h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Hover to zoom
+    </span>
+  </div>
+
+  {%- comment -%}── Thumbnail strip ──{%- endcomment -%}
+  {%- if product.media.size > 1 -%}
+    <div class="mp__thumbs" role="list" aria-label="Product image thumbnails">
+      {%- for media in product.media -%}
+        <button
+          class="mp__thumb-btn{% if forloop.first %} is-active{% endif %}"
+          type="button"
+          role="listitem"
+          data-thumb
+          data-media-id="{{ media.id }}"
+          aria-label="{{ media.media_type | capitalize }} {{ forloop.index }}"
+          aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"
+        >
+          {%- if media.media_type == 'image' -%}
+            <img
+              src="{{ media | image_url: width: 120 }}"
+              alt="{{ media.alt | escape | default: product.title }}"
+              width="60" height="60"
+              loading="lazy"
+            >
+          {%- elsif media.media_type == 'video' or media.media_type == 'external_video' -%}
+            <span class="mp__thumb-play-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 4.5L10 7L5.5 9.5V4.5Z" fill="currentColor"/></svg>
+            </span>
+            {%- if media.preview_image -%}
+              <img
+                src="{{ media.preview_image | image_url: width: 120 }}"
+                alt="Video thumbnail"
+                width="60" height="60"
+                loading="lazy"
+              >
+            {%- endif -%}
+          {%- elsif media.media_type == 'model' -%}
+            <span class="mp__thumb-model-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="6" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M2 6.5L7 1l5 5.5" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            </span>
+          {%- endif -%}
+        </button>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+
+</div>
+{%- comment -%}/mp__gallery{%- endcomment -%}
