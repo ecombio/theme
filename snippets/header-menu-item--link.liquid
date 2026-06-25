@@ -11,9 +11,11 @@
     fancy_highlight  {bool}    — red text + animated sparkle stars
                                  (requires highlight to also be enabled)
 
-  Stars are rendered via snippets/icon.liquid (name: 'menu-star') so the
-  path lives in one place. The modifier class passed through `class` drives
-  position and size via header-menu.css.
+  STAR PLACEMENT:
+    Stars are rendered as siblings of the <a>, not children, so they
+    position relative to .header__menu-item--link-fancy (the wrapper div)
+    rather than the <a> itself. This avoids the overflow-x:auto clip on
+    .header__menu-scroll swallowing absolutely-positioned children.
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
@@ -24,19 +26,24 @@
 
 {%- if is_fancy -%}
 
-  <a
-    href="{{ block.settings.url }}"
-    class="header__menu-link header__menu-link--highlight header__menu-link--fancy"
-    {{ block.shopify_attributes }}
-  >
-    <span class="header__menu-fancy-label">
-      {{- block.settings.label | escape -}}
-    </span>
+  <div class="header__menu-item header__menu-item--link-fancy" {{ block.shopify_attributes }}>
+    <a
+      href="{{ block.settings.url }}"
+      class="header__menu-link header__menu-link--highlight header__menu-link--fancy"
+    >
+      <span class="header__menu-fancy-label">
+        {{- block.settings.label | escape -}}
+      </span>
+    </a>
 
+    {%- comment -%}
+      Stars sit outside the <a> as siblings so they escape the <a>'s
+      inline-flex context and position correctly against the wrapper div.
+    {%- endcomment -%}
     {%- render 'icon', name: 'menu-star', size: 10, class: 'header__menu-star--1' -%}
     {%- render 'icon', name: 'menu-star', size: 6,  class: 'header__menu-star--2' -%}
     {%- render 'icon', name: 'menu-star', size: 7,  class: 'header__menu-star--3' -%}
-  </a>
+  </div>
 
 {%- else -%}
 
