@@ -1,0 +1,49 @@
+{% comment %}
+  snippets/header-menu-fancy-link.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Standalone "fancy highlight" menu link: red text + animated sparkle stars.
+
+  This is intentionally a SEPARATE snippet from header-menu-item--link.liquid
+  so it never inherits/collides with that file's highlight/toggle logic.
+  If you want a plain highlighted link (no stars), use
+  header-menu-item--link.liquid instead — don't try to make this snippet
+  do both jobs.
+
+  USAGE (from header-menu-bar / wherever blocks are rendered):
+
+    {%- if block.settings.fancy_highlight -%}
+      {%- render 'header-menu-fancy-link',
+            label: block.settings.label,
+            url:   block.settings.url,
+            shopify_attributes: block.shopify_attributes
+      -%}
+    {%- else -%}
+      {%- render 'header-menu-item--link', block: block -%}
+    {%- endif -%}
+
+  REQUIRED PARAMS:
+    label                {string} — link text (already unescaped, will be escaped here)
+    url                  {string} — destination href
+
+  OPTIONAL PARAMS:
+    shopify_attributes   {string} — pass block.shopify_attributes for editor binding
+
+  ASSETS:
+    Requires assets/header-menu-fancy-link.css to be loaded once on the page
+    (see snippet stylesheet tag below — uses {{ 'file.css' | asset_url | stylesheet_tag }}
+    so it's safe to render this snippet multiple times without duplicating tags).
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{{ 'header-menu-fancy-link.css' | asset_url | stylesheet_tag }}
+
+<a
+  href="{{ url | default: '#' }}"
+  class="hmfl-link"
+  {{ shopify_attributes }}
+>
+  <span class="hmfl-label">{{- label | escape -}}</span>
+  <svg class="hmfl-star hmfl-star--1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+  <svg class="hmfl-star hmfl-star--2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+  <svg class="hmfl-star hmfl-star--3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+</a>
