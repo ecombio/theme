@@ -13,7 +13,7 @@
       const vw   = document.documentElement.clientWidth;
 
       const overflowsRight = rect.right > vw - PADDING;
-      const overflowsLeft  = rect.left < PADDING;
+      const overflowsLeft  = rect.left  < PADDING;
 
       if (!overflowsRight && !overflowsLeft) {
         // Already fits — leave the default centered CSS transform alone.
@@ -33,11 +33,23 @@
   }
 
   function resetPanel(panel) {
-    // Clear any inline overrides on close so the next open starts from the
-    // default centered CSS position and gets re-measured cleanly.
-    panel.style.left      = '';
-    panel.style.right     = '';
-    panel.style.transform = '';
+    // Defer so the browser can re-evaluate :hover state first.
+    // If the cursor moved onto the panel itself (crossing the ::before bridge)
+    // or is still over the parent item, the CSS :hover rule keeps it open —
+    // don't wipe the inline position overrides or the panel will jump/vanish.
+    requestAnimationFrame(() => {
+      const stillActive =
+        panel.matches(':hover') ||
+        panel.closest(
+          '.menu-bar__item--has-mega:hover, .menu-bar__item--has-dropdown:hover'
+        );
+
+      if (!stillActive) {
+        panel.style.left      = '';
+        panel.style.right     = '';
+        panel.style.transform = '';
+      }
+    });
   }
 
   function initMenuClamping() {
