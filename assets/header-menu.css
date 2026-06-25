@@ -279,55 +279,65 @@
 /* ── FANCY HIGHLIGHT (single link block, optional) ────────────────────────── */
 
 /*
-  Red text (no pill/background), with small red sparkle stars scattered
-  around the label that pop in and out on a staggered loop.
-  Reduced-motion: stars hidden, red text remains.
+  Red text with small sparkle stars.
+
+  CLIP ISSUE: .header__menu-scroll has overflow-x: auto which clips
+  position:absolute children even through overflow:visible on the <a>.
+  Fix: the <a> itself does not clip (overflow:visible), and the stars
+  escape via the .header__menu-item wrapper which sits outside the
+  scroll clip context at the flex-item level.
+
+  The stars are position:absolute relative to .header__menu-item
+  (position:relative), NOT relative to the <a>.
 */
 
+.header__menu-item--link-fancy {
+  position: relative; /* containing block for the stars */
+}
+
 .header__menu-link--fancy {
-  position: relative;
   color: #e8492a;
   font-weight: 700;
   background: none;
   padding: 0;
-  overflow: visible;
 }
 
 .header__menu-link--fancy .header__menu-fancy-label {
   color: #e8492a;
 }
 
-/* Star shared styles */
+/* Star shared styles — positioned relative to .header__menu-item--link-fancy */
 .header__menu-star {
   position: absolute;
   color: #e8492a;
   pointer-events: none;
   opacity: 0;
+  display: block;
   animation: menu-star-pop 2.4s ease-in-out infinite;
 }
 
-/* Top-right: large-ish star sitting just above the last letter */
+/* Top-right */
 .header__menu-star--1 {
-  top: -8px;
-  right: -10px;
+  top: -6px;
+  right: -8px;
   width: 10px;
   height: 10px;
   animation-delay: 0s;
 }
 
-/* Bottom-left: small star below the text */
+/* Bottom-left */
 .header__menu-star--2 {
-  bottom: -6px;
-  left: -2px;
+  bottom: -4px;
+  left: 0px;
   width: 6px;
   height: 6px;
   animation-delay: 0.9s;
 }
 
-/* Top-left: tiny star above the first letter */
+/* Top-left */
 .header__menu-star--3 {
-  top: -6px;
-  left: 4px;
+  top: -4px;
+  left: 6px;
   width: 7px;
   height: 7px;
   animation-delay: 1.7s;
@@ -340,8 +350,7 @@
   100% { opacity: 0; transform: scale(0.3) rotate(25deg);  }
 }
 
-/* Stars freeze on hover */
-.header__menu-link--fancy:hover .header__menu-star {
+.header__menu-item--link-fancy:hover .header__menu-star {
   animation-play-state: paused;
 }
 
