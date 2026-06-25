@@ -88,9 +88,25 @@
       .ecombio-sticky-header {
         position: sticky;
         top: 0;
-        z-index: 200;
+        /*
+          z-index intentionally removed.
+          z-index + position:sticky creates a stacking context that traps
+          .mega-menu and .dropdown panels inside it — they can never render
+          above page content no matter how high their own z-index is set.
+          Instead, main gets isolation:isolate so page content forms its own
+          stacking context below the sticky header, which naturally paints on
+          top without needing an explicit z-index.
+        */
         background-color: var(--color-background);
-        overflow: visible; /* must be visible — overflow:hidden clips mega/dropdown panels */
+        overflow: visible;
+      }
+
+      /*
+        Give <main> its own stacking context so it sits below the sticky
+        header. This replaces the z-index:200 we removed above.
+      */
+      main {
+        isolation: isolate;
       }
 
       /* ── Sticky Footer ── */
