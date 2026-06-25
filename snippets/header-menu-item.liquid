@@ -4,17 +4,37 @@
   Dispatcher — routes block.type to the correct sub-snippet.
 
   BLOCK TYPES → SUB-SNIPPETS:
-    link      → header-menu-item--link.liquid
+    link      → header-menu-item--link.liquid        (fancy_highlight: false)
+    link      → header-menu-fancy-link.liquid          (fancy_highlight: true)
     linklist  → header-menu-item--linklist.liquid
     mega      → header-menu-item--mega.liquid
+
+  NOTE ON fancy_highlight:
+    This check MUST live here, at the dispatcher level — not inside
+    header-menu-item--link.liquid. header-menu-fancy-link.liquid is a fully
+    separate, self-contained snippet (own namespaced CSS, no shared classes),
+    so the on/off decision is a clean either/or render call rather than
+    conditional classes fighting inside one shared file.
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
 {%- case block.type -%}
+
   {%- when 'link' -%}
-    {%- render 'header-menu-item--link', block: block -%}
+    {%- if block.settings.highlight and block.settings.fancy_highlight -%}
+      {%- render 'header-menu-fancy-link',
+            label:               block.settings.label,
+            url:                 block.settings.url,
+            shopify_attributes:  block.shopify_attributes
+      -%}
+    {%- else -%}
+      {%- render 'header-menu-item--link', block: block -%}
+    {%- endif -%}
+
   {%- when 'linklist' -%}
     {%- render 'header-menu-item--linklist', block: block -%}
+
   {%- when 'mega' -%}
     {%- render 'header-menu-item--mega', block: block -%}
+
 {%- endcase -%}
