@@ -279,78 +279,68 @@
 /* ── FANCY HIGHLIGHT (single link block, optional) ────────────────────────── */
 
 /*
-  Red text with small sparkle stars.
+  Stars are inline SVGs inside the <a> — no position:absolute.
+  overflow-x:auto on .header__menu-scroll cannot clip inline children,
+  so this approach is clip-proof by design.
 
-  CLIP ISSUE: .header__menu-scroll has overflow-x: auto which clips
-  position:absolute children even through overflow:visible on the <a>.
-  Fix: the <a> itself does not clip (overflow:visible), and the stars
-  escape via the .header__menu-item wrapper which sits outside the
-  scroll clip context at the flex-item level.
-
-  The stars are position:absolute relative to .header__menu-item
-  (position:relative), NOT relative to the <a>.
+  Scatter is achieved with vertical-align + transform:translateY per star.
 */
-
-.header__menu-item--link-fancy {
-  position: relative; /* containing block for the stars */
-}
 
 .header__menu-link--fancy {
   color: #e8492a;
   font-weight: 700;
   background: none;
   padding: 0;
+  align-items: flex-start; /* let stars sit at different vertical positions */
 }
 
 .header__menu-link--fancy .header__menu-fancy-label {
   color: #e8492a;
+  vertical-align: middle;
 }
 
-/* Star shared styles — positioned relative to .header__menu-item--link-fancy */
+/* Stars: inline-block so transform works, no position:absolute needed */
 .header__menu-star {
-  position: absolute;
+  display: inline-block;
   color: #e8492a;
   pointer-events: none;
   opacity: 0;
-  display: block;
+  flex-shrink: 0;
   animation: menu-star-pop 2.4s ease-in-out infinite;
 }
 
-/* Top-right */
+/* Top-right of the label — sits high */
 .header__menu-star--1 {
-  top: -6px;
-  right: -8px;
   width: 10px;
   height: 10px;
+  transform: translateY(-5px);
   animation-delay: 0s;
 }
 
-/* Bottom-left */
+/* Drops below the baseline */
 .header__menu-star--2 {
-  bottom: -4px;
-  left: 0px;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
+  transform: translateY(3px) translateX(-6px);
   animation-delay: 0.9s;
 }
 
-/* Top-left */
+/* Tucks back up and left */
 .header__menu-star--3 {
-  top: -4px;
-  left: 6px;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
+  transform: translateY(-3px) translateX(-14px);
   animation-delay: 1.7s;
 }
 
 @keyframes menu-star-pop {
-  0%   { opacity: 0; transform: scale(0.3) rotate(0deg);   }
-  25%  { opacity: 1; transform: scale(1)   rotate(15deg);  }
-  65%  { opacity: 1; transform: scale(1)   rotate(-8deg);  }
-  100% { opacity: 0; transform: scale(0.3) rotate(25deg);  }
+  0%   { opacity: 0; scale: 0.3; rotate: 0deg;   }
+  25%  { opacity: 1; scale: 1;   rotate: 15deg;  }
+  65%  { opacity: 1; scale: 1;   rotate: -8deg;  }
+  100% { opacity: 0; scale: 0.3; rotate: 25deg;  }
 }
 
-.header__menu-item--link-fancy:hover .header__menu-star {
+.header__menu-link--fancy:hover .header__menu-star {
   animation-play-state: paused;
 }
 
