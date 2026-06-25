@@ -20,6 +20,14 @@
     rating_count     {String}   product.metafields.reviews.rating_count.value
     badge_blocks     {Array}    section.blocks filtered to type 'trust_badge'
     accordion_blocks {Array}    section.blocks filtered to type 'accordion'
+
+  Styled by   assets/product-detail.css (loaded in main-product.liquid)
+  Scripted by assets/product-detail.js  (loaded in main-product.liquid)
+    • [data-mp-price] / [data-mp-variant-input] / [data-mp-toast]
+      are the JS hooks consumed by product-detail.js.
+    • On variant change with a featured_media_id, calls
+      window.mpMedia.switchMedia(), exposed by product-media.js
+      (loaded first — see main-product.liquid load order).
   ============================================================
 {% endcomment %}
 
@@ -62,7 +70,7 @@
   {%- endif -%}
 
   {%- comment -%}── Price block ──{%- endcomment -%}
-  <div class="mp__price-block" id="mp-price-{{ section_id }}">
+  <div class="mp__price-block" id="mp-price-{{ section_id }}" data-mp-price>
     {%- if current_variant.compare_at_price > current_variant.price -%}
       {%- assign save_amount = current_variant.compare_at_price | minus: current_variant.price -%}
       {%- assign save_pct    = save_amount | times: 100 | divided_by: current_variant.compare_at_price -%}
@@ -111,6 +119,7 @@
       name="id"
       value="{{ current_variant.id }}"
       id="mp-variant-input-{{ section_id }}"
+      data-mp-variant-input
     >
 
     {%- comment -%}── Variant selectors ──{%- endcomment -%}
@@ -291,6 +300,7 @@
     <div
       class="mp__toast"
       id="mp-toast-{{ section_id }}"
+      data-mp-toast
       role="status"
       aria-live="polite"
       aria-atomic="true"

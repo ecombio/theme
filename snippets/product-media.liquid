@@ -6,13 +6,20 @@
   Parameters (all required — snippets have no parent scope):
     product     {Object}  Shopify product object
     section_id  {String}  section.id — used for scoped IDs
+
+  Styled by  assets/product-media.css (loaded in main-product.liquid)
+  Scripted by assets/product-media.js  (loaded in main-product.liquid)
+    • [data-mp-viewer] / [data-thumb] are the JS hooks consumed
+      by product-media.js's switchMedia(), which is also exposed
+      as window.mpMedia.switchMedia for product-detail.js to call
+      on variant change.
   ============================================================
 {% endcomment %}
 
 <div class="mp__gallery" aria-label="Product images">
 
   {%- comment -%}── Main viewer ──{%- endcomment -%}
-  <div class="mp__main-viewer" id="mp-viewer-{{ section_id }}">
+  <div class="mp__main-viewer" id="mp-viewer-{{ section_id }}" data-mp-viewer>
     {%- for media in product.media -%}
       <div
         class="mp__media-item{% if forloop.first %} is-active{% endif %}"
