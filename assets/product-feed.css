@@ -1,0 +1,82 @@
+/* product-feed.css
+   Layout for the product feed: filter sidebar + product grid two-column
+   shell, sub-collections row, and in-feed block grid placement.
+   Filter sidebar component styles (inputs, pills, groups) live in
+   collection.css since the sidebar is part of this snippet but its
+   component classes are shared. */
+
+/* ---------- Two-column shell ---------- */
+.product-feed {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.product-feed--filters-hidden {
+  grid-template-columns: 1fr;
+}
+
+/* ---------- Filter sidebar ---------- */
+.product-feed__filter {
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+.product-feed__filter[hidden] {
+  display: none;
+}
+
+/* ---------- Main column ---------- */
+.product-feed__main {
+  min-width: 0;
+}
+
+/* ---------- Product grid ---------- */
+.product-feed__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 4), 1fr);
+  gap: 1.5rem;
+}
+
+/* ---------- Responsive ---------- */
+
+/* Tablet — 768px to 1024px */
+@media (max-width: 1024px) {
+  .product-feed {
+    grid-template-columns: 220px 1fr;
+    gap: 1.5rem;
+  }
+
+  .product-feed__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile + small tablet — up to 768px */
+@media (max-width: 768px) {
+  .product-feed {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .product-feed__filter {
+    position: static;
+    max-height: none;
+  }
+
+  .product-feed__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Small mobile — up to 480px */
+@media (max-width: 480px) {
+  .product-feed__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
