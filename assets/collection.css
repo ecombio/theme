@@ -317,6 +317,72 @@
   color: #fff;
 }
 
+/* ---------- Mobile sort sheet ---------- */
+.mobile-sort-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Sits just below the bottom bar (z-index 100) */
+}
+
+.mobile-sort-sheet__inner {
+  padding: 1.25rem 1.5rem;
+}
+
+.mobile-sort-sheet__heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b6b6b;
+  margin: 0 0 0.75rem;
+}
+
+.mobile-sort-sheet__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-sort-sheet__option {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  border-bottom: 1px solid #f0f0f0;
+  transition: color 0.15s ease;
+}
+
+.mobile-sort-sheet__option:last-child {
+  border-bottom: none;
+}
+
+.mobile-sort-sheet__option--active {
+  font-weight: 600;
+}
+
+.mobile-sort-sheet__option--active::after {
+  content: ' ✓';
+}
+
+@media (min-width: 769px) {
+  .mobile-sort-sheet {
+    display: none;
+  }
+}
+
 /* ---------- Responsive ---------- */
 
 /* Tablet — 768px to 1024px */
@@ -335,19 +401,23 @@
 @media (max-width: 768px) {
   .collection-page {
     padding: 0 1rem;
+    /* Room for the fixed bottom bar */
+    padding-bottom: 5rem;
   }
 
-  /* Toolbar: tabs row first, filter toggle below left-aligned */
+  /* Toolbar: tabs only — filter toggle hidden, replaced by bottom bar */
   .collection-toolbar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0;
     margin-bottom: 1.25rem;
   }
 
+  .collection-toolbar__filter-toggle {
+    display: none;
+  }
+
   .tab-switcher {
-    order: -1;
     flex: 1 1 100%;
-    border-bottom: 1px solid #e5e5e5;
     overflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -357,17 +427,50 @@
     display: none;
   }
 
-  .collection-toolbar__filter-toggle {
-    flex: 0 0 auto;
-    border-bottom: none;
-    margin-bottom: 0;
-    padding: 0.6rem 0;
-    font-size: 0.875rem;
-    color: #2a2a2a;
+  /* Fixed bottom bar */
+  .collection-mobile-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    /* Safe area for phones with home bar */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .collection-toolbar__filter-toggle[aria-expanded="true"] {
-    border-bottom-color: transparent;
+  .collection-mobile-bar__btn {
+    flex: 1 1 50%;
+    appearance: none;
+    background: none;
+    border: none;
+    border-right: 1px solid #e5e5e5;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.9rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    transition: background 0.15s ease;
+  }
+
+  .collection-mobile-bar__btn:last-child {
+    border-right: none;
+  }
+
+  .collection-mobile-bar__btn:hover,
+  .collection-mobile-bar__btn:active {
+    background: #f4f4f4;
+  }
+
+  .collection-mobile-bar__btn[aria-expanded="true"] {
+    color: #1a1a1a;
+    font-weight: 600;
   }
 
   .collection-filter__group-body {
@@ -379,14 +482,18 @@
 @media (max-width: 480px) {
   .collection-page {
     padding: 0 0.75rem;
+    padding-bottom: 5rem;
   }
 
   .tab-switcher__tab {
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
   }
+}
 
-  .collection-toolbar__filter-toggle {
-    font-size: 0.85rem;
+/* Hide the mobile bar on desktop/tablet */
+@media (min-width: 769px) {
+  .collection-mobile-bar {
+    display: none;
   }
 }

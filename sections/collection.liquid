@@ -55,7 +55,36 @@
 
     </div>
 
-    {%- comment -%} PRODUCTS PANEL {%- endcomment -%}
+    {%- comment -%} Fixed mobile bottom bar — Filter + Sort {%- endcomment -%}
+    {%- if section.settings.show_filters or section.settings.show_sort -%}
+      <div class="collection-mobile-bar">
+        {%- if section.settings.show_filters -%}
+          <button
+            class="collection-mobile-bar__btn"
+            aria-expanded="false"
+            aria-controls="collection-filter"
+            data-filter-toggle
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Filters
+          </button>
+        {%- endif -%}
+        {%- if section.settings.show_sort -%}
+          <button
+            class="collection-mobile-bar__btn"
+            data-mobile-sort-toggle
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Sort
+          </button>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
     <div
       id="panel-products"
       role="tabpanel"
@@ -163,7 +192,52 @@
       activateTab(key, false);
     });
 
-    /* ---------- Sub-collections carousel ---------- */
+    /* ---------- Mobile sort sheet ---------- */
+    var mobileSortBtn = page.querySelector('[data-mobile-sort-toggle]');
+    if (mobileSortBtn) {
+      // Build a lightweight sort sheet on first tap
+      mobileSortBtn.addEventListener('click', function () {
+        var existing = document.getElementById('mobile-sort-sheet');
+        if (existing) {
+          existing.hidden = !existing.hidden;
+          mobileSortBtn.setAttribute('aria-expanded', existing.hidden ? 'false' : 'true');
+          return;
+        }
+
+        var sheet = document.createElement('div');
+        sheet.id = 'mobile-sort-sheet';
+        sheet.className = 'mobile-sort-sheet';
+        sheet.setAttribute('role', 'dialog');
+        sheet.setAttribute('aria-label', 'Sort options');
+
+        var inner = '<div class="mobile-sort-sheet__inner">';
+        inner += '<p class="mobile-sort-sheet__heading">Sort by</p>';
+        inner += '<ul class="mobile-sort-sheet__list">';
+
+        // Pull options from the hidden desktop select if present
+        var desktopSort = document.getElementById('SortBy');
+        if (desktopSort) {
+          Array.from(desktopSort.options).forEach(function (opt) {
+            var active = opt.selected ? ' mobile-sort-sheet__option--active' : '';
+            inner += '<li><button class="mobile-sort-sheet__option' + active + '" data-sort-value="' + opt.value + '">' + opt.text + '</button></li>';
+          });
+        }
+
+        inner += '</ul></div>';
+        sheet.innerHTML = inner;
+
+        sheet.querySelectorAll('[data-sort-value]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var url = new URL(window.location.href);
+            url.searchParams.set('sort_by', btn.dataset.sortValue);
+            window.location.href = url.toString();
+          });
+        });
+
+        document.body.appendChild(sheet);
+        mobileSortBtn.setAttribute('aria-expanded', 'true');
+      });
+    }
     document.querySelectorAll('[data-sub-collections]').forEach(function (carousel) {
       var track = carousel.querySelector('[data-sub-collections-track]');
       var prev  = carousel.querySelector('[data-sub-collections-prev]');
