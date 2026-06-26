@@ -1,0 +1,154 @@
+{%- comment -%}
+  sections/product-compare.liquid
+  Main product comparison section.
+
+  Usage — on your /pages/compare page, add this section via the theme editor,
+  or include it statically in templates/page.compare.liquid:
+    {% section 'product-compare' %}
+
+  URL format:  /pages/compare?handles=handle-a,handle-b,handle-c
+  Reads up to 5 handles from the query string; all product data is fetched
+  client-side via /products/{handle}.js so the section shell is cacheable.
+
+  Dependencies:
+    assets/product-compare.css  — loaded via stylesheet_tag below
+    assets/product-compare.js   — loaded via script_tag below
+    snippets/compare-bar.liquid — sticky entry widget (separate concern)
+
+  CSS custom properties inherit from product-card.css where token names overlap.
+{%- endcomment -%}
+
+{{ 'product-compare.css' | asset_url | stylesheet_tag }}
+
+<section
+  class="product-compare"
+  data-section-id="{{ section.id }}"
+  data-section-type="product-compare"
+  aria-label="Product comparison"
+>
+
+  {%- comment -%}── Page header ──{%- endcomment -%}
+  <div class="product-compare__header">
+    <a
+      href="{{ request.origin }}"
+      class="product-compare__back-link"
+      aria-label="Back to shopping"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back
+    </a>
+
+    <div class="product-compare__header-center">
+      <h1 class="product-compare__title">Compare Products</h1>
+      <p class="product-compare__subtitle" data-compare-subtitle></p>
+    </div>
+
+    <button
+      class="product-compare__clear-btn"
+      type="button"
+      data-compare-clear-all
+      aria-label="Clear all products from comparison"
+    >
+      Clear all
+    </button>
+  </div>
+
+  {%- comment -%}── Loading state ──{%- endcomment -%}
+  <div class="product-compare__loading" data-compare-loading aria-live="polite" aria-label="Loading products">
+    <div class="product-compare__loading-grid">
+      {%- for i in (1..5) -%}
+        <div class="product-compare__skeleton">
+          <div class="product-compare__skeleton-img"></div>
+          <div class="product-compare__skeleton-line product-compare__skeleton-line--title"></div>
+          <div class="product-compare__skeleton-line product-compare__skeleton-line--price"></div>
+          <div class="product-compare__skeleton-line product-compare__skeleton-line--short"></div>
+          <div class="product-compare__skeleton-line product-compare__skeleton-line--short"></div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+
+  {%- comment -%}── Empty state ──{%- endcomment -%}
+  <div class="product-compare__empty" data-compare-empty hidden>
+    <svg class="product-compare__empty-icon" width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+      <rect x="4" y="14" width="24" height="30" rx="3" stroke="currentColor" stroke-width="2"/>
+      <rect x="28" y="14" width="24" height="30" rx="3" stroke="currentColor" stroke-width="2"/>
+      <path d="M16 28h24M28 20v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <h2 class="product-compare__empty-title">Nothing to compare yet</h2>
+    <p class="product-compare__empty-body">
+      Browse our range and tick the Compare checkbox on any product to start building your comparison.
+    </p>
+    <a href="/collections/all" class="product-compare__empty-cta">Shop all products</a>
+  </div>
+
+  {%- comment -%}── Error state ──{%- endcomment -%}
+  <div class="product-compare__error" data-compare-error hidden>
+    <p class="product-compare__error-msg" data-compare-error-msg></p>
+    <a href="/collections/all" class="product-compare__back-link">Return to shop</a>
+  </div>
+
+  {%- comment -%}── Compare table ──{%- endcomment -%}
+  <div class="product-compare__wrap" data-compare-wrap hidden>
+
+    {%- comment -%}
+      Scrollable viewport. On mobile the columns scroll horizontally.
+      JS populates data-compare-columns-inner with rendered column HTML.
+    {%- endcomment -%}
+    <div class="product-compare__scroll-viewport" role="region" aria-label="Comparison table" tabindex="0">
+      <div class="product-compare__table" data-compare-table role="table">
+
+        {%- comment -%}── Column headers (images + titles) ──{%- endcomment -%}
+        <div class="product-compare__col-headers" data-compare-col-headers role="row" aria-label="Products">
+          {%- comment -%}Label cell to align with row labels{%- endcomment -%}
+          <div class="product-compare__row-label-cell" aria-hidden="true"></div>
+          {%- comment -%}JS injects product header cells here{%- endcomment -%}
+        </div>
+
+        {%- comment -%}── Data rows (JS injects) ──{%- endcomment -%}
+        <div class="product-compare__rows" data-compare-rows role="rowgroup">
+          {%- comment -%}Rows injected by product-compare.js{%- endcomment -%}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<script>
+  // Pass Liquid context to JS: currency symbol, routes
+  window.__productCompare = window.__productCompare || {};
+  window.__productCompare.currencySymbol = {{ shop.money_format | json }};
+  window.__productCompare.shopUrl        = {{ shop.url | json }};
+</script>
+
+{{ 'product-compare.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Product Compare",
+  "tag": "div",
+  "class": "product-compare-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "empty_cta_label",
+      "label": "Empty state CTA label",
+      "default": "Shop all products"
+    },
+    {
+      "type": "url",
+      "id": "empty_cta_url",
+      "label": "Empty state CTA URL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Compare"
+    }
+  ]
+}
+{% endschema %}
