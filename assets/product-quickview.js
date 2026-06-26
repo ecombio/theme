@@ -29,6 +29,9 @@
  *   [F] modal appended to document.body (not documentElement) — ensures correct
  *       stacking context inside the flex column body layout and z-index layering
  *       relative to sticky header (z-index: 200) and cart drawer
+ *   [G] transitionend scoped to .qv-modal__panel + propertyName 'opacity' —
+ *       prevents the unscoped handler from firing multiple times (once per
+ *       transitioning property) and wiping the modal body on the second open
  */
 
 (() => {
@@ -129,8 +132,13 @@
     modal.classList.remove('is-open');
     document.documentElement.classList.remove('quickview-open');
 
-    // Wait for CSS transition before hiding
-    modal.addEventListener('transitionend', () => {
+    // [G] Scope transitionend to the panel element and a single property (opacity)
+    //     so the handler fires exactly once per close, not once per transitioning
+    //     property (opacity + transform = 2 fires without this guard), and not
+    //     for transitions on child elements that bubble up.
+    const panel = qs('.qv-modal__panel', modal);
+    panel.addEventListener('transitionend', (e) => {
+      if (e.propertyName !== 'opacity') return;
       modal.setAttribute('hidden', '');
       qs('.qv-modal__body', modal).innerHTML = '';
     }, { once: true });
@@ -252,7 +260,7 @@
       // ── Thumbnail swap ──────────────────────────────────────────────────────
       const thumb = e.target.closest('[data-qv-thumb]');
       if (thumb) {
-        const wrap    = thumb.closest('.qv');
+        const wrap = thumb.closest('.qv');
         if (!wrap) return;
 
         const mainImg = qs('[data-qv-main-img]', wrap);
