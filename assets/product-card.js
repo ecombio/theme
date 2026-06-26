@@ -1,5 +1,5 @@
 /* ============================================================
-   card-product-features.js
+   product-card.js
    Add to Cart · Wishlist · Compare · Quick View
    ============================================================ */
 

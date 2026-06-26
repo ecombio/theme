@@ -3,7 +3,7 @@
    Reads `shopify_wishlist` from localStorage, fetches each
    product via /products/{handle}.js, and renders cards.
 
-   Storage format (written by card-product-features.js):
+   Storage format (written by product-card.js):
      [{ id: "123456", handle: "my-product" }, …]
 
    Backward-compat: bare string entries (old format) are
