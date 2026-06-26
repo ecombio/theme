@@ -1,0 +1,67 @@
+{% comment %}
+  Snippet: article-summarizer.liquid
+  Usage:   {% render 'article-summarizer', article: article %}
+  Place directly after {{ article.content }} in your article template.
+
+  On click:
+    1. Copies a formatted prompt (title + excerpt + instructions) to clipboard
+    2. Opens the chosen AI in a new tab
+    3. Shows a toast telling the user to paste
+
+  No API keys. No backend. No streaming.
+{% endcomment %}
+
+{% assign excerpt = article.content | strip_html | strip_newlines | truncate: 2000 %}
+
+<div
+  class="ma-summarizer"
+  data-title="{{ article.title | escape }}"
+  data-excerpt="{{ excerpt | escape }}"
+>
+  <p class="ma-summarizer__label">Summarize with AI</p>
+
+  <div class="ma-summarizer__buttons">
+
+    <button
+      class="ma-summarizer__btn"
+      data-ai="claude"
+      data-url="https://claude.ai/new"
+      type="button"
+    >
+      <svg class="ma-summarizer__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17.304 1.53c-2.246-.096-4.1 1.416-4.1 3.654v2.878h-2.56C6.26 8.062 2.5 11.822 2.5 16.506c0 3.576 3.4 5.964 6.708 4.746l.498-.186C12.02 20.21 13.204 18.374 13.204 16.352v-2.88h3.016c2.12 0 3.986-1.258 4.7-3.164l2.08-5.588C24.05 2.738 20.884.002 17.304 1.53z" fill="currentColor"/>
+      </svg>
+      Summarize with Claude
+    </button>
+
+    <button
+      class="ma-summarizer__btn"
+      data-ai="chatgpt"
+      data-url="https://chat.openai.com/"
+      type="button"
+    >
+      <svg class="ma-summarizer__icon" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-6.211-2.054A10.079 10.079 0 0 0 9.9 6.958a9.967 9.967 0 0 0-6.675 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 6.212 2.054 10.079 10.079 0 0 0 9.608-6.988 9.967 9.967 0 0 0 6.675-4.835 10.079 10.079 0 0 0-1.14-11.946z" fill="currentColor" opacity=".15"/>
+        <path d="M22.498 37.886a6.787 6.787 0 0 1-4.357-1.588l.214-.122 7.243-4.183a1.172 1.172 0 0 0 .59-1.018V21.16l3.061 1.768a.11.11 0 0 1 .058.08v8.465a6.823 6.823 0 0 1-6.809 6.413zM6.146 31.095a6.79 6.79 0 0 1-.81-4.56l.214.129 7.243 4.183a1.17 1.17 0 0 0 1.18 0l8.838-5.103v3.535a.106.106 0 0 1-.042.09L15.43 33.55a6.82 6.82 0 0 1-9.284-2.454zm-1.77-14.8a6.788 6.788 0 0 1 3.544-2.986l-.001.248v8.362a1.17 1.17 0 0 0 .588 1.017l8.836 5.102-3.062 1.769a.111.111 0 0 1-.103.012L7.044 25.4a6.823 6.823 0 0 1-2.668-9.106zm25.13 5.843-8.836-5.1 3.06-1.766a.111.111 0 0 1 .103-.013l7.228 4.172a6.817 6.817 0 0 1-1.052 12.292v-8.61a1.17 1.17 0 0 0-.503-1.975zm3.047-4.57-.214-.13-7.241-4.18a1.17 1.17 0 0 0-1.181 0L15.07 18.36v-3.534a.11.11 0 0 1 .042-.09l7.243-4.17a6.82 6.82 0 0 1 10.135 7.063l.063-.051zm-19.16 6.305-3.061-1.768a.107.107 0 0 1-.058-.08v-8.464a6.82 6.82 0 0 1 11.19-5.232l-.213.122-7.243 4.184a1.172 1.172 0 0 0-.59 1.018l-.025 10.22zm1.664-3.586 3.926-2.267 3.928 2.266v4.534l-3.926 2.268-3.928-2.268V20.287z" fill="currentColor"/>
+      </svg>
+      Summarize with ChatGPT
+    </button>
+
+    <button
+      class="ma-summarizer__btn"
+      data-ai="gemini"
+      data-url="https://gemini.google.com/app"
+      type="button"
+    >
+      <svg class="ma-summarizer__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 24A14.3 14.3 0 0 0 0 12 14.3 14.3 0 0 0 12 0a14.3 14.3 0 0 0 12 12 14.3 14.3 0 0 0-12 12z" fill="currentColor"/>
+      </svg>
+      Summarize with Gemini
+    </button>
+
+  </div>
+
+  <p class="ma-summarizer__hint">Copies a prompt to your clipboard, then opens the AI in a new tab.</p>
+</div>
+
+<div class="ma-summarizer-toast" id="ma-summarizer-toast" role="status" aria-live="polite"></div>
