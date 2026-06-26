@@ -1,0 +1,433 @@
+/* ==========================================================
+   product-quickview.css
+   Styles the .qv content injected into .quickview-modal__body
+   Shell styles (backdrop, panel, close btn) live in quickview-modal.css
+   ========================================================== */
+
+/* ── CSS Variables ── */
+.qv {
+  --qv-gold:        #C8991A;
+  --qv-text:        #111111;
+  --qv-muted:       #666666;
+  --qv-border:      #e5e5e5;
+  --qv-bg-soft:     #f8f8f8;
+  --qv-radius:      8px;
+  --qv-radius-sm:   4px;
+  --qv-gap:         2rem;
+  --qv-font:        inherit;
+}
+
+/* ── Two-Column Layout ── */
+.qv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--qv-gap);
+  padding: 2rem;
+  font-family: var(--qv-font);
+  color: var(--qv-text);
+  min-height: 0; /* prevents grid blowout */
+}
+
+/* ── LEFT: Gallery ── */
+.qv__gallery {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.qv__main-img-wrap {
+  position: relative;
+  border-radius: var(--qv-radius);
+  overflow: hidden;
+  background: var(--qv-bg-soft);
+  aspect-ratio: 3 / 2;
+  flex: 1;
+  min-width: 0;
+}
+
+.qv__main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.2s ease;
+}
+
+/* Badge overlay */
+.qv__badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: var(--qv-gold);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--qv-radius-sm);
+}
+
+/* Image placeholder */
+.qv__img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--qv-bg-soft);
+}
+
+/* Thumbnails — vertical strip, ordered before main image in HTML via order */
+.qv__thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  order: -1; /* visually left of main image */
+  padding-right: 2px; /* prevent clipping active border */
+  max-height: 340px;
+}
+
+.qv__thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.qv__thumb {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--qv-radius-sm);
+  border: 2px solid transparent;
+  overflow: hidden;
+  padding: 0;
+  background: var(--qv-bg-soft);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.qv__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.qv__thumb:hover {
+  border-color: var(--qv-border);
+}
+
+.qv__thumb.is-active {
+  border-color: var(--qv-gold);
+}
+
+/* ── RIGHT: Info ── */
+.qv__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  overflow-y: auto;
+  max-height: calc(90vh - 4rem); /* matches modal max-height minus padding */
+  padding-right: 2px; /* prevent scrollbar clipping */
+}
+
+/* Vendor */
+.qv__vendor {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--qv-muted);
+  margin: 0;
+}
+
+/* Title */
+.qv__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--qv-text);
+}
+
+/* Reviews */
+.qv__reviews-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.qv__star {
+  flex-shrink: 0;
+}
+
+.qv__reviews-label {
+  font-size: 0.75rem;
+  color: var(--qv-muted);
+  margin-left: 0.25rem;
+}
+
+/* Price */
+.qv__price {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.qv__price-compare {
+  font-size: 0.9rem;
+  color: var(--qv-muted);
+  text-decoration: line-through;
+}
+
+.qv__price-sale-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: #c0392b;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--qv-radius-sm);
+  letter-spacing: 0.02em;
+}
+
+.qv__price-current {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--qv-text);
+}
+
+/* ETA */
+.qv__eta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--qv-muted);
+  padding: 0.5rem 0.75rem;
+  background: var(--qv-bg-soft);
+  border-radius: var(--qv-radius-sm);
+  border: 1px solid var(--qv-border);
+}
+
+.qv__eta svg {
+  flex-shrink: 0;
+  color: var(--qv-gold);
+}
+
+.qv__eta strong {
+  color: var(--qv-text);
+}
+
+/* Description */
+.qv__desc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--qv-muted);
+  margin: 0;
+}
+
+/* ── Variants ── */
+.qv__variants {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.qv__option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.qv__option-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--qv-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.qv__option-selected {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--qv-muted);
+}
+
+/* Color Swatches */
+.qv__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.qv__swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background-color: var(--swatch-color, #ccc);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  outline-offset: 3px;
+}
+
+.qv__swatch:hover {
+  transform: scale(1.1);
+}
+
+.qv__swatch.is-active {
+  border-color: var(--qv-gold);
+  box-shadow: 0 0 0 1px var(--qv-gold);
+}
+
+/* Light swatches get a subtle border so they're visible on white */
+.qv__swatch--light {
+  box-shadow: inset 0 0 0 1px var(--qv-border);
+}
+
+.qv__swatch--light.is-active {
+  box-shadow: inset 0 0 0 1px var(--qv-border), 0 0 0 2px var(--qv-gold);
+}
+
+/* Option Pills */
+.qv__option-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.qv__option-btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--qv-border);
+  border-radius: var(--qv-radius-sm);
+  background: #fff;
+  color: var(--qv-text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.qv__option-btn:hover {
+  border-color: var(--qv-text);
+}
+
+.qv__option-btn.is-active {
+  border-color: var(--qv-gold);
+  background: var(--qv-gold);
+  color: #fff;
+}
+
+/* ── Actions ── */
+.qv__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: auto; /* pushes to bottom of flex column */
+  padding-top: 0.5rem;
+}
+
+/* Add to Cart */
+.qv__atc {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--qv-text);
+  color: #fff;
+  border: none;
+  border-radius: var(--qv-radius);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.qv__atc:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.qv__atc:active {
+  transform: translateY(0);
+}
+
+.qv__atc--soldout {
+  background: var(--qv-border);
+  color: var(--qv-muted);
+  cursor: not-allowed;
+}
+
+.qv__atc--soldout:hover {
+  background: var(--qv-border);
+  transform: none;
+}
+
+/* View Full Details link */
+.qv__pdp-link {
+  display: block;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--qv-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.qv__pdp-link:hover {
+  color: var(--qv-text);
+  text-decoration: underline;
+}
+
+/* ── Responsive: Stack on mobile ── */
+@media (max-width: 640px) {
+  .qv {
+    grid-template-columns: 1fr;
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .qv__info {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .qv__gallery {
+    flex-direction: column;
+  }
+
+  .qv__thumbs {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    order: 1;
+    max-height: none;
+    padding-right: 0;
+    padding-bottom: 2px;
+  }
+
+  .qv__main-img-wrap {
+    aspect-ratio: 4 / 3;
+    flex: none;
+    width: 100%;
+  }
+}
+
+/* ── Accessibility: Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .qv__main-img,
+  .qv__thumb,
+  .qv__swatch,
+  .qv__option-btn,
+  .qv__atc {
+    transition: none !important;
+  }
+}
