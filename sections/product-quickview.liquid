@@ -1,0 +1,79 @@
+{%- comment -%}
+  sections/product-quickview.liquid
+  Rendered exclusively via the Shopify Sections Rendering API:
+    fetch(`/products/${handle}?sections=product-quickview`)
+  Returns JSON; product-quickview.js extracts data['product-quickview'].
+
+  This section is NEVER rendered on a standalone page — it exists only
+  to produce the quickview modal's inner HTML on demand.
+
+  Component tree:
+    .qv
+    ├── snippets/quickview-media.liquid
+    │     ├── .qv__media-main    (featured image   [data-qv-main-img])
+    │     └── .qv__media-thumbs  (thumbnail strip  [data-qv-thumb])
+    └── snippets/quickview-detail.liquid
+          ├── vendor, title, reviews
+          ├── price block                [data-qv-price]
+          ├── variant options            [data-qv-swatch] [data-qv-option-btn]
+          ├── hidden select + JSON island [data-qv-variant-select] [data-qv-variant-data]
+          ├── ETA metafield
+          ├── ATC button                 [data-atc-btn] [data-atc-label]
+          └── View full details link
+{%- endcomment -%}
+
+{%- liquid
+  assign qv_product     = product
+  assign qv_images      = qv_product.images
+  assign qv_featured    = qv_product.featured_image
+  assign qv_variants    = qv_product.variants
+  assign qv_options     = qv_product.options_with_values
+  assign first_variant  = qv_product.first_available_variant | default: qv_variants.first
+  assign eta_text       = qv_product.metafields.custom.eta_text
+
+  assign has_single_var = false
+  if qv_product.has_only_default_variant
+    assign has_single_var = true
+  endif
+
+  assign on_sale     = false
+  assign save_amount = 0
+  assign save_pct    = 0
+  if first_variant.compare_at_price > first_variant.price
+    assign on_sale     = true
+    assign save_amount = first_variant.compare_at_price | minus: first_variant.price
+    assign save_pct    = save_amount | times: 100 | divided_by: first_variant.compare_at_price
+  endif
+-%}
+
+<div
+  class="qv"
+  data-product-id="{{ qv_product.id }}"
+  data-product-handle="{{ qv_product.handle }}"
+>
+
+  {%- render 'quickview-media',
+    qv_product:  qv_product,
+    qv_featured: qv_featured,
+    qv_images:   qv_images
+  -%}
+
+  {%- render 'quickview-detail',
+    qv_product:     qv_product,
+    qv_variants:    qv_variants,
+    first_variant:  first_variant,
+    qv_options:     qv_options,
+    has_single_var: has_single_var,
+    on_sale:        on_sale,
+    save_pct:       save_pct,
+    eta_text:       eta_text
+  -%}
+
+</div>{%- comment -%} /.qv {%- endcomment -%}
+
+{% schema %}
+{
+  "name": "Product Quick View",
+  "settings": []
+}
+{% endschema %}
