@@ -1,0 +1,179 @@
+{%- comment -%}
+  sections/product-wishlist.liquid
+  Renders the customer's saved wishlist from localStorage.
+
+  Because wishlists are stored client-side (localStorage key: 'shopify_wishlist'),
+  all product card rendering happens in product-wishlist.js via /products/{handle}.js
+  fetch calls. This template provides the shell, empty state, and schema only.
+
+  CSS dependency : assets/product-wishlist.css  (loaded via stylesheet_tag below)
+  JS dependency  : assets/product-wishlist.js   (loaded via script_tag below)
+  Snippet dep    : snippets/product-card.liquid  is NOT used here — cards are
+                   rendered client-side and injected by product-wishlist.js.
+                   product-card.js / product-card.css must already be loaded
+                   globally via theme.liquid.
+
+  Template       : templates/page.product-wishlist.json
+
+  Schema settings:
+    title              — section heading
+    empty_heading      — h2 shown when wishlist is empty
+    empty_subtext      — supporting copy under empty heading
+    empty_cta_label    — CTA button label
+    empty_cta_url      — CTA button href
+    show_remove_all    — toggle "Remove all" button
+    columns_desktop    — grid columns on desktop (2–4)
+    columns_mobile     — grid columns on mobile (1–2)
+{%- endcomment -%}
+
+{{ 'product-wishlist.css' | asset_url | stylesheet_tag }}
+
+<section
+  class="wishlist-section"
+  data-wishlist-section
+  data-columns-desktop="{{ section.settings.columns_desktop }}"
+  data-columns-mobile="{{ section.settings.columns_mobile }}"
+  aria-label="{{ section.settings.title | escape }}"
+>
+  {%- comment -%}── Header ──{%- endcomment -%}
+  <div class="wishlist-section__header">
+    <div class="wishlist-section__header-inner">
+      <h1 class="wishlist-section__title">{{ section.settings.title | escape }}</h1>
+      <span class="wishlist-section__count" data-wishlist-count aria-live="polite"></span>
+    </div>
+
+    {%- if section.settings.show_remove_all -%}
+      <button
+        class="wishlist-section__remove-all"
+        type="button"
+        data-wishlist-remove-all
+        aria-label="Remove all items from wishlist"
+        hidden
+      >
+        Remove all
+      </button>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%}── Loading state ──{%- endcomment -%}
+  <div class="wishlist-section__loading" data-wishlist-loading aria-hidden="true">
+    <div class="wishlist-section__spinner" aria-hidden="true"></div>
+    <span class="wishlist-section__loading-text">Loading your wishlist…</span>
+  </div>
+
+  {%- comment -%}── Empty state ──{%- endcomment -%}
+  <div class="wishlist-section__empty" data-wishlist-empty hidden>
+    <div class="wishlist-section__empty-icon" aria-hidden="true">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M28 47S8 35.5 8 21a11 11 0 0 1 20-6.25A11 11 0 0 1 48 21c0 14.5-20 26-20 26z"
+          stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2 class="wishlist-section__empty-heading">{{ section.settings.empty_heading | escape }}</h2>
+    <p class="wishlist-section__empty-subtext">{{ section.settings.empty_subtext | escape }}</p>
+    {%- if section.settings.empty_cta_label != blank and section.settings.empty_cta_url != blank -%}
+      <a
+        href="{{ section.settings.empty_cta_url }}"
+        class="wishlist-section__empty-cta"
+      >
+        {{ section.settings.empty_cta_label | escape }}
+      </a>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%}
+    ── Product grid ──
+    Populated entirely by product-wishlist.js.
+    product-card.js is already global so injected cards wire up automatically.
+    After injection, product-wishlist.js fires 'productcard:injected' so
+    product-card.js re-syncs wishlist/compare state on the new nodes.
+  {%- endcomment -%}
+  <ul
+    class="wishlist-section__grid"
+    data-wishlist-grid
+    data-columns-desktop="{{ section.settings.columns_desktop }}"
+    data-columns-mobile="{{ section.settings.columns_mobile }}"
+    aria-label="Wishlist products"
+    hidden
+  ></ul>
+
+</section>
+
+<script src="{{ 'product-wishlist.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Wishlist",
+  "tag": "section",
+  "class": "section-product-wishlist",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "My Wishlist"
+    },
+    {
+      "type": "header",
+      "content": "Empty state"
+    },
+    {
+      "type": "text",
+      "id": "empty_heading",
+      "label": "Empty heading",
+      "default": "Your wishlist is empty"
+    },
+    {
+      "type": "text",
+      "id": "empty_subtext",
+      "label": "Empty subtext",
+      "default": "Save items you love and come back to them anytime."
+    },
+    {
+      "type": "text",
+      "id": "empty_cta_label",
+      "label": "CTA button label",
+      "default": "Start shopping"
+    },
+    {
+      "type": "url",
+      "id": "empty_cta_url",
+      "label": "CTA button link"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_remove_all",
+      "label": "Show \"Remove all\" button",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns (desktop)",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Columns (mobile)",
+      "options": [
+        { "value": "1", "label": "1 column" },
+        { "value": "2", "label": "2 columns" }
+      ],
+      "default": "2"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Wishlist"
+    }
+  ]
+}
+{% endschema %}
