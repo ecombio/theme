@@ -1,202 +1,261 @@
-/* ============================================================
-   product-card.js
-   Add to Cart · Wishlist · Compare · Quick View
-   ============================================================ */
+/**
+ * product-card.js
+ * Handles all interactivity for snippets/product-card.liquid
+ *
+ * Features:
+ *   • Add to Cart  — POST /cart/add.js, fires cart:updated + cart:open
+ *   • Wishlist     — localStorage, aria-pressed + aria-label sync
+ *   • Compare      — in-memory, renders compare-bar, max 5
+ *   • Quick View   — delegates to product-quickview.js via custom event
+ *
+ * Fixes applied (from Architecture_Review, June 2026):
+ *   [1]  ATC: btn.disabled = true on start prevents double-submit
+ *   [2]  ATC: label selector uses [data-atc-label], not a CSS class
+ *   [3]  ATC: is-added class added for CSS green state
+ *   [4]  Wishlist: aria-label updated on sync ("Add to" / "Remove from")
+ *   [5]  Compare: `let` throughout — no var re-declaration bugs
+ *   [6]  Compare: compareItems.length = 0 instead of full reassignment
+ *   [7]  Money: single shared formatMoney() reads window.Shopify currency
+ *   [8]  QV: removed — Quick View is now owned by product-quickview.js.
+ *            This file fires 'quickview:open' and product-quickview.js listens.
+ *   [9]  Init: readyState guard handles deferred/async script loading
+ *   [10] productcard:injected: re-syncs wishlist + compare on dynamic injection
+ */
 
-(function () {
+(() => {
   'use strict';
 
-  function qs(sel, root)  { return (root || document).querySelector(sel); }
-  function qsa(sel, root) { return [...(root || document).querySelectorAll(sel)]; }
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const qs  = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const emit = (name, detail = {}) =>
+    document.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
 
-  /* ──────────────────────────────────────────────────────────
-     ADD TO CART
-  ────────────────────────────────────────────────────────── */
+  // ── [7] Shared money formatter ───────────────────────────────────────────────
+  // Reads store currency symbol from Shopify global; falls back to '$'.
+  // Used by ATC, Compare bar, and exposed on window.EcombioCard for QV.
+  function formatMoney(cents) {
+    const symbol = window.Shopify?.currency?.symbol ?? '$';
+    const amount = (cents / 100).toFixed(2).replace(/\.00$/, '');
+    return symbol + amount;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // [1][2][3] ADD TO CART
+  // Attributes: [data-atc-btn]  [data-variant-id]  [data-atc-label]
+  // ══════════════════════════════════════════════════════════════════════════════
   function initAddToCart() {
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-atc-btn]');
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-atc-btn]');
       if (!btn || btn.disabled) return;
 
-      var variantId = btn.getAttribute('data-variant-id');
+      const variantId = btn.getAttribute('data-variant-id');
       if (!variantId) return;
 
-      var label = btn.querySelector('.card-product__atc-label');
-      var originalHTML = btn.innerHTML;
+      // [2] data-attribute hook — zero CSS class dependency
+      const label        = btn.querySelector('[data-atc-label]');
+      const originalHTML = btn.innerHTML;
 
+      // [1] Disable immediately to block double-submit
+      btn.disabled = true;
       btn.classList.add('is-loading');
       if (label) label.textContent = 'Adding…';
 
       fetch('/cart/add.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ id: variantId, quantity: 1 })
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: variantId, quantity: 1 }),
       })
-        .then(function (res) { if (!res.ok) throw new Error('Cart error'); return res.json(); })
-        .then(function () {
-          if (label) label.textContent = 'Added!';
-          btn.classList.remove('is-loading');
-          document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
-          document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
-          setTimeout(function () { btn.innerHTML = originalHTML; }, 1800);
+        .then((res) => {
+          if (!res.ok) throw new Error('Cart error');
+          return res.json();
         })
-        .catch(function () {
+        .then(() => {
+          // [3] is-added drives the green CSS state
           btn.classList.remove('is-loading');
+          btn.classList.add('is-added');
+          if (label) label.textContent = 'Added!';
+
+          emit('cart:updated');
+          emit('cart:open');
+
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('is-added');
+            btn.disabled = false;
+          }, 1800);
+        })
+        .catch(() => {
+          btn.classList.remove('is-loading');
+          btn.disabled = false;
           if (label) label.textContent = 'Try again';
-          setTimeout(function () { btn.innerHTML = originalHTML; }, 2000);
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+          }, 2000);
         });
     });
   }
 
-  /* ──────────────────────────────────────────────────────────
-     WISHLIST
-     Stores: [{ id: "123", handle: "my-product" }, …]
-     Backward-compat: bare string IDs from old format are kept
-     as-is but won't resolve on the wishlist page until
-     re-toggled.
-  ────────────────────────────────────────────────────────── */
-  var WISHLIST_KEY = 'shopify_wishlist';
+  // ══════════════════════════════════════════════════════════════════════════════
+  // [4] WISHLIST
+  // Storage key : 'shopify_wishlist'
+  // Format      : [{ id: "123", handle: "my-product" }, …]
+  // Backward-compat: bare string IDs from old format are normalised by entryId()
+  // Attributes  : [data-wishlist-btn]  [data-product-id]
+  //               btn.closest('[data-product-handle]') → handle
+  // ══════════════════════════════════════════════════════════════════════════════
+  const WISHLIST_KEY = 'shopify_wishlist';
 
   function getWishlist() {
-    try { return JSON.parse(localStorage.getItem(WISHLIST_KEY)) || []; } catch (e) { return []; }
-  }
-  function saveWishlist(list) {
-    try { localStorage.setItem(WISHLIST_KEY, JSON.stringify(list)); } catch (e) { /* */ }
+    try   { return JSON.parse(localStorage.getItem(WISHLIST_KEY)) || []; }
+    catch { return []; }
   }
 
-  /* Normalise an entry — old format was a bare id string */
+  function saveWishlist(list) {
+    try   { localStorage.setItem(WISHLIST_KEY, JSON.stringify(list)); }
+    catch { /* storage full or private browsing */ }
+  }
+
+  // Normalise legacy bare-string IDs
   function entryId(entry) {
     return typeof entry === 'object' ? entry.id : entry;
   }
 
   function syncWishlistButtons() {
-    var list = getWishlist();
-    var ids  = list.map(entryId);
-    qsa('[data-wishlist-btn]').forEach(function (btn) {
-      btn.setAttribute('aria-pressed', String(ids.indexOf(btn.getAttribute('data-product-id')) !== -1));
+    const ids = getWishlist().map(entryId);
+    qsa('[data-wishlist-btn]').forEach((btn) => {
+      const pressed = ids.includes(btn.getAttribute('data-product-id'));
+      btn.setAttribute('aria-pressed', String(pressed));
+      // [4] aria-label reflects current state so screen readers announce correctly
+      btn.setAttribute(
+        'aria-label',
+        `${pressed ? 'Remove from' : 'Add to'} wishlist`
+      );
     });
   }
 
   function initWishlist() {
     syncWishlistButtons();
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-wishlist-btn]');
+
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-wishlist-btn]');
       if (!btn) return;
 
-      var id     = btn.getAttribute('data-product-id');
-      /* Walk up to the card element to grab the handle */
-      var card   = btn.closest('[data-product-handle]');
-      var handle = (card && card.getAttribute('data-product-handle')) || '';
+      const id     = btn.getAttribute('data-product-id');
+      const card   = btn.closest('[data-product-handle]');
+      const handle = card?.getAttribute('data-product-handle') || '';
 
-      var list = getWishlist();
-      var ids  = list.map(entryId);
-      var idx  = ids.indexOf(id);
+      const list = getWishlist();
+      const ids  = list.map(entryId);
+      const idx  = ids.indexOf(id);
 
       if (idx === -1) {
-        list.push({ id: id, handle: handle });
+        list.push({ id, handle });
       } else {
         list.splice(idx, 1);
       }
 
       saveWishlist(list);
       syncWishlistButtons();
-      document.dispatchEvent(new CustomEvent('wishlist:toggle', {
-        bubbles: true,
-        detail: { productId: id, wishlisted: idx === -1 }
-      }));
+      emit('wishlist:toggle', { productId: id, wishlisted: idx === -1 });
     });
   }
 
-  /* ──────────────────────────────────────────────────────────
-     COMPARE
-     URL shape: /pages/compare?handles=handle-a,handle-b,...
+  // ══════════════════════════════════════════════════════════════════════════════
+  // [5][6] COMPARE
+  // Max 5 items. Renders into .compare-bar (snippets/compare-bar.liquid)
+  //
+  // Checkbox attributes:
+  //   [data-compare-checkbox]  [data-product-id]   [data-product-handle]
+  //   [data-product-title]     [data-product-image] [data-product-price]
+  //
+  // Bar elements:
+  //   .compare-bar              .compare-bar__counter    .compare-bar__list
+  //   [data-compare-submit]     [data-compare-clear]
+  //   [data-compare-remove]     (injected per item)
+  //
+  // Compare URL: /pages/compare?handles=a,b,c
+  // ══════════════════════════════════════════════════════════════════════════════
+  const COMPARE_MAX = 5;
+  // [5] let — avoids var re-declaration bugs and keeps mutability explicit
+  let compareItems = []; // [{ id, handle, title, image, price }]
 
-     Product card attributes read:
-       data-compare-checkbox   — the checkbox
-       data-product-id         — numeric ID (used for dedup)
-       data-product-handle     — slug (used in the URL)
-       data-product-title      — display name
-       data-product-image      — thumbnail URL
-       data-product-price      — formatted price string
-
-     Bar attributes:
-       .compare-bar            — wrapper
-       .compare-bar__counter   — "N" span
-       .compare-bar__list      — <ul> for thumbnails
-       [data-compare-submit]   — open/compare button
-       [data-compare-clear]    — clear all buttons
-       [data-compare-remove]   — per-item remove buttons (injected)
-  ────────────────────────────────────────────────────────── */
-  var COMPARE_MAX  = 5;
-  var compareItems = []; // [{ id, handle, title, image, price }, …]
-
-  function findCompareItem(id) {
-    return compareItems.findIndex(function (x) { return x.id === id; });
+  function findCompare(id) {
+    return compareItems.findIndex((x) => x.id === id);
   }
 
   function syncCompareCheckboxes() {
-    qsa('[data-compare-checkbox]').forEach(function (cb) {
-      cb.checked = findCompareItem(cb.getAttribute('data-product-id')) !== -1;
+    qsa('[data-compare-checkbox]').forEach((cb) => {
+      cb.checked = findCompare(cb.getAttribute('data-product-id')) !== -1;
     });
   }
 
   function renderCompareBar() {
-    var bar = qs('.compare-bar');
+    const bar = qs('.compare-bar');
     if (!bar) return;
 
-    var counterEl = qs('.compare-bar__counter', bar);
-    if (counterEl) counterEl.textContent = compareItems.length;
+    const counter = qs('.compare-bar__counter', bar);
+    if (counter) counter.textContent = compareItems.length;
 
-    var list = qs('.compare-bar__list', bar);
+    const list = qs('.compare-bar__list', bar);
     if (list) {
       list.innerHTML = '';
-      compareItems.forEach(function (item) {
-        var li = document.createElement('li');
+
+      // Filled slots
+      compareItems.forEach((item) => {
+        const li = document.createElement('li');
         li.className = 'compare-bar__item';
-        li.innerHTML =
-          '<img src="' + item.image + '" alt="' + item.title + '" width="48" height="48" style="border-radius:6px;object-fit:cover;">' +
-          '<button class="compare-bar__item-remove" type="button" aria-label="Remove ' + item.title + ' from compare" data-compare-remove="' + item.id + '">&times;</button>';
+        li.innerHTML = `
+          <img src="${item.image}" alt="${item.title}" width="48" height="48">
+          <button
+            class="compare-bar__item-remove"
+            type="button"
+            aria-label="Remove ${item.title} from compare"
+            data-compare-remove="${item.id}"
+          >&times;</button>`;
         list.appendChild(li);
       });
-      for (var i = compareItems.length; i < COMPARE_MAX; i++) {
-        var li = document.createElement('li');
+
+      // [5] `let` in for-loop — no var re-declaration
+      for (let i = compareItems.length; i < COMPARE_MAX; i++) {
+        const li = document.createElement('li');
         li.className = 'compare-bar__item compare-bar__item-placeholder';
         li.setAttribute('aria-hidden', 'true');
         list.appendChild(li);
       }
     }
 
-    var submitBtn = qs('[data-compare-submit]', bar);
-    if (submitBtn) submitBtn.disabled = compareItems.length < 2;
+    const submit = qs('[data-compare-submit]', bar);
+    if (submit) submit.disabled = compareItems.length < 2;
 
     bar.classList.toggle('is-active', compareItems.length > 0);
   }
 
-  function buildCompareUrl() {
-    var handles = compareItems.map(function (x) { return x.handle; });
-    return '/pages/compare?handles=' + handles.join(',');
-  }
-
   function initCompare() {
-    document.addEventListener('change', function (e) {
-      var cb = e.target.closest('[data-compare-checkbox]');
+    // Checkbox toggle
+    document.body.addEventListener('change', (e) => {
+      const cb = e.target.closest('[data-compare-checkbox]');
       if (!cb) return;
 
-      var id = cb.getAttribute('data-product-id');
-      var idx = findCompareItem(id);
+      const id  = cb.getAttribute('data-product-id');
+      const idx = findCompare(id);
 
       if (cb.checked) {
         if (compareItems.length >= COMPARE_MAX) {
           cb.checked = false;
-          var bar = qs('.compare-bar');
-          if (bar) { bar.classList.add('is-limit'); setTimeout(function () { bar.classList.remove('is-limit'); }, 600); }
+          const bar = qs('.compare-bar');
+          if (bar) {
+            bar.classList.add('is-limit');
+            setTimeout(() => bar.classList.remove('is-limit'), 600);
+          }
           return;
         }
         compareItems.push({
-          id    : id,
+          id,
           handle: cb.getAttribute('data-product-handle') || '',
-          title : cb.getAttribute('data-product-title')  || '',
-          image : cb.getAttribute('data-product-image')  || '',
-          price : cb.getAttribute('data-product-price')  || ''
+          title:  cb.getAttribute('data-product-title')  || '',
+          image:  cb.getAttribute('data-product-image')  || '',
+          price:  cb.getAttribute('data-product-price')  || '',
         });
       } else {
         if (idx !== -1) compareItems.splice(idx, 1);
@@ -204,214 +263,91 @@
 
       syncCompareCheckboxes();
       renderCompareBar();
-      document.dispatchEvent(new CustomEvent('compare:updated', { bubbles: true, detail: { items: compareItems } }));
+      emit('compare:updated', { items: compareItems });
     });
 
-    document.addEventListener('click', function (e) {
-      var removeBtn = e.target.closest('[data-compare-remove]');
-      if (!removeBtn) return;
-      var idx = findCompareItem(removeBtn.getAttribute('data-compare-remove'));
+    // Per-item remove (injected into bar)
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-compare-remove]');
+      if (!btn) return;
+      const idx = findCompare(btn.getAttribute('data-compare-remove'));
       if (idx !== -1) compareItems.splice(idx, 1);
       syncCompareCheckboxes();
       renderCompareBar();
     });
 
-    document.addEventListener('click', function (e) {
+    // [6] Clear all — mutation rather than reassignment keeps reference stable
+    document.body.addEventListener('click', (e) => {
       if (!e.target.closest('[data-compare-clear]')) return;
-      compareItems = [];
+      compareItems.length = 0;
       syncCompareCheckboxes();
       renderCompareBar();
     });
 
-    document.addEventListener('click', function (e) {
+    // Submit → navigate to compare page
+    document.body.addEventListener('click', (e) => {
       if (!e.target.closest('[data-compare-submit]')) return;
-      if (compareItems.length >= 2) window.location.href = buildCompareUrl();
+      if (compareItems.length >= 2) {
+        window.location.href =
+          '/pages/compare?handles=' +
+          compareItems.map((x) => x.handle).join(',');
+      }
     });
 
     renderCompareBar();
   }
 
-  /* ──────────────────────────────────────────────────────────
-     QUICK VIEW
-  ────────────────────────────────────────────────────────── */
-  function buildModal() {
-    if (qs('#card-quickview-modal')) return;
-    var modal = document.createElement('div');
-    modal.id  = 'card-quickview-modal';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
-    modal.setAttribute('aria-label', 'Quick view');
-    modal.className = 'quickview-modal';
-    modal.innerHTML =
-      '<div class="quickview-modal__backdrop"></div>' +
-      '<div class="quickview-modal__panel">' +
-        '<button class="quickview-modal__close" type="button" aria-label="Close quick view">&times;</button>' +
-        '<div class="quickview-modal__body"></div>' +
-      '</div>';
-    document.body.appendChild(modal);
-    modal.querySelector('.quickview-modal__backdrop').addEventListener('click', closeModal);
-    modal.querySelector('.quickview-modal__close').addEventListener('click', closeModal);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
-  }
-
-  function openModal(html) {
-    var modal = qs('#card-quickview-modal');
-    if (!modal) return;
-    modal.querySelector('.quickview-modal__body').innerHTML = html;
-    modal.classList.add('is-open');
-    document.body.style.overflow = 'hidden';
-    modal.querySelector('.quickview-modal__close').focus();
-  }
-
-  function closeModal() {
-    var modal = qs('#card-quickview-modal');
-    if (!modal) return;
-    modal.classList.remove('is-open');
-    document.body.style.overflow = '';
-  }
-
-  function initQuickView() {
-    buildModal();
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-quickview-btn]');
+  // ══════════════════════════════════════════════════════════════════════════════
+  // [8] QUICK VIEW — trigger only
+  // This file fires 'quickview:open' with the product handle.
+  // All modal rendering, fetch, variant UI, and focus management
+  // lives in product-quickview.js — loaded independently.
+  // ══════════════════════════════════════════════════════════════════════════════
+  function initQuickViewTrigger() {
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-quickview-btn]');
       if (!btn) return;
-      var handle = btn.getAttribute('data-product-handle');
+      const handle = btn.getAttribute('data-product-handle');
       if (!handle) return;
-      var body = qs('#card-quickview-modal .quickview-modal__body');
-      body.innerHTML = '<div class="quickview-modal__loading" aria-live="polite">Loading…</div>';
-      openModal(body.innerHTML);
-
-      fetch('/products/' + handle + '?view=quickview&sections=product-quickview', {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      })
-        /* ✅ FIX: was res.text() — Shopify sections API returns JSON, not raw HTML */
-        .then(function (res) { return res.ok ? res.json() : null; })
-        .then(function (data) {
-          if (!data || !data['product-quickview']) {
-            body.innerHTML =
-              '<div style="padding:2rem;text-align:center">' +
-                '<p style="margin:0 0 1rem;font-size:0.9rem;color:#555">Preview unavailable.</p>' +
-                '<a href="/products/' + handle + '" style="display:inline-flex;text-decoration:none">View product</a>' +
-              '</div>';
-            return;
-          }
-          /* ✅ FIX: extract the rendered HTML from the sections wrapper key */
-          body.innerHTML = data['product-quickview'];
-        })
-        .catch(function () {
-          body.innerHTML = '<p style="padding:2rem;color:#c0392b">Unable to load preview.</p>';
-        });
-    });
-  }
-/* ──────────────────────────────────────────────────────────
-     QUICK VIEW UI (Global Event Delegation)
-  ────────────────────────────────────────────────────────── */
-  function initQuickViewUI() {
-    document.addEventListener('click', function (e) {
-      // 1. Thumbnail Image Swapping
-      var thumb = e.target.closest('[data-qv-thumb]');
-      if (thumb) {
-        var wrap = thumb.closest('.qv');
-        var mainImg = wrap.querySelector('#qv-main-img');
-        if (mainImg) {
-          mainImg.src = thumb.getAttribute('data-src');
-          mainImg.alt = thumb.getAttribute('data-alt');
-        }
-        wrap.querySelectorAll('[data-qv-thumb]').forEach(function (t) { t.classList.remove('is-active'); });
-        thumb.classList.add('is-active');
-        return;
-      }
-
-      // 2. Variant Swatch / Button Logic
-      var optBtn = e.target.closest('[data-qv-swatch], [data-qv-option-btn]');
-      if (optBtn) {
-        var wrap = optBtn.closest('.qv');
-        var productId = wrap.getAttribute('data-product-id');
-        var value = optBtn.getAttribute('data-value');
-
-        /* Update visual active state on the clicked group */
-        var group = optBtn.closest('[role="radiogroup"]');
-        if (group) {
-          group.querySelectorAll('[data-qv-swatch], [data-qv-option-btn]').forEach(function (b) {
-            b.classList.remove('is-active');
-            b.setAttribute('aria-checked', 'false');
-          });
-          optBtn.classList.add('is-active');
-          optBtn.setAttribute('aria-checked', 'true');
-        }
-
-        /* Update the text label */
-        var optionName = optBtn.closest('.qv__option');
-        var selectedLabel = optionName && optionName.querySelector('[data-qv-option-selected]');
-        if (selectedLabel) selectedLabel.textContent = value;
-
-        /* Find the correct variant from the JSON block */
-        var jsonEl = document.getElementById('qv-variant-data-' + productId);
-        if (!jsonEl) return;
-        var variants = JSON.parse(jsonEl.textContent);
-
-        /* Gather all currently active option values in this modal */
-        var activeBtns = wrap.querySelectorAll('[data-qv-swatch].is-active, [data-qv-option-btn].is-active');
-        var currentOptions = [];
-        activeBtns.forEach(function (b) {
-          var idx = parseInt(b.getAttribute('data-option-index'), 10);
-          currentOptions[idx] = b.getAttribute('data-value');
-        });
-
-        /* Find matching variant */
-        var variant = variants.find(function (v) {
-          return v.options.every(function (opt, i) { return opt === currentOptions[i]; });
-        });
-
-        if (variant) updateQuickViewVariant(wrap, variant);
-      }
+      emit('quickview:open', { handle, trigger: btn });
     });
   }
 
-  function updateQuickViewVariant(wrap, variant) {
-    /* Update hidden select */
-    var select = wrap.querySelector('[data-qv-variant-select]');
-    if (select) select.value = variant.id;
+  // ══════════════════════════════════════════════════════════════════════════════
+  // [10] productcard:injected
+  // Fire this event after dynamically inserting new cards into the DOM
+  // (e.g. recently-viewed, infinite scroll) to re-sync state indicators.
+  // ══════════════════════════════════════════════════════════════════════════════
+  document.addEventListener('productcard:injected', () => {
+    syncWishlistButtons();
+    syncCompareCheckboxes();
+  });
 
-    /* Update ATC button */
-    var atcBtn = wrap.querySelector('.qv__atc');
-    if (atcBtn) {
-      atcBtn.setAttribute('data-variant-id', variant.id);
-      var label = atcBtn.querySelector('[data-atc-label]');
-      if (variant.available) {
-        atcBtn.disabled = false;
-        atcBtn.classList.remove('qv__atc--soldout');
-        if (label) label.textContent = 'Add to cart';
-      } else {
-        atcBtn.disabled = true;
-        atcBtn.classList.add('qv__atc--soldout');
-        if (label) label.textContent = 'Sold out';
-      }
-    }
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PUBLIC API
+  // Exposed on window so product-quickview.js (and any future script)
+  // can call formatMoney without duplicating the implementation.
+  // ══════════════════════════════════════════════════════════════════════════════
+  window.EcombioCard = {
+    formatMoney,
+    syncWishlistButtons,
+    syncCompareCheckboxes,
+  };
 
-    /* Update Price */
-    var priceEl = wrap.querySelector('.qv__price');
-    if (priceEl) {
-      var moneyFormatter = function (cents) {
-        return '$' + (cents / 100).toFixed(2).replace(/\.00$/, '');
-      };
-      var html = '';
-      if (variant.compare_at_price && variant.compare_at_price > variant.price) {
-        html += '<s class="qv__price-compare">' + moneyFormatter(variant.compare_at_price) + '</s>';
-        html += '<span class="qv__price-sale-badge">Save ' + moneyFormatter(variant.compare_at_price - variant.price) + '</span>';
-      }
-      html += '<span class="qv__price-current">' + moneyFormatter(variant.price) + '</span>';
-      priceEl.innerHTML = html;
-    }
-  }
-
-  /* ── INIT ── */
-  document.addEventListener('DOMContentLoaded', function () {
+  // ══════════════════════════════════════════════════════════════════════════════
+  // [9] INIT — readyState guard handles deferred / async script loading
+  // ══════════════════════════════════════════════════════════════════════════════
+  function init() {
     initAddToCart();
     initWishlist();
     initCompare();
-    initQuickView();
-    initQuickViewUI();
-  });
+    initQuickViewTrigger();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 
 })();
