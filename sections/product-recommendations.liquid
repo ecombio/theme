@@ -1,8 +1,9 @@
 {% comment %}
   ╔══════════════════════════════════════════════════════════╗
   ║  sections/product-recommendations.liquid                 ║
-  ║  Mode: Shopify AI — recommendations object (server-side) ║
+  ║  Mode: Shopify AI — /recommendations/products.json       ║
   ║  Cards: snippets/product-card.liquid                     ║
+  ║         via sections/product-card-single.liquid          ║
   ╚══════════════════════════════════════════════════════════╝
 {% endcomment %}
 
@@ -29,21 +30,63 @@
     --pr-pad-bottom: {{ pad_bottom }}px;
   "
   aria-label="{{ section.settings.heading | escape }}"
+  hidden
 >
   <div class="pr-inner">
     <div class="pr-header">
       <h2 class="pr-heading">{{ section.settings.heading }}</h2>
     </div>
-
-    {%- if recommendations.performed and recommendations.products_count > 0 -%}
-      <div class="pr-grid">
-        {%- for rec_product in recommendations.products limit: limit -%}
-          {%- render 'product-card', product: rec_product -%}
-        {%- endfor -%}
-      </div>
-    {%- endif -%}
+    <div class="pr-grid" id="pr-recs-grid-{{ section.id }}"></div>
   </div>
 </section>
+
+<script>
+(function () {
+  const section   = document.getElementById('pr-recs-section-{{ section.id }}');
+  const grid      = document.getElementById('pr-recs-grid-{{ section.id }}');
+  const productId = {{ product.id | json }};
+  const limit     = {{ limit | json }};
+
+  if (!grid || !productId) return;
+
+  // 1. Fetch Shopify AI recommendations to get product handles
+  fetch(`/recommendations/products.json?product_id=${productId}&limit=${limit}&intent=related`)
+    .then(r => r.json())
+    .then(({ products }) => {
+      if (!products || products.length === 0) return;
+
+      // 2. For each handle, fetch a server-rendered product-card via sections API
+      return Promise.all(
+        products.slice(0, limit).map(p =>
+          fetch(`/products/${p.handle}?sections=product-card-single`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null)
+        )
+      );
+    })
+    .then(results => {
+      if (!results) return;
+
+      const cards = results
+        .filter(Boolean)
+        .map(data => data['product-card-single'])
+        .filter(Boolean);
+
+      if (cards.length === 0) return;
+
+      grid.innerHTML = cards.join('');
+      section.removeAttribute('hidden');
+
+      // Re-sync wishlist + compare state for injected cards
+      document.dispatchEvent(new CustomEvent('productcard:injected', { bubbles: true }));
+    })
+    .catch(() => {
+      // Silently fail — section stays hidden
+    });
+})();
+</script>
 
 {% schema %}
 {
