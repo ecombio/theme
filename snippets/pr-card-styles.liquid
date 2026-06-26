@@ -1,0 +1,328 @@
+{%- comment -%}
+  snippets/pr-card-styles.liquid
+  Shared CSS for all three recommendation sections:
+    - sections/product-recommendations.liquid
+    - sections/product-related.liquid
+    - sections/product-recently-viewed.liquid
+  Rendered once per section via {% render 'pr-card-styles' %}
+{%- endcomment -%}
+
+<style>
+/* ==========================================================
+   PR Cards — shared styles for recommendation sections
+   Scope: .pr-section, .pr-grid, .pr-card, .pr-*
+   ========================================================== */
+
+/* ── Color Schemes ── */
+.pr-section.cs-light  { background: #ffffff; }
+.pr-section.cs-gray   { background: #f8f8f8; }
+.pr-section.cs-dark   { background: #111111; color: #ffffff; }
+.pr-section.cs-accent { background: #C8991A; color: #ffffff; }
+
+/* ── Section Shell ── */
+.pr-section {
+  padding-top:    var(--pr-pad-top,    52px);
+  padding-bottom: var(--pr-pad-bottom, 52px);
+}
+
+.pr-inner {
+  max-width: var(--page-width, 1200px);
+  margin: 0 auto;
+  padding: 0 var(--page-margin, 1.5rem);
+}
+
+/* ── Header ── */
+.pr-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pr-heading {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cs-dark .pr-heading  { color: #ffffff; }
+
+.pr-view-all-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.65;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.pr-view-all-link:hover { opacity: 1; }
+
+/* ── Grid ── */
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--pr-cols, 4), 1fr);
+  gap: var(--pr-gap, 16px);
+}
+
+@media (max-width: 767px) {
+  .pr-grid {
+    grid-template-columns: repeat(var(--pr-cols-mob, 2), 1fr);
+  }
+}
+
+/* ── Card Base ── */
+.pr-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.pr-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ── Card Styles ── */
+.pr-card.s-boxed {
+  border: 1px solid #e5e5e5;
+  background: #ffffff;
+}
+
+.pr-card.s-boxed:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.pr-card.s-shadow {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.pr-card.s-shadow:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+}
+
+.pr-card.s-minimal {
+  background: transparent;
+  border: none;
+}
+
+.cs-dark .pr-card.s-boxed,
+.cs-dark .pr-card.s-shadow {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+/* ── Card Media ── */
+.pr-card__media {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.pr-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.pr-card:hover .pr-card__img {
+  transform: scale(1.04);
+}
+
+/* ── Badges ── */
+.pr-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pr-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.pr-badge--sale    { background: #DC2626; color: #fff; }
+.pr-badge--viewed  { background: #4F46E5; color: #fff; }
+
+/* ── Card Body ── */
+.pr-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px 8px;
+  flex: 1;
+}
+
+.pr-card__vendor {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #888;
+}
+
+.pr-card__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: inherit;
+}
+
+/* ── Price ── */
+.pr-card__price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.pr-price {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pr-price--sale { color: #DC2626; }
+
+.pr-price--was {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #999;
+  text-decoration: line-through;
+}
+
+/* ── Card Foot ── */
+.pr-card__foot {
+  padding: 0 12px 12px;
+}
+
+/* ── Buttons ── */
+.pr-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.pr-btn--filled {
+  background: #111111;
+  color: #ffffff;
+  border: 1px solid #111111;
+}
+
+.pr-btn--filled:hover {
+  background: #333333;
+  border-color: #333333;
+}
+
+.pr-btn--outline {
+  background: transparent;
+  color: #111111;
+  border: 1px solid #111111;
+}
+
+.pr-btn--outline:hover {
+  background: #111111;
+  color: #ffffff;
+}
+
+.pr-btn--ghost {
+  background: transparent;
+  color: #111111;
+  border: 1px solid transparent;
+  text-decoration: underline;
+}
+
+.pr-btn--ghost:hover {
+  border-color: #111111;
+  text-decoration: none;
+}
+
+.cs-dark .pr-btn--outline {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.cs-dark .pr-btn--outline:hover {
+  background: #ffffff;
+  color: #111111;
+}
+
+/* ── Skeleton loader ── */
+.pr-skeleton {
+  pointer-events: none;
+}
+
+.pr-skeleton .pr-card__media {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: pr-shimmer 1.4s infinite;
+}
+
+.pr-skeleton .pr-card__body {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: pr-shimmer 1.4s infinite;
+  min-height: 80px;
+}
+
+@keyframes pr-shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Empty state ── */
+.pr-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .pr-card,
+  .pr-card__img,
+  .pr-skeleton .pr-card__media,
+  .pr-skeleton .pr-card__body {
+    transition: none !important;
+    animation: none !important;
+  }
+  .pr-card:hover { transform: none; }
+}
+</style>
