@@ -147,19 +147,71 @@
       });
     });
 
-    /* ---------- Filter toggle ---------- */
-    var filterToggle = page.querySelector('[data-filter-toggle]');
-    var filterPanel  = document.getElementById('collection-filter');
-    var productFeed  = page.querySelector('.product-feed');
+    /* ---------- Shared backdrop ---------- */
+    var backdrop = document.createElement('div');
+    backdrop.className = 'collection-mobile-backdrop';
+    document.body.appendChild(backdrop);
 
-    if (filterToggle && filterPanel) {
-      filterToggle.addEventListener('click', function () {
-        var isOpen = filterToggle.getAttribute('aria-expanded') === 'true';
-        filterToggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-        filterPanel.hidden = isOpen;
-        if (productFeed) productFeed.classList.toggle('product-feed--filters-hidden', isOpen);
-      });
+    function openBackdrop(onClose) {
+      backdrop.classList.add('is-visible');
+      backdrop._onClose = onClose;
     }
+
+    function closeBackdrop() {
+      backdrop.classList.remove('is-visible');
+      if (typeof backdrop._onClose === 'function') backdrop._onClose();
+      backdrop._onClose = null;
+    }
+
+    backdrop.addEventListener('click', closeBackdrop);
+
+    /* ---------- Filter drawer ---------- */
+    var filterToggles = page.querySelectorAll('[data-filter-toggle]');
+    var filterPanel   = document.getElementById('collection-filter');
+    var productFeed   = page.querySelector('.product-feed');
+
+    if (filterPanel && !filterPanel.querySelector('.collection-filter__close')) {
+      var closeBar = document.createElement('div');
+      closeBar.className = 'collection-filter__close';
+      closeBar.innerHTML = '<span class="collection-filter__close-label">Filters</span>'
+        + '<button class="collection-filter__close-btn" aria-label="Close filters">&times;</button>';
+      filterPanel.insertBefore(closeBar, filterPanel.firstChild);
+      closeBar.querySelector('.collection-filter__close-btn').addEventListener('click', closeFilter);
+    }
+
+    function openFilter() {
+      filterPanel.removeAttribute('hidden');
+      requestAnimationFrame(function () {
+        filterPanel.classList.add('is-open');
+      });
+      filterToggles.forEach(function (t) { t.setAttribute('aria-expanded', 'true'); });
+      document.body.style.overflow = 'hidden';
+      openBackdrop(closeFilter);
+    }
+
+    function closeFilter() {
+      filterPanel.classList.remove('is-open');
+      filterToggles.forEach(function (t) { t.setAttribute('aria-expanded', 'false'); });
+      document.body.style.overflow = '';
+      filterPanel.addEventListener('transitionend', function handler() {
+        if (!filterPanel.classList.contains('is-open')) filterPanel.setAttribute('hidden', '');
+        filterPanel.removeEventListener('transitionend', handler);
+      });
+      if (backdrop._onClose === closeFilter) closeBackdrop();
+    }
+
+    filterToggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function () {
+        if (window.innerWidth <= 768) {
+          filterPanel.classList.contains('is-open') ? closeFilter() : openFilter();
+        } else {
+          var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+          toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+          filterPanel.hidden = isOpen;
+          if (productFeed) productFeed.classList.toggle('product-feed--filters-hidden', isOpen);
+        }
+      });
+    });
 
     /* ---------- Sort ---------- */
     var sortSelect = page.querySelector('[data-sort]');
@@ -195,15 +247,9 @@
     /* ---------- Mobile sort sheet ---------- */
     var mobileSortBtn = page.querySelector('[data-mobile-sort-toggle]');
     if (mobileSortBtn) {
-      // Build a lightweight sort sheet on first tap
-      mobileSortBtn.addEventListener('click', function () {
-        var existing = document.getElementById('mobile-sort-sheet');
-        if (existing) {
-          existing.hidden = !existing.hidden;
-          mobileSortBtn.setAttribute('aria-expanded', existing.hidden ? 'false' : 'true');
-          return;
-        }
+      var sortSheet = null;
 
+      function buildSortSheet() {
         var sheet = document.createElement('div');
         sheet.id = 'mobile-sort-sheet';
         sheet.className = 'mobile-sort-sheet';
@@ -211,10 +257,10 @@
         sheet.setAttribute('aria-label', 'Sort options');
 
         var inner = '<div class="mobile-sort-sheet__inner">';
+        inner += '<div class="mobile-sort-sheet__handle"></div>';
         inner += '<p class="mobile-sort-sheet__heading">Sort by</p>';
         inner += '<ul class="mobile-sort-sheet__list">';
 
-        // Pull options from the hidden desktop select if present
         var desktopSort = document.getElementById('SortBy');
         if (desktopSort) {
           Array.from(desktopSort.options).forEach(function (opt) {
@@ -235,9 +281,32 @@
         });
 
         document.body.appendChild(sheet);
+        return sheet;
+      }
+
+      function openSortSheet() {
+        if (!sortSheet) sortSheet = buildSortSheet();
+        sortSheet.getBoundingClientRect(); // force reflow
+        sortSheet.classList.add('is-open');
         mobileSortBtn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+        openBackdrop(closeSortSheet);
+      }
+
+      function closeSortSheet() {
+        if (!sortSheet) return;
+        sortSheet.classList.remove('is-open');
+        mobileSortBtn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+        if (backdrop._onClose === closeSortSheet) closeBackdrop();
+      }
+
+      mobileSortBtn.addEventListener('click', function () {
+        sortSheet && sortSheet.classList.contains('is-open') ? closeSortSheet() : openSortSheet();
       });
     }
+
+    /* ---------- Sub-collections carousel ---------- */
     document.querySelectorAll('[data-sub-collections]').forEach(function (carousel) {
       var track = carousel.querySelector('[data-sub-collections-track]');
       var prev  = carousel.querySelector('[data-sub-collections-prev]');

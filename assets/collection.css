@@ -317,6 +317,92 @@
   color: #fff;
 }
 
+/* ---------- Mobile filter drawer ---------- */
+.collection-mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.collection-mobile-backdrop.is-visible {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .collection-mobile-backdrop {
+    display: block;
+    pointer-events: none;
+  }
+
+  .collection-mobile-backdrop.is-visible {
+    pointer-events: auto;
+  }
+
+  /* Drawer — slides in from left */
+  .product-feed__filter {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 99;
+    width: min(80vw, 320px);
+    max-height: 100%;
+    overflow-y: auto;
+    background: #fff;
+    padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Override the sticky/static from product-feed.css at this breakpoint */
+    top: 0 !important;
+    max-height: 100dvh !important;
+  }
+
+  .product-feed__filter.is-open {
+    transform: translateX(0);
+  }
+
+  /* Drawer close button */
+  .collection-filter__close {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .collection-filter__close-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .collection-filter__close-btn {
+    appearance: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: #6b6b6b;
+    line-height: 1;
+    font-size: 1.25rem;
+    transition: color 0.15s ease;
+  }
+
+  .collection-filter__close-btn:hover {
+    color: #1a1a1a;
+  }
+}
+
+@media (min-width: 769px) {
+  .collection-filter__close {
+    display: none;
+  }
+}
+
 /* ---------- Mobile sort sheet ---------- */
 .mobile-sort-sheet {
   position: fixed;
@@ -326,13 +412,26 @@
   z-index: 99;
   background: #fff;
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
   padding-bottom: env(safe-area-inset-bottom);
-  /* Sits just below the bottom bar (z-index 100) */
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-sort-sheet.is-open {
+  transform: translateY(0);
 }
 
 .mobile-sort-sheet__inner {
   padding: 1.25rem 1.5rem;
+}
+
+.mobile-sort-sheet__handle {
+  width: 36px;
+  height: 4px;
+  background: #d4d4d4;
+  border-radius: 999px;
+  margin: 0 auto 1rem;
 }
 
 .mobile-sort-sheet__heading {
