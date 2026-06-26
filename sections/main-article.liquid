@@ -54,8 +54,17 @@
   </aside>
 
   {% comment %} Center: Article content {% endcomment %}
-  <main class="ma-body__content article-content" id="article-content" role="main">
-    {{ article.content }}
+  <main class="ma-body__content" id="article-content" role="main">
+    {% comment %}
+      .article-content is intentionally scoped to ONLY the rendered
+      article body. article-player.js and article-toc.js both query
+      this class to wrap words / build the TOC — it must never include
+      the comments list or comment form below, or those get read aloud
+      / wrapped in word-spans too.
+    {% endcomment %}
+    <div class="article-content">
+      {{ article.content }}
+    </div>
 
     {% comment %} ── Comments ────────────────────────────────────────── {% endcomment %}
     {% if blog.comments_enabled? %}
