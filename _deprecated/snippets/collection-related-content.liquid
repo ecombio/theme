@@ -1,0 +1,40 @@
+{%- liquid
+  assign related_articles = collection.metafields.custom.articles.value
+  assign related_pages    = collection.metafields.custom.pages.value
+-%}
+
+{%- if related_articles.size > 0 or related_pages.size > 0 -%}
+  <div class="collection-related-content">
+
+    {%- if related_articles.size > 0 -%}
+      <section class="collection-related-content__section" aria-labelledby="related-articles-heading">
+        <h2 id="related-articles-heading" class="collection-related-content__heading">
+          {{ 'collections.related_content.articles_heading' | t | default: 'Related Articles' }}
+        </h2>
+        <ul class="collection-related-content__grid" role="list">
+          {%- for article in related_articles -%}
+            <li class="collection-related-content__item">
+              {%- render 'card-article', article: article -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </section>
+    {%- endif -%}
+
+    {%- if related_pages.size > 0 -%}
+      <section class="collection-related-content__section" aria-labelledby="related-pages-heading">
+        <h2 id="related-pages-heading" class="collection-related-content__heading">
+          {{ 'collections.related_content.pages_heading' | t | default: 'Related Pages' }}
+        </h2>
+        <ul class="collection-related-content__grid" role="list">
+          {%- for page in related_pages -%}
+            <li class="collection-related-content__item">
+              {%- render 'card-page', page: page -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </section>
+    {%- endif -%}
+
+  </div>
+{%- endif -%}
