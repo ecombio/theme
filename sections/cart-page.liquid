@@ -1,0 +1,400 @@
+{%- comment -%}
+  sections/cart-page.liquid
+  Full cart page — two-column layout (items left, order summary right).
+  Includes cross-sell / upsell product block driven by a metafield or
+  cart recommendation API fallback.
+
+  CSS dependency : assets/cart-page.css  (loaded via stylesheet_tag below)
+  JS dependency  : assets/cart-drawer.js (already global via theme.liquid)
+                   — reuses EcombioCart.refresh() after qty/remove changes.
+
+  Data attributes used by cart-drawer.js (shared event bus):
+    [data-ecombio-qty-change]   [data-key]   [data-delta]
+    [data-qty-value]
+    [data-ecombio-remove-item]  [data-key]
+    [data-ecombio-cart-subtotal]
+    [data-ecombio-cart-count]
+
+  Own JS (inline, bottom of file) handles:
+    • POST to /cart/change.js + section refresh for qty / remove
+    • Cross-sell ATC → fires cart:updated so the drawer badge stays in sync
+
+  Parameters: none — rendered as a Shopify section at /cart.
+{%- endcomment -%}
+
+{{ 'cart-page.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign cross_sell_products = section.settings.cross_sell_products
+-%}
+
+<div class="cart-page" data-cart-page>
+
+  {%- if cart.item_count == 0 -%}
+
+    {%- comment -%}── EMPTY STATE ──{%- endcomment -%}
+    <div class="cart-page__empty">
+      <svg class="cart-page__empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <h1 class="cart-page__empty-title">Your cart is empty</h1>
+      <p class="cart-page__empty-sub">Looks like you haven't added anything yet.</p>
+      <a href="{{ routes.all_products_collection_url }}" class="cart-page__btn cart-page__btn--primary">
+        Start shopping
+      </a>
+    </div>
+
+  {%- else -%}
+
+    <div class="cart-page__layout">
+
+      {%- comment -%}══════════════════════════════════════════
+        LEFT COL — item list
+      ══════════════════════════════════════════{%- endcomment -%}
+      <div class="cart-page__items-col" data-cart-items-col>
+
+        <h1 class="cart-page__heading">
+          Your Cart
+          <span class="cart-page__heading-count" data-ecombio-cart-count aria-live="polite" aria-atomic="true">
+            ({{ cart.item_count }})
+          </span>
+        </h1>
+
+        <ul class="cart-page__items" role="list" aria-label="Cart items" data-ecombio-cart-body>
+          {%- for item in cart.items -%}
+            <li class="cart-page__item" data-cart-item-key="{{ item.key }}">
+
+              {%- comment -%}── Image ──{%- endcomment -%}
+              <a href="{{ item.url }}" class="cart-page__item-image-link" tabindex="-1" aria-hidden="true">
+                {%- if item.image -%}
+                  <img
+                    src="{{ item.image | image_url: width: 200 }}"
+                    alt="{{ item.image.alt | escape }}"
+                    width="100"
+                    height="100"
+                    loading="lazy"
+                    class="cart-page__item-image"
+                  >
+                {%- else -%}
+                  <div class="cart-page__item-image cart-page__item-image--placeholder" aria-hidden="true"></div>
+                {%- endif -%}
+              </a>
+
+              {%- comment -%}── Info ──{%- endcomment -%}
+              <div class="cart-page__item-info">
+                <div class="cart-page__item-top">
+                  <div>
+                    {%- if item.product.vendor != blank -%}
+                      <span class="cart-page__item-vendor">{{ item.product.vendor }}</span>
+                    {%- endif -%}
+                    <a href="{{ item.url }}" class="cart-page__item-title">{{ item.product.title }}</a>
+
+                    {%- unless item.product.has_only_default_variant -%}
+                      <p class="cart-page__item-variant">{{ item.variant.title }}</p>
+                    {%- endunless -%}
+
+                    {%- if item.selling_plan_allocation -%}
+                      <p class="cart-page__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
+                    {%- endif -%}
+
+                    {%- if item.line_level_discount_allocations.size > 0 -%}
+                      <ul class="cart-page__item-discounts" aria-label="Item discounts">
+                        {%- for discount in item.line_level_discount_allocations -%}
+                          <li class="cart-page__item-discount">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                            {{ discount.discount_application.title }}
+                            (−{{ discount.amount | money }})
+                          </li>
+                        {%- endfor -%}
+                      </ul>
+                    {%- endif -%}
+                  </div>
+
+                  {%- comment -%}── Line price ──{%- endcomment -%}
+                  <div class="cart-page__item-price">
+                    {%- if item.original_line_price != item.final_line_price -%}
+                      <s class="cart-page__price--was">{{ item.original_line_price | money }}</s>
+                    {%- endif -%}
+                    <span class="cart-page__price">{{ item.final_line_price | money }}</span>
+                  </div>
+                </div>
+
+                {%- comment -%}── Qty + remove ──{%- endcomment -%}
+                <div class="cart-page__item-bottom">
+                  <div class="cart-page__qty" role="group" aria-label="Quantity for {{ item.product.title | escape }}">
+                    <button
+                      type="button"
+                      class="cart-page__qty-btn"
+                      data-ecombio-qty-change
+                      data-key="{{ item.key }}"
+                      data-delta="-1"
+                      aria-label="Decrease quantity"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <span class="cart-page__qty-value" data-qty-value="{{ item.key }}" aria-live="polite">{{ item.quantity }}</span>
+                    <button
+                      type="button"
+                      class="cart-page__qty-btn"
+                      data-ecombio-qty-change
+                      data-key="{{ item.key }}"
+                      data-delta="1"
+                      aria-label="Increase quantity"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="cart-page__remove"
+                    data-ecombio-remove-item
+                    data-key="{{ item.key }}"
+                    aria-label="Remove {{ item.product.title | escape }}"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                      <path d="M10 11v6M14 11v6"></path>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                    </svg>
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+            </li>
+          {%- endfor -%}
+        </ul>
+
+        {%- comment -%}── Cross-sell block ──{%- endcomment -%}
+        {%- if cross_sell_products != blank -%}
+          <div class="cart-page__crosssell">
+            <h2 class="cart-page__crosssell-title">You might also like</h2>
+            <ul class="cart-page__crosssell-list" role="list">
+              {%- for product in cross_sell_products limit: 4 -%}
+                {%- assign cs_variant = product.first_available_variant | default: product.variants.first -%}
+                <li class="cart-page__crosssell-item">
+                  <a href="{{ product.url }}" class="cart-page__crosssell-image-link" tabindex="-1" aria-hidden="true">
+                    {%- if product.featured_image -%}
+                      <img
+                        src="{{ product.featured_image | image_url: width: 160 }}"
+                        alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                        width="80"
+                        height="80"
+                        loading="lazy"
+                        class="cart-page__crosssell-image"
+                      >
+                    {%- else -%}
+                      <div class="cart-page__crosssell-image cart-page__crosssell-image--placeholder" aria-hidden="true"></div>
+                    {%- endif -%}
+                  </a>
+                  <div class="cart-page__crosssell-info">
+                    <a href="{{ product.url }}" class="cart-page__crosssell-name">{{ product.title }}</a>
+                    <span class="cart-page__crosssell-price">{{ product.price | money }}</span>
+                    <button
+                      type="button"
+                      class="cart-page__crosssell-atc"
+                      data-atc-btn
+                      data-variant-id="{{ cs_variant.id }}"
+                      aria-label="Add {{ product.title | escape }} to cart"
+                      {%- unless cs_variant.available %} disabled aria-disabled="true"{%- endunless %}
+                    >
+                      <span data-atc-label>
+                        {%- if cs_variant.available %}Add{%- else %}Sold out{%- endif %}
+                      </span>
+                    </button>
+                  </div>
+                </li>
+              {%- endfor -%}
+            </ul>
+          </div>
+        {%- endif -%}
+
+      </div>{%- comment -%}/.cart-page__items-col{%- endcomment -%}
+
+      {%- comment -%}══════════════════════════════════════════
+        RIGHT COL — order summary
+      ══════════════════════════════════════════{%- endcomment -%}
+      <aside class="cart-page__summary" aria-label="Order summary" data-ecombio-cart-footer>
+
+        <h2 class="cart-page__summary-title">Order summary</h2>
+
+        {%- comment -%}── Cart-level discounts ──{%- endcomment -%}
+        {%- if cart.cart_level_discount_applications.size > 0 -%}
+          <ul class="cart-page__discounts" aria-label="Applied discounts">
+            {%- for discount in cart.cart_level_discount_applications -%}
+              <li class="cart-page__discount">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                {{ discount.title }}
+                <span class="cart-page__discount-amount">(−{{ discount.total_allocated_amount | money }})</span>
+              </li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+
+        {%- comment -%}── Subtotal ──{%- endcomment -%}
+        <div class="cart-page__subtotal-row">
+          <span class="cart-page__subtotal-label">Subtotal</span>
+          <span class="cart-page__subtotal-value" data-ecombio-cart-subtotal>
+            {{ cart.total_price | money_with_currency }}
+          </span>
+        </div>
+
+        <p class="cart-page__tax-note">{{ 'cart.general.taxes_and_shipping' | t }}</p>
+
+        <a href="{{ routes.checkout_url }}" class="cart-page__btn cart-page__btn--primary cart-page__checkout">
+          Check out
+        </a>
+
+        <a href="{{ routes.all_products_collection_url }}" class="cart-page__continue">
+          Continue shopping
+        </a>
+
+      </aside>
+
+    </div>{%- comment -%}/.cart-page__layout{%- endcomment -%}
+
+  {%- endif -%}
+
+  {%- comment -%}── Loading overlay ──{%- endcomment -%}
+  <div class="cart-page__loading" data-cart-page-loading aria-hidden="true" hidden>
+    <div class="cart-page__spinner" role="status" aria-label="Updating cart"></div>
+  </div>
+
+</div>
+
+{%- comment -%}
+  Inline JS — handles qty/remove on the cart PAGE (not the drawer).
+  Reuses the same /cart/change.js → section refresh pattern
+  from cart-drawer.js, but targets data-cart-page selectors.
+  Also fires cart:updated so the drawer badge stays in sync.
+{%- endcomment -%}
+<script>
+(() => {
+  'use strict';
+
+  const SECTION_ID  = 'cart-page';
+  const PAGE_SEL    = '[data-cart-page]';
+  const LOADING_SEL = '[data-cart-page-loading]';
+  const BODY_SEL    = '[data-ecombio-cart-body]';
+  const FOOTER_SEL  = '[data-ecombio-cart-footer]';
+
+  function setLoading(on) {
+    const overlay = document.querySelector(LOADING_SEL);
+    if (!overlay) return;
+    if (on) {
+      overlay.removeAttribute('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+    } else {
+      overlay.setAttribute('hidden', '');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function updateBadges(itemCount, totalPrice) {
+    document.querySelectorAll('[data-ecombio-cart-count]').forEach((el) => {
+      const isParens = el.textContent.trim().startsWith('(');
+      el.textContent = isParens ? `(${itemCount})` : itemCount;
+      el.setAttribute('aria-label', `${itemCount} item${itemCount !== 1 ? 's' : ''} in cart`);
+    });
+    const symbol = window.Shopify?.currency?.symbol ?? '$';
+    const formatted = symbol + (totalPrice / 100).toFixed(2);
+    document.querySelectorAll('[data-ecombio-cart-subtotal]').forEach((el) => {
+      el.textContent = formatted;
+    });
+  }
+
+  async function refreshPageHTML() {
+    try {
+      const res = await fetch(`/?section_id=${SECTION_ID}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      if (!res.ok) return;
+      const text = await res.text();
+      const doc  = new DOMParser().parseFromString(text, 'text/html');
+
+      const newBody   = doc.querySelector(BODY_SEL);
+      const curBody   = document.querySelector(BODY_SEL);
+      if (newBody && curBody) curBody.innerHTML = newBody.innerHTML;
+
+      const newFooter = doc.querySelector(FOOTER_SEL);
+      const curFooter = document.querySelector(FOOTER_SEL);
+      if (newFooter && curFooter) curFooter.innerHTML = newFooter.innerHTML;
+
+      // If cart is now empty, swap the whole page section
+      const newPage   = doc.querySelector(PAGE_SEL);
+      const curPage   = document.querySelector(PAGE_SEL);
+      if (newPage && curPage && newPage.querySelector('.cart-page__empty')) {
+        curPage.innerHTML = newPage.innerHTML;
+      }
+    } catch (err) {
+      console.error('[CartPage] HTML refresh failed', err);
+    }
+  }
+
+  async function cartChange(key, quantity) {
+    setLoading(true);
+    try {
+      const res = await fetch('/cart/change.js', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: key, quantity }),
+      });
+      if (!res.ok) throw new Error('Cart update failed');
+      const cart = await res.json();
+      await refreshPageHTML();
+      updateBadges(cart.item_count, cart.total_price);
+
+      // Keep cart drawer badge in sync
+      document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+    } catch (err) {
+      console.error('[CartPage]', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Event delegation — qty steppers and remove buttons
+  document.body.addEventListener('click', (e) => {
+    // Only act when we're on the cart page
+    if (!document.querySelector(PAGE_SEL)) return;
+
+    const qtyBtn = e.target.closest('[data-ecombio-qty-change]');
+    if (qtyBtn) {
+      const key     = qtyBtn.dataset.key;
+      const delta   = parseInt(qtyBtn.dataset.delta, 10);
+      const valueEl = document.querySelector(`[data-qty-value="${key}"]`);
+      const current = valueEl ? parseInt(valueEl.textContent, 10) : 1;
+      cartChange(key, Math.max(0, current + delta));
+      return;
+    }
+
+    const removeBtn = e.target.closest('[data-ecombio-remove-item]');
+    if (removeBtn) {
+      cartChange(removeBtn.dataset.key, 0);
+    }
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Cart Page",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "cross_sell_products",
+      "label": "Cross-sell collection",
+      "info": "Up to 4 products from this collection will appear below the cart items as recommendations."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart Page"
+    }
+  ]
+}
+{% endschema %}
