@@ -1,23 +1,21 @@
 {% comment %}
   ╔══════════════════════════════════════════════════════════╗
   ║  sections/product-recently-viewed.liquid                 ║
-  ║  Mode: localStorage browser history — no server needed   ║
-  ║  Best placed: bottom of product page                     ║
+  ║  Mode: localStorage browser history                      ║
+  ║  Cards: snippets/product-card.liquid (via sections API)  ║
   ╚══════════════════════════════════════════════════════════╝
 {% endcomment %}
 
 {% render 'pr-card-styles' %}
 
 {%- liquid
-  assign card_style  = section.settings.card_style
-  assign btn_style   = section.settings.button_style
-  assign cols_d      = section.settings.columns_desktop
-  assign cols_m      = section.settings.columns_mobile
-  assign gap         = section.settings.card_gap
-  assign pad_top     = section.settings.padding_top
-  assign pad_bottom  = section.settings.padding_bottom
-  assign cs          = section.settings.color_scheme
-  assign limit       = section.settings.products_to_show
+  assign cols_d     = section.settings.columns_desktop
+  assign cols_m     = section.settings.columns_mobile
+  assign gap        = section.settings.card_gap
+  assign pad_top    = section.settings.padding_top
+  assign pad_bottom = section.settings.padding_bottom
+  assign cs         = section.settings.color_scheme
+  assign limit      = section.settings.products_to_show
 -%}
 
 <section
@@ -38,7 +36,7 @@
       <h2 class="pr-heading">{{ section.settings.heading }}</h2>
     </div>
     <div class="pr-grid" id="pr-rv-grid-{{ section.id }}">
-      {% comment %} Filled entirely by JS {% endcomment %}
+      {% comment %} Filled by JS via sections API {% endcomment %}
     </div>
   </div>
 </section>
@@ -52,11 +50,6 @@
   const currentId   = {{ product.id | json }};
   const currentHandle = {{ product.handle | json }};
   const limit       = {{ limit | json }};
-  const cardStyle   = {{ card_style | json }};
-  const btnStyle    = {{ btn_style | json }};
-  const showVendor  = {{ section.settings.show_vendor | json }};
-  const showPrice   = {{ section.settings.show_price | json }};
-  const showBadge   = {{ section.settings.show_sale_badge | json }};
   const hideIfEmpty = {{ section.settings.hide_if_empty | json }};
 
   /* ── Storage helpers ── */
@@ -77,65 +70,7 @@
     save(list.slice(0, MAX_STORED));
   })();
 
-  /* ── Utility ── */
-  function money(cents) {
-    return new Intl.NumberFormat(document.documentElement.lang || 'en', {
-      style: 'currency',
-      currency: window.Shopify?.currency?.active || 'USD',
-      minimumFractionDigits: 2
-    }).format(cents / 100);
-  }
-
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
-    );
-  }
-
-  function btnClass() {
-    return btnStyle === 'outline' ? 'pr-btn--outline'
-         : btnStyle === 'ghost'   ? 'pr-btn--ghost'
-         : 'pr-btn--filled';
-  }
-
-  function buildCard(p, isFirst) {
-    const onSale = p.compare_at_price && p.compare_at_price > p.price;
-    const img = p.featured_image
-      ? `<img src="${p.featured_image}?width=600" alt="${esc(p.title)}" class="pr-card__img" loading="lazy" width="600" height="600">`
-      : '';
-
-    const badges = [];
-    if (showBadge && onSale) badges.push(`<span class="pr-badge pr-badge--sale">Sale</span>`);
-    if (isFirst)             badges.push(`<span class="pr-badge pr-badge--viewed">Just Viewed</span>`);
-
-    const vendor = showVendor && p.vendor
-      ? `<span class="pr-card__vendor">${esc(p.vendor)}</span>` : '';
-
-    const price = showPrice ? `
-      <div class="pr-card__price">
-        ${onSale
-          ? `<span class="pr-price pr-price--sale">${money(p.price)}</span><span class="pr-price pr-price--was">${money(p.compare_at_price)}</span>`
-          : `<span class="pr-price">${money(p.price)}</span>`}
-      </div>` : '';
-
-    return `
-      <a href="${esc(p.url)}" class="pr-card s-${esc(cardStyle)}" aria-label="${esc(p.title)}">
-        <div class="pr-card__media">
-          ${img}
-          ${badges.length ? `<div class="pr-badges">${badges.join('')}</div>` : ''}
-        </div>
-        <div class="pr-card__body">
-          ${vendor}
-          <p class="pr-card__title">${esc(p.title)}</p>
-          ${price}
-        </div>
-        <div class="pr-card__foot">
-          <span class="pr-btn ${btnClass()}">View Product</span>
-        </div>
-      </a>`;
-  }
-
-  /* ── Main: load history and fetch product data ── */
+  /* ── Build history list (exclude current product) ── */
   const history = load()
     .filter(item => item.id !== currentId)
     .slice(0, limit);
@@ -148,17 +83,28 @@
     return;
   }
 
-  /* Fetch each product's JSON in parallel */
+  /*
+   * Fetch each product card HTML via the Shopify sections API.
+   * /products/{handle}?sections=product-card-single returns a rendered
+   * snippets/product-card.liquid wrapped in sections/product-card-single.liquid
+   * so the markup + CSS classes are identical to every other product-card
+   * on the page.
+   */
   Promise.all(
     history.map(item =>
-      fetch(`/products/${item.handle}.js`)
+      fetch(`/products/${item.handle}?sections=product-card-single`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
         .then(r => r.ok ? r.json() : null)
         .catch(() => null)
     )
-  ).then(products => {
-    const valid = products.filter(Boolean);
+  ).then(results => {
+    const cards = results
+      .filter(Boolean)
+      .map(data => data['product-card-single'])
+      .filter(Boolean);
 
-    if (valid.length === 0) {
+    if (cards.length === 0) {
       if (!hideIfEmpty) {
         section.removeAttribute('hidden');
         grid.innerHTML = '<p class="pr-empty">No recently viewed products yet.</p>';
@@ -166,8 +112,15 @@
       return;
     }
 
-    grid.innerHTML = valid.map((p, i) => buildCard(p, i === 0)).join('');
+    grid.innerHTML = cards.join('');
     section.removeAttribute('hidden');
+
+    /*
+     * Re-sync wishlist buttons that were just injected into the DOM.
+     * product-card.js exposes syncWishlistButtons via a custom event
+     * if available; otherwise dispatch a lightweight signal.
+     */
+    document.dispatchEvent(new CustomEvent('productcard:injected', { bubbles: true }));
   });
 })();
 </script>
@@ -207,68 +160,33 @@
     },
     {
       "type": "header",
-      "content": "Card"
-    },
-    {
-      "type": "select",
-      "id": "card_style",
-      "label": "Card Style",
-      "options": [
-        { "value": "boxed",   "label": "Boxed" },
-        { "value": "shadow",  "label": "Shadow" },
-        { "value": "minimal", "label": "Minimal" }
-      ],
-      "default": "boxed"
-    },
-    {
-      "type": "select",
-      "id": "button_style",
-      "label": "Button Style",
-      "options": [
-        { "value": "filled",  "label": "Filled" },
-        { "value": "outline", "label": "Outline" },
-        { "value": "ghost",   "label": "Ghost" }
-      ],
-      "default": "outline"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_vendor",
-      "label": "Show vendor",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "show_price",
-      "label": "Show price",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_sale_badge",
-      "label": "Show sale badge",
-      "default": true
-    },
-    {
-      "type": "header",
       "content": "Layout"
     },
     {
       "type": "range",
       "id": "columns_desktop",
-      "min": 2, "max": 6, "step": 1, "default": 4,
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4,
       "label": "Columns (desktop)"
     },
     {
       "type": "range",
       "id": "columns_mobile",
-      "min": 1, "max": 3, "step": 1, "default": 2,
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "default": 2,
       "label": "Columns (mobile)"
     },
     {
       "type": "range",
       "id": "card_gap",
-      "min": 8, "max": 40, "step": 2, "default": 16,
+      "min": 8,
+      "max": 40,
+      "step": 2,
+      "default": 16,
       "label": "Card gap (px)"
     },
     {
@@ -290,13 +208,19 @@
     {
       "type": "range",
       "id": "padding_top",
-      "min": 0, "max": 120, "step": 4, "default": 52,
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "default": 52,
       "label": "Padding top (px)"
     },
     {
       "type": "range",
       "id": "padding_bottom",
-      "min": 0, "max": 120, "step": 4, "default": 52,
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "default": 52,
       "label": "Padding bottom (px)"
     }
   ],
