@@ -1,24 +1,44 @@
 {% comment %}
-  css-variables.liquid
-  Combined version:
-  - Loads font variations (from your original)
-  - Outputs base theme variables from settings
-  - Adds preset-aware variables for Hyper vs Focus density/spacing
+  snippets/css-variables.liquid
+
+  Outputs a single <style> block into <head> (via theme.liquid).
+  Everything that was previously hardcoded in product-card.css,
+  product-quickview.css, and theme.liquid inline styles lives here
+  as a single source of truth.
+
+  Token namespaces:
+    --font-*          typography
+    --color-*         brand / UI palette
+    --radius-*        border radii
+    --transition-*    motion
+    --page-*          page-width layout
+    --header-*        header layout
+    --footer-*        footer layout
+    --section-*       section spacing
+    --card-*          product card density
+    --grid-*          grid gap density
+    --nav-*           navigation typography
+    --font-weight-*   preset-driven weight scale
 {% endcomment %}
 
 {% style %}
-  {% # Load all font variations with display: swap %}
+
+  {% comment %} ── Font faces ──────────────────────────────────────────── {% endcomment %}
   {{ settings.type_primary_font | font_face: font_display: 'swap' }}
   {{ settings.type_primary_font | font_modify: 'weight', 'bold' | font_face: font_display: 'swap' }}
   {{ settings.type_primary_font | font_modify: 'weight', 'bold' | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
   {{ settings.type_primary_font | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
 
-  {% comment %} ========== PRESET LOGIC ========== {% endcomment %}
+  {% comment %} ── Preset logic ─────────────────────────────────────────
+    Two presets supported: 'hyper' (marketplace density) and 'focus'
+    (premium storefront). Add a new branch here before adding a third
+    preset to settings_schema.json — the else clause silently inherits
+    Focus values for any unknown preset value.
+  ──────────────────────────────────────────────────────────────────── {% endcomment %}
   {%- liquid
     assign preset = settings.theme_preset | default: 'hyper'
 
     if preset == 'hyper'
-      # Hyper = Marketplace density → tighter, bolder, more compact
       assign spacing_multiplier = 1.6
       assign card_padding       = '14px'
       assign grid_gap           = '12px'
@@ -27,7 +47,6 @@
       assign font_weight_medium = '600'
       assign font_weight_bold   = '700'
     else
-      # Focus = Premium storefront → more breathing room, cleaner
       assign spacing_multiplier = 2.4
       assign card_padding       = '24px'
       assign grid_gap           = '24px'
@@ -37,42 +56,93 @@
       assign font_weight_bold   = '600'
     endif
 
-    assign section_spacing = settings.section_spacing_scale | default: 1 | times: spacing_multiplier | append: 'rem'
+    comment
+      plus: 0 coerces section_spacing_scale from string → number before
+      times: — without it Liquid outputs 0 when the value comes from settings.
+    endcomment
+    assign section_spacing = settings.section_spacing_scale | default: 1 | plus: 0 | times: spacing_multiplier | append: 'rem'
   -%}
 
   :root {
-    /* ============================================
-       BASE THEME VARIABLES (from settings)
-       ============================================ */
-    --font-primary--family: {{ settings.type_primary_font.family }}, {{ settings.type_primary_font.fallback_families }};
-    --font-primary--style: {{ settings.type_primary_font.style }};
-    --font-primary--weight: {{ settings.type_primary_font.weight }};
 
-    --page-width: {{ settings.max_page_width }};
-    --page-margin: {{ settings.min_page_margin }}px;
+    /* ── Typography ──────────────────────────────────────────────── */
+    --font-primary--family:  {{ settings.type_primary_font.family }}, {{ settings.type_primary_font.fallback_families }};
+    --font-primary--style:   {{ settings.type_primary_font.style }};
+    --font-primary--weight:  {{ settings.type_primary_font.weight }};
 
-    --color-background: {{ settings.background_color }};
-    --color-foreground: {{ settings.foreground_color }};
-    --style-border-radius-inputs: {{ settings.input_corner_radius }}px;
+    /* ── Brand palette ───────────────────────────────────────────── */
+    /*
+      These replace every hardcoded hex in product-card.css and
+      product-quickview.css. Both files should reference these vars
+      rather than defining their own token blocks.
+    */
+    --color-background:      {{ settings.background_color }};
+    --color-foreground:      {{ settings.foreground_color }};
 
-    /* ============================================
-       THEME PRESET SYSTEM — Hyper vs Focus
-       ============================================ */
-    /* Spacing & Density (respects merchant's section_spacing_scale) */
-    --section-spacing: {{ section_spacing }};
-    --card-padding: {{ card_padding }};
-    --grid-gap: {{ grid_gap }};
+    --color-accent:          {{ settings.accent_color      | default: '#4F46E5' }};
+    --color-accent-hover:    {{ settings.accent_color_hover | default: '#4338CA' }};
+    --color-accent-text:     #ffffff;
 
-    /* Header */
-    --header-padding-y: {{ header_padding_y }};
+    --color-text:            {{ settings.foreground_color  | default: '#111827' }};
+    --color-text-muted:      {{ settings.text_muted_color  | default: '#6B7280' }};
 
-    /* Typography */
-    --nav-font-size: {{ nav_font_size }};
-    --font-weight-medium: {{ font_weight_medium }};
-    --font-weight-bold: {{ font_weight_bold }};
+    --color-surface:         {{ settings.background_color  | default: '#ffffff' }};
+    --color-border:          {{ settings.border_color      | default: '#E5E7EB' }};
 
-    /* Transitions */
-    --transition-fast: 0.15s ease;
-    --transition-base: 0.3s ease;
+    /* ATC button — yellow matches Amazon-style add-to-cart convention */
+    --color-atc:             {{ settings.atc_color         | default: '#f5c518' }};
+    --color-atc-hover:       {{ settings.atc_color_hover   | default: '#e6b800' }};
+    --color-atc-text:        #111111;
+    --color-atc-soldout-bg:  #E5E7EB;
+    --color-atc-soldout-text: #9CA3AF;
+    --color-atc-added:       #059669;
+
+    /* Sale / savings */
+    --color-sale:            {{ settings.sale_color        | default: '#DC2626' }};
+    --color-save-bg:         #FEF3C7;
+    --color-save-text:       {{ settings.save_badge_color  | default: '#D97706' }};
+
+    /* Option pills */
+    --color-pill-bg:         #F3F4F6;
+    --color-pill-bg-active:  {{ settings.foreground_color  | default: '#111827' }};
+    --color-pill-text:       #374151;
+    --color-pill-text-active: #ffffff;
+    --color-pill-border:     {{ settings.border_color      | default: '#E5E7EB' }};
+    --color-pill-border-active: {{ settings.foreground_color | default: '#111827' }};
+
+    /* ── Radii ───────────────────────────────────────────────────── */
+    --radius-base:           10px;
+    --radius-sm:             6px;
+    --radius-inputs:         {{ settings.input_corner_radius }}px;
+
+    /* ── Motion ──────────────────────────────────────────────────── */
+    --transition-fast:       0.15s ease;
+    --transition-base:       0.2s ease;
+    --transition-slow:       0.35s ease;
+
+    /* ── Page layout ─────────────────────────────────────────────── */
+    --page-width:            {{ settings.max_page_width }};
+    --page-margin:           {{ settings.min_page_margin }}px;
+
+    /* ── Header layout ───────────────────────────────────────────── */
+    --header-width:          {{ settings.header_max_width   | default: settings.max_page_width }};
+    --header-margin:         {{ settings.header_page_margin | default: settings.min_page_margin }}px;
+    --header-padding-y:      {{ header_padding_y }};
+
+    /* ── Footer layout ───────────────────────────────────────────── */
+    --footer-width:          {{ settings.footer_max_width   | default: settings.max_page_width }};
+    --footer-margin:         {{ settings.footer_page_margin | default: settings.min_page_margin }}px;
+
+    /* ── Preset-driven density ───────────────────────────────────── */
+    --section-spacing:       {{ section_spacing }};
+    --card-padding:          {{ card_padding }};
+    --grid-gap:              {{ grid_gap }};
+
+    /* ── Navigation ──────────────────────────────────────────────── */
+    --nav-font-size:         {{ nav_font_size }};
+    --font-weight-medium:    {{ font_weight_medium }};
+    --font-weight-bold:      {{ font_weight_bold }};
+
   }
+
 {% endstyle %}
