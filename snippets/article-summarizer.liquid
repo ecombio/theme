@@ -4,20 +4,23 @@
   Place directly after {{ article.content }} in your article template.
 
   On click:
-    1. Builds a prompt from the article title + excerpt
-    2. Appends it as ?q= to the AI URL so it pre-fills the chat input
-    3. Also copies it to clipboard as a reliable fallback
-    4. Shows a toast with clear next-step instructions
+    1. Resolves the prompt: uses article.metafields.custom.ai_summarizer if set,
+       otherwise falls back to a built-in default prompt.
+    2. Appends the prompt as ?q= to the AI URL so it pre-fills the chat input.
+    3. Also copies it to clipboard as a reliable fallback.
+    4. Shows a toast with clear next-step instructions.
 
   No API keys. No backend. No streaming.
 {% endcomment %}
 
 {% assign excerpt = article.content | strip_html | strip_newlines | truncate: 2000 %}
+{% assign custom_prompt = article.metafields.custom.ai_summarizer | escape %}
 
 <div
   class="ma-summarizer"
   data-title="{{ article.title | escape }}"
   data-excerpt="{{ excerpt | escape }}"
+  {% if custom_prompt != blank %}data-custom-prompt="{{ custom_prompt }}"{% endif %}
 >
   <div class="ma-summarizer__inner">
     <div class="ma-summarizer__header">
