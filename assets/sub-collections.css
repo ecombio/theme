@@ -8,6 +8,9 @@
 .sub-collections {
   position: relative;
   margin-block-end: 2rem;
+  /* Arrows are outside the track, so the wrapper needs side padding
+     to give them space without them overlapping the content.       */
+  padding-inline: 2.5rem;
 }
 
 /* Scrollable track ------------------------------------------ */
@@ -19,7 +22,8 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;           /* Firefox */
   padding-block: 0.25rem;          /* room for focus rings */
-  padding-inline: 0.25rem;
+  justify-content: center;         /* centres items when they don't overflow;
+                                      ignored by the browser once content overflows */
 }
 
 .sub-collections__track::-webkit-scrollbar {
@@ -104,9 +108,11 @@
 }
 
 /* Nav buttons ----------------------------------------------- */
+/* Arrows sit in the wrapper's padding gutters, never inside
+   the track, so padding-inline on the track is not needed.   */
 .sub-collections__nav {
   position: absolute;
-  top: calc(50% - 0.75rem);       /* vertically centred on the image area */
+  top: calc(50% - 0.75rem);
   transform: translateY(-50%);
   z-index: 2;
   display: flex;
@@ -136,11 +142,6 @@
 .sub-collections__nav--prev { left: 0; }
 .sub-collections__nav--next { right: 0; }
 
-/* Nudge track inward so arrows don't overlap first/last card */
-.sub-collections__track {
-  padding-inline: 2.25rem;
-}
-
 /* Active / current state ------------------------------------ */
 .sub-collections__item--active .sub-collections__media {
   outline: 2px solid currentColor;
@@ -153,6 +154,10 @@
 
 /* Responsive ------------------------------------------------ */
 @media (max-width: 768px) {
+  .sub-collections {
+    padding-inline: 2rem;
+  }
+
   .sub-collections__item {
     width: 80px;
   }
