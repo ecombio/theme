@@ -1,0 +1,71 @@
+{% comment %}
+  Snippet: article-player.liquid
+  Usage:   {% render 'article-player', article: article %}
+  Place directly before {{ article.content }} in your article template.
+
+  - Wraps article content words in <span data-word> for highlighting
+  - All JS is loaded via article-player.js (defer)
+  - No API calls, no external dependencies
+{% endcomment %}
+
+<div class="ma-player" id="ma-player" aria-label="Read aloud player">
+
+  <div class="ma-player__top">
+
+    {% comment %} Play / Pause {% endcomment %}
+    <button class="ma-player__play" id="ma-player-play" type="button" aria-label="Play">
+      <svg class="ma-player__icon ma-player__icon--play" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <polygon points="6,3 20,12 6,21" fill="currentColor"/>
+      </svg>
+      <svg class="ma-player__icon ma-player__icon--pause" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:none">
+        <rect x="5" y="3" width="4" height="18" fill="currentColor"/>
+        <rect x="15" y="3" width="4" height="18" fill="currentColor"/>
+      </svg>
+    </button>
+
+    {% comment %} Progress bar {% endcomment %}
+    <div class="ma-player__progress-wrap">
+      <div class="ma-player__progress" id="ma-player-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="ma-player__progress-fill" id="ma-player-fill"></div>
+        <div class="ma-player__progress-thumb" id="ma-player-thumb"></div>
+      </div>
+      <div class="ma-player__times">
+        <span class="ma-player__time" id="ma-player-elapsed">0:00</span>
+        <span class="ma-player__time ma-player__time--right" id="ma-player-remaining">–0:00</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ma-player__bottom">
+
+    {% comment %} Follow-along label {% endcomment %}
+    <span class="ma-player__follow-label" id="ma-player-follow-label">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width="12" height="12">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="2"/>
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      Follow along
+    </span>
+
+    {% comment %} Voice selector {% endcomment %}
+    <div class="ma-player__control-group">
+      <label class="ma-player__control-label" for="ma-player-voice">Voice</label>
+      <select class="ma-player__select" id="ma-player-voice" aria-label="Select voice"></select>
+    </div>
+
+    {% comment %} Speed control {% endcomment %}
+    <div class="ma-player__control-group">
+      <label class="ma-player__control-label" for="ma-player-speed">Speed</label>
+      <div class="ma-player__speed-group">
+        <button class="ma-player__speed-btn" data-speed="0.75" type="button">0.75×</button>
+        <button class="ma-player__speed-btn" data-speed="1" type="button">1×</button>
+        <button class="ma-player__speed-btn is-active" data-speed="1.25" type="button">1.25×</button>
+        <button class="ma-player__speed-btn" data-speed="1.5" type="button">1.5×</button>
+        <button class="ma-player__speed-btn" data-speed="2" type="button">2×</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
