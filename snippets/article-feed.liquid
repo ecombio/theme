@@ -2,26 +2,27 @@
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
 {%- comment -%}
-  Uses Collection metafield: custom.articles (List of Blog posts)
-  Falls back to section.settings.blog if metafield is empty.
+  Priority:
+  1. Collection metafield: custom.articles (curated list)
+  2. Fallback: section.settings.blog
 {%- endcomment -%}
 
 {%- liquid
   assign featured_articles = collection.metafields.custom.articles.value
   assign feed_blog = section.settings.blog
+  assign max_articles = 12
 -%}
 
 {%- if featured_articles != blank and featured_articles.size > 0 -%}
 
   <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
-    {%- for article in featured_articles -%}
+    {%- for article in featured_articles limit: max_articles -%}
       {%- render 'article-card', article: article -%}
     {%- endfor -%}
   </div>
 
 {%- elsif feed_blog != blank and feed_blog.articles.size > 0 -%}
 
-  {%- comment -%} Fallback: show from the blog selected in section settings {%- endcomment -%}
   {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
 
     <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
