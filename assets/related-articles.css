@@ -1,93 +1,38 @@
 /* =============================================
-   Related Article Carousel
-   Depends on: article-card.css
+   Related Articles — Carousel Layout
+   Wraps existing .article-card components
 ============================================= */
 
-/* Import existing article card styles */
-@import url('article-card.css');
-
-/* --- Container --- */
-.related-article {
-  padding: 48px 0;
-  overflow: hidden;
-}
-
-/* --- Header row: title + buttons --- */
-.related-article__header {
+.related-articles {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 0 16px;
-}
-
-.related-article__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.related-article__controls {
-  display: flex;
-  gap: 8px;
-}
-
-/* --- Prev / Next buttons --- */
-.related-article__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.1rem;
-  transition: background 0.2s, color 0.2s;
-}
-
-.related-article__btn:hover {
-  background: #000;
-  color: #fff;
-}
-
-.related-article__btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
-/* --- Viewport: clips the track --- */
-.related-article__viewport {
-  overflow: hidden;
-  padding: 0 16px;
-}
-
-/* --- Track: the sliding row of cards --- */
-.related-article__track {
-  display: flex;
+  overflow-x: auto;
   gap: 24px;
-  transition: transform 0.35s ease;
-  will-change: transform;
+  padding: 0 16px 16px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
 }
 
-/* --- Slides --- */
-.related-article__slide {
-  /* Desktop: 3 cards */
+.related-articles::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.related-articles .article-card {
   flex: 0 0 calc((100% - 48px) / 3);
+  scroll-snap-align: start;
   min-width: 0;
 }
 
 /* Tablet: 2 cards */
 @media (max-width: 1024px) {
-  .related-article__slide {
+  .related-articles .article-card {
     flex: 0 0 calc((100% - 24px) / 2);
   }
 }
 
 /* Mobile: 1 card */
 @media (max-width: 640px) {
-  .related-article__slide {
+  .related-articles .article-card {
     flex: 0 0 100%;
   }
 }
