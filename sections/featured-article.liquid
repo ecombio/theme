@@ -4,20 +4,17 @@
 {%- comment -%}
   sections/featured-article.liquid
   ─────────────────────────────────
-  Displays the latest articles from a merchant-selected blog as a carousel.
-  Uses the reusable `article-card` snippet for each slide.
-  No metafields or custom data — all configuration via the schema below.
+  Displays featured articles from the collection metafield:
+  custom.featured_articles (List of blog posts)
+  Assign articles per collection via:
+  Shopify Admin → Catalog → Collections → [collection] → Metafields → Featured Articles
 {%- endcomment -%}
 
-{%- liquid
-  assign blog_source   = section.settings.blog
-  assign article_limit = section.settings.article_count
-  assign section_id    = section.id
--%}
+{%- assign featured_articles = collection.metafields.custom.featured_articles.value -%}
 
-{%- if blog_source != blank and blog_source.articles_count > 0 -%}
+{%- if featured_articles != blank and featured_articles.size > 0 -%}
 
-  <section class="featured-article" id="featured-article-{{ section_id }}">
+  <section class="featured-article" id="featured-article-{{ section.id }}">
     <div class="featured-article__inner">
 
       {%- comment -%} ── Section header: heading + prev/next controls + view all ── {%- endcomment -%}
@@ -28,8 +25,8 @@
           {%- endif -%}
         </div>
         <div class="featured-article__header-right">
-          {%- if section.settings.show_view_all -%}
-            <a href="{{ blog_source.url }}" class="featured-article__view-all">
+          {%- if section.settings.show_view_all and section.settings.blog != blank -%}
+            <a href="{{ section.settings.blog.url }}" class="featured-article__view-all">
               View all &rarr;
             </a>
           {%- endif -%}
@@ -43,30 +40,27 @@
       {%- comment -%} ── Carousel track ── {%- endcomment -%}
       <div class="featured-article__track-wrapper">
         <ul class="featured-article__track" role="list">
-          {%- for article in blog_source.articles limit: article_limit -%}
+          {%- for article in featured_articles -%}
             <li class="featured-article__slide">
-              {%- render 'article-card',
-                article: article,
-                show_excerpt: section.settings.show_excerpt,
-                show_author: section.settings.show_author,
-                show_date: section.settings.show_date
-              -%}
+              {%- render 'article-card', article: article -%}
             </li>
           {%- endfor -%}
         </ul>
       </div>
 
       {%- comment -%} ── Dot indicators ── {%- endcomment -%}
-      <div class="featured-article__dots" role="tablist" aria-label="Article slides">
-        {%- for article in blog_source.articles limit: article_limit -%}
-          <button
-            class="featured-article__dot{% if forloop.first %} featured-article__dot--active{% endif %}"
-            role="tab"
-            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-            aria-label="Go to slide {{ forloop.index }}"
-          ></button>
-        {%- endfor -%}
-      </div>
+      {%- if featured_articles.size > 1 -%}
+        <div class="featured-article__dots" role="tablist" aria-label="Article slides">
+          {%- for article in featured_articles -%}
+            <button
+              class="featured-article__dot{% if forloop.first %} featured-article__dot--active{% endif %}"
+              role="tab"
+              aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+              aria-label="Go to slide {{ forloop.index }}"
+            ></button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
 
     </div>
   </section>
@@ -74,10 +68,11 @@
 {%- elsif request.design_mode -%}
 
   {%- comment -%} ── Editor-only empty state ── {%- endcomment -%}
-  <section class="featured-article" id="featured-article-{{ section_id }}">
+  <section class="featured-article" id="featured-article-{{ section.id }}">
     <div class="featured-article__inner">
       <p class="featured-article__empty">
-        Select a blog in the section settings to display articles here.
+        No featured articles found. Assign articles to this collection via
+        Admin &rarr; Catalog &rarr; Collections &rarr; [collection] &rarr; Metafields &rarr; Featured Articles.
       </p>
     </div>
   </section>
@@ -85,7 +80,7 @@
 {%- endif -%}
 
 <style>
-  #featured-article-{{ section_id }} {
+  #featured-article-{{ section.id }} {
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
   }
@@ -93,7 +88,7 @@
 
 <script>
   (function () {
-    const section = document.getElementById('featured-article-{{ section_id }}');
+    const section = document.getElementById('featured-article-{{ section.id }}');
     if (!section) return;
 
     const track   = section.querySelector('.featured-article__track');
@@ -166,43 +161,7 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Latest Articles"
-    },
-    {
-      "type": "blog",
-      "id": "blog",
-      "label": "Blog"
-    },
-    {
-      "type": "range",
-      "id": "article_count",
-      "label": "Number of articles",
-      "min": 1,
-      "max": 12,
-      "step": 1,
-      "default": 6
-    },
-    {
-      "type": "header",
-      "content": "Card options"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_excerpt",
-      "label": "Show excerpt",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_author",
-      "label": "Show author",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "show_date",
-      "label": "Show date",
-      "default": true
+      "default": "Featured Articles"
     },
     {
       "type": "header",
@@ -213,6 +172,12 @@
       "id": "show_view_all",
       "label": "Show \"View all\" button",
       "default": true
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "\"View all\" blog link",
+      "info": "Select the blog the View all button should link to"
     },
     {
       "type": "header",
