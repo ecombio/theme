@@ -1,15 +1,27 @@
-{%- assign has_description = false -%}
-{%- assign has_shipping     = false -%}
-{%- assign has_refund       = false -%}
-{%- assign has_warranty     = false -%}
+{%- liquid
+  assign has_description = false
+  assign has_shipping    = false
+  assign has_refund      = false
+  assign has_warranty    = false
 
-{%- if product.description != blank -%}{%- assign has_description = true -%}{%- endif -%}
+  if product.description != blank
+    assign has_description = true
+  endif
 
-{%- for page in pages -%}
-  {%- if page.handle == 'shipping-policy' -%}{%- assign has_shipping = true -%}{%- assign shipping_page = page -%}{%- endif -%}
-  {%- if page.handle == 'refund-policy' -%}{%- assign has_refund = true -%}{%- assign refund_page = page -%}{%- endif -%}
-  {%- if page.handle == 'warranty' -%}{%- assign has_warranty = true -%}{%- assign warranty_page = page -%}{%- endif -%}
-{%- endfor -%}
+  assign shipping_page = pages['shipping-policy']
+  assign refund_page   = pages['refund-policy']
+  assign warranty_page = pages['warranty']
+
+  if shipping_page.content != blank
+    assign has_shipping = true
+  endif
+  if refund_page.content != blank
+    assign has_refund = true
+  endif
+  if warranty_page.content != blank
+    assign has_warranty = true
+  endif
+-%}
 
 <div class="pd-wrap">
 
@@ -24,6 +36,7 @@
   </div>
   {%- endif -%}
 
+  {%- if has_shipping -%}
   <div class="pd-row">
     <button class="pd-trigger" type="button" id="PdTriggerShipping" aria-haspopup="dialog" aria-expanded="false" aria-controls="PdPanelShipping">
       <span>Shipping Policy</span>
@@ -32,8 +45,19 @@
       </svg>
     </button>
   </div>
+  {%- elsif shop.shipping_policy.body != blank -%}
+  <div class="pd-row">
+    <button class="pd-trigger" type="button" id="PdTriggerShipping" aria-haspopup="dialog" aria-expanded="false" aria-controls="PdPanelShipping">
+      <span>Shipping Policy</span>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  {%- endif -%}
 
-  <div class="pd-row pd-row--last">
+  {%- if has_refund -%}
+  <div class="pd-row">
     <button class="pd-trigger" type="button" id="PdTriggerRefund" aria-haspopup="dialog" aria-expanded="false" aria-controls="PdPanelRefund">
       <span>Refund &amp; Return Policy</span>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -41,8 +65,19 @@
       </svg>
     </button>
   </div>
+  {%- elsif shop.refund_policy.body != blank -%}
+  <div class="pd-row">
+    <button class="pd-trigger" type="button" id="PdTriggerRefund" aria-haspopup="dialog" aria-expanded="false" aria-controls="PdPanelRefund">
+      <span>Refund &amp; Return Policy</span>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  {%- endif -%}
 
-  <div class="pd-row pd-row--last">
+  {%- if has_warranty -%}
+  <div class="pd-row">
     <button class="pd-trigger" type="button" id="PdTriggerWarranty" aria-haspopup="dialog" aria-expanded="false" aria-controls="PdPanelWarranty">
       <span>Warranty</span>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -50,6 +85,7 @@
       </svg>
     </button>
   </div>
+  {%- endif -%}
 
 </div>
 
