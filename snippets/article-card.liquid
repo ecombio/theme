@@ -4,7 +4,10 @@
 {%- endcomment -%}
 
 <article class="article-card">
-<a href="{{ article.url }}" class="article-card__image-wrapper" aria-hidden="true" tabindex="-1">
+  <a href="{{ article.url }}" class="article-card__image-wrapper" aria-hidden="true" tabindex="-1">
+    {%- comment -%}
+      Show the article image if it exists, otherwise fall back to Shopify's built-in placeholder SVG.
+    {%- endcomment -%}
     {%- if article.image -%}
       <img
         src="{{ article.image | image_url: width: 800 }}"
@@ -15,12 +18,7 @@
         height="{{ article.image.height }}"
       >
     {%- else -%}
-      <img
-        src="{{ 'article-placeholder.png' | asset_url }}"
-        alt="{{ article.title | escape }}"
-        class="article-card__image article-card__image--placeholder"
-        loading="lazy"
-      >
+      {{ 'lifestyle-1' | placeholder_svg_tag: 'article-card__image article-card__image--placeholder' }}
     {%- endif -%}
   </a>
 
