@@ -1,58 +1,22 @@
 {{ 'article-feed.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  Priority:
-  1. Collection metafield: custom.articles (curated list)
-  2. Fallback: section.settings.blog
-{%- endcomment -%}
+{%- comment %} DEBUG: Testing custom.articles metafield {%- endcomment %}
 
-{%- liquid
-  assign featured_articles = collection.metafields.custom.articles.value
-  assign feed_blog = section.settings.blog
-  assign max_articles = 12   # ← adjust as needed
--%}
+{%- assign metafield_articles = collection.metafields.custom.articles.value -%}
 
-{%- if featured_articles != blank and featured_articles.size > 0 -%}
+<p style="background: yellow; padding: 15px; margin: 20px 0; font-family: monospace;">
+  <strong>DEBUG OUTPUT:</strong><br><br>
+  Metafield articles count: {{ metafield_articles.size }}<br>
+  Metafield exists: {{ metafield_articles != blank }}
+</p>
 
+{%- if metafield_articles.size > 0 -%}
   <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
-    {%- for article in featured_articles limit: max_articles -%}
+    {%- for article in metafield_articles -%}
       {%- render 'article-card', article: article -%}
     {%- endfor -%}
   </div>
-
-{%- elsif feed_blog != blank and feed_blog.articles.size > 0 -%}
-
-  {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
-
-    <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
-      {%- for article in feed_blog.articles -%}
-        {%- render 'article-card', article: article -%}
-      {%- endfor -%}
-    </div>
-
-    {%- if paginate.pages > 1 -%}
-      <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
-        {%- if paginate.previous -%}
-          <a href="{{ paginate.previous.url }}&tab=articles" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
-        {%- endif -%}
-        {%- for part in paginate.parts -%}
-          {%- if part.is_link -%}
-            <a href="{{ part.url }}&tab=articles" class="pagination__link">{{ part.title }}</a>
-          {%- else -%}
-            <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
-          {%- endif -%}
-        {%- endfor -%}
-        {%- if paginate.next -%}
-          <a href="{{ paginate.next.url }}&tab=articles" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
-        {%- endif -%}
-      </nav>
-    {%- endif -%}
-
-  {%- endpaginate -%}
-
 {%- else -%}
-
-  <p class="collection-empty">No articles found.</p>
-
+  <p style="color: red; padding: 15px;">No articles found in the custom.articles metafield.</p>
 {%- endif -%}
