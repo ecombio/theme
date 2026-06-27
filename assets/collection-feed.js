@@ -36,7 +36,7 @@
     if (push) {
       var url = new URL(window.location.href);
       url.searchParams.set('tab', key);
-      url.hash = ''; // ← strip any anchor hash
+      url.hash = '';
       history.pushState({ tab: key }, '', url.toString());
     }
   }

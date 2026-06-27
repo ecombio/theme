@@ -39,7 +39,6 @@
           .replace(/^-|-$/g, '');
       }
 
-      // Scroll manually and replaceState so the hash never enters the URL
       seeMoreLink.addEventListener('click', (e) => {
         e.preventDefault();
         firstHeading.scrollIntoView({ behavior: 'smooth' });
