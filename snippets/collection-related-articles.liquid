@@ -1,244 +1,95 @@
-{% comment %}
-  Snippet: collection-related-articles.liquid
-  Purpose: Renders a "Related Articles" list for a collection, sourced from
-           the collection metafield: custom.related_articles (Type: List · Blog post).
-  Usage:   {% render 'collection-related-articles' %}
-           Place after the product grid in your collection template or section.
-  Metafield:
-    Namespace + key : custom.related_articles
-    Type            : List — Blog post
-  Notes:
-    - Each item in the list resolves to a full article object, exposing:
-        .title, .url, .image, .excerpt, .author, .published_at, .blog
-    - The section only renders when at least one article is assigned.
-    - Featured image falls back gracefully when no image is set on the article.
-{% endcomment %}
-RELATED
-{%- liquid
-  assign related_articles = collection.metafields.custom.related_articles.value
--%}
+{% assign related_articles = collection.metafields.custom.related_articles.value %}
 
-{%- if related_articles != blank and related_articles.size > 0 -%}
+{% if related_articles != blank and related_articles.size > 0 %}
+  <div class="related-articles-carousel" id="related-articles-carousel">
 
-  <section
-    class="cra-section"
-    aria-labelledby="cra-heading"
-  >
-    <div class="cra-container">
-
-      <h2 class="cra-heading" id="cra-heading">Related Articles</h2>
-
-      <ul class="cra-list" role="list">
-        {%- for article in related_articles -%}
-          <li class="cra-item">
-            <a
-              class="cra-card"
-              href="{{ article.url }}"
-              aria-label="{{ article.title | escape }}"
-            >
-              {%- comment %} ── Featured image ── {% endcomment -%}
-              <div class="cra-card__media">
-                {%- if article.image != blank -%}
-                  <img
-                    class="cra-card__img"
-                    src="{{ article.image | image_url: width: 600 }}"
-                    alt="{{ article.image.alt | default: article.title | escape }}"
-                    width="600"
-                    height="{{ 600 | divided_by: article.image.aspect_ratio | round }}"
-                    loading="lazy"
-                  >
-                {%- else -%}
-                  <div class="cra-card__img-placeholder" aria-hidden="true"></div>
-                {%- endif -%}
-              </div>
-
-              {%- comment %} ── Card body ── {% endcomment -%}
-              <div class="cra-card__body">
-
-                {%- if article.blog.title != blank -%}
-                  <span class="cra-card__eyebrow">{{ article.blog.title | escape }}</span>
-                {%- endif -%}
-
-                <h3 class="cra-card__title">{{ article.title | escape }}</h3>
-
-                {%- if article.excerpt != blank -%}
-                  <p class="cra-card__excerpt">{{ article.excerpt | strip_html | truncate: 120 }}</p>
-                {%- endif -%}
-
-                <div class="cra-card__meta">
-                  {%- if article.author != blank -%}
-                    <span class="cra-card__author">{{ article.author | escape }}</span>
-                  {%- endif -%}
-                  {%- if article.published_at != blank -%}
-                    <time
-                      class="cra-card__date"
-                      datetime="{{ article.published_at | date: '%Y-%m-%d' }}"
-                    >
-                      {{- article.published_at | date: '%b %-d, %Y' -}}
-                    </time>
-                  {%- endif -%}
-                </div>
-
-                <span class="cra-card__cta" aria-hidden="true">Read article →</span>
-
-              </div>
-            </a>
-          </li>
-        {%- endfor -%}
-      </ul>
-
+    <div class="related-articles-header">
+      <h2>Related Articles</h2>
+      <div class="carousel-controls">
+        <button class="carousel-btn carousel-btn--prev" aria-label="Previous article">&#8592;</button>
+        <button class="carousel-btn carousel-btn--next" aria-label="Next article">&#8594;</button>
+      </div>
     </div>
-  </section>
 
-  {%- comment %} ── Scoped styles ── {% endcomment -%}
-  <style>
-    /* ─── Layout ─────────────────────────────────────────────── */
-    .cra-section {
-      padding: 3rem 0;
-    }
+    <div class="carousel-track-wrapper">
+      <ul class="carousel-track" role="list">
+        {% for article in related_articles %}
+          <li class="carousel-slide">
+            {% render 'article-card', article: article %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
 
-    .cra-container {
-      max-width: var(--page-width, 1280px);
-      margin: 0 auto;
-      padding: 0 1.5rem;
-    }
+    <div class="carousel-dots" role="tablist" aria-label="Article slides">
+      {% for article in related_articles %}
+        <button
+          class="carousel-dot {% if forloop.first %}carousel-dot--active{% endif %}"
+          role="tab"
+          aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+          aria-label="Go to slide {{ forloop.index }}"
+        ></button>
+      {% endfor %}
+    </div>
 
-    .cra-heading {
-      font-size: clamp(1.25rem, 2vw, 1.75rem);
-      font-weight: 700;
-      margin: 0 0 1.75rem;
-      letter-spacing: -0.01em;
-    }
+  </div>
 
-    /* ─── Grid ───────────────────────────────────────────────── */
-    .cra-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-      gap: 1.5rem;
-    }
+  <script>
+    (function () {
+      const carousel = document.getElementById('related-articles-carousel');
+      if (!carousel) return;
 
-    /* ─── Card ───────────────────────────────────────────────── */
-    .cra-card {
-      display: flex;
-      flex-direction: column;
-      text-decoration: none;
-      color: inherit;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 8px;
-      overflow: hidden;
-      transition: box-shadow 0.2s ease, transform 0.2s ease;
-    }
+      const track      = carousel.querySelector('.carousel-track');
+      const slides     = carousel.querySelectorAll('.carousel-slide');
+      const dots       = carousel.querySelectorAll('.carousel-dot');
+      const prevBtn    = carousel.querySelector('.carousel-btn--prev');
+      const nextBtn    = carousel.querySelector('.carousel-btn--next');
 
-    .cra-card:hover,
-    .cra-card:focus-visible {
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-      transform: translateY(-2px);
-      outline: 2px solid currentColor;
-      outline-offset: 2px;
-    }
+      let current = 0;
 
-    @media (prefers-reduced-motion: reduce) {
-      .cra-card {
-        transition: none;
+      function getSlidesPerView() {
+        const w = window.innerWidth;
+        if (w <= 768)  return 1;
+        if (w <= 1024) return 2;
+        return 3;
       }
-      .cra-card:hover,
-      .cra-card:focus-visible {
-        transform: none;
+
+      function getMaxIndex() {
+        return Math.max(0, slides.length - getSlidesPerView());
       }
-    }
 
-    /* ─── Media ──────────────────────────────────────────────── */
-    .cra-card__media {
-      aspect-ratio: 16 / 9;
-      overflow: hidden;
-      background: rgba(0, 0, 0, 0.05);
-      flex-shrink: 0;
-    }
-
-    .cra-card__img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.35s ease;
-    }
-
-    .cra-card:hover .cra-card__img {
-      transform: scale(1.04);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .cra-card:hover .cra-card__img {
-        transform: none;
+      function updateButtons() {
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current >= getMaxIndex();
       }
-    }
 
-    .cra-card__img-placeholder {
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.06);
-    }
+      function goTo(index) {
+        const max = getMaxIndex();
+        current = Math.max(0, Math.min(index, max));
 
-    /* ─── Body ───────────────────────────────────────────────── */
-    .cra-card__body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      padding: 1.1rem 1.25rem 1.25rem;
-      flex: 1;
-    }
+        const slideWidth = slides[0].offsetWidth + 20; // 20px = gap
+        track.style.transform = `translateX(-${current * slideWidth}px)`;
 
-    .cra-card__eyebrow {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      opacity: 0.55;
-    }
+        dots.forEach((dot, i) => {
+          const active = i === current;
+          dot.classList.toggle('carousel-dot--active', active);
+          dot.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
 
-    .cra-card__title {
-      font-size: 1rem;
-      font-weight: 700;
-      line-height: 1.35;
-      margin: 0;
-    }
+        updateButtons();
+      }
 
-    .cra-card__excerpt {
-      font-size: 0.875rem;
-      line-height: 1.55;
-      opacity: 0.7;
-      margin: 0.15rem 0 0;
-    }
+      prevBtn.addEventListener('click', () => goTo(current - 1));
+      nextBtn.addEventListener('click', () => goTo(current + 1));
+      dots.forEach((dot, i) => dot.addEventListener('click', () => goTo(i)));
 
-    .cra-card__meta {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-      font-size: 0.75rem;
-      opacity: 0.55;
-      margin-top: auto;
-      padding-top: 0.75rem;
-    }
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => goTo(current), 150);
+      });
 
-    .cra-card__author::after {
-      content: '·';
-      margin-left: 0.6rem;
-    }
-
-    .cra-card__author:last-child::after {
-      content: '';
-    }
-
-    .cra-card__cta {
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      margin-top: 0.5rem;
-    }
-  </style>
-
-{%- endif -%}
+      goTo(0);
+    })();
+  </script>
+{% endif %}
