@@ -3,17 +3,18 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
 
 {% assign articles = collection.metafields.custom.related_post_cards.value %}
+{% assign show_image = show_image | default: true %}
 
 {% if articles != blank %}
   <div class="related-articles-wrapper">
     <h2 class="related-articles__title">Related Articles</h2>
 
-    <div class="related-articles" data-related-articles>
+    <div class="related-articles{% unless show_image %} related-articles--hide-images{% endunless %}" data-related-articles>
       <div class="related-articles__swiper swiper">
         <div class="related-articles__track swiper-wrapper">
           {% for article in articles %}
             <div class="related-articles__slide swiper-slide">
-              {% render 'article-card', article: article %}
+              {% render 'article-card', article: article, show_image: show_image %}
             </div>
           {% endfor %}
         </div>
