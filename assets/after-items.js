@@ -27,7 +27,7 @@
   });
 
   // ── Wire up collection-hero "See more" link to first heading ──
-  const seeMoreLink = document.querySelector('.collection-hero a[href^="#"]');
+  const seeMoreLink = document.querySelector('.collection-hero [data-scroll-target]');
   if (seeMoreLink) {
     const firstHeading = container.querySelector('h2, h3');
     if (firstHeading) {
