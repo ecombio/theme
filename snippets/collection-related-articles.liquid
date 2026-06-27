@@ -1,95 +1,13 @@
-{% assign related_articles = collection.metafields.custom.related_posts.value %}
+{{ 'article-feed.css' | asset_url | stylesheet_tag }}
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
 
-{% if related_articles != blank and related_articles.size > 0 %}
-  <div class="related-articles-carousel" id="related-articles-carousel">
 
-    <div class="related-articles-header">
-      <h2>Related Articles</h2>
-      <div class="carousel-controls">
-        <button class="carousel-btn carousel-btn--prev" aria-label="Previous article">&#8592;</button>
-        <button class="carousel-btn carousel-btn--next" aria-label="Next article">&#8594;</button>
-      </div>
-    </div>
+{% assign articles = collection.metafields.custom.related_post_cards.value %}
 
-    <div class="carousel-track-wrapper">
-      <ul class="carousel-track" role="list">
-        {% for article in related_articles %}
-          <li class="carousel-slide">
-            {% render 'article-card', article: article %}
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <div class="carousel-dots" role="tablist" aria-label="Article slides">
-      {% for article in related_articles %}
-        <button
-          class="carousel-dot {% if forloop.first %}carousel-dot--active{% endif %}"
-          role="tab"
-          aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-          aria-label="Go to slide {{ forloop.index }}"
-        ></button>
-      {% endfor %}
-    </div>
-
+{% if articles != blank %}
+  <div class="article-feed">
+    {% for article in articles %}
+      {% render 'article-card', article: article %}
+    {% endfor %}
   </div>
-
-  <script>
-    (function () {
-      const carousel = document.getElementById('related-articles-carousel');
-      if (!carousel) return;
-
-      const track      = carousel.querySelector('.carousel-track');
-      const slides     = carousel.querySelectorAll('.carousel-slide');
-      const dots       = carousel.querySelectorAll('.carousel-dot');
-      const prevBtn    = carousel.querySelector('.carousel-btn--prev');
-      const nextBtn    = carousel.querySelector('.carousel-btn--next');
-
-      let current = 0;
-
-      function getSlidesPerView() {
-        const w = window.innerWidth;
-        if (w <= 768)  return 1;
-        if (w <= 1024) return 2;
-        return 3;
-      }
-
-      function getMaxIndex() {
-        return Math.max(0, slides.length - getSlidesPerView());
-      }
-
-      function updateButtons() {
-        prevBtn.disabled = current === 0;
-        nextBtn.disabled = current >= getMaxIndex();
-      }
-
-      function goTo(index) {
-        const max = getMaxIndex();
-        current = Math.max(0, Math.min(index, max));
-
-        const slideWidth = slides[0].offsetWidth + 20; // 20px = gap
-        track.style.transform = `translateX(-${current * slideWidth}px)`;
-
-        dots.forEach((dot, i) => {
-          const active = i === current;
-          dot.classList.toggle('carousel-dot--active', active);
-          dot.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-
-        updateButtons();
-      }
-
-      prevBtn.addEventListener('click', () => goTo(current - 1));
-      nextBtn.addEventListener('click', () => goTo(current + 1));
-      dots.forEach((dot, i) => dot.addEventListener('click', () => goTo(i)));
-
-      let resizeTimer;
-      window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => goTo(current), 150);
-      });
-
-      goTo(0);
-    })();
-  </script>
 {% endif %}
