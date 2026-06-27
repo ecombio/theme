@@ -35,18 +35,20 @@
   </div>
 </section>
 
-  {%- render 'after-items' -%}
-  {%- render 'related-articles', show_image: section.settings.show_article_images -%}
+{%- render 'after-items' -%}
+{%- render 'related-articles', show_image: section.settings.show_article_images -%}
+
+{%- if section.settings.show_related_products -%}
   {%- render 'related-products',
     collection:     collection,
-    heading:        'You May Also Like',
-    limit:          12,
-    cards_desk:     4,
+    heading:        section.settings.related_products_heading,
+    limit:          section.settings.related_products_limit,
+    cards_desk:     section.settings.related_products_columns,
     cards_mob:      2,
     show_arrows:    true,
-    arrow_position: 'bottom'
+    arrow_position: section.settings.related_products_arrow_position
   -%}
-
+{%- endif -%}
 
 {%- comment -%} Shared backdrop for filter drawer + sort sheet {%- endcomment -%}
 <div class="collection-mobile-backdrop" aria-hidden="true"></div>
@@ -151,6 +153,53 @@
       "id": "show_article_images",
       "label": "Show images on related articles",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Related Products"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_related_products",
+      "label": "Show related products carousel",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "related_products_heading",
+      "label": "Heading",
+      "default": "You May Also Like"
+    },
+    {
+      "type": "range",
+      "id": "related_products_limit",
+      "label": "Max products to show",
+      "min": 4,
+      "max": 24,
+      "step": 2,
+      "default": 12
+    },
+    {
+      "type": "select",
+      "id": "related_products_columns",
+      "label": "Cards per row (desktop)",
+      "default": "4",
+      "options": [
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" },
+        { "value": "5", "label": "5" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "related_products_arrow_position",
+      "label": "Arrow position",
+      "default": "bottom",
+      "options": [
+        { "value": "bottom", "label": "Below carousel" },
+        { "value": "side",   "label": "Either side" }
+      ]
     }
   ],
   "blocks": [
