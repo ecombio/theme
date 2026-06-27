@@ -1,9 +1,4 @@
 {{ 'collection.css' | asset_url | stylesheet_tag }}
-{{ 'product-card.css' | asset_url | stylesheet_tag }}
-{{ 'article-card.css' | asset_url | stylesheet_tag }}
-{{ 'sub-collections.css' | asset_url | stylesheet_tag }}
-{{ 'promo-banner.css' | asset_url | stylesheet_tag }}
-{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign active_tab = request.query_parameters['tab'] | default: 'products'
@@ -15,323 +10,28 @@
 <section class="collection-section">
   <div class="collection-page" data-collection-page data-active-tab="{{ active_tab }}">
 
-    {%- comment -%} Toolbar: filter toggle + tab switcher {%- endcomment -%}
-    <div class="collection-toolbar">
+    {%- render 'collection-toolbar' -%}
 
-      {%- if section.settings.show_filters -%}
-        <button
-          class="collection-toolbar__filter-toggle"
-          aria-expanded="true"
-          aria-controls="collection-filter"
-          data-filter-toggle
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Filters
-        </button>
-      {%- endif -%}
+    <div class="collection-body">
 
-      <div class="tab-switcher" role="tablist">
-        <button
-          class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
-          role="tab"
-          aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
-          aria-controls="panel-products"
-          id="tab-products"
-          data-tab="products"
-          tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
-        >{{ section.settings.tab_products_label | default: 'Products' }}</button>
-        <button
-          class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
-          role="tab"
-          aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
-          aria-controls="panel-articles"
-          id="tab-articles"
-          data-tab="articles"
-          tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
-        >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
+      {%- render 'collection-filter' -%}
+
+      <div class="collection-body__feed">
+        {%- render 'collection-feed', active_tab: active_tab -%}
       </div>
 
-    </div>
-
-    {%- comment -%} Fixed mobile bottom bar — Filter + Sort {%- endcomment -%}
-    {%- if section.settings.show_filters or section.settings.show_sort -%}
-      <div class="collection-mobile-bar">
-        {%- if section.settings.show_filters -%}
-          <button
-            class="collection-mobile-bar__btn"
-            aria-expanded="false"
-            aria-controls="collection-filter"
-            data-filter-toggle
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            Filters
-          </button>
-        {%- endif -%}
-        {%- if section.settings.show_sort -%}
-          <button
-            class="collection-mobile-bar__btn"
-            data-mobile-sort-toggle
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Sort
-          </button>
-        {%- endif -%}
-      </div>
-    {%- endif -%}
-    <div
-      id="panel-products"
-      role="tabpanel"
-      aria-labelledby="tab-products"
-      data-panel="products"
-      {% if active_tab != 'products' %}hidden{% endif %}
-    >
-      {%- render 'product-feed' -%}
-    </div>
-
-    {%- comment -%} ARTICLES PANEL {%- endcomment -%}
-    <div
-      id="panel-articles"
-      role="tabpanel"
-      aria-labelledby="tab-articles"
-      data-panel="articles"
-      {% if active_tab != 'articles' %}hidden{% endif %}
-    >
-      {%- render 'article-feed' -%}
     </div>
 
   </div>
 </section>
 
-<script>
-  (function () {
-    var page = document.querySelector('[data-collection-page]');
-    if (!page) return;
+{%- comment -%} Shared backdrop for filter drawer + sort sheet {%- endcomment -%}
+<div class="collection-mobile-backdrop" aria-hidden="true"></div>
 
-    var tabs   = page.querySelectorAll('[data-tab]');
-    var panels = page.querySelectorAll('[data-panel]');
-
-    function activateTab(key, push) {
-      tabs.forEach(function (t) {
-        var on = t.dataset.tab === key;
-        t.classList.toggle('tab-switcher__tab--active', on);
-        t.setAttribute('aria-selected', on ? 'true' : 'false');
-        t.setAttribute('tabindex', on ? '0' : '-1');
-      });
-      panels.forEach(function (p) {
-        p.dataset.panel === key ? p.removeAttribute('hidden') : p.setAttribute('hidden', '');
-      });
-      page.dataset.activeTab = key;
-      if (push) {
-        var url = new URL(window.location.href);
-        url.searchParams.set('tab', key);
-        history.pushState({ tab: key }, '', url.toString());
-      }
-    }
-
-    tabs.forEach(function (tab, i) {
-      tab.addEventListener('click', function () {
-        if (tab.dataset.tab !== page.dataset.activeTab) activateTab(tab.dataset.tab, true);
-      });
-      tab.addEventListener('keydown', function (e) {
-        var next;
-        if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
-        if (e.key === 'ArrowLeft')  next = tabs[i - 1] || tabs[tabs.length - 1];
-        if (next) { next.focus(); next.click(); }
-      });
-    });
-
-    /* ---------- Shared backdrop ---------- */
-    var backdrop = document.createElement('div');
-    backdrop.className = 'collection-mobile-backdrop';
-    document.body.appendChild(backdrop);
-
-    function openBackdrop(onClose) {
-      backdrop.classList.add('is-visible');
-      backdrop._onClose = onClose;
-    }
-
-    function closeBackdrop() {
-      backdrop.classList.remove('is-visible');
-      if (typeof backdrop._onClose === 'function') backdrop._onClose();
-      backdrop._onClose = null;
-    }
-
-    backdrop.addEventListener('click', closeBackdrop);
-
-    /* ---------- Filter drawer ---------- */
-    var filterToggles = page.querySelectorAll('[data-filter-toggle]');
-    var filterPanel   = document.getElementById('collection-filter');
-    var productFeed   = page.querySelector('.product-feed');
-
-    if (filterPanel && !filterPanel.querySelector('.collection-filter__close')) {
-      var closeBar = document.createElement('div');
-      closeBar.className = 'collection-filter__close';
-      closeBar.innerHTML = '<span class="collection-filter__close-label">Filters</span>'
-        + '<button class="collection-filter__close-btn" aria-label="Close filters">&times;</button>';
-      filterPanel.insertBefore(closeBar, filterPanel.firstChild);
-      closeBar.querySelector('.collection-filter__close-btn').addEventListener('click', closeFilter);
-    }
-
-    function openFilter() {
-      filterPanel.removeAttribute('hidden');
-      requestAnimationFrame(function () {
-        filterPanel.classList.add('is-open');
-      });
-      filterToggles.forEach(function (t) { t.setAttribute('aria-expanded', 'true'); });
-      document.body.style.overflow = 'hidden';
-      openBackdrop(closeFilter);
-    }
-
-    function closeFilter() {
-      filterPanel.classList.remove('is-open');
-      filterToggles.forEach(function (t) { t.setAttribute('aria-expanded', 'false'); });
-      document.body.style.overflow = '';
-      filterPanel.addEventListener('transitionend', function handler() {
-        if (!filterPanel.classList.contains('is-open')) filterPanel.setAttribute('hidden', '');
-        filterPanel.removeEventListener('transitionend', handler);
-      });
-      if (backdrop._onClose === closeFilter) closeBackdrop();
-    }
-
-    filterToggles.forEach(function (toggle) {
-      toggle.addEventListener('click', function () {
-        if (window.innerWidth <= 768) {
-          filterPanel.classList.contains('is-open') ? closeFilter() : openFilter();
-        } else {
-          var isOpen = toggle.getAttribute('aria-expanded') === 'true';
-          toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-          filterPanel.hidden = isOpen;
-          if (productFeed) productFeed.classList.toggle('product-feed--filters-hidden', isOpen);
-        }
-      });
-    });
-
-    /* ---------- Sort ---------- */
-    var sortSelect = page.querySelector('[data-sort]');
-    if (sortSelect) {
-      sortSelect.addEventListener('change', function () {
-        var url = new URL(window.location.href);
-        url.searchParams.set('sort_by', sortSelect.value);
-        window.location.href = url.toString();
-      });
-    }
-
-    /* ---------- Filter form ---------- */
-    var filterForm = document.getElementById('FilterForm');
-    if (filterForm) {
-      filterForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var url = new URL(window.location.href);
-        url.search = '';
-        new FormData(filterForm).forEach(function (val, key) { url.searchParams.append(key, val); });
-        url.searchParams.set('tab', page.dataset.activeTab);
-        window.location.href = url.toString();
-      });
-    }
-
-    /* ---------- Popstate ---------- */
-    window.addEventListener('popstate', function (e) {
-      var key = (e.state && e.state.tab)
-        ? e.state.tab
-        : new URL(window.location.href).searchParams.get('tab') || 'products';
-      activateTab(key, false);
-    });
-
-    /* ---------- Mobile sort sheet ---------- */
-    var mobileSortBtn = page.querySelector('[data-mobile-sort-toggle]');
-    if (mobileSortBtn) {
-      var sortSheet = null;
-
-      function buildSortSheet() {
-        var sheet = document.createElement('div');
-        sheet.id = 'mobile-sort-sheet';
-        sheet.className = 'mobile-sort-sheet';
-        sheet.setAttribute('role', 'dialog');
-        sheet.setAttribute('aria-label', 'Sort options');
-
-        var inner = '<div class="mobile-sort-sheet__inner">';
-        inner += '<div class="mobile-sort-sheet__handle"></div>';
-        inner += '<p class="mobile-sort-sheet__heading">Sort by</p>';
-        inner += '<ul class="mobile-sort-sheet__list">';
-
-        var desktopSort = document.getElementById('SortBy');
-        if (desktopSort) {
-          Array.from(desktopSort.options).forEach(function (opt) {
-            var active = opt.selected ? ' mobile-sort-sheet__option--active' : '';
-            inner += '<li><button class="mobile-sort-sheet__option' + active + '" data-sort-value="' + opt.value + '">' + opt.text + '</button></li>';
-          });
-        }
-
-        inner += '</ul></div>';
-        sheet.innerHTML = inner;
-
-        sheet.querySelectorAll('[data-sort-value]').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var url = new URL(window.location.href);
-            url.searchParams.set('sort_by', btn.dataset.sortValue);
-            window.location.href = url.toString();
-          });
-        });
-
-        document.body.appendChild(sheet);
-        return sheet;
-      }
-
-      function openSortSheet() {
-        if (!sortSheet) sortSheet = buildSortSheet();
-        sortSheet.getBoundingClientRect(); // force reflow
-        sortSheet.classList.add('is-open');
-        mobileSortBtn.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-        openBackdrop(closeSortSheet);
-      }
-
-      function closeSortSheet() {
-        if (!sortSheet) return;
-        sortSheet.classList.remove('is-open');
-        mobileSortBtn.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-        if (backdrop._onClose === closeSortSheet) closeBackdrop();
-      }
-
-      mobileSortBtn.addEventListener('click', function () {
-        sortSheet && sortSheet.classList.contains('is-open') ? closeSortSheet() : openSortSheet();
-      });
-    }
-
-    /* ---------- Sub-collections carousel ---------- */
-    document.querySelectorAll('[data-sub-collections]').forEach(function (carousel) {
-      var track = carousel.querySelector('[data-sub-collections-track]');
-      var prev  = carousel.querySelector('[data-sub-collections-prev]');
-      var next  = carousel.querySelector('[data-sub-collections-next]');
-      if (!track) return;
-
-      function updateNavState() {
-        if (prev) prev.disabled = track.scrollLeft <= 4;
-        if (next) next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
-      }
-
-      function scrollByAmount(dir) {
-        var cardWidth = track.firstElementChild ? track.firstElementChild.getBoundingClientRect().width : 120;
-        track.scrollBy({ left: dir * (cardWidth * 3 + 32), behavior: 'smooth' });
-      }
-
-      if (prev) prev.addEventListener('click', function () { scrollByAmount(-1); });
-      if (next) next.addEventListener('click', function () { scrollByAmount(1); });
-      track.addEventListener('scroll', updateNavState);
-      updateNavState();
-    });
-  })();
-</script>
-
-<script src="{{ 'promo-carousel.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'collection-filter.js' | asset_url }}" defer></script>
+<script src="{{ 'collection-feed.js' | asset_url }}" defer></script>
+<script src="{{ 'collection.js' | asset_url }}" defer></script>
+<script src="{{ 'promo-carousel.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -413,7 +113,7 @@
     },
     {
       "type": "paragraph",
-      "content": "Add a 'Promo carousel' block to insert a tabbed product carousel into the grid, then add one or more 'Carousel tab' blocks set to the same position number to populate it."
+      "content": "Add a 'Promo carousel' block to insert a tabbed product carousel into the grid. Add up to 5 collections directly on the block — tabs appear automatically when more than one collection is set."
     },
     {
       "type": "header",
@@ -549,7 +249,7 @@
           "type": "number",
           "id": "position",
           "label": "Position in product grid",
-          "info": "Carousel appears before the Nth product on this page. A number larger than the total product count places it at the end. Leave blank or 0 to hide. Add 'Carousel tab' blocks below with the same position number to populate it."
+          "info": "Carousel appears before the Nth product on this page. A number larger than the total product count places it at the end. Leave blank or 0 to hide."
         },
         {
           "type": "text",
@@ -560,6 +260,98 @@
           "type": "text",
           "id": "subheading",
           "label": "Subheading"
+        },
+        {
+          "type": "header",
+          "content": "Collections"
+        },
+        {
+          "type": "paragraph",
+          "content": "Add up to 5 collections. Tabs appear automatically when more than one collection is set."
+        },
+        {
+          "type": "collection",
+          "id": "collection_1",
+          "label": "Collection 1"
+        },
+        {
+          "type": "text",
+          "id": "tab_label_1",
+          "label": "Tab label 1",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon_1",
+          "label": "Tab icon 1 (emoji or short text)"
+        },
+        {
+          "type": "collection",
+          "id": "collection_2",
+          "label": "Collection 2"
+        },
+        {
+          "type": "text",
+          "id": "tab_label_2",
+          "label": "Tab label 2",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon_2",
+          "label": "Tab icon 2 (emoji or short text)"
+        },
+        {
+          "type": "collection",
+          "id": "collection_3",
+          "label": "Collection 3"
+        },
+        {
+          "type": "text",
+          "id": "tab_label_3",
+          "label": "Tab label 3",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon_3",
+          "label": "Tab icon 3 (emoji or short text)"
+        },
+        {
+          "type": "collection",
+          "id": "collection_4",
+          "label": "Collection 4"
+        },
+        {
+          "type": "text",
+          "id": "tab_label_4",
+          "label": "Tab label 4",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon_4",
+          "label": "Tab icon 4 (emoji or short text)"
+        },
+        {
+          "type": "collection",
+          "id": "collection_5",
+          "label": "Collection 5"
+        },
+        {
+          "type": "text",
+          "id": "tab_label_5",
+          "label": "Tab label 5",
+          "info": "Leave blank to use the collection's title"
+        },
+        {
+          "type": "text",
+          "id": "tab_icon_5",
+          "label": "Tab icon 5 (emoji or short text)"
+        },
+        {
+          "type": "header",
+          "content": "Display"
         },
         {
           "type": "range",
@@ -639,34 +431,6 @@
           "type": "url",
           "id": "banner_link",
           "label": "Banner link"
-        }
-      ]
-    },
-    {
-      "type": "carousel_tab",
-      "name": "Carousel tab",
-      "settings": [
-        {
-          "type": "number",
-          "id": "parent_position",
-          "label": "Parent carousel position",
-          "info": "Must match the position number set on the 'Promo carousel' block this tab belongs to."
-        },
-        {
-          "type": "collection",
-          "id": "collection",
-          "label": "Collection"
-        },
-        {
-          "type": "text",
-          "id": "tab_label",
-          "label": "Tab label",
-          "info": "Leave blank to use the collection's title"
-        },
-        {
-          "type": "text",
-          "id": "tab_icon",
-          "label": "Tab icon (emoji or short text)"
         }
       ]
     }
