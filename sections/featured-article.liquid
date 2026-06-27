@@ -1,50 +1,72 @@
 {{- 'article-card.css' | asset_url | stylesheet_tag -}}
+{{- 'featured-article.css' | asset_url | stylesheet_tag -}}
 
 {%- comment -%}
   sections/featured-article.liquid
   ─────────────────────────────────
-  Displays the latest articles from a merchant-selected blog.
-  Uses the reusable `article-card` snippet for each article.
+  Displays the latest articles from a merchant-selected blog as a carousel.
+  Uses the reusable `article-card` snippet for each slide.
   No metafields or custom data — all configuration via the schema below.
 {%- endcomment -%}
 
 {%- liquid
-  assign blog_source  = section.settings.blog
+  assign blog_source   = section.settings.blog
   assign article_limit = section.settings.article_count
+  assign section_id    = section.id
 -%}
 
 {%- if blog_source != blank and blog_source.articles_count > 0 -%}
 
-  <section class="featured-article" id="featured-article-{{ section.id }}">
+  <section class="featured-article" id="featured-article-{{ section_id }}">
     <div class="featured-article__inner">
 
-      {%- comment -%} ── Section header ── {%- endcomment -%}
+      {%- comment -%} ── Section header: heading + prev/next controls + view all ── {%- endcomment -%}
       <div class="featured-article__header">
-        {%- if section.settings.heading != blank -%}
-          <h2 class="featured-article__heading">{{ section.settings.heading }}</h2>
-        {%- endif -%}
-
-        {%- comment -%} "View all" links to the blog index {%- endcomment -%}
-        {%- if section.settings.show_view_all -%}
-          <a href="{{ blog_source.url }}" class="featured-article__view-all">
-            View all &rarr;
-          </a>
-        {%- endif -%}
+        <div class="featured-article__header-left">
+          {%- if section.settings.heading != blank -%}
+            <h2 class="featured-article__heading">{{ section.settings.heading }}</h2>
+          {%- endif -%}
+        </div>
+        <div class="featured-article__header-right">
+          {%- if section.settings.show_view_all -%}
+            <a href="{{ blog_source.url }}" class="featured-article__view-all">
+              View all &rarr;
+            </a>
+          {%- endif -%}
+          <div class="featured-article__controls">
+            <button class="featured-article__btn featured-article__btn--prev" aria-label="Previous article">&#8592;</button>
+            <button class="featured-article__btn featured-article__btn--next" aria-label="Next article">&#8594;</button>
+          </div>
+        </div>
       </div>
 
-      {%- comment -%} ── Article grid ── {%- endcomment -%}
-      <ul class="featured-article__grid" role="list">
+      {%- comment -%} ── Carousel track ── {%- endcomment -%}
+      <div class="featured-article__track-wrapper">
+        <ul class="featured-article__track" role="list">
+          {%- for article in blog_source.articles limit: article_limit -%}
+            <li class="featured-article__slide">
+              {%- render 'article-card',
+                article: article,
+                show_excerpt: section.settings.show_excerpt,
+                show_author: section.settings.show_author,
+                show_date: section.settings.show_date
+              -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+
+      {%- comment -%} ── Dot indicators ── {%- endcomment -%}
+      <div class="featured-article__dots" role="tablist" aria-label="Article slides">
         {%- for article in blog_source.articles limit: article_limit -%}
-          <li class="featured-article__item">
-            {%- render 'article-card',
-              article: article,
-              show_excerpt: section.settings.show_excerpt,
-              show_author: section.settings.show_author,
-              show_date: section.settings.show_date
-            -%}
-          </li>
+          <button
+            class="featured-article__dot{% if forloop.first %} featured-article__dot--active{% endif %}"
+            role="tab"
+            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+            aria-label="Go to slide {{ forloop.index }}"
+          ></button>
         {%- endfor -%}
-      </ul>
+      </div>
 
     </div>
   </section>
@@ -52,7 +74,7 @@
 {%- elsif request.design_mode -%}
 
   {%- comment -%} ── Editor-only empty state ── {%- endcomment -%}
-  <section class="featured-article">
+  <section class="featured-article" id="featured-article-{{ section_id }}">
     <div class="featured-article__inner">
       <p class="featured-article__empty">
         Select a blog in the section settings to display articles here.
@@ -63,11 +85,72 @@
 {%- endif -%}
 
 <style>
-  #featured-article-{{ section.id }} {
+  #featured-article-{{ section_id }} {
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
   }
 </style>
+
+<script>
+  (function () {
+    const section = document.getElementById('featured-article-{{ section_id }}');
+    if (!section) return;
+
+    const track   = section.querySelector('.featured-article__track');
+    const slides  = section.querySelectorAll('.featured-article__slide');
+    const dots    = section.querySelectorAll('.featured-article__dot');
+    const prevBtn = section.querySelector('.featured-article__btn--prev');
+    const nextBtn = section.querySelector('.featured-article__btn--next');
+
+    if (!track || slides.length < 2) return;
+
+    let current = 0;
+
+    function getSlidesPerView() {
+      const w = window.innerWidth;
+      if (w <= 768)  return 1;
+      if (w <= 1024) return 2;
+      return 3;
+    }
+
+    function getMaxIndex() {
+      return Math.max(0, slides.length - getSlidesPerView());
+    }
+
+    function updateButtons() {
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current >= getMaxIndex();
+    }
+
+    function goTo(index) {
+      const max = getMaxIndex();
+      current = Math.max(0, Math.min(index, max));
+
+      const slideWidth = slides[0].offsetWidth + 20; // 20px = gap
+      track.style.transform = `translateX(-${current * slideWidth}px)`;
+
+      dots.forEach((dot, i) => {
+        const active = i === current;
+        dot.classList.toggle('featured-article__dot--active', active);
+        dot.setAttribute('aria-selected', String(active));
+      });
+
+      updateButtons();
+    }
+
+    prevBtn.addEventListener('click', () => goTo(current - 1));
+    nextBtn.addEventListener('click', () => goTo(current + 1));
+    dots.forEach((dot, i) => dot.addEventListener('click', () => goTo(i)));
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => goTo(current), 150);
+    });
+
+    goTo(0);
+  })();
+</script>
 
 {% schema %}
 {
@@ -97,7 +180,7 @@
       "min": 1,
       "max": 12,
       "step": 1,
-      "default": 3
+      "default": 6
     },
     {
       "type": "header",
