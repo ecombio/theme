@@ -1,72 +1,106 @@
-{% comment %}
-  Snippet: collection-toolbar
-  Called by: sections/main-collection.liquid, sections/main-search.liquid
-  Calls:     snippets/collection-tabs.liquid
-             snippets/collection-sort.liquid
+{%- comment -%}
+  snippets/collection-toolbar.liquid
+  Renders the sticky toolbar (filter toggle + tab switcher) and the
+  fixed mobile bottom bar (filter + sort).
 
-  Parameters:
-    - show_filters  {Boolean}
-    - active_tab    {String}  — 'products' | 'articles' | 'pages'
-    - article_count {Number}
-    - page_count    {Number}
-    - product_count {Number}  — search context only
-    - per_page      {Number}
-    - show_banners  {Boolean}
-    - context       {String}  — 'collection' | 'search'
-    - section       {Object}
-{% endcomment %}
+  Expects section.settings:
+    show_filters         {Boolean}
+    show_sort            {Boolean}
+    tab_products_label   {String}
+    tab_articles_label   {String}
 
-<div class="collection-toolbar">
+  Communicates outward via data attributes only:
+    [data-filter-toggle]      → collection-filter.js opens/closes drawer
+    [data-tab]                → collection-feed.js switches panels
+    [data-mobile-sort-toggle] → collection.js opens sort sheet
+{%- endcomment -%}
 
-  {%- comment -%} ── Filter button — products tab only ── {%- endcomment -%}
-  {%- if show_filters and active_tab != 'articles' and active_tab != 'pages' -%}
+{{ 'collection-toolbar.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign active_tab = active_tab | default: 'products'
+-%}
+
+{%- comment -%} ── Sticky desktop toolbar ── {%- endcomment -%}
+<div class="collection-toolbar" role="navigation" aria-label="Collection navigation">
+
+  {%- if section.settings.show_filters -%}
     <button
-      class="collection-toolbar__filter-btn"
+      class="collection-toolbar__filter-toggle"
       type="button"
-      id="filters-open-btn"
-      aria-expanded="false"
-      aria-controls="collection-filters"
+      aria-expanded="true"
+      aria-controls="collection-filter"
+      aria-label="Toggle filters"
+      data-filter-toggle
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       Filters
-      <span class="collection-toolbar__active-count" id="active-filter-count" aria-live="polite"></span>
     </button>
   {%- endif -%}
 
-  {%- comment -%} ── Count ── {%- endcomment -%}
-  <span class="collection-toolbar__count">
-    {%- if context == 'search' -%}
-      {%- if active_tab == 'articles' -%}
-        {{ article_count }} {{ article_count | pluralize: 'article', 'articles' }}
-      {%- elsif active_tab == 'pages' -%}
-        {{ page_count }} {{ page_count | pluralize: 'page', 'pages' }}
-      {%- else -%}
-        {{ product_count }} {{ product_count | pluralize: 'product', 'products' }}
-      {%- endif -%}
-    {%- else -%}
-      {%- if collection.products_count == collection.all_products_count -%}
-        {{ collection.all_products_count }} {{ collection.all_products_count | pluralize: 'product', 'products' }}
-      {%- else -%}
-        {{ collection.products_count }} of {{ collection.all_products_count }} products
-      {%- endif -%}
+  <div class="tab-switcher" role="tablist" aria-label="Collection view">
+    <button
+      class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
+      role="tab"
+      type="button"
+      aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+      aria-controls="panel-products"
+      id="tab-products"
+      data-tab="products"
+      tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
+    >{{ section.settings.tab_products_label | default: 'Products' }}</button>
+
+    <button
+      class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
+      role="tab"
+      type="button"
+      aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+      aria-controls="panel-articles"
+      id="tab-articles"
+      data-tab="articles"
+      tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
+    >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
+  </div>
+
+</div>
+
+{%- comment -%} ── Fixed mobile bottom bar ── {%- endcomment -%}
+{%- if section.settings.show_filters or section.settings.show_sort -%}
+  <div class="collection-mobile-bar" aria-label="Collection controls" role="toolbar">
+
+    {%- if section.settings.show_filters -%}
+      <button
+        class="collection-mobile-bar__btn"
+        type="button"
+        aria-expanded="false"
+        aria-controls="collection-filter"
+        aria-label="Toggle filters"
+        data-filter-toggle
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Filters
+      </button>
     {%- endif -%}
-  </span>
 
-  {%- comment -%} ── Tabs + panels ── {%- endcomment -%}
-  {% render 'collection-tabs',
-    active_tab:    active_tab,
-    article_count: article_count,
-    page_count:    page_count,
-    product_count: product_count,
-    per_page:      per_page,
-    show_banners:  show_banners,
-    context:       context,
-    section:       section
-  %}
+    {%- if section.settings.show_sort -%}
+      <button
+        class="collection-mobile-bar__btn"
+        type="button"
+        aria-expanded="false"
+        aria-label="Sort products"
+        data-mobile-sort-toggle
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Sort
+      </button>
+    {%- endif -%}
 
-  {%- comment -%} ── Sort — hidden on pages tab ── {%- endcomment -%}
-  {%- unless active_tab == 'pages' -%}
-    {% render 'collection-sort', context: context %}
-  {%- endunless -%}
+  </div>
+{%- endif -%}

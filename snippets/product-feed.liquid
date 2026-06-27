@@ -1,8 +1,30 @@
+{%- comment -%}
+  snippets/product-feed.liquid
+  Renders the product grid with in-feed blocks (sub-collections,
+  promo banners, promo carousels) and pagination.
+
+  Filter sidebar has been extracted to snippets/collection-filter.liquid
+  and is rendered by collection.liquid in the left column.
+
+  Expects section.settings:
+    products_per_page  {Number}
+    columns            {Number}
+
+  In-feed block types (from section.blocks):
+    promo_banner
+    promo_carousel  + carousel_tab (children matched by position)
+    sub_collection
+{%- endcomment -%}
+
 {{ 'product-feed.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
+{{ 'sub-collections.css' | asset_url | stylesheet_tag }}
+{{ 'promo-banner.css' | asset_url | stylesheet_tag }}
+{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign banner_blocks   = section.blocks | where: 'type', 'feed_banner'
-  assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
+  assign banner_blocks       = section.blocks | where: 'type', 'promo_banner'
+  assign carousel_blocks     = section.blocks | where: 'type', 'promo_carousel'
   assign carousel_tab_blocks = section.blocks | where: 'type', 'carousel_tab'
 -%}
 
@@ -10,123 +32,54 @@
 
   <div class="product-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
 
-    {%- if section.settings.show_filters -%}
-      <aside class="product-feed__filter" id="collection-filter">
+    {%- render 'sub-collection' -%}
 
-        {%- if section.settings.show_sort -%}
-          <div class="collection-filter__sort">
-            <label for="SortBy">Sort</label>
-            <select id="SortBy" data-sort>
-              {%- for option in collection.sort_options -%}
-                <option value="{{ option.value }}"{% if option.value == collection.sort_by %} selected{% endif %}>{{ option.name }}</option>
-              {%- endfor -%}
-            </select>
-          </div>
-        {%- endif -%}
+    <div class="product-feed__grid">
 
-        <form method="get" action="{{ collection.url }}" id="FilterForm">
-          {%- for filter in collection.filters -%}
-            <details class="collection-filter__group"{% if filter.active_values.size > 0 %} open{% endif %}>
-              <summary class="collection-filter__group-label">
-                {{ filter.label }}
-                {%- if filter.active_values.size > 0 -%}
-                  <span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>
-                {%- endif -%}
-              </summary>
-              <div class="collection-filter__group-body">
-                {%- case filter.type -%}
-                  {%- when 'list' -%}
-                    {%- for value in filter.values -%}
-                      <label class="collection-filter__option{% if value.active %} collection-filter__option--active{% endif %}{% if value.count == 0 and value.active == false %} collection-filter__option--disabled{% endif %}">
-                        <input
-                          type="checkbox"
-                          name="{{ value.param_name }}"
-                          value="{{ value.value }}"
-                          {% if value.active %}checked{% endif %}
-                          {% if value.count == 0 and value.active == false %}disabled{% endif %}
-                        >
-                        {{ value.label }} <span>({{ value.count }})</span>
-                      </label>
-                    {%- endfor -%}
-                  {%- when 'price_range' -%}
-                    <div class="collection-filter__price">
-                      <input type="number" name="{{ filter.min_value.param_name }}" value="{{ filter.min_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="0">
-                      <span>–</span>
-                      <input type="number" name="{{ filter.max_value.param_name }}" value="{{ filter.max_value.value | divided_by: 100.0 }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" placeholder="{{ filter.range_max | divided_by: 100.0 }}">
-                    </div>
-                {%- endcase -%}
-              </div>
-            </details>
-          {%- endfor -%}
+      {%- for product in collection.products -%}
 
-          {%- assign active_count = 0 -%}
-          {%- for filter in collection.filters -%}
-            {%- assign active_count = active_count | plus: filter.active_values.size -%}
-          {%- endfor -%}
-          {%- if active_count > 0 -%}
-            <div class="collection-filter__active">
-              {%- for filter in collection.filters -%}
-                {%- for value in filter.active_values -%}
-                  <a href="{{ value.url_to_remove }}" class="collection-filter__pill">{{ value.label }} &times;</a>
-                {%- endfor -%}
-              {%- endfor -%}
-              <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
-            </div>
-          {%- endif -%}
-
-          <button type="submit" class="collection-filter__submit">Apply</button>
-        </form>
-
-      </aside>
-    {%- endif -%}
-
-    <div class="product-feed__main">
-
-      {%- render 'sub-collection' -%}
-
-      <div class="product-feed__grid">
-        {%- for product in collection.products -%}
-
-          {%- for banner in banner_blocks -%}
-            {%- assign banner_position = banner.settings.position | default: 0 -%}
-            {%- if banner_position > 0 and banner_position == forloop.parentloop.index -%}
-              {%- render 'feed-banner', block: banner -%}
-            {%- endif -%}
-          {%- endfor -%}
-
-          {%- for carousel in carousel_blocks -%}
-            {%- assign carousel_position = carousel.settings.position | default: 0 -%}
-            {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
-              {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
-              {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
-            {%- endif -%}
-          {%- endfor -%}
-
-          {%- render 'product-card', product: product -%}
-
-        {%- else -%}
-          <p class="collection-empty">No products found.</p>
-        {%- endfor -%}
-
-        {%- comment -%} Blocks positioned beyond the product count render after the last card {%- endcomment -%}
-        {%- assign product_count = collection.products.size -%}
+        {%- comment -%} In-feed banners at this position {%- endcomment -%}
         {%- for banner in banner_blocks -%}
           {%- assign banner_position = banner.settings.position | default: 0 -%}
-          {%- if banner_position > product_count and banner_position > 0 -%}
-            {%- render 'feed-banner', block: banner -%}
+          {%- if banner_position > 0 and banner_position == forloop.parentloop.index -%}
+            {%- render 'promo-banner', block: banner -%}
           {%- endif -%}
         {%- endfor -%}
+
+        {%- comment -%} In-feed carousels at this position {%- endcomment -%}
         {%- for carousel in carousel_blocks -%}
           {%- assign carousel_position = carousel.settings.position | default: 0 -%}
-          {%- if carousel_position > product_count and carousel_position > 0 -%}
+          {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
             {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
             {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
           {%- endif -%}
         {%- endfor -%}
-      </div>
+
+        {%- render 'product-card', product: product -%}
+
+      {%- else -%}
+        <p class="collection-empty">No products found.</p>
+      {%- endfor -%}
+
+      {%- comment -%} Blocks positioned beyond product count render after last card {%- endcomment -%}
+      {%- assign product_count = collection.products.size -%}
+
+      {%- for banner in banner_blocks -%}
+        {%- assign banner_position = banner.settings.position | default: 0 -%}
+        {%- if banner_position > product_count and banner_position > 0 -%}
+          {%- render 'promo-banner', block: banner -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- for carousel in carousel_blocks -%}
+        {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+        {%- if carousel_position > product_count and carousel_position > 0 -%}
+          {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
+          {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+        {%- endif -%}
+      {%- endfor -%}
 
     </div>
-
   </div>
 
   {%- if paginate.pages > 1 -%}
