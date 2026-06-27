@@ -1,37 +1,11 @@
-{% comment %}
-  Related Articles Carousel
-  Pulls articles from: collection.metafields.custom.related_post_cards.value
-  Usage: {% render 'related-article', collection: collection %}
-{% endcomment %}
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
 
-{% assign related_articles = collection.metafields.custom.related_post_cards.value %}
+{% assign articles = collection.metafields.custom.related_post_cards.value %}
 
-{% if related_articles and related_articles.size > 0 %}
-  {{ 'related-article.css' | asset_url | stylesheet_tag }}
-
-  <section class="related-article">
-    <div class="related-article__header">
-      <h2 class="related-article__title">Related Articles</h2>
-      <div class="related-article__controls">
-        <button class="related-article__btn related-article__btn--prev" aria-label="Previous articles">
-          &#8592;
-        </button>
-        <button class="related-article__btn related-article__btn--next" aria-label="Next articles">
-          &#8594;
-        </button>
-      </div>
-    </div>
-
-    <div class="related-article__viewport">
-      <div class="related-article__track">
-        {% for article in related_articles %}
-          <div class="related-article__slide">
-            {% render 'article-card', article: article %}
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
-
-  <script src="{{ 'related-article.js' | asset_url }}" defer></script>
+{% if articles != blank %}
+  <div class="related-articles">
+    {% for article in articles %}
+      {% render 'article-card', article: article %}
+    {% endfor %}
+  </div>
 {% endif %}
