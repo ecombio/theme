@@ -25,4 +25,20 @@
       }
     } catch (_) {}
   });
+
+  // ── Wire up collection-hero "See more" link to first heading ──
+  const seeMoreLink = document.querySelector('.collection-hero a[href^="#"]');
+  if (seeMoreLink) {
+    const firstHeading = container.querySelector('h2, h3');
+    if (firstHeading) {
+      if (!firstHeading.id) {
+        firstHeading.id = firstHeading.textContent
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+      }
+      seeMoreLink.href = `#${firstHeading.id}`;
+    }
+  }
 })();
