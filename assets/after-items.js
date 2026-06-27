@@ -38,7 +38,16 @@
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '');
       }
-      seeMoreLink.href = `#${firstHeading.id}`;
+
+      // Scroll manually and replaceState so the hash never enters the URL
+      seeMoreLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        firstHeading.scrollIntoView({ behavior: 'smooth' });
+        const url = new URL(window.location.href);
+        url.hash = '';
+        history.replaceState(null, '', url.toString());
+      });
     }
   }
+
 })();
