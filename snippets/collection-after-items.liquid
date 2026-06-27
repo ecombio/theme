@@ -1,0 +1,30 @@
+{% comment %}
+  Snippet: collection-after-items.liquid
+  Purpose: Renders the "After-Item Lists" content injected after collection items,
+           sourced from the collection metafield: custom.after_item_lists (Type: Page).
+  Usage:   {% render 'collection-after-items' %}
+           Place this snippet in your collection template after the product grid loop.
+  Metafield:
+    Namespace + key : custom.after_item_lists
+    Type            : Page (one)
+  Dependencies:
+    - Collection must have the metafield custom.after_item_lists populated
+      in the Shopify admin (Settings → Custom data → Collections).
+{% endcomment %}
+
+{%- liquid
+  assign after_item_page = collection.metafields.custom.after_item_lists.value
+-%}
+
+{%- if after_item_page != blank -%}
+  <div
+    class="collection-after-items"
+    aria-label="{{ after_item_page.title | escape }}"
+  >
+    {%- if after_item_page.content != blank -%}
+      <div class="collection-after-items__content rte">
+        {{- after_item_page.content -}}
+      </div>
+    {%- endif -%}
+  </div>
+{%- endif -%}
