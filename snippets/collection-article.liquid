@@ -1,0 +1,52 @@
+{%- comment -%}
+  snippets/collection-article.liquid
+  Card for articles sourced from the collection's custom.articles metafield.
+
+  Accepts:
+  - article: {Object} Article Liquid object (from collection.metafields.custom.articles.value)
+{%- endcomment -%}
+
+<article class="article-card">
+  {%- if article.image -%}
+    <a href="{{ article.url }}" class="article-card__image-wrapper" aria-hidden="true" tabindex="-1">
+      <img
+        src="{{ article.image | image_url: width: 800 }}"
+        alt="{{ article.image.alt | escape | default: article.title | escape }}"
+        class="article-card__image"
+        loading="lazy"
+        width="{{ article.image.width }}"
+        height="{{ article.image.height }}"
+      >
+    </a>
+  {%- endif -%}
+
+  <div class="article-card__content">
+    <div class="article-card__meta">
+      <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+        {{ article.published_at | date: format: 'abbreviated_date' }}
+      </time>
+
+      {%- if article.metafields.custom.reading_time != blank -%}
+        <span class="article-card__metafield-tag">
+          {{ article.metafields.custom.reading_time }} min read
+        </span>
+      {%- endif -%}
+    </div>
+
+    <h3 class="article-card__title">
+      <a href="{{ article.url }}">{{ article.title }}</a>
+    </h3>
+
+    <p class="article-card__excerpt">
+      {%- if article.excerpt.size > 0 -%}
+        {{ article.excerpt | strip_html | truncatewords: 20 }}
+      {%- else -%}
+        {{ article.content | strip_html | truncatewords: 20 }}
+      {%- endif -%}
+    </p>
+
+    <a href="{{ article.url }}" class="article-card__read-more" aria-label="Read more about {{ article.title | escape }}">
+      Read article
+    </a>
+  </div>
+</article>
