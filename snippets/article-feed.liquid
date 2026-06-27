@@ -1,9 +1,27 @@
 {{ 'article-feed.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
-{%- assign feed_blog = section.settings.blog -%}
+{%- comment -%}
+  Uses Collection metafield: custom.articles (List of Blog posts)
+  Falls back to section.settings.blog if metafield is empty.
+{%- endcomment -%}
 
-{%- if feed_blog != blank and feed_blog.articles.size > 0 -%}
+{%- liquid
+  assign featured_articles = collection.metafields.custom.articles.value
+  assign feed_blog = section.settings.blog
+-%}
+
+{%- if featured_articles != blank and featured_articles.size > 0 -%}
+
+  <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
+    {%- for article in featured_articles -%}
+      {%- render 'article-card', article: article -%}
+    {%- endfor -%}
+  </div>
+
+{%- elsif feed_blog != blank and feed_blog.articles.size > 0 -%}
+
+  {%- comment -%} Fallback: show from the blog selected in section settings {%- endcomment -%}
   {%- paginate feed_blog.articles by section.settings.articles_per_page -%}
 
     <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
@@ -31,6 +49,9 @@
     {%- endif -%}
 
   {%- endpaginate -%}
+
 {%- else -%}
+
   <p class="collection-empty">No articles found.</p>
+
 {%- endif -%}
