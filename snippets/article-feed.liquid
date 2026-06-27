@@ -1,26 +1,9 @@
-{{ 'article-feed.css' | asset_url | stylesheet_tag }}
-{{ 'article-card.css' | asset_url | stylesheet_tag }}
+{% assign articles = collection.metafields.custom.posts.value %}
 
-{%- comment -%}
-  Articles come exclusively from the collection's custom.articles metafield.
-  No blog fallback — if the metafield is empty, "No articles found" displays.
-{%- endcomment -%}
-
-{%- liquid
-  assign featured_articles = collection.metafields.custom.articles.value
-  assign max_articles = 12
--%}
-
-{%- if featured_articles != blank and featured_articles.size > 0 -%}
-
-  <div class="article-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
-    {%- for article in featured_articles limit: max_articles -%}
-      {%- render 'article-card', article: article -%}
-    {%- endfor -%}
+{% if articles != blank %}
+  <div class="article-feed">
+    {% for article in articles %}
+      {% render 'article-card', article: article %}
+    {% endfor %}
   </div>
-
-{%- else -%}
-
-  <p class="collection-empty">No articles found!</p>
-
-{%- endif -%}
+{% endif %}
