@@ -1,0 +1,168 @@
+{%- comment -%}
+  snippets/recommendation-carousel.liquid
+  ============================================================
+  Generic, reusable horizontal product-carousel CHROME.
+
+  This snippet renders the heading, optional "See all" link, scroll
+  arrows, scrollable track, and empty/skeleton states — but has zero
+  opinion about WHERE the products came from. Callers hand in
+  pre-rendered <li class="quick-view__recs-item">…</li> markup (built
+  with {% capture %}), so the exact same chrome/behavior can be reused
+  anywhere a horizontal product row is needed (Quick View, a future
+  PDP "Related Products" section, recently-viewed, etc.) without
+  duplicating carousel markup or JS.
+
+  Always reuses snippets/product-card.liquid for the cards themselves
+  — this snippet never renders card markup directly.
+
+  Wired to assets/recommendation-carousel.js (self-initializing,
+  event-delegated, double-init guarded — loaded once globally,
+  works for any number of instances on the page).
+
+  Parameters:
+    heading          {String}   required — visible <h3> + aria-label
+    items_html       {String}   required (may be '') — capture of one
+                                 or more `<li class="quick-view__recs-item">`
+                                 blocks. Pass '' when is_async is true.
+    see_all_url      {String}   optional — renders a "See all" link
+    empty_text       {String}   optional, default 'Nothing to show right now'
+    collapsible      {Boolean}  optional, default false — wraps the row in
+                                 <details> so merchants can opt into a
+                                 collapsed-by-default carousel on long modals.
+                                 Default is always-visible: recommendations
+                                 are a conversion surface, so hiding them
+                                 behind a click by default would undercut
+                                 the whole point of the feature.
+
+    -- Async-only (Recommendations API hydration) --
+    is_async         {Boolean}  optional, default false
+    product_id       {Number}   required when is_async
+    recs_section_id  {String}   required when is_async — section handle
+                                 fetched via the Section Rendering API +
+                                 Recommendations API combo, e.g.
+                                 'quick-view-recommendations'
+    intent           {String}   optional, default 'related'
+                                 ('related' or 'complementary')
+    limit            {Number}   optional, default 8
+    skeleton_count    {Number}   optional, default 4
+{%- endcomment -%}
+
+{%- liquid
+  assign empty_text     = empty_text     | default: 'Nothing to show right now'
+  assign is_async        = is_async       | default: false
+  assign limit            = limit          | default: 8
+  assign skeleton_count   = skeleton_count | default: 4
+  assign collapsible      = collapsible    | default: false
+  assign intent            = intent         | default: 'related'
+
+  assign has_items = false
+  if items_html != blank
+    assign has_items = true
+  endif
+  
+  assign should_render = true
+  if is_async == false and has_items == false
+    assign should_render = false
+  endif
+-%}
+
+  {%- comment -%}
+    Nothing to render at all: not async (so no client-side fallback
+    coming) AND no static items. Avoids flashing an empty heading +
+    empty scroller in the modal.
+  {%- endcomment -%}
+
+{%- if should_render -%}
+
+  {%- comment -%}── Shared inner markup: arrows + track + empty state ──{%- endcomment -%}
+  {%- capture recs_body -%}
+    <div class="quick-view__recs-viewport">
+      <button
+        type="button"
+        class="quick-view__recs-arrow quick-view__recs-arrow--prev"
+        data-recs-arrow="prev"
+        aria-label="Scroll {{ heading | escape }} left"
+        tabindex="-1"
+      >
+        <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path d="M7 1 1 7l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <ul
+        class="quick-view__recs-track"
+        role="list"
+        data-recs-track
+        tabindex="0"
+        aria-label="{{ heading | escape }}"
+        aria-busy="{% if is_async %}true{% else %}false{% endif %}"
+      >
+        {%- if is_async -%}
+          {%- for i in (1..skeleton_count) -%}
+            <li class="quick-view__recs-item quick-view__recs-item--skeleton" aria-hidden="true" data-recs-skeleton></li>
+          {%- endfor -%}
+        {%- else -%}
+          {{ items_html }}
+        {%- endif -%}
+      </ul>
+
+      <button
+        type="button"
+        class="quick-view__recs-arrow quick-view__recs-arrow--next"
+        data-recs-arrow="next"
+        aria-label="Scroll {{ heading | escape }} right"
+        tabindex="-1"
+      >
+        <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+          <path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <p class="quick-view__recs-empty" data-recs-empty{% if is_async or has_items %} hidden{% endif %}>
+      {{ empty_text }}
+    </p>
+  {%- endcapture -%}
+
+  {%- if collapsible -%}
+    <details
+      class="quick-view__recs"
+      data-recommendation-carousel="{% if is_async %}async{% else %}static{% endif %}"
+      {%- if is_async %}
+      data-product-id="{{ product_id }}"
+      data-recs-endpoint="{{ recs_section_id }}"
+      data-limit="{{ limit }}"
+      data-intent="{{ intent }}"
+      {%- endif %}
+      open
+    >
+      <summary class="quick-view__recs-summary">
+        <h3 class="quick-view__recs-title">{{ heading }}</h3>
+        {%- if see_all_url -%}
+          <a href="{{ see_all_url }}" class="quick-view__recs-see-all" onclick="event.stopPropagation()">See all</a>
+        {%- endif -%}
+      </summary>
+      {{ recs_body }}
+    </details>
+  {%- else -%}
+    <div
+      class="quick-view__recs"
+      data-recommendation-carousel="{% if is_async %}async{% else %}static{% endif %}"
+      {%- if is_async %}
+      data-product-id="{{ product_id }}"
+      data-recs-endpoint="{{ recs_section_id }}"
+      data-limit="{{ limit }}"
+      data-intent="{{ intent }}"
+      {%- endif %}
+    >
+      <div class="quick-view__recs-head">
+        <h3 class="quick-view__recs-title">{{ heading }}</h3>
+        {%- if see_all_url -%}
+          <a href="{{ see_all_url }}" class="quick-view__recs-see-all">See all</a>
+        {%- endif -%}
+      </div>
+      {{ recs_body }}
+    </div>
+  {%- endif -%}
+
+{%- endif -%}
