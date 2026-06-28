@@ -1,14 +1,14 @@
 {%- comment -%}
   sections/cart-drawer.liquid
 
-  Cart drawer with inline product recommendations.
-  Recommendations are rendered client-side via the Product Recommendations API
-  (/recommendations/products.json?product_id=X&intent=related|complementary).
+  Cart drawer shell. Handles layout, items, footer, and loading overlay.
+  Recommendation rails are fully delegated to snippets/cart-recommendations.liquid.
 
-  The drawer shell is rendered server-side; JS fetches and injects recommendation
-  cards after the drawer opens so the initial render is never blocked.
-
-  Recommendation rails are delegated to snippets/cart-recommendations.liquid.
+  Assets to load in your theme.liquid (in this order):
+    {{ 'cart-drawer.css'          | asset_url | stylesheet_tag }}
+    {{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
+    {{ 'cart-drawer.js'           | asset_url | script_tag }}
+    {{ 'cart-recommendations.js'  | asset_url | script_tag }}
 
   Schema settings:
     show_related         → "You may also like" rail
@@ -39,7 +39,7 @@
   data-rec-limit="{{ rec_limit }}"
 >
 
-  {{- comment -}} Backdrop {{- endcomment -}}
+  {%- comment -%} Backdrop {%- endcomment -%}
   <div
     class="ecombio-cart-drawer__backdrop"
     data-ecombio-cart-close
@@ -47,10 +47,10 @@
     aria-hidden="true"
   ></div>
 
-  {{- comment -}} Drawer panel {{- endcomment -}}
+  {%- comment -%} Drawer panel {%- endcomment -%}
   <div class="ecombio-cart-drawer__inner" role="document">
 
-    {{- comment -}} ── Header ── {{- endcomment -}}
+    {%- comment -%} ── Header ── {%- endcomment -%}
     <div class="ecombio-cart-drawer__header">
       <h2 class="ecombio-cart-drawer__title">
         Your Cart
@@ -76,12 +76,12 @@
       </button>
     </div>
 
-    {{- comment -}} ── Body ── {{- endcomment -}}
+    {%- comment -%} ── Body ── {%- endcomment -%}
     <div class="ecombio-cart-drawer__body" data-ecombio-cart-body>
 
       {%- if cart.item_count == 0 -%}
 
-        {{- comment -}} Empty state {{- endcomment -}}
+        {%- comment -%} Empty state {%- endcomment -%}
         <div class="ecombio-cart-drawer__empty">
           <svg class="ecombio-cart-drawer__empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
@@ -100,13 +100,13 @@
 
       {%- else -%}
 
-        {{- comment -}} ── Cart items ── {{- endcomment -}}
+        {%- comment -%} ── Cart items ── {%- endcomment -%}
         <ul class="ecombio-cart-drawer__items" role="list" aria-label="Cart items">
           {%- for item in cart.items -%}
             {%- comment -%}
-              data-cart-product-id is read by JS to determine the recommendation
-              source product. Required for the recs fallback when sessionStorage
-              has no last-added product (e.g. on first page load).
+              data-cart-product-id is read by cart-recommendations.js to determine
+              the recommendation source product. Required as a fallback when
+              sessionStorage has no last-added product (e.g. on first page load).
             {%- endcomment -%}
             <li
               class="ecombio-cart-drawer__item"
@@ -114,7 +114,7 @@
               data-cart-product-id="{{ item.product_id }}"
             >
 
-              {{- comment -}} Product image {{- endcomment -}}
+              {%- comment -%} Product image {%- endcomment -%}
               <a href="{{ item.url }}" class="ecombio-cart-drawer__item-image-link" tabindex="-1" aria-hidden="true">
                 {%- if item.image -%}
                   {{-
@@ -133,7 +133,7 @@
                 {%- endif -%}
               </a>
 
-              {{- comment -}} Product info {{- endcomment -}}
+              {%- comment -%} Product info {%- endcomment -%}
               <div class="ecombio-cart-drawer__item-info">
                 <a href="{{ item.url }}" class="ecombio-cart-drawer__item-title">{{ item.product.title }}</a>
 
@@ -147,7 +147,7 @@
 
                 <div class="ecombio-cart-drawer__item-bottom">
 
-                  {{- comment -}} Quantity stepper {{- endcomment -}}
+                  {%- comment -%} Quantity stepper {%- endcomment -%}
                   <div
                     class="ecombio-cart-drawer__qty"
                     role="group"
@@ -162,7 +162,7 @@
                       aria-label="{% if item.quantity == 1 %}Remove {{ item.product.title | escape }} from cart{% else %}Decrease quantity of {{ item.product.title | escape }}{% endif %}"
                     >
                       {%- if item.quantity == 1 -%}
-                        {{- comment -}} Trash icon at qty 1 — signals removal, not decrement {{- endcomment -}}
+                        {%- comment -%} Trash icon at qty 1 — signals removal, not decrement {%- endcomment -%}
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                           <polyline points="3 6 5 6 21 6"></polyline>
                           <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
@@ -197,7 +197,7 @@
                     </button>
                   </div>
 
-                  {{- comment -}} Line price {{- endcomment -}}
+                  {%- comment -%} Line price {%- endcomment -%}
                   <div class="ecombio-cart-drawer__item-price">
                     {%- if item.original_line_price != item.final_line_price -%}
                       <s class="ecombio-cart-drawer__price--was">{{ item.original_line_price | money }}</s>
@@ -205,7 +205,7 @@
                     <span class="ecombio-cart-drawer__price">{{ item.final_line_price | money }}</span>
                   </div>
 
-                  {{- comment -}} Remove button {{- endcomment -}}
+                  {%- comment -%} Remove button {%- endcomment -%}
                   <button
                     type="button"
                     class="ecombio-cart-drawer__remove"
@@ -221,13 +221,13 @@
                     </svg>
                   </button>
 
-                </div>{{- comment -}} /.ecombio-cart-drawer__item-bottom {{- endcomment -}}
-              </div>{{- comment -}} /.ecombio-cart-drawer__item-info {{- endcomment -}}
+                </div>{%- comment -%} /.ecombio-cart-drawer__item-bottom {%- endcomment -%}
+              </div>{%- comment -%} /.ecombio-cart-drawer__item-info {%- endcomment -%}
             </li>
           {%- endfor -%}
         </ul>
 
-        {{- comment -}} ── Product recommendations (delegated to snippet) ── {{- endcomment -}}
+        {%- comment -%} ── Product recommendations (delegated to snippet) ── {%- endcomment -%}
         {%- render 'cart-recommendations',
               show_related: show_related,
               show_complementary: show_complementary,
@@ -237,9 +237,9 @@
 
       {%- endif -%}
 
-    </div>{{- comment -}} /.ecombio-cart-drawer__body {{- endcomment -}}
+    </div>{%- comment -%} /.ecombio-cart-drawer__body {%- endcomment -%}
 
-    {{- comment -}} ── Footer — hidden when cart is empty ── {{- endcomment -}}
+    {%- comment -%} ── Footer — hidden when cart is empty ── {%- endcomment -%}
     <div
       class="ecombio-cart-drawer__footer"
       data-ecombio-cart-footer
@@ -283,9 +283,9 @@
         Continue shopping
       </a>
 
-    </div>{{- comment -}} /.ecombio-cart-drawer__footer {{- endcomment -}}
+    </div>{%- comment -%} /.ecombio-cart-drawer__footer {%- endcomment -%}
 
-    {{- comment -}} ── Loading overlay ── {{- endcomment -}}
+    {%- comment -%} ── Loading overlay ── {%- endcomment -%}
     <div
       class="ecombio-cart-drawer__loading"
       data-ecombio-cart-loading
@@ -295,8 +295,8 @@
       <div class="ecombio-cart-drawer__spinner" role="status" aria-label="Updating cart"></div>
     </div>
 
-  </div>{{- comment -}} /.ecombio-cart-drawer__inner {{- endcomment -}}
-</div>{{- comment -}} /#ecombio-cart-drawer {{- endcomment -}}
+  </div>{%- comment -%} /.ecombio-cart-drawer__inner {%- endcomment -%}
+</div>{%- comment -%} /#ecombio-cart-drawer {%- endcomment -%}
 
 {% schema %}
 {

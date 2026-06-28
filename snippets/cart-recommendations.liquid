@@ -2,9 +2,9 @@
   snippets/cart-recommendations.liquid
 
   Renders the product recommendations shell inside the cart drawer.
-  JS reads data-* attributes from the drawer root (#ecombio-cart-drawer)
-  and from this container, then fetches and injects recommendation cards
-  after the drawer opens — initial render is never blocked.
+  JS (cart-recommendations.js) reads data-* attributes from the drawer root
+  (#ecombio-cart-drawer) and from this container, then fetches and injects
+  recommendation cards after the drawer opens — initial render is never blocked.
 
   Usage (inside cart-drawer.liquid, after the items list):
     {%- render 'cart-recommendations',
@@ -23,14 +23,14 @@
   Notes:
     "related" intent        → Shopify ML, works out of the box.
     "complementary" intent  → Requires Shopify Search & Discovery app +
-                              complementary products configured per product
-                              in Admin → Products → [product] → Complementary
-                              products. Returns 0 products silently when no
-                              associations exist; the rail is hidden by JS.
+                              complementary products configured per product in
+                              Admin → Products → [product] → Complementary products.
+                              Returns 0 products silently when no associations
+                              exist; the rail is hidden by JS automatically.
 
-    The source product ID is read from sessionStorage key
-    'ecombio_last_added_product_id' (written by your ATC flow). Falls back
-    to the first cart item's [data-cart-product-id] attribute.
+    Source product ID is read from sessionStorage key
+    'ecombio_last_added_product_id' (written by your ATC flow). Falls back to
+    the first cart item's [data-cart-product-id] attribute.
 {%- endcomment -%}
 
 {%- if show_related or show_complementary -%}
@@ -44,7 +44,7 @@
   >
     {%- comment -%}
       Skeleton renders immediately to prevent layout shift.
-      JS replaces this entire block once recommendations load.
+      cart-recommendations.js replaces this entire block once recommendations load.
     {%- endcomment -%}
     <div class="ecombio-cart-recs__skeleton" aria-hidden="true">
       <div class="ecombio-cart-recs__skeleton-bar"></div>
