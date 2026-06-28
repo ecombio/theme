@@ -35,11 +35,13 @@
     assign save_pct = first_variant.compare_at_price | minus: first_variant.price | times: 100 | divided_by: first_variant.compare_at_price
   endif
 
-  assign policy_set = product.metafields.custom.policies.value
+assign policy_set = product.metafields.custom.policies.value
 
-  assign shipping_policy_body = policy_set.shipping_policy.value
-  assign refund_policy_body   = policy_set.returns_refunds.value
-  assign warranty_policy_body = policy_set.warranty_policy.value
+# Rich text fields on Metaobjects return JSON by default.
+# Use | metafield_tag to render them as proper HTML.
+assign shipping_policy_body = policy_set.shipping_policy | metafield_tag | default: ''
+assign refund_policy_body   = policy_set.returns_refunds | metafield_tag | default: ''
+assign warranty_policy_body = policy_set.warranty_policy | metafield_tag | default: ''
 -%}
 
 <div
