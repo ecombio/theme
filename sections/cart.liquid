@@ -5,31 +5,20 @@
   in cart-drawer.css so colours, radii, and type stay in sync with the drawer
   without duplicating any variables.
 
-  Assets:
-    cart-drawer.css          → shared tokens               (theme.liquid)
-    cart-recommendations.css → rec rail styles              (theme.liquid)
-    cart-page.css            → page-specific layout         (loaded below)
-    cart-drawer.js           → drawer + EcombioCart API     (loaded below —
-                               needed because cart-page.js depends on it)
-    cart-recommendations.js  → rec rail (reused on the cart  (loaded below —
-                               page too)                      same reason)
-    cart-page.js             → qty/remove/subtotal for the   (loaded below)
-                               page table
-
-  cart-page.css/js were removed from theme.liquid and now load here instead,
-  scoped to this section. cart-drawer.js and cart-recommendations.js are
-  re-declared here too (in addition to theme.liquid) ONLY if this section can
-  render on a page where theme.liquid's footer scripts haven't already loaded
-  them — Shopify will not fetch the same asset_url twice, so duplicating the
-  tag is safe and guarantees load order without depending on where in
-  theme.liquid those tags happen to sit.
+  Assets loaded via theme.liquid (same tags as the drawer):
+    cart-drawer.css          → shared tokens
+    cart-recommendations.css → rec rail styles
+    cart-page.css            → page-specific layout
+    cart-drawer.js           → drawer + EcombioCart API (needed for the
+                               open-drawer links and badge updates)
+    cart-recommendations.js  → rec rail (reused on the cart page too)
+    cart-page.js             → qty/remove/subtotal for the page table
 
   The page intentionally re-uses cart-recommendations.js so the same rec
   rail logic runs here. The recs shell (snippets/cart-recommendations.liquid)
   is rendered below the items table.
 {%- endcomment -%}
-
-{{ 'cart-page.css' | asset_url | stylesheet_tag }}
+{{ 'cart-page.css'          | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign show_related        = section.settings.show_related
@@ -199,7 +188,7 @@
                         data-delta="1"
                         aria-label="Increase quantity of {{ item.product.title | escape }}"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                           <line x1="12" y1="5" x2="12" y2="19"></line>
                           <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
@@ -308,17 +297,7 @@
   </div>
 </main>
 
-{%- comment -%}
-  JS load order matters: cart-page.js dispatches a 'cart:drawer:open' event
-  on init and depends on cart-recommendations.js already being registered
-  to listen for it (and on cart-drawer.js for the shared EcombioCart API).
-  Tagging all three here, in this order, guarantees that regardless of
-  what theme.liquid still loads elsewhere. Shopify de-dupes identical
-  asset_url script tags, so re-declaring cart-drawer.js / cart-recommendations.js
-  here is safe even if theme.liquid also loads them.
-{%- endcomment -%}
-
-{{ 'cart-page.js'             | asset_url | script_tag }}
+{{ 'cart-page.js'           | asset_url | script_tag }}
 
 {% schema %}
 {
