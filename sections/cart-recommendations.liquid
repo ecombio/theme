@@ -1,0 +1,153 @@
+{%- comment -%}
+  sections/cart-recommendations.liquid
+  ══════════════════════════════════════════════════════════════════════════════
+  PURPOSE
+    Thin wrapper around snippets/product-recommendations.liquid.
+    Exists solely so the Section Rendering API can re-render recommendations
+    independently of the main cart-drawer section.
+
+  HOW IT IS FETCHED
+    cart-recommendations.js calls:
+
+      GET /?section_id=cart-recommendations
+            &product_id={last_cart_product_id}
+            &intent={complementary|related}
+            &limit={n}
+
+    The Product Recommendations API endpoint is called server-side here,
+    so there is no CORS concern and the response is cacheable at the CDN.
+
+  SECTION RENDERING INTEGRATION
+    assets/cart-recommendations.js swaps [data-ecd-recs-container] innerHTML
+    with the full HTML response from this section fetch.
+
+  PARAMETERS (via URL query string — Liquid reads them from request object)
+    product_id   {Number}  The product ID to base recommendations on.
+                           Falls back to the last item in the current cart.
+    intent       {String}  'complementary' or 'related'. Default: 'complementary'.
+    limit        {Number}  Max recommendations to fetch. Default: 6 (JS trims to 4
+                           after excluding cart items, so we over-fetch slightly).
+
+  WHY OVER-FETCH
+    The JS excludes products already in cart client-side after receiving HTML.
+    But Liquid renders based on what the Recommendations API returns, and the
+    API doesn't know what's in the cart. So we request `limit` = displayLimit + 2
+    from the API, render all of them in Liquid, then JS hides the extras.
+    The simpler alternative — excluding server-side via cart object — only works
+    when section is fetched in a cart context, which isn't guaranteed for cached
+    CDN responses. Client-side exclusion is safer.
+
+  SCHEMA
+    Minimal schema required for section registration. No blocks needed.
+  ══════════════════════════════════════════════════════════════════════════════
+{%- endcomment -%}
+
+{%- liquid
+  comment
+    ── Resolve product_id ──────────────────────────────────────────────────
+    Prefer the product_id URL param (set by JS). If absent, fall back to the
+    last item in the active cart session. If the cart is empty, bail out early.
+  endcomment
+
+  assign recs_product_id = request.query_string | split: 'product_id=' | last | split: '&' | first | plus: 0
+
+  if recs_product_id == 0
+    if cart.items.size > 0
+      assign recs_product_id = cart.items.last.product_id
+    endif
+  endif
+
+  comment
+    ── Resolve intent ───────────────────────────────────────────────────────
+  endcomment
+  assign recs_intent = request.query_string | split: 'intent=' | last | split: '&' | first
+  if recs_intent == blank or recs_intent != 'related'
+    assign recs_intent = 'complementary'
+  endif
+
+  comment
+    ── Resolve limit ────────────────────────────────────────────────────────
+    Over-fetch by 2 to give JS room to hide already-carted items.
+  endcomment
+  assign display_limit = request.query_string | split: 'limit=' | last | split: '&' | first | plus: 0
+  if display_limit == 0
+    assign display_limit = 4
+  endif
+  assign fetch_limit = display_limit | plus: 2
+
+  comment
+    ── Build cart_item_ids for in-cart detection ────────────────────────────
+    We pass this to the snippet so it can mark already-carted variants.
+  endcomment
+  assign cart_item_ids = ''
+  for item in cart.items
+    assign cart_item_ids = cart_item_ids | append: item.variant_id | append: ','
+  endfor
+  assign cart_item_ids = cart_item_ids | split: ','
+-%}
+
+{%- comment -%}
+  ── Early exit ─────────────────────────────────────────────────────────────
+  No product_id means we have nothing to base recommendations on.
+  Render empty so JS can detect "no recommendations" and hide the container.
+{%- endcomment -%}
+{%- if recs_product_id == 0 -%}
+  {%- comment -%} Intentionally empty — JS checks for empty response {%- endcomment -%}
+{%- else -%}
+
+  {%- comment -%}
+    ── Fetch recommendations from Shopify's Product Recommendations API ──────
+    `recommendations` is a Liquid object available inside section templates.
+    It maps directly to the /recommendations/products endpoint.
+    intent: 'complementary' surfaces accessories; 'related' is algorithm-based.
+  {%- endcomment -%}
+  {%- assign recommendations = recommendations.products -%}
+
+  {%- comment -%}
+    Shopify's `recommendations` object is only populated when the section
+    is rendered with the product_id in context (Section Rendering API sets
+    this automatically when product_id is in the query string alongside
+    section_id). The object is named `recommendations` and is scoped to this
+    section render — it reads from the same endpoint used by the AJAX API.
+
+    In practice: when JS calls:
+      /?section_id=cart-recommendations&product_id=123&intent=complementary
+    Shopify populates `recommendations` here with up to `fetch_limit` products.
+  {%- endcomment -%}
+  {%- render 'product-recommendation',
+    products:       recommendations,
+    cart_item_ids:  cart_item_ids,
+    recs_limit:     display_limit,
+    recs_title:     'You might also like'
+  -%}
+
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Cart Recommendations",
+  "settings": [
+    {
+      "type": "range",
+      "id": "display_limit",
+      "label": "Number of recommendations",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4,
+      "info": "Maximum cards shown in the cart drawer. Actual count may be lower if products are already in cart."
+    },
+    {
+      "type": "select",
+      "id": "intent",
+      "label": "Recommendation strategy",
+      "options": [
+        { "value": "complementary", "label": "Complementary (accessories, add-ons)" },
+        { "value": "related",       "label": "Related (similar products)" }
+      ],
+      "default": "complementary",
+      "info": "Complementary requires manual curation in Search & Discovery app. Falls back to Related automatically if no complementary products are configured."
+    }
+  ]
+}
+{% endschema %}
