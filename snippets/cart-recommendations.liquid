@@ -3,8 +3,7 @@
 
   Renders the product recommendations shell inside the cart drawer.
   JS (cart-recommendations.js) reads data-* attributes from the drawer root
-  (#ecombio-cart-drawer) and from this container, then fetches and injects
-  recommendation cards after the drawer opens — initial render is never blocked.
+  and this container, then fetches and injects cards after the drawer opens.
 
   Usage (inside cart-drawer.liquid, after the items list):
     {%- render 'cart-recommendations',
@@ -14,23 +13,10 @@
           complementary_label: complementary_label
     -%}
 
-  Parameters:
-    show_related        {Boolean} Render the "You may also like" rail
-    show_complementary  {Boolean} Render the "Frequently bought together" rail
-    related_label       {String}  Heading text for the related rail
-    complementary_label {String}  Heading text for the complementary rail
-
-  Notes:
-    "related" intent        → Shopify ML, works out of the box.
-    "complementary" intent  → Requires Shopify Search & Discovery app +
-                              complementary products configured per product in
-                              Admin → Products → [product] → Complementary products.
-                              Returns 0 products silently when no associations
-                              exist; the rail is hidden by JS automatically.
-
-    Source product ID is read from sessionStorage key
-    'ecombio_last_added_product_id' (written by your ATC flow). Falls back to
-    the first cart item's [data-cart-product-id] attribute.
+  "related" intent       → Shopify ML, works out of the box.
+  "complementary" intent → Requires Shopify Search & Discovery app +
+                           complementary products configured per product in Admin.
+                           Returns 0 products silently; rail hidden automatically.
 {%- endcomment -%}
 
 {%- if show_related or show_complementary -%}
@@ -39,13 +25,20 @@
     data-ecombio-recs
     data-related-label="{{ related_label | escape }}"
     data-complementary-label="{{ complementary_label | escape }}"
-    aria-live="polite"
-    aria-label="Product recommendations"
   >
     {%- comment -%}
-      Skeleton renders immediately to prevent layout shift.
-      cart-recommendations.js replaces this entire block once recommendations load.
+      A visually-hidden live region announces state changes to screen readers
+      without reading out every product title on each re-render.
+      JS updates this element's text when recs load or are unavailable.
     {%- endcomment -%}
+    <span
+      class="ecombio-cart-recs__status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></span>
+
+    {%- comment -%} Skeleton renders immediately to prevent layout shift. {%- endcomment -%}
     <div class="ecombio-cart-recs__skeleton" aria-hidden="true">
       <div class="ecombio-cart-recs__skeleton-bar"></div>
       <div class="ecombio-cart-recs__skeleton-cards">
