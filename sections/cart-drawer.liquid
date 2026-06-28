@@ -1,519 +1,187 @@
-{%- liquid
-  assign free_shipping_threshold = section.settings.free_shipping_threshold | default: 100
-  assign cart_total_dollars       = cart.total_price | divided_by: 100.0
-  assign progress_pct             = cart_total_dollars | divided_by: free_shipping_threshold | times: 100 | round
-  if progress_pct > 100
-    assign progress_pct = 100
-  endif
-  assign remaining_cents = free_shipping_threshold | times: 100 | minus: cart.total_price
-  assign show_shipping_bar = section.settings.show_shipping_bar
-  assign show_recommendations = section.settings.show_recommendations
-  assign reco_limit = section.settings.reco_limit | default: 4
-  assign reco_intent = section.settings.reco_intent | default: 'related'
-  assign checkout_label = section.settings.checkout_button_label | default: 'Checkout'
-  assign empty_heading = section.settings.empty_state_heading | default: 'Your cart is empty'
-  assign empty_sub = section.settings.empty_state_subtext | default: 'Add something to get started'
-  assign empty_cta = section.settings.empty_state_cta_label | default: 'Shop now'
-  assign empty_cta_url = section.settings.empty_state_cta_url | default: routes.all_products_collection_url
-  assign reco_heading = section.settings.recommendations_heading | default: 'You might also like'
-  assign tax_note = section.settings.tax_note | default: 'Taxes and shipping calculated at checkout'
-  assign drawer_title = section.settings.drawer_title | default: 'Your cart'
--%}
-
-{{- 'cart-drawer.css' | asset_url | stylesheet_tag -}}
-
 <div
-  id="shopify-section-{{ section.id }}"
-  data-section-id="{{ section.id }}"
-  data-section-type="cart-drawer"
-  data-free-shipping-threshold="{{ free_shipping_threshold }}"
-  data-reco-limit="{{ reco_limit }}"
-  data-reco-intent="{{ reco_intent }}"
-  data-show-recommendations="{{ show_recommendations }}"
-  data-show-shipping-bar="{{ show_shipping_bar }}"
-  data-currency="{{ cart.currency.iso_code }}"
+  id="ecombio-cart-drawer"
+  class="ecombio-cart-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Shopping cart"
+  aria-hidden="true"
+  hidden
 >
+  {%- comment -%} Backdrop {%- endcomment -%}
+  <div class="ecombio-cart-drawer__backdrop" data-ecombio-cart-close tabindex="-1" aria-hidden="true"></div>
 
-  {%- comment -%} Overlay / Backdrop {%- endcomment -%}
-  <div id="cart-drawer-overlay" class="cart-overlay" aria-hidden="true"></div>
-
-  <div
-    id="cart-drawer"
-    class="cart-drawer"
-    role="dialog"
-    aria-modal="true"
-    aria-label="{{ drawer_title | escape }}"
-    aria-hidden="true"
-  >
+  {%- comment -%} Drawer panel {%- endcomment -%}
+  <div class="ecombio-cart-drawer__inner" role="document">
 
     {%- comment -%} Header {%- endcomment -%}
-    <div class="cart-drawer__header">
-      <h2 class="cart-drawer__title">
-        {{ drawer_title }}
-        <span class="cart-drawer__count" id="cart-drawer-count" aria-live="polite" aria-atomic="true">
-          ({{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }})
+    <div class="ecombio-cart-drawer__header">
+      <h2 class="ecombio-cart-drawer__title">
+        Your Cart
+        <span class="ecombio-cart-drawer__count" data-ecombio-cart-count aria-live="polite" aria-atomic="true">
+          ({{ cart.item_count }})
         </span>
       </h2>
-      <button class="cart-drawer__close" id="cart-drawer-close" aria-label="Close cart">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <button
+        type="button"
+        class="ecombio-cart-drawer__close"
+        data-ecombio-cart-close
+        aria-label="Close cart"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
 
     {%- comment -%} Body {%- endcomment -%}
-    <div class="cart-drawer__body">
+    <div class="ecombio-cart-drawer__body" data-ecombio-cart-body>
 
-      {%- comment -%} Shipping progress bar {%- endcomment -%}
-      {%- if show_shipping_bar -%}
-        <div
-          class="cart-shipping-bar{% if cart_total_dollars >= free_shipping_threshold %} cart-shipping-bar--qualified{% endif %}"
-          id="cart-shipping-bar"
-          data-threshold-cents="{{ free_shipping_threshold | times: 100 }}"
-        >
-          <p class="cart-shipping-bar__msg" id="cart-shipping-bar-msg">
-            {%- if cart_total_dollars >= free_shipping_threshold -%}
-              <span class="cart-shipping-bar__msg--success">
-                {{- section.settings.shipping_qualified_msg | default: '🎉 You qualify for free shipping!' -}}
-              </span>
-            {%- else -%}
-              {%- assign remaining_display = remaining_cents | money -%}
-              {{ section.settings.shipping_progress_msg
-                  | default: 'Add [amount] more for free shipping'
-                  | replace: '[amount]', remaining_display }}
-            {%- endif -%}
-          </p>
-          <div
-            class="cart-shipping-bar__track"
-            role="progressbar"
-            aria-label="Free shipping progress"
-            aria-valuenow="{{ progress_pct }}"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          >
-            <div class="cart-shipping-bar__fill" style="width: {{ progress_pct }}%"></div>
-          </div>
+      {%- if cart.item_count == 0 -%}
+
+        <div class="ecombio-cart-drawer__empty">
+          <svg class="ecombio-cart-drawer__empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <p class="ecombio-cart-drawer__empty-text">Your cart is empty</p>
+          <a href="{{ routes.all_products_collection_url }}" class="ecombio-btn ecombio-btn--outline" data-ecombio-cart-close>
+            Continue shopping
+          </a>
         </div>
-      {%- endif -%}
 
-      {%- comment -%} Cart line items {%- endcomment -%}
-      <div class="cart-drawer__items" id="cart-drawer-items">
-        {%- if cart.item_count > 0 -%}
+      {%- else -%}
+
+        <ul class="ecombio-cart-drawer__items" role="list" aria-label="Cart items">
           {%- for item in cart.items -%}
-            <div class="cart-item" data-key="{{ item.key }}" data-variant-id="{{ item.variant_id }}">
+            <li class="ecombio-cart-drawer__item" data-cart-item-key="{{ item.key }}">
 
-              <a href="{{ item.url }}" class="cart-item__image-link" tabindex="-1" aria-hidden="true">
+              {%- comment -%} Product image {%- endcomment -%}
+              <a href="{{ item.url }}" class="ecombio-cart-drawer__item-image-link" tabindex="-1" aria-hidden="true">
                 {%- if item.image -%}
                   <img
-                    src="{{ item.image | img_url: '120x120', crop: 'center' }}"
+                    src="{{ item.image | image_url: width: 120 }}"
                     alt="{{ item.image.alt | escape }}"
-                    width="60"
-                    height="60"
+                    width="80"
+                    height="80"
                     loading="lazy"
-                    class="cart-item__image"
+                    class="ecombio-cart-drawer__item-image"
                   >
                 {%- else -%}
-                  <div class="cart-item__image cart-item__image--placeholder" aria-hidden="true"></div>
+                  <div class="ecombio-cart-drawer__item-image ecombio-cart-drawer__item-image--placeholder"></div>
                 {%- endif -%}
               </a>
 
-              <div class="cart-item__details">
-                <a href="{{ item.url }}" class="cart-item__name">{{ item.product.title }}</a>
+              {%- comment -%} Product info {%- endcomment -%}
+              <div class="ecombio-cart-drawer__item-info">
+                <a href="{{ item.url }}" class="ecombio-cart-drawer__item-title">{{ item.product.title }}</a>
 
-                {%- unless item.variant.title == 'Default Title' -%}
-                  <p class="cart-item__variant">{{ item.variant.title }}</p>
+                {%- unless item.product.has_only_default_variant -%}
+                  <p class="ecombio-cart-drawer__item-variant">{{ item.variant.title }}</p>
                 {%- endunless -%}
 
                 {%- if item.selling_plan_allocation -%}
-                  <p class="cart-item__selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
+                  <p class="ecombio-cart-drawer__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
                 {%- endif -%}
 
-                <div class="cart-item__bottom">
-                  <div
-                    class="cart-item__qty"
-                    role="group"
-                    aria-label="Quantity for {{ item.product.title | escape }}"
-                  >
+                <div class="ecombio-cart-drawer__item-bottom">
+                  {%- comment -%} Quantity stepper {%- endcomment -%}
+                  <div class="ecombio-cart-drawer__qty" role="group" aria-label="Quantity for {{ item.product.title | escape }}">
                     <button
-                      class="cart-item__qty-btn"
-                      data-action="decrease"
+                      type="button"
+                      class="ecombio-cart-drawer__qty-btn"
+                      data-ecombio-qty-change
                       data-key="{{ item.key }}"
-                      aria-label="Decrease quantity of {{ item.product.title | escape }}"
-                    >−</button>
-                    <input
-                      class="cart-item__qty-input"
-                      type="number"
-                      value="{{ item.quantity }}"
-                      min="0"
-                      step="1"
-                      data-key="{{ item.key }}"
-                      aria-label="Quantity of {{ item.product.title | escape }}"
+                      data-delta="-1"
+                      aria-label="Decrease quantity"
+                      {% if item.quantity == 1 %}data-remove-on-zero{% endif %}
                     >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <span class="ecombio-cart-drawer__qty-value" data-qty-value="{{ item.key }}" aria-live="polite">{{ item.quantity }}</span>
                     <button
-                      class="cart-item__qty-btn"
-                      data-action="increase"
+                      type="button"
+                      class="ecombio-cart-drawer__qty-btn"
+                      data-ecombio-qty-change
                       data-key="{{ item.key }}"
-                      aria-label="Increase quantity of {{ item.product.title | escape }}"
-                    >+</button>
+                      data-delta="1"
+                      aria-label="Increase quantity"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
                   </div>
 
-                  <div class="cart-item__price">
+                  {%- comment -%} Price {%- endcomment -%}
+                  <div class="ecombio-cart-drawer__item-price">
                     {%- if item.original_line_price != item.final_line_price -%}
-                      <s class="cart-item__price--compare">{{ item.original_line_price | money }}</s>
+                      <s class="ecombio-cart-drawer__price--was">{{ item.original_line_price | money }}</s>
                     {%- endif -%}
-                    <span>{{ item.final_line_price | money }}</span>
+                    <span class="ecombio-cart-drawer__price">{{ item.final_line_price | money }}</span>
                   </div>
-                </div>
 
-                {%- if item.discounts.size > 0 -%}
-                  <ul class="cart-item__discounts" aria-label="Applied discounts">
-                    {%- for discount in item.discounts -%}
-                      <li class="cart-item__discount-tag">{{ discount.title }}</li>
-                    {%- endfor -%}
-                  </ul>
-                {%- endif -%}
+                  {%- comment -%} Remove {%- endcomment -%}
+                  <button
+                    type="button"
+                    class="ecombio-cart-drawer__remove"
+                    data-ecombio-remove-item
+                    data-key="{{ item.key }}"
+                    aria-label="Remove {{ item.product.title | escape }} from cart"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                      <path d="M10 11v6M14 11v6"></path>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
-              <button
-                class="cart-item__remove"
-                data-key="{{ item.key }}"
-                aria-label="Remove {{ item.product.title | escape }} from cart"
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                  <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-              </button>
-
-            </div>
+            </li>
           {%- endfor -%}
-        {%- else -%}
-          <div class="cart-drawer__empty" id="cart-drawer-empty">
-            <svg class="cart-drawer__empty-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <path d="M6 8h4l6 24h20l4-16H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="20" cy="38" r="2" fill="currentColor"/>
-              <circle cx="34" cy="38" r="2" fill="currentColor"/>
-            </svg>
-            <p class="cart-drawer__empty-title">{{ empty_heading }}</p>
-            <p class="cart-drawer__empty-sub">{{ empty_sub }}</p>
-            <a href="{{ empty_cta_url }}" class="cart-drawer__empty-cta">{{ empty_cta }}</a>
-          </div>
-        {%- endif -%}
-      </div>
+        </ul>
 
-      {%- comment -%} Smart Recommendations {%- endcomment -%}
-      {%- if show_recommendations and cart.item_count > 0 -%}
-        <div
-          class="cart-recommendations"
-          id="cart-recommendations"
-          aria-label="{{ reco_heading | escape }}"
-          data-reco-heading="{{ reco_heading | escape }}"
-        >
-          <h3 class="cart-recommendations__title">{{ reco_heading }}</h3>
-          <div class="cart-recommendations__list" id="cart-recommendations-list">
-            <div class="cart-recommendations__loading" aria-hidden="true">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-        </div>
       {%- endif -%}
+
+    </div>{%- comment -%} /.ecombio-cart-drawer__body {%- endcomment -%}
+
+    {%- comment -%} Footer (only shown when cart has items) {%- endcomment -%}
+    <div class="ecombio-cart-drawer__footer" data-ecombio-cart-footer {% if cart.item_count == 0 %}hidden{% endif %}>
+
+      {%- comment -%} Discount code (optional — remove block if unused) {%- endcomment -%}
+      {%- if cart.cart_level_discount_applications.size > 0 -%}
+        <ul class="ecombio-cart-drawer__discounts" aria-label="Applied discounts">
+          {%- for discount in cart.cart_level_discount_applications -%}
+            <li class="ecombio-cart-drawer__discount">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+              {{ discount.title }}
+              <span>(−{{ discount.total_allocated_amount | money }})</span>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      <div class="ecombio-cart-drawer__subtotal">
+        <span>Subtotal</span>
+        <span data-ecombio-cart-subtotal>{{ cart.total_price | money_with_currency }}</span>
+      </div>
+      <p class="ecombio-cart-drawer__tax-note">{{ 'cart.general.taxes_and_shipping' | t }}</p>
+
+      <a href="{{ routes.checkout_url }}" class="ecombio-btn ecombio-btn--primary ecombio-cart-drawer__checkout">
+        Check out
+      </a>
+
+      <a href="{{ routes.all_products_collection_url }}" class="ecombio-cart-drawer__continue" data-ecombio-cart-close>
+        Continue shopping
+      </a>
 
     </div>
 
-    {%- comment -%} Footer {%- endcomment -%}
-    {%- if cart.item_count > 0 -%}
-      <div class="cart-drawer__footer" id="cart-drawer-footer">
+    {%- comment -%} Loading overlay {%- endcomment -%}
+    <div class="ecombio-cart-drawer__loading" data-ecombio-cart-loading aria-hidden="true" hidden>
+      <div class="ecombio-cart-drawer__spinner" role="status" aria-label="Updating cart"></div>
+    </div>
 
-        {%- if cart.cart_level_discount_applications.size > 0 -%}
-          <div class="cart-drawer__discounts" aria-label="Cart discounts">
-            {%- for discount in cart.cart_level_discount_applications -%}
-              <div class="cart-drawer__discount">
-                <span>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M1 6.5L5.5 11 11 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  {{ discount.title }}
-                </span>
-                <span>−{{ discount.total_allocated_amount | money }}</span>
-              </div>
-            {%- endfor -%}
-          </div>
-        {%- endif -%}
-
-        <div class="cart-drawer__subtotal">
-          <span>{{ section.settings.subtotal_label | default: 'Subtotal' }}</span>
-          <span id="cart-drawer-subtotal">{{ cart.total_price | money }}</span>
-        </div>
-
-        {%- if tax_note != blank -%}
-          <p class="cart-drawer__tax-note">{{ tax_note }}</p>
-        {%- endif -%}
-
-        {%- if section.settings.show_cart_note -%}
-          <div class="cart-drawer__note">
-            <label for="cart-note" class="cart-drawer__note-label">
-              {{ section.settings.cart_note_label | default: 'Order note' }}
-            </label>
-            <textarea
-              id="cart-note"
-              class="cart-drawer__note-input"
-              name="note"
-              rows="3"
-              placeholder="{{ section.settings.cart_note_placeholder | default: 'Any special instructions?' }}"
-            >{{ cart.note }}</textarea>
-          </div>
-        {%- endif -%}
-
-        <a
-          href="{{ routes.checkout_url }}"
-          class="cart-drawer__checkout"
-          id="cart-drawer-checkout"
-          aria-label="{{ checkout_label | escape }}"
-        >
-          {%- if section.settings.show_lock_icon -%}
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M4.5 6V4a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          {%- endif -%}
-          {{ checkout_label }}
-        </a>
-
-        {%- if section.settings.show_continue_shopping -%}
-          <button
-            class="cart-drawer__continue"
-            id="cart-drawer-continue"
-            type="button"
-          >
-            {{ section.settings.continue_shopping_label | default: 'Continue shopping' }}
-          </button>
-        {%- endif -%}
-
-      </div>
-    {%- endif -%}
-
-  </div>
+  </div>{%- comment -%} /.ecombio-cart-drawer__inner {%- endcomment -%}
 </div>
-
-<script>
-  window.cartDrawerSettings = {
-    sectionId: {{ section.id | json }},
-    freeShippingThreshold: {{ free_shipping_threshold | json }},
-    recoLimit: {{ reco_limit | json }},
-    recoIntent: {{ reco_intent | json }},
-    showRecommendations: {{ show_recommendations | json }},
-    showShippingBar: {{ show_shipping_bar | json }},
-    currency: {{ cart.currency.iso_code | json }},
-    locale: {{ request.locale.iso_code | json }},
-    routes: {
-      cartUrl: {{ routes.cart_url | json }},
-      checkoutUrl: {{ routes.checkout_url | json }},
-      allProductsUrl: {{ routes.all_products_collection_url | json }}
-    },
-    strings: {
-      shippingQualified: {{ section.settings.shipping_qualified_msg | default: '🎉 You qualify for free shipping!' | json }},
-      shippingProgress: {{ section.settings.shipping_progress_msg | default: 'Add [amount] more for free shipping' | json }},
-      emptyHeading: {{ empty_heading | json }},
-      emptySub: {{ empty_sub | json }},
-      emptyCta: {{ empty_cta | json }},
-      emptyCTAUrl: {{ empty_cta_url | json }},
-      recoHeading: {{ reco_heading | json }},
-      subtotalLabel: {{ section.settings.subtotal_label | default: 'Subtotal' | json }},
-      checkoutLabel: {{ checkout_label | json }},
-      taxNote: {{ tax_note | json }},
-      itemSingular: {{ 'item' | json }},
-      itemPlural: {{ 'items' | json }},
-      removeLabel: {{ 'Remove from cart' | json }},
-      decreaseLabel: {{ 'Decrease quantity' | json }},
-      increaseLabel: {{ 'Increase quantity' | json }}
-    },
-    ui: {
-      showLockIcon: {{ section.settings.show_lock_icon | json }},
-      showContinueShopping: {{ section.settings.show_continue_shopping | json }},
-      continueShopping: {{ section.settings.continue_shopping_label | default: 'Continue shopping' | json }},
-      showCartNote: {{ section.settings.show_cart_note | json }}
-    }
-  };
-</script>
-
-{{ 'cart-drawer.js' | asset_url | script_tag }}
-
-{% schema %}
-{
-  "name": "Cart drawer",
-  "class": "cart-drawer-section",
-  "settings": [
-    {
-      "type": "header",
-      "content": "Drawer"
-    },
-    {
-      "type": "text",
-      "id": "drawer_title",
-      "label": "Drawer title",
-      "default": "Your cart"
-    },
-    {
-      "type": "header",
-      "content": "Free shipping bar"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_shipping_bar",
-      "label": "Show free shipping progress bar",
-      "default": true
-    },
-    {
-      "type": "number",
-      "id": "free_shipping_threshold",
-      "label": "Free shipping threshold ($)",
-      "default": 100,
-      "info": "Set to 0 to disable. Must match your shipping rate settings in Shopify admin."
-    },
-    {
-      "type": "text",
-      "id": "shipping_progress_msg",
-      "label": "Progress message",
-      "default": "Add [amount] more for free shipping",
-      "info": "Use [amount] as a placeholder — it's replaced with the remaining dollar amount."
-    },
-    {
-      "type": "text",
-      "id": "shipping_qualified_msg",
-      "label": "Qualified message",
-      "default": "🎉 You qualify for free shipping!"
-    },
-    {
-      "type": "header",
-      "content": "Product recommendations"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_recommendations",
-      "label": "Show product recommendations",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "recommendations_heading",
-      "label": "Recommendations heading",
-      "default": "You might also like"
-    },
-    {
-      "type": "range",
-      "id": "reco_limit",
-      "label": "Number of recommendations",
-      "min": 1,
-      "max": 8,
-      "step": 1,
-      "default": 4
-    },
-    {
-      "type": "select",
-      "id": "reco_intent",
-      "label": "Recommendation type",
-      "options": [
-        { "value": "related", "label": "Related products" },
-        { "value": "complementary", "label": "Complementary products" }
-      ],
-      "default": "related",
-      "info": "\"Complementary\" requires you to configure product relationships in Shopify Search & Discovery app."
-    },
-    {
-      "type": "header",
-      "content": "Footer"
-    },
-    {
-      "type": "text",
-      "id": "subtotal_label",
-      "label": "Subtotal label",
-      "default": "Subtotal"
-    },
-    {
-      "type": "text",
-      "id": "tax_note",
-      "label": "Tax and shipping note",
-      "default": "Taxes and shipping calculated at checkout",
-      "info": "Leave blank to hide."
-    },
-    {
-      "type": "text",
-      "id": "checkout_button_label",
-      "label": "Checkout button label",
-      "default": "Checkout"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_lock_icon",
-      "label": "Show lock icon on checkout button",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_continue_shopping",
-      "label": "Show \"Continue shopping\" link",
-      "default": false
-    },
-    {
-      "type": "text",
-      "id": "continue_shopping_label",
-      "label": "\"Continue shopping\" label",
-      "default": "Continue shopping"
-    },
-    {
-      "type": "header",
-      "content": "Cart note"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_cart_note",
-      "label": "Show order note field",
-      "default": false
-    },
-    {
-      "type": "text",
-      "id": "cart_note_label",
-      "label": "Note field label",
-      "default": "Order note"
-    },
-    {
-      "type": "text",
-      "id": "cart_note_placeholder",
-      "label": "Note field placeholder",
-      "default": "Any special instructions?"
-    },
-    {
-      "type": "header",
-      "content": "Empty state"
-    },
-    {
-      "type": "text",
-      "id": "empty_state_heading",
-      "label": "Heading",
-      "default": "Your cart is empty"
-    },
-    {
-      "type": "text",
-      "id": "empty_state_subtext",
-      "label": "Subtext",
-      "default": "Add something to get started"
-    },
-    {
-      "type": "text",
-      "id": "empty_state_cta_label",
-      "label": "Button label",
-      "default": "Shop now"
-    },
-    {
-      "type": "url",
-      "id": "empty_state_cta_url",
-      "label": "Button URL",
-      "info": "Defaults to your all-products collection."
-    }
-  ],
-  "presets": [
-    {
-      "name": "Cart drawer"
-    }
-  ]
-}
-{% endschema %}
