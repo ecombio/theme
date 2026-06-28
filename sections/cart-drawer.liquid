@@ -1,24 +1,31 @@
 {%- comment -%}
   sections/cart-drawer.liquid
+
   Cart drawer with inline product recommendations.
   Recommendations are rendered client-side via the Product Recommendations API
   (/recommendations/products.json?product_id=X&intent=related|complementary).
-  This section renders a shell; JS fetches and injects the cards after the
-  drawer opens so the initial render is never blocked.
+
+  The drawer shell is rendered server-side; JS fetches and injects recommendation
+  cards after the drawer opens so the initial render is never blocked.
+
+  Recommendation rails are delegated to snippets/cart-recommendations.liquid.
+
   Schema settings:
-    - show_related → "You may also like" rail
-    - show_complementary → "Frequently bought together" rail
-    - related_label → heading text for the related rail
-    - complementary_label → heading text for the complementary rail
-    - rec_limit → how many cards to show per rail (2–6)
+    show_related         → "You may also like" rail
+    show_complementary   → "Frequently bought together" rail
+    related_label        → heading text for the related rail
+    complementary_label  → heading text for the complementary rail
+    rec_limit            → how many cards to show per rail (2–6)
 {%- endcomment -%}
+
 {%- liquid
-  assign show_related = section.settings.show_related
-  assign show_complementary = section.settings.show_complementary
-  assign related_label = section.settings.related_label | default: 'You may also like'
+  assign show_related        = section.settings.show_related
+  assign show_complementary  = section.settings.show_complementary
+  assign related_label       = section.settings.related_label       | default: 'You may also like'
   assign complementary_label = section.settings.complementary_label | default: 'Frequently bought together'
-  assign rec_limit = section.settings.rec_limit | default: 4
+  assign rec_limit           = section.settings.rec_limit           | default: 4
 -%}
+
 <div
   id="ecombio-cart-drawer"
   class="ecombio-cart-drawer"
@@ -31,15 +38,28 @@
   data-show-complementary="{{ show_complementary }}"
   data-rec-limit="{{ rec_limit }}"
 >
-  {%- comment -%} Backdrop {%- endcomment -%}
-  <div class="ecombio-cart-drawer__backdrop" data-ecombio-cart-close tabindex="-1" aria-hidden="true"></div>
-  {%- comment -%} Drawer panel {%- endcomment -%}
+
+  {{- comment -}} Backdrop {{- endcomment -}}
+  <div
+    class="ecombio-cart-drawer__backdrop"
+    data-ecombio-cart-close
+    tabindex="-1"
+    aria-hidden="true"
+  ></div>
+
+  {{- comment -}} Drawer panel {{- endcomment -}}
   <div class="ecombio-cart-drawer__inner" role="document">
-    {%- comment -%} Header {%- endcomment -%}
+
+    {{- comment -}} ── Header ── {{- endcomment -}}
     <div class="ecombio-cart-drawer__header">
       <h2 class="ecombio-cart-drawer__title">
         Your Cart
-        <span class="ecombio-cart-drawer__count" data-ecombio-cart-count aria-live="polite" aria-atomic="true">
+        <span
+          class="ecombio-cart-drawer__count"
+          data-ecombio-cart-count
+          aria-live="polite"
+          aria-atomic="true"
+        >
           ({{ cart.item_count }})
         </span>
       </h2>
@@ -55,9 +75,13 @@
         </svg>
       </button>
     </div>
-    {%- comment -%} Body {%- endcomment -%}
+
+    {{- comment -}} ── Body ── {{- endcomment -}}
     <div class="ecombio-cart-drawer__body" data-ecombio-cart-body>
+
       {%- if cart.item_count == 0 -%}
+
+        {{- comment -}} Empty state {{- endcomment -}}
         <div class="ecombio-cart-drawer__empty">
           <svg class="ecombio-cart-drawer__empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
@@ -65,11 +89,18 @@
             <path d="M16 10a4 4 0 0 1-8 0"></path>
           </svg>
           <p class="ecombio-cart-drawer__empty-text">Your cart is empty</p>
-          <a href="{{ routes.all_products_collection_url }}" class="ecombio-btn ecombio-btn--outline" data-ecombio-cart-close>
+          <a
+            href="{{ routes.all_products_collection_url }}"
+            class="ecombio-btn ecombio-btn--outline"
+            data-ecombio-cart-close
+          >
             Continue shopping
           </a>
         </div>
+
       {%- else -%}
+
+        {{- comment -}} ── Cart items ── {{- endcomment -}}
         <ul class="ecombio-cart-drawer__items" role="list" aria-label="Cart items">
           {%- for item in cart.items -%}
             {%- comment -%}
@@ -82,7 +113,8 @@
               data-cart-item-key="{{ item.key }}"
               data-cart-product-id="{{ item.product_id }}"
             >
-              {%- comment -%} Product image {%- endcomment -%}
+
+              {{- comment -}} Product image {{- endcomment -}}
               <a href="{{ item.url }}" class="ecombio-cart-drawer__item-image-link" tabindex="-1" aria-hidden="true">
                 {%- if item.image -%}
                   {{-
@@ -100,18 +132,27 @@
                   <div class="ecombio-cart-drawer__item-image ecombio-cart-drawer__item-image--placeholder"></div>
                 {%- endif -%}
               </a>
-              {%- comment -%} Product info {%- endcomment -%}
+
+              {{- comment -}} Product info {{- endcomment -}}
               <div class="ecombio-cart-drawer__item-info">
                 <a href="{{ item.url }}" class="ecombio-cart-drawer__item-title">{{ item.product.title }}</a>
+
                 {%- unless item.product.has_only_default_variant -%}
                   <p class="ecombio-cart-drawer__item-variant">{{ item.variant.title }}</p>
                 {%- endunless -%}
+
                 {%- if item.selling_plan_allocation -%}
                   <p class="ecombio-cart-drawer__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
                 {%- endif -%}
+
                 <div class="ecombio-cart-drawer__item-bottom">
-                  {%- comment -%} Quantity stepper {%- endcomment -%}
-                  <div class="ecombio-cart-drawer__qty" role="group" aria-label="Quantity for {{ item.product.title | escape }}">
+
+                  {{- comment -}} Quantity stepper {{- endcomment -}}
+                  <div
+                    class="ecombio-cart-drawer__qty"
+                    role="group"
+                    aria-label="Quantity for {{ item.product.title | escape }}"
+                  >
                     <button
                       type="button"
                       class="ecombio-cart-drawer__qty-btn"
@@ -121,7 +162,7 @@
                       aria-label="{% if item.quantity == 1 %}Remove {{ item.product.title | escape }} from cart{% else %}Decrease quantity of {{ item.product.title | escape }}{% endif %}"
                     >
                       {%- if item.quantity == 1 -%}
-                        {%- comment -%} Trash icon at qty 1 — signals removal, not decrement {%- endcomment -%}
+                        {{- comment -}} Trash icon at qty 1 — signals removal, not decrement {{- endcomment -}}
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                           <polyline points="3 6 5 6 21 6"></polyline>
                           <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
@@ -134,7 +175,13 @@
                         </svg>
                       {%- endif -%}
                     </button>
-                    <span class="ecombio-cart-drawer__qty-value" data-qty-value="{{ item.key }}" aria-live="polite">{{ item.quantity }}</span>
+
+                    <span
+                      class="ecombio-cart-drawer__qty-value"
+                      data-qty-value="{{ item.key }}"
+                      aria-live="polite"
+                    >{{ item.quantity }}</span>
+
                     <button
                       type="button"
                       class="ecombio-cart-drawer__qty-btn"
@@ -149,14 +196,16 @@
                       </svg>
                     </button>
                   </div>
-                  {%- comment -%} Price {%- endcomment -%}
+
+                  {{- comment -}} Line price {{- endcomment -}}
                   <div class="ecombio-cart-drawer__item-price">
                     {%- if item.original_line_price != item.final_line_price -%}
                       <s class="ecombio-cart-drawer__price--was">{{ item.original_line_price | money }}</s>
                     {%- endif -%}
                     <span class="ecombio-cart-drawer__price">{{ item.final_line_price | money }}</span>
                   </div>
-                  {%- comment -%} Remove {%- endcomment -%}
+
+                  {{- comment -}} Remove button {{- endcomment -}}
                   <button
                     type="button"
                     class="ecombio-cart-drawer__remove"
@@ -171,53 +220,32 @@
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
                     </svg>
                   </button>
-                </div>
-              </div>
+
+                </div>{{- comment -}} /.ecombio-cart-drawer__item-bottom {{- endcomment -}}
+              </div>{{- comment -}} /.ecombio-cart-drawer__item-info {{- endcomment -}}
             </li>
           {%- endfor -%}
         </ul>
-        {%- comment -%}
-          ── Product Recommendations Shell ────────────────────────────────────
-          Rendered only when cart has items. JS reads data-* config from the
-          drawer root and decides which rails to fetch and render.
-          "related" intent → "You may also like" (Shopify ML, no setup needed)
-          "complementary" intent → "Frequently bought together"
-                                   Requires Shopify Search & Discovery app +
-                                   complementary products configured per product in
-                                   Admin → Products → [product] → Complementary products.
-                                   If no associations exist the API returns 0 products
-                                   and the rail is silently hidden — safe to enable.
-          Source product ID comes from sessionStorage key 'ecombio_last_added_product_id'
-          (written by your ATC flow). Falls back to the first cart item's
-          data-cart-product-id attribute.
-        {%- endcomment -%}
-        {%- if show_related or show_complementary -%}
-          <div
-            class="ecombio-cart-recs"
-            data-ecombio-recs
-            data-related-label="{{ related_label | escape }}"
-            data-complementary-label="{{ complementary_label | escape }}"
-            aria-live="polite"
-            aria-label="Product recommendations"
-          >
-            {%- comment -%}
-              Skeleton renders immediately to prevent layout shift.
-              JS replaces this entire block once recommendations load.
-            {%- endcomment -%}
-            <div class="ecombio-cart-recs__skeleton" aria-hidden="true">
-              <div class="ecombio-cart-recs__skeleton-bar"></div>
-              <div class="ecombio-cart-recs__skeleton-cards">
-                {%- for i in (1..4) -%}
-                  <div class="ecombio-cart-recs__skeleton-card"></div>
-                {%- endfor -%}
-              </div>
-            </div>
-          </div>
-        {%- endif -%}
+
+        {{- comment -}} ── Product recommendations (delegated to snippet) ── {{- endcomment -}}
+        {%- render 'cart-recommendations',
+              show_related: show_related,
+              show_complementary: show_complementary,
+              related_label: related_label,
+              complementary_label: complementary_label
+        -%}
+
       {%- endif -%}
-    </div>{%- comment -%} /.ecombio-cart-drawer__body {%- endcomment -%}
-    {%- comment -%} Footer — hidden when cart is empty {%- endcomment -%}
-    <div class="ecombio-cart-drawer__footer" data-ecombio-cart-footer {% if cart.item_count == 0 %}hidden{% endif %}>
+
+    </div>{{- comment -}} /.ecombio-cart-drawer__body {{- endcomment -}}
+
+    {{- comment -}} ── Footer — hidden when cart is empty ── {{- endcomment -}}
+    <div
+      class="ecombio-cart-drawer__footer"
+      data-ecombio-cart-footer
+      {%- if cart.item_count == 0 %} hidden{%- endif %}
+    >
+
       {%- if cart.cart_level_discount_applications.size > 0 -%}
         <ul class="ecombio-cart-drawer__discounts" aria-label="Applied discounts">
           {%- for discount in cart.cart_level_discount_applications -%}
@@ -232,24 +260,44 @@
           {%- endfor -%}
         </ul>
       {%- endif -%}
+
       <div class="ecombio-cart-drawer__subtotal">
         <span>Subtotal</span>
         <span data-ecombio-cart-subtotal>{{ cart.total_price | money_with_currency }}</span>
       </div>
+
       <p class="ecombio-cart-drawer__tax-note">{{ 'cart.general.taxes_and_shipping' | t }}</p>
-      <a href="{{ routes.checkout_url }}" class="ecombio-btn ecombio-btn--primary ecombio-cart-drawer__checkout">
+
+      <a
+        href="{{ routes.checkout_url }}"
+        class="ecombio-btn ecombio-btn--primary ecombio-cart-drawer__checkout"
+      >
         Check out
       </a>
-      <a href="{{ routes.all_products_collection_url }}" class="ecombio-cart-drawer__continue" data-ecombio-cart-close>
+
+      <a
+        href="{{ routes.all_products_collection_url }}"
+        class="ecombio-cart-drawer__continue"
+        data-ecombio-cart-close
+      >
         Continue shopping
       </a>
-    </div>
-    {%- comment -%} Loading overlay {%- endcomment -%}
-    <div class="ecombio-cart-drawer__loading" data-ecombio-cart-loading aria-hidden="true" hidden>
+
+    </div>{{- comment -}} /.ecombio-cart-drawer__footer {{- endcomment -}}
+
+    {{- comment -}} ── Loading overlay ── {{- endcomment -}}
+    <div
+      class="ecombio-cart-drawer__loading"
+      data-ecombio-cart-loading
+      aria-hidden="true"
+      hidden
+    >
       <div class="ecombio-cart-drawer__spinner" role="status" aria-label="Updating cart"></div>
     </div>
-  </div>{%- comment -%} /.ecombio-cart-drawer__inner {%- endcomment -%}
-</div>
+
+  </div>{{- comment -}} /.ecombio-cart-drawer__inner {{- endcomment -}}
+</div>{{- comment -}} /#ecombio-cart-drawer {{- endcomment -}}
+
 {% schema %}
 {
   "name": "Cart Drawer",
