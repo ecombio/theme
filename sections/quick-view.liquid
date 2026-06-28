@@ -12,10 +12,13 @@
        produce that inner HTML on demand.
 
   This section renders once in theme.liquid and is reused for every open.
+  When fetched via /products/${handle}?sections=quick-view, Shopify passes
+  the product object automatically — section.settings.preview_product is
+  only used as a fallback in the theme editor.
 {%- endcomment -%}
 
 {%- liquid
-  assign product       = section.settings.preview_product
+  assign product       = product | default: section.settings.preview_product
   assign featured      = product.featured_image
   assign images        = product.images
   assign variants      = product.variants
@@ -65,25 +68,28 @@
       {%- comment -%}
         Populated by quick-view.js on open via sections fetch.
         On the first server render the body is intentionally empty —
-        the Liquid below only runs when the section is fetched as a
-        section render (i.e. request.design_mode or sections API call).
+        the Liquid below only runs when the section is fetched via
+        the sections API or viewed in the theme editor.
       {%- endcomment -%}
       {%- if product != blank -%}
-        <div class="quick-view">
+        <div class="quick-view"
+          data-product-id="{{ product.id }}"
+          data-product-handle="{{ product.handle }}"
+        >
           {%- render 'quick-view-media',
             product:  product,
             featured: featured,
             images:   images
           -%}
           {%- render 'quick-view-detail',
-            product:       product,
-            variants:      variants,
-            first_variant: first_variant,
-            options:       options,
+            product:        product,
+            variants:       variants,
+            first_variant:  first_variant,
+            options:        options,
             has_single_var: has_single_var,
-            on_sale:       on_sale,
-            save_pct:      save_pct,
-            eta_text:      eta_text
+            on_sale:        on_sale,
+            save_pct:       save_pct,
+            eta_text:       eta_text
           -%}
         </div>
       {%- endif -%}
