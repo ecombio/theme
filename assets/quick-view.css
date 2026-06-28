@@ -682,3 +682,150 @@ html.quick-view-open { overflow: hidden; }
     transition: none;
   }
 }
+/* ============================================================
+   5. DESCRIPTION TABS
+   Append this entire block to the bottom of assets/quick-view.css.
+   ============================================================ */
+
+/* ── Fix: make .quick-view grid rows stack correctly ──────────────── */
+.quick-view {
+  align-items:  start;
+  background:   var(--quick-view-bg);
+}
+
+/* ── Full-width tab section ─────────────────────────────────────────
+   grid-column: 1 / -1 spans both the media and detail columns.
+   background must be set explicitly — the panel behind is transparent.
+   ─────────────────────────────────────────────────────────────────── */
+.quick-view__desc-wrap {
+  grid-column:    1 / -1;
+  display:        flex;
+  flex-direction: column;
+  background:     var(--quick-view-bg);
+  border-top:     1px solid var(--quick-view-border-color);
+}
+
+/* ── Tab strip ── */
+.quick-view__tabs {
+  display:          flex;
+  align-items:      flex-end;
+  gap:              0;
+  padding:          0 var(--quick-view-detail-padding);
+  border-bottom:    1px solid var(--quick-view-border-color);
+  background:       var(--quick-view-bg);
+  overflow-x:       auto;
+  scrollbar-width:  none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-view__tabs::-webkit-scrollbar { display: none; }
+
+/* ── Tab button ── */
+.quick-view__tab {
+  flex-shrink:    0;
+  padding:        0.7rem 1rem;
+  font-family:    var(--quick-view-font);
+  font-size:      0.78rem;
+  font-weight:    600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color:          var(--quick-view-color-text-muted);
+  background:     transparent;
+  border:         none;
+  border-bottom:  2px solid transparent;
+  margin-bottom:  -1px;
+  cursor:         pointer;
+  white-space:    nowrap;
+  line-height:    1.4;
+  transition:     color 0.15s ease, border-color 0.15s ease;
+}
+
+.quick-view__tab:hover {
+  color: var(--quick-view-color-text);
+}
+
+.quick-view__tab.is-active {
+  color:               var(--quick-view-color-text);
+  border-bottom-color: var(--quick-view-accent);
+}
+
+.quick-view__tab:focus-visible {
+  outline:        2px solid var(--quick-view-accent);
+  outline-offset: 2px;
+}
+
+/* ── Tab panels ── */
+.quick-view__tab-panel {
+  display:    none;
+  padding:    1.25rem var(--quick-view-detail-padding);
+  background: var(--quick-view-bg);
+}
+
+.quick-view__tab-panel.is-active {
+  display: block;
+}
+
+/* ── Scrollable content area ── */
+.quick-view__tab-panel-inner {
+  font-family:     var(--quick-view-font);
+  font-size:       0.875rem;
+  line-height:     1.65;
+  color:           var(--quick-view-color-text);
+  max-height:      200px;
+  overflow-y:      auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--quick-view-border-color) transparent;
+}
+
+.quick-view__tab-panel-inner::-webkit-scrollbar       { width: 4px; }
+.quick-view__tab-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.quick-view__tab-panel-inner::-webkit-scrollbar-thumb {
+  background:    var(--quick-view-border-color);
+  border-radius: 2px;
+}
+
+/* ── RTE resets ── */
+.quick-view__tab-panel-inner p              { margin: 0 0 0.75em; }
+.quick-view__tab-panel-inner p:last-child   { margin-bottom: 0; }
+.quick-view__tab-panel-inner h1,
+.quick-view__tab-panel-inner h2,
+.quick-view__tab-panel-inner h3             { font-size: 0.875rem; font-weight: 700; margin: 0 0 0.5em; color: var(--quick-view-color-text); }
+.quick-view__tab-panel-inner a              { color: var(--quick-view-color-link); text-underline-offset: 2px; }
+.quick-view__tab-panel-inner a:hover        { color: var(--quick-view-color-link-hover); }
+.quick-view__tab-panel-inner ul,
+.quick-view__tab-panel-inner ol             { padding-left: 1.25rem; margin: 0 0 0.75em; }
+.quick-view__tab-panel-inner li             { margin-bottom: 0.25em; }
+
+/* ── Dark mode ── */
+@media (prefers-color-scheme: dark) {
+  .quick-view__desc-wrap,
+  .quick-view__tabs,
+  .quick-view__tab-panel {
+    background: var(--quick-view-bg); /* resolves to #1c1c1e via dark token */
+  }
+  .quick-view__tab-panel-inner::-webkit-scrollbar-thumb {
+    background: #3a3a3c;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 700px) {
+  .quick-view__tabs {
+    padding: 0 var(--quick-view-detail-padding-mobile);
+  }
+  .quick-view__tab {
+    padding:   0.6rem 0.7rem;
+    font-size: 0.72rem;
+  }
+  .quick-view__tab-panel {
+    padding: 1rem var(--quick-view-detail-padding-mobile);
+  }
+  .quick-view__tab-panel-inner {
+    max-height: 160px;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .quick-view__tab { transition: none; }
+}
