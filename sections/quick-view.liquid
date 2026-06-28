@@ -3,8 +3,15 @@
   ==========================
   Modal shell. Renders once in theme.liquid; reused for every product open.
 
-  Passes all shop.policies bodies as explicit strings into render tags
-  because shop.policies is NOT accessible inside render-tag isolated scope.
+  Policy copy (Shipping / Returns & Refunds / Warranty) comes from a single
+  metaobject reference on the product: custom.policies → Product Policy
+  metaobject (definition handle: product_policy). Each policy field on that
+  metaobject is a rich_text field, which auto-renders to HTML when output
+  directly — no need for the metafield_tag filter.
+
+  Passed as explicit parameters into the render tag below because metaobject
+  field values resolved here are local variables, and render-tag scope only
+  sees globals + explicitly passed params.
 {%- endcomment -%}
 
 {%- liquid
@@ -28,13 +35,11 @@
     assign save_pct = first_variant.compare_at_price | minus: first_variant.price | times: 100 | divided_by: first_variant.compare_at_price
   endif
 
-  assign shipping_policy_body = shop.policies.shipping_policy.body
-  assign refund_policy_body   = shop.policies.refund_policy.body
+  assign policy_set = product.metafields.custom.policies.value
 
-  assign warranty_policy_body = product.metafields.custom.warranty_policy
-  if warranty_policy_body == blank
-    assign warranty_policy_body = shop.policies.privacy_policy.body
-  endif
+  assign shipping_policy_body = policy_set.shipping_policy.value
+  assign refund_policy_body   = policy_set.returns_refunds.value
+  assign warranty_policy_body = policy_set.warranty_policy.value
 -%}
 
 <div
