@@ -6,23 +6,26 @@
 
   Tabs (in order):
     1. Description        — product.description
-    2. Shipping Policy    — shop.policies.shipping_policy
-    3. Returns & Refunds  — shop.policies.refund_policy
+    2. Shipping Policy    — shipping_policy (passed from section scope)
+    3. Returns & Refunds  — refund_policy   (passed from section scope)
 
-  A tab is omitted entirely when its content is blank, so stores with only
-  a description don't see empty "Shipping" or "Returns" tabs.
+  IMPORTANT: shop.policies is NOT accessible inside render-tag isolated scope.
+  The section must pass policy bodies explicitly as parameters:
+    {%- render 'quick-view-description',
+        product:         product,
+        shipping_policy: shop.policies.shipping_policy.body,
+        refund_policy:   shop.policies.refund_policy.body
+    -%}
 
-  Parameters (passed via render tag from sections/quick-view.liquid):
-    product  {Object}  required — Shopify product object
+  Parameters:
+    product          {Object}  required — Shopify product object
+    shipping_policy  {String}  optional — shop.policies.shipping_policy.body
+    refund_policy    {String}  optional — shop.policies.refund_policy.body
 
-  JS hooks (handled by quick-view.js initDescriptionTabs()):
-    [data-qv-tab]        — clickable tab buttons; data-target="#<panel-id>"
-    [data-qv-tab-panel]  — panel <div>s; toggled via aria-hidden + .is-active
-
-  Accessibility:
-    • role="tablist" / role="tab" / role="tabpanel" pattern
-    • aria-selected, aria-controls, aria-labelledby wired in Liquid
-    • Keyboard: left/right arrow navigation handled in JS
+  JS hooks (handled by quick-view.js — initDescriptionTabs()):
+    [data-qv-desc-wrap]   — root container; guarded against double-init
+    [data-qv-tab]         — clickable tab buttons
+    [data-qv-tab-panel]   — panel divs; toggled via .is-active + aria-hidden
 {%- endcomment -%}
 
 {%- liquid
@@ -34,11 +37,11 @@
     assign has_description = true
   endif
 
-  if shop.policies.shipping_policy.body != blank
+  if shipping_policy != blank
     assign has_shipping = true
   endif
 
-  if shop.policies.refund_policy.body != blank
+  if refund_policy != blank
     assign has_refund = true
   endif
 
@@ -49,22 +52,12 @@
 -%}
 
 {%- if any_tab -%}
-<div
-  class="quick-view__desc-wrap"
-  data-qv-desc-wrap
->
+<div class="quick-view__desc-wrap" data-qv-desc-wrap>
 
-  {%- comment -%}── Tab strip ──{%- endcomment -%}
-  <div
-    class="quick-view__tabs"
-    role="tablist"
-    aria-label="Product information tabs"
-  >
-
-    {%- assign first_tab_set = false -%}
+  {%- comment -%}── Tab strip (tablist) ──{%- endcomment -%}
+  <div class="quick-view__tabs" role="tablist" aria-label="Product information tabs">
 
     {%- if has_description -%}
-      {%- assign first_tab_set = true -%}
       <button
         type="button"
         class="quick-view__tab is-active"
@@ -72,57 +65,57 @@
         id="qv-tab-desc-{{ product.id }}"
         aria-selected="true"
         aria-controls="qv-panel-desc-{{ product.id }}"
+        tabindex="0"
         data-qv-tab
         data-target="qv-panel-desc-{{ product.id }}"
-      >
-        Description
-      </button>
+      >Description</button>
     {%- endif -%}
 
     {%- if has_shipping -%}
       <button
         type="button"
-        class="quick-view__tab{% unless first_tab_set %} is-active{% endunless %}"
+        class="quick-view__tab{% unless has_description %} is-active{% endunless %}"
         role="tab"
         id="qv-tab-ship-{{ product.id }}"
-        aria-selected="{% unless first_tab_set %}true{% else %}false{% endunless %}"
+        aria-selected="{% unless has_description %}true{% else %}false{% endunless %}"
         aria-controls="qv-panel-ship-{{ product.id }}"
+        tabindex="{% unless has_description %}0{% else %}-1{% endunless %}"
         data-qv-tab
         data-target="qv-panel-ship-{{ product.id }}"
-      >
-        Shipping Policy
-      </button>
-      {%- unless first_tab_set -%}{%- assign first_tab_set = true -%}{%- endunless -%}
+      >Shipping Policy</button>
     {%- endif -%}
 
     {%- if has_refund -%}
+      {%- liquid
+        assign refund_first = false
+        unless has_description or has_shipping
+          assign refund_first = true
+        endunless
+      -%}
       <button
         type="button"
-        class="quick-view__tab{% unless first_tab_set %} is-active{% endunless %}"
+        class="quick-view__tab{% if refund_first %} is-active{% endif %}"
         role="tab"
         id="qv-tab-refund-{{ product.id }}"
-        aria-selected="{% unless first_tab_set %}true{% else %}false{% endunless %}"
+        aria-selected="{{ refund_first }}"
         aria-controls="qv-panel-refund-{{ product.id }}"
+        tabindex="{% if refund_first %}0{% else %}-1{% endif %}"
         data-qv-tab
         data-target="qv-panel-refund-{{ product.id }}"
-      >
-        Returns &amp; Refunds
-      </button>
+      >Returns &amp; Refunds</button>
     {%- endif -%}
 
   </div>{%- comment -%}/.quick-view__tabs{%- endcomment -%}
 
   {%- comment -%}── Tab panels ──{%- endcomment -%}
 
-  {%- assign first_panel_set = false -%}
-
   {%- if has_description -%}
-    {%- assign first_panel_set = true -%}
     <div
       class="quick-view__tab-panel is-active"
       role="tabpanel"
       id="qv-panel-desc-{{ product.id }}"
       aria-labelledby="qv-tab-desc-{{ product.id }}"
+      aria-hidden="false"
       data-qv-tab-panel
       tabindex="0"
     >
@@ -134,33 +127,38 @@
 
   {%- if has_shipping -%}
     <div
-      class="quick-view__tab-panel{% unless first_panel_set %} is-active{% endunless %}"
+      class="quick-view__tab-panel{% unless has_description %} is-active{% endunless %}"
       role="tabpanel"
       id="qv-panel-ship-{{ product.id }}"
       aria-labelledby="qv-tab-ship-{{ product.id }}"
+      aria-hidden="{% if has_description %}true{% else %}false{% endif %}"
       data-qv-tab-panel
-      aria-hidden="{% if first_panel_set %}true{% else %}false{% endif %}"
       tabindex="0"
     >
       <div class="quick-view__tab-panel-inner rte">
-        {{- shop.policies.shipping_policy.body -}}
+        {{- shipping_policy -}}
       </div>
     </div>
-    {%- unless first_panel_set -%}{%- assign first_panel_set = true -%}{%- endunless -%}
   {%- endif -%}
 
   {%- if has_refund -%}
+    {%- liquid
+      assign refund_hidden = true
+      unless has_description or has_shipping
+        assign refund_hidden = false
+      endunless
+    -%}
     <div
-      class="quick-view__tab-panel{% unless first_panel_set %} is-active{% endunless %}"
+      class="quick-view__tab-panel{% unless refund_hidden %} is-active{% endunless %}"
       role="tabpanel"
       id="qv-panel-refund-{{ product.id }}"
       aria-labelledby="qv-tab-refund-{{ product.id }}"
+      aria-hidden="{{ refund_hidden }}"
       data-qv-tab-panel
-      aria-hidden="{% if first_panel_set %}true{% else %}false{% endif %}"
       tabindex="0"
     >
       <div class="quick-view__tab-panel-inner rte">
-        {{- shop.policies.refund_policy.body -}}
+        {{- refund_policy -}}
       </div>
     </div>
   {%- endif -%}

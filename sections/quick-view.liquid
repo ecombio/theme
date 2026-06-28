@@ -5,19 +5,15 @@
 
   Flow:
     1. product-card.js fires 'quickview:open' with { handle, trigger }
-    2. quick-view.js listens, fetches:
-         /products/${handle}?sections=quick-view
+    2. quick-view.js listens, fetches /products/${handle}?sections=quick-view
        and injects the returned HTML into .quick-view-modal__body
     3. snippets/quick-view-media.liquid + snippets/quick-view-detail.liquid
-       produce that inner HTML on demand.
-    4. snippets/quick-view-description.liquid renders the tab strip
-       (Description / Shipping Policy / Returns & Refunds) as a full-width
-       row beneath the two-column layout.
+       produce the two-column inner HTML.
+    4. snippets/quick-view-description.liquid renders the full-width tab strip
+       (Description / Shipping Policy / Returns & Refunds) below.
 
-  This section renders once in theme.liquid and is reused for every open.
-  When fetched via /products/${handle}?sections=quick-view, Shopify passes
-  the product object automatically — section.settings.preview_product is
-  only used as a fallback in the theme editor.
+  NOTE: shop.policies is not in render-tag scope, so we pass policy bodies
+  down explicitly as string parameters to quick-view-description.
 {%- endcomment -%}
 
 {%- liquid
@@ -40,6 +36,9 @@
     assign on_sale  = true
     assign save_pct = first_variant.compare_at_price | minus: first_variant.price | times: 100 | divided_by: first_variant.compare_at_price
   endif
+
+  assign shipping_policy_body = shop.policies.shipping_policy.body
+  assign refund_policy_body   = shop.policies.refund_policy.body
 -%}
 
 <div
@@ -68,18 +67,13 @@
     </button>
 
     <div class="quick-view-modal__body">
-      {%- comment -%}
-        Populated by quick-view.js on open via sections fetch.
-        On the first server render the body is intentionally empty —
-        the Liquid below only runs when the section is fetched via
-        the sections API or viewed in the theme editor.
-      {%- endcomment -%}
       {%- if product != blank -%}
-        <div class="quick-view"
+        <div
+          class="quick-view"
           data-product-id="{{ product.id }}"
           data-product-handle="{{ product.handle }}"
         >
-          {%- comment -%}── Two-column row: media + detail ──{%- endcomment -%}
+          {%- comment -%}── Row 1: two-column media + detail ──{%- endcomment -%}
           {%- render 'quick-view-media',
             product:  product,
             featured: featured,
@@ -96,9 +90,11 @@
             eta_text:       eta_text
           -%}
 
-          {%- comment -%}── Full-width row: description / policy tabs ──{%- endcomment -%}
+          {%- comment -%}── Row 2: full-width description + policy tabs ──{%- endcomment -%}
           {%- render 'quick-view-description',
-            product: product
+            product:         product,
+            shipping_policy: shipping_policy_body,
+            refund_policy:   refund_policy_body
           -%}
         </div>
       {%- endif -%}
