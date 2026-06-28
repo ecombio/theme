@@ -1,18 +1,16 @@
 /**
- * Quick View Modal
- * ================
- * Fetches product JSON and renders a modal with images,
- * variant selector, description, and add-to-cart.
+ * assets/quick-view.js
+ * ====================
+ * Quick View modal for snippets/product-card.liquid.
  *
- * Dependencies: none (vanilla JS, ES2017+)
+ * Flow:
+ *   1. product-card.js intercepts [data-quickview-btn] clicks and fires:
+ *        document.dispatchEvent(new CustomEvent('quickview:open', { detail: { handle, trigger } }))
+ *   2. This file listens for that event, fetches /products/{handle}.js,
+ *      and renders the modal.
  *
- * Integration with product-card.liquid:
- *   Add to each card's image wrapper:
- *     <button
- *       class="product-card__quick-view js-quick-view-trigger"
- *       data-product-url="{{ product.url }}"
- *       aria-label="Quick view {{ product.title }}"
- *     >Quick View</button>
+ * Dependencies: sections/quick-view.liquid must be rendered on the page.
+ * Loaded globally via theme.liquid.
  */
 
 (function () {
@@ -28,11 +26,11 @@
 
   // ─── DOM refs ─────────────────────────────────────────────────────────────
 
-  const modal       = document.getElementById('quick-view-modal');
-  const contentEl   = document.getElementById('quick-view-content');
-  const template    = document.getElementById('quick-view-template');
+  const modal     = document.getElementById('quick-view-modal');
+  const contentEl = document.getElementById('quick-view-content');
+  const template  = document.getElementById('quick-view-template');
 
-  if (!modal || !contentEl || !template) return; // section not on page
+  if (!modal || !contentEl || !template) return;
 
   // ─── Open / Close ─────────────────────────────────────────────────────────
 
@@ -48,11 +46,9 @@
     modal.classList.remove('is-open');
     document.body.style.overflow = '';
     releaseFocus();
-    // Clear content after transition
     setTimeout(() => { contentEl.innerHTML = ''; }, 300);
   }
 
-  // Close triggers
   modal.addEventListener('click', (e) => {
     if (e.target.closest('.js-quick-view-close')) closeModal();
   });
@@ -63,21 +59,21 @@
 
   // ─── Fetch & Render ───────────────────────────────────────────────────────
 
-  async function loadProduct(productUrl) {
-    contentEl.innerHTML = ''; // triggers spinner via CSS :empty
+  async function loadProduct(handle) {
+    contentEl.innerHTML = '';
     openModal();
 
     try {
-      const res = await fetch(`${productUrl}.js`);
+      const res = await fetch(`/products/${handle}.js`);
       if (!res.ok) throw new Error('Product not found');
       const product = await res.json();
       state.product = product;
-      state.selectedOptions = product.variants[0].options.slice(); // clone first variant options
+      state.selectedOptions = product.variants[0].options.slice();
       state.selectedVariant = product.variants[0];
       renderProduct(product);
     } catch (err) {
       contentEl.innerHTML = `<p style="padding:2rem;text-align:center;">Sorry, couldn't load this product.</p>`;
-      console.error('[QuickView]', err);
+      console.error('[quick-view]', err);
     }
   }
 
@@ -86,51 +82,39 @@
     contentEl.innerHTML = '';
     contentEl.appendChild(clone);
 
-    // Vendor
     const vendorEl = document.getElementById('quick-view-vendor');
     if (vendorEl) {
       vendorEl.textContent = product.vendor;
       if (!product.vendor) vendorEl.style.display = 'none';
     }
 
-    // Title
     const titleEl = document.getElementById('quick-view-title');
     if (titleEl) titleEl.textContent = product.title;
 
-    // Full-details link
     const linkEl = document.getElementById('quick-view-full-link');
     if (linkEl) linkEl.href = product.url;
 
-    // Description
     const descEl = document.getElementById('quick-view-description');
     if (descEl) descEl.innerHTML = product.description;
 
-    // Gallery
     renderGallery(product);
-
-    // Variants
     renderVariants(product);
-
-    // Price
     updatePrice();
 
-    // ATC button
     const atcBtn = document.getElementById('quick-view-atc-btn');
     if (atcBtn) {
       updateAtcButton(atcBtn);
       atcBtn.addEventListener('click', () => addToCart(atcBtn));
     }
 
-    // Quantity controls
     setupQuantityControls();
   }
 
   // ─── Gallery ──────────────────────────────────────────────────────────────
 
   function renderGallery(product) {
-    const mainImg    = document.getElementById('quick-view-main-image');
-    const thumbsEl   = document.getElementById('quick-view-thumbnails');
-
+    const mainImg  = document.getElementById('quick-view-main-image');
+    const thumbsEl = document.getElementById('quick-view-thumbnails');
     if (!mainImg || !thumbsEl || !product.images.length) return;
 
     function setMainImage(src, alt) {
@@ -195,27 +179,17 @@
         btn.type = 'button';
         btn.className = 'quick-view-variant-btn';
         btn.textContent = value;
-        btn.dataset.optionIndex = optionIndex;
-        btn.dataset.optionValue = value;
 
-        if (value === state.selectedOptions[optionIndex]) {
-          btn.classList.add('is-selected');
-        }
+        if (value === state.selectedOptions[optionIndex]) btn.classList.add('is-selected');
 
-        // Check availability for this value
-        const available = product.variants.some(
-          v => v.options[optionIndex] === value && v.available
-        );
+        const available = product.variants.some(v => v.options[optionIndex] === value && v.available);
         if (!available) btn.classList.add('is-unavailable');
 
         btn.addEventListener('click', () => {
           state.selectedOptions[optionIndex] = value;
-          // Update label
           labelEl.innerHTML = `${optionName}: <span>${value}</span>`;
-          // Update selected state
           optionsEl.querySelectorAll('.quick-view-variant-btn').forEach(b => b.classList.remove('is-selected'));
           btn.classList.add('is-selected');
-          // Find matching variant
           state.selectedVariant = findVariant(product);
           updatePrice();
           updateGalleryForVariant();
@@ -246,15 +220,12 @@
     mainImg.src = v.featured_image.src;
     mainImg.onload = () => { mainImg.style.opacity = '1'; };
 
-    // Update active thumb
     const thumbsEl = document.getElementById('quick-view-thumbnails');
     if (!thumbsEl) return;
-    const thumbs = thumbsEl.querySelectorAll('.quick-view-product__thumb img');
-    thumbs.forEach((img, i) => {
-      const thumb = img.parentElement;
+    thumbsEl.querySelectorAll('.quick-view-product__thumb img').forEach((img) => {
       if (img.src === v.featured_image.src) {
         thumbsEl.querySelectorAll('.quick-view-product__thumb').forEach(b => b.classList.remove('is-active'));
-        thumb.classList.add('is-active');
+        img.parentElement.classList.add('is-active');
       }
     });
   }
@@ -268,10 +239,10 @@
     const v = state.selectedVariant || state.product?.variants[0];
     if (!v) return;
 
-    const format = (cents) => {
-      const amount = (cents / 100).toFixed(2);
-      return `${window.Shopify?.currency?.active || '$'}${amount}`;
-    };
+    // Use EcombioCard.formatMoney if available (shared with product-card.js),
+    // otherwise fall back to a local formatter.
+    const format = window.EcombioCard?.formatMoney
+      || ((cents) => (window.Shopify?.currency?.symbol ?? '$') + (cents / 100).toFixed(2).replace(/\.00$/, ''));
 
     if (v.compare_at_price && v.compare_at_price > v.price) {
       priceEl.innerHTML = `<s>${format(v.compare_at_price)}</s> <span class="price--sale">${format(v.price)}</span>`;
@@ -280,7 +251,7 @@
     }
   }
 
-  // ─── ATC Button ───────────────────────────────────────────────────────────
+  // ─── ATC ──────────────────────────────────────────────────────────────────
 
   function updateAtcButton(btn) {
     const v = state.selectedVariant;
@@ -315,8 +286,9 @@
       btn.classList.add('is-added');
       btn.textContent = 'Added!';
 
-      // Dispatch cart update event for theme cart drawer/counter
+      // Fire both events so cart drawer + counter both update
       document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+      document.dispatchEvent(new CustomEvent('cart:open',    { bubbles: true }));
 
       setTimeout(() => {
         btn.classList.remove('is-added');
@@ -326,7 +298,7 @@
     } catch (err) {
       btn.classList.remove('is-loading');
       btn.textContent = 'Error – try again';
-      console.error('[QuickView] Add to cart error:', err);
+      console.error('[quick-view] ATC error:', err);
       setTimeout(() => updateAtcButton(btn), 2000);
     }
   }
@@ -337,7 +309,6 @@
     const qtyInput = document.getElementById('quick-view-qty');
     const minusBtn = contentEl.querySelector('.js-qty-minus');
     const plusBtn  = contentEl.querySelector('.js-qty-plus');
-
     if (!qtyInput || !minusBtn || !plusBtn) return;
 
     minusBtn.addEventListener('click', () => {
@@ -376,20 +347,16 @@
   }
 
   function releaseFocus() {
-    if (modal._focusTrapHandler) {
-      modal.removeEventListener('keydown', modal._focusTrapHandler);
-    }
+    if (modal._focusTrapHandler) modal.removeEventListener('keydown', modal._focusTrapHandler);
     if (previousFocus) previousFocus.focus();
   }
 
-  // ─── Listen for quickview:open fired by product-card.js ──────────────────
-  // product-card.js fires: emit('quickview:open', { handle, trigger: btn })
-  // We build the product URL from the handle and fetch its .js endpoint.
+  // ─── Entry point ──────────────────────────────────────────────────────────
+  // product-card.js fires 'quickview:open' with { handle, trigger }
 
   document.addEventListener('quickview:open', (e) => {
     const { handle } = e.detail || {};
-    if (!handle) return;
-    loadProduct(`/products/${handle}`);
+    if (handle) loadProduct(handle);
   });
 
 })();
