@@ -5,20 +5,20 @@
   in cart-drawer.css so colours, radii, and type stay in sync with the drawer
   without duplicating any variables.
 
-  Assets loaded via theme.liquid (same tags as the drawer):
-    cart-drawer.css          → shared tokens
-    cart-recommendations.css → rec rail styles
-    cart-page.css            → page-specific layout
-    cart-drawer.js           → drawer + EcombioCart API (needed for the
-                               open-drawer links and badge updates)
-    cart-recommendations.js  → rec rail (reused on the cart page too)
-    cart-page.js             → qty/remove/subtotal for the page table
+  Assets loaded via theme.liquid:
+    cart-drawer.css            → shared tokens
+    cart-recommendations.css   → rec rail styles (shared with drawer — same BEM classes)
+    cart-page.css              → page-specific layout
+    cart-drawer.js             → drawer + EcombioCart API (needed for the
+                                 open-drawer links and badge updates)
+    cart-page-recommendations.js → page-native rec rail logic (NOT cart-recommendations.js —
+                                 that one is drawer-only; see its own header for why)
+    cart-page.js               → qty/remove/subtotal for the page table,
+                                 plus the init event that triggers recs
 
-  The page intentionally re-uses cart-recommendations.js so the same rec
-  rail logic runs here. The recs shell (snippets/cart-recommendations.liquid)
-  is rendered below the items table.
+  The recs shell (snippets/cart-recommendations.liquid) is shared markup,
+  rendered below the items table here and inside the drawer elsewhere.
 {%- endcomment -%}
-{{ 'cart-page.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign show_related        = section.settings.show_related
@@ -29,10 +29,10 @@
 -%}
 
 {%- comment -%}
-  The drawer's JS reads rec config from #ecombio-cart-drawer data attributes.
-  On the cart page that element is absent, so we emit a hidden proxy element
-  that cart-recommendations.js can read from instead.
-  cart-page.js dispatches 'cart:drawer:open' on DOMContentLoaded so recs load.
+  cart-page-recommendations.js reads rec config directly from this element
+  (#ecombio-cart-page-config) — no drawer dependency, no id monkey-patching.
+  cart-page.js dispatches 'cart:page:recs:init' on load so recs fetch once
+  the DOM is ready.
 {%- endcomment -%}
 <div
   id="ecombio-cart-page-config"
@@ -296,7 +296,7 @@
 
   </div>
 </main>
-{{ 'cart-page.js'             | asset_url | script_tag }}
+
 {% schema %}
 {
   "name": "Cart",
