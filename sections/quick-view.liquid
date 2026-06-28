@@ -1,4 +1,4 @@
-{% comment %}
+{%- comment -%}
   sections/quick-view.liquid
   ==========================
   Modal shell for the Quick View feature.
@@ -8,11 +8,33 @@
     2. quick-view.js listens, fetches:
          /products/${handle}?sections=quick-view
        and injects the returned HTML into .quick-view-modal__body
-    3. snippets/quick-view-detail.liquid + snippets/quick-view-media.liquid
+    3. snippets/quick-view-media.liquid + snippets/quick-view-detail.liquid
        produce that inner HTML on demand.
 
   This section renders once in theme.liquid and is reused for every open.
-{% endcomment %}
+{%- endcomment -%}
+
+{%- liquid
+  assign product       = section.settings.preview_product
+  assign featured      = product.featured_image
+  assign images        = product.images
+  assign variants      = product.variants
+  assign options       = product.options_with_values
+  assign first_variant = product.first_available_variant | default: product.variants.first
+  assign eta_text      = product.metafields.custom.eta_text
+
+  assign has_single_var = false
+  if product.has_only_default_variant
+    assign has_single_var = true
+  endif
+
+  assign on_sale  = false
+  assign save_pct = 0
+  if first_variant.compare_at_price > first_variant.price
+    assign on_sale  = true
+    assign save_pct = first_variant.compare_at_price | minus: first_variant.price | times: 100 | divided_by: first_variant.compare_at_price
+  endif
+-%}
 
 <div
   id="quick-view-modal"
@@ -26,8 +48,8 @@
 
   <div class="quick-view-modal__panel">
     <button
-      class="quick-view-modal__close"
       type="button"
+      class="quick-view-modal__close"
       aria-label="{{ 'accessibility.close' | t | default: 'Close' }}"
       data-quick-view-close
     >
@@ -39,13 +61,46 @@
       </svg>
     </button>
 
-    <div class="quick-view-modal__body"></div>
+    <div class="quick-view-modal__body">
+      {%- comment -%}
+        Populated by quick-view.js on open via sections fetch.
+        On the first server render the body is intentionally empty —
+        the Liquid below only runs when the section is fetched as a
+        section render (i.e. request.design_mode or sections API call).
+      {%- endcomment -%}
+      {%- if product != blank -%}
+        <div class="quick-view">
+          {%- render 'quick-view-media',
+            product:  product,
+            featured: featured,
+            images:   images
+          -%}
+          {%- render 'quick-view-detail',
+            product:       product,
+            variants:      variants,
+            first_variant: first_variant,
+            options:       options,
+            has_single_var: has_single_var,
+            on_sale:       on_sale,
+            save_pct:      save_pct,
+            eta_text:      eta_text
+          -%}
+        </div>
+      {%- endif -%}
+    </div>
   </div>
 </div>
 
 {% schema %}
 {
   "name": "Quick View",
-  "settings": []
+  "settings": [
+    {
+      "type": "product",
+      "id": "preview_product",
+      "label": "Preview product",
+      "info": "Only used in the theme editor to preview the modal. Not shown on storefront."
+    }
+  ]
 }
 {% endschema %}
