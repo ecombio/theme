@@ -1,3 +1,28 @@
+{%- comment -%}
+  sections/cart-drawer.liquid
+  Cart drawer with inline product recommendations.
+
+  Recommendations are rendered client-side via the Product Recommendations API
+  (/recommendations/products.json?product_id=X&intent=related|complementary).
+  This section renders a shell; JS fetches and injects the cards after the
+  drawer opens so the initial render is never blocked.
+
+  Schema settings:
+    - show_related        → "You may also like" rail
+    - show_complementary  → "Frequently bought together" rail
+    - related_label       → heading text for the related rail
+    - complementary_label → heading text for the complementary rail
+    - rec_limit           → how many cards to show per rail (2–6)
+{%- endcomment -%}
+
+{%- liquid
+  assign show_related       = section.settings.show_related
+  assign show_complementary = section.settings.show_complementary
+  assign related_label      = section.settings.related_label       | default: 'You may also like'
+  assign complementary_label= section.settings.complementary_label | default: 'Frequently bought together'
+  assign rec_limit          = section.settings.rec_limit           | default: 4
+-%}
+
 <div
   id="ecombio-cart-drawer"
   class="ecombio-cart-drawer"
@@ -6,6 +31,9 @@
   aria-label="Shopping cart"
   aria-hidden="true"
   hidden
+  data-show-related="{{ show_related }}"
+  data-show-complementary="{{ show_complementary }}"
+  data-rec-limit="{{ rec_limit }}"
 >
   {%- comment -%} Backdrop {%- endcomment -%}
   <div class="ecombio-cart-drawer__backdrop" data-ecombio-cart-close tabindex="-1" aria-hidden="true"></div>
@@ -60,14 +88,17 @@
               {%- comment -%} Product image {%- endcomment -%}
               <a href="{{ item.url }}" class="ecombio-cart-drawer__item-image-link" tabindex="-1" aria-hidden="true">
                 {%- if item.image -%}
-                  <img
-                    src="{{ item.image | image_url: width: 120 }}"
-                    alt="{{ item.image.alt | escape }}"
-                    width="80"
-                    height="80"
-                    loading="lazy"
-                    class="ecombio-cart-drawer__item-image"
-                  >
+                  {{-
+                    item.image
+                    | image_url: width: 160
+                    | image_tag:
+                      width: 80,
+                      height: 80,
+                      loading: 'lazy',
+                      class: 'ecombio-cart-drawer__item-image',
+                      sizes: '80px',
+                      widths: '80, 160'
+                  -}}
                 {%- else -%}
                   <div class="ecombio-cart-drawer__item-image ecombio-cart-drawer__item-image--placeholder"></div>
                 {%- endif -%}
@@ -94,10 +125,19 @@
                       data-ecombio-qty-change
                       data-key="{{ item.key }}"
                       data-delta="-1"
-                      aria-label="Decrease quantity"
-                      {% if item.quantity == 1 %}data-remove-on-zero{% endif %}
+                      aria-label="{% if item.quantity == 1 %}Remove {{ item.product.title | escape }} from cart{% else %}Decrease quantity of {{ item.product.title | escape }}{% endif %}"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      {%- if item.quantity == 1 -%}
+                        {%- comment -%} Show trash icon at qty 1 to signal removal {%- endcomment -%}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                          <path d="M10 11v6M14 11v6"></path>
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                        </svg>
+                      {%- else -%}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      {%- endif -%}
                     </button>
                     <span class="ecombio-cart-drawer__qty-value" data-qty-value="{{ item.key }}" aria-live="polite">{{ item.quantity }}</span>
                     <button
@@ -106,7 +146,7 @@
                       data-ecombio-qty-change
                       data-key="{{ item.key }}"
                       data-delta="1"
-                      aria-label="Increase quantity"
+                      aria-label="Increase quantity of {{ item.product.title | escape }}"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </button>
@@ -142,6 +182,49 @@
           {%- endfor -%}
         </ul>
 
+        {%- comment -%}
+          ── Product Recommendations Shell ────────────────────────────────────
+          Rendered only when cart has items. JS reads data-* config from the
+          drawer root and decides which rails to fetch and render.
+
+          "related" intent   → "You may also like"   (Shopify ML, always works)
+          "complementary"    → "Frequently bought together"
+                               Requires Shopify Search & Discovery app +
+                               complementary products metafield configured in
+                               Admin → Products → [product] → Complementary products.
+                               If no associations exist, the API returns 0 products
+                               and the rail is silently hidden — safe to leave on.
+
+          data-rec-source-id is populated by JS with the last-added product ID
+          (stored in sessionStorage by product-card.js / ATC flows).
+          Fallback: first item in cart.
+        {%- endcomment -%}
+
+        {%- if show_related or show_complementary -%}
+          <div
+            class="ecombio-cart-recs"
+            data-ecombio-recs
+            data-related-label="{{ related_label | escape }}"
+            data-complementary-label="{{ complementary_label | escape }}"
+            aria-live="polite"
+            aria-label="Product recommendations"
+          >
+            {%- comment -%}
+              JS replaces this content. The skeleton shown here is a
+              lightweight placeholder that prevents layout shift while
+              recommendations load.
+            {%- endcomment -%}
+            <div class="ecombio-cart-recs__skeleton" aria-hidden="true">
+              <div class="ecombio-cart-recs__skeleton-bar"></div>
+              <div class="ecombio-cart-recs__skeleton-cards">
+                {%- for i in (1..4) -%}
+                  <div class="ecombio-cart-recs__skeleton-card"></div>
+                {%- endfor -%}
+              </div>
+            </div>
+          </div>
+        {%- endif -%}
+
       {%- endif -%}
 
     </div>{%- comment -%} /.ecombio-cart-drawer__body {%- endcomment -%}
@@ -149,7 +232,6 @@
     {%- comment -%} Footer (only shown when cart has items) {%- endcomment -%}
     <div class="ecombio-cart-drawer__footer" data-ecombio-cart-footer {% if cart.item_count == 0 %}hidden{% endif %}>
 
-      {%- comment -%} Discount code (optional — remove block if unused) {%- endcomment -%}
       {%- if cart.cart_level_discount_applications.size > 0 -%}
         <ul class="ecombio-cart-drawer__discounts" aria-label="Applied discounts">
           {%- for discount in cart.cart_level_discount_applications -%}
@@ -185,38 +267,49 @@
 
   </div>{%- comment -%} /.ecombio-cart-drawer__inner {%- endcomment -%}
 </div>
+
 {% schema %}
 {
-  "name": "Ecombio Cart Drawer",
-  "tag": "div",
-  "class": "ecombio-cart-drawer-section",
+  "name": "Cart Drawer",
   "settings": [
     {
       "type": "header",
-      "content": "Cart Drawer Settings"
+      "content": "Product Recommendations"
     },
     {
       "type": "checkbox",
-      "id": "show_discounts",
-      "label": "Show applied discounts",
+      "id": "show_related",
+      "label": "Show \"You may also like\"",
+      "info": "Powered by Shopify's recommendation engine. Works out of the box.",
       "default": true
     },
     {
       "type": "text",
-      "id": "empty_message",
-      "label": "Empty cart message",
-      "default": "Your cart is empty"
+      "id": "related_label",
+      "label": "\"You may also like\" heading",
+      "default": "You may also like"
     },
     {
-      "type": "url",
-      "id": "empty_cta_link",
-      "label": "Empty state CTA link",
-      "info": "Defaults to all products collection"
-    }
-  ],
-  "presets": [
+      "type": "checkbox",
+      "id": "show_complementary",
+      "label": "Show \"Frequently bought together\"",
+      "info": "Requires the Shopify Search & Discovery app. You must also configure complementary products on each product page in your Admin.",
+      "default": false
+    },
     {
-      "name": "Ecombio Cart Drawer"
+      "type": "text",
+      "id": "complementary_label",
+      "label": "\"Frequently bought together\" heading",
+      "default": "Frequently bought together"
+    },
+    {
+      "type": "range",
+      "id": "rec_limit",
+      "label": "Products to show per rail",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
     }
   ]
 }
