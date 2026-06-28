@@ -1,355 +1,344 @@
-{%- assign cart_empty_shell = true -%}
+{%- comment -%}
+  sections/cart.liquid
 
-{{ 'cart-empty.css' | asset_url | stylesheet_tag }}
-{{ 'cart.css'       | asset_url | stylesheet_tag }}
+  Full-page cart. Shares the ecombio design-token layer (--ecd-*) declared
+  in cart-drawer.css so colours, radii, and type stay in sync with the drawer
+  without duplicating any variables.
+
+  Assets loaded via theme.liquid (same tags as the drawer):
+    cart-drawer.css          → shared tokens
+    cart-recommendations.css → rec rail styles
+    cart-page.css            → page-specific layout
+    cart-drawer.js           → drawer + EcombioCart API (needed for the
+                               open-drawer links and badge updates)
+    cart-recommendations.js  → rec rail (reused on the cart page too)
+    cart-page.js             → qty/remove/subtotal for the page table
+
+  The page intentionally re-uses cart-recommendations.js so the same rec
+  rail logic runs here. The recs shell (snippets/cart-recommendations.liquid)
+  is rendered below the items table.
+{%- endcomment -%}
 
 {%- liquid
-  assign free_shipping_threshold = 500
-  assign free_shipping_cents     = free_shipping_threshold | times: 100
-  assign item_count              = cart.item_count
-  assign has_items               = false
-  if item_count > 0
-    assign has_items = true
-  endif
+  assign show_related        = section.settings.show_related
+  assign show_complementary  = section.settings.show_complementary
+  assign related_label       = section.settings.related_label       | default: 'You may also like'
+  assign complementary_label = section.settings.complementary_label | default: 'Frequently bought together'
+  assign rec_limit           = section.settings.rec_limit           | default: 4
 -%}
 
-{%- if has_items -%}
+{%- comment -%}
+  The drawer's JS reads rec config from #ecombio-cart-drawer data attributes.
+  On the cart page that element is absent, so we emit a hidden proxy element
+  that cart-recommendations.js can read from instead.
+  cart-page.js dispatches 'cart:drawer:open' on DOMContentLoaded so recs load.
+{%- endcomment -%}
+<div
+  id="ecombio-cart-page-config"
+  data-show-related="{{ show_related }}"
+  data-show-complementary="{{ show_complementary }}"
+  data-rec-limit="{{ rec_limit }}"
+  hidden
+  aria-hidden="true"
+></div>
 
-  <div class="cart-page" data-cart-page>
+<main
+  class="ecombio-cart-page"
+  id="ecombio-cart-page"
+  data-ecombio-cart-page
+  aria-label="Cart"
+>
 
-    {%- comment -%} ── Shipping banner ── {%- endcomment -%}
-    <div class="cart-page__shipping-banner" data-cart-shipping-banner>
-      <div class="cart-page__container">
-        <div class="cart-page__shipping-inner">
-          <p class="cart-page__shipping-label" data-cart-shipping-label>
-            {%- if cart.total_price >= free_shipping_cents -%}
-              🎉 You're eligible for free express shipping!
-            {%- else -%}
-              {%- assign remaining = free_shipping_cents | minus: cart.total_price -%}
-              Spend {{ remaining | money }} more for free express shipping
-            {%- endif -%}
-          </p>
-          <div class="cart-page__shipping-track">
-            {%- assign pct = cart.total_price | times: 100 | divided_by: free_shipping_cents -%}
-            {%- if pct > 100 -%}{%- assign pct = 100 -%}{%- endif -%}
-            <div
-              class="cart-page__shipping-fill{% if cart.total_price >= free_shipping_cents %} cart-page__shipping-fill--complete{% endif %}"
-              data-cart-shipping-fill
-              style="width: {{ pct }}%"
-            ></div>
-          </div>
-        </div>
+  <div class="ecombio-cart-page__inner">
+
+    {%- if cart.item_count == 0 -%}
+
+      <div class="ecombio-cart-page__empty">
+        <svg class="ecombio-cart-page__empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
+        </svg>
+        <h1 class="ecombio-cart-page__empty-heading">Your cart is empty</h1>
+        <a href="{{ routes.all_products_collection_url }}" class="ecombio-btn ecombio-btn--primary">
+          Continue shopping
+        </a>
       </div>
-    </div>
 
-    {%- comment -%} ── Main layout ── {%- endcomment -%}
-    <div class="cart-page__container">
-      <div class="cart-page__layout">
+    {%- else -%}
 
-        {%- comment -%} ── Left col: items ── {%- endcomment -%}
-        <div class="cart-page__main" data-cart-main>
+      <div class="ecombio-cart-page__layout">
 
-          <div class="cart-page__header-row">
-            <h1 class="cart-page__title">
-              Your cart
-              <span class="cart-page__item-count" data-cart-item-count>
-                ({{ item_count }} {{ item_count | pluralize: 'item', 'items' }})
-              </span>
-            </h1>
-            <a href="/collections/all" class="cart-page__continue-link">← Continue shopping</a>
-          </div>
+        {%- comment -%} ── Left column: items table ── {%- endcomment -%}
+        <div class="ecombio-cart-page__items-col" data-ecombio-cart-page-items>
 
-          <div class="cart-page__col-headings" aria-hidden="true">
-            <span class="cart-page__col-heading cart-page__col-heading--product">Product</span>
-            <span class="cart-page__col-heading cart-page__col-heading--price">Price</span>
-            <span class="cart-page__col-heading cart-page__col-heading--qty">Quantity</span>
-            <span class="cart-page__col-heading cart-page__col-heading--total">Total</span>
-          </div>
+          <h1 class="ecombio-cart-page__heading">
+            Your Cart
+            <span
+              class="ecombio-cart-page__count"
+              data-ecombio-cart-count
+              aria-live="polite"
+              aria-atomic="true"
+            >({{ cart.item_count }})</span>
+          </h1>
 
-          <ul
-            class="cart-page__items"
-            data-cart-items
-            aria-label="Cart items"
-            aria-live="polite"
-            aria-atomic="false"
-          >
-            {%- for item in cart.items -%}
-              <li
-                class="cart-page__item"
-                data-cart-item
-                data-line="{{ forloop.index }}"
-                data-variant-id="{{ item.variant_id }}"
-              >
-                <a href="{{ item.url }}" class="cart-page__item-img-link" tabindex="-1" aria-hidden="true">
-                  <div class="cart-page__item-img-wrap">
-                    {%- if item.image -%}
-                      <img
-                        src="{{ item.image | image_url: width: 200 }}"
-                        alt="{{ item.title | escape }}"
-                        width="100"
-                        height="100"
-                        loading="lazy"
-                        class="cart-page__item-img"
-                      >
-                    {%- else -%}
-                      <div class="cart-page__item-img-placeholder"></div>
-                    {%- endif -%}
-                  </div>
-                </a>
-
-                <div class="cart-page__item-info">
-                  <a href="{{ item.url }}" class="cart-page__item-title">{{ item.product_title }}</a>
-                  {%- unless item.variant_title == 'Default Title' or item.variant_title == blank -%}
-                    <p class="cart-page__item-variant">{{ item.variant_title }}</p>
-                  {%- endunless -%}
-                  {%- if item.selling_plan_allocation -%}
-                    <p class="cart-page__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
-                  {%- endif -%}
-                  <p class="cart-page__item-unit-price--mobile">{{ item.original_price | money }}</p>
-                </div>
-
-                <div class="cart-page__item-col cart-page__item-col--price" aria-label="Unit price">
-                  {%- if item.original_price > item.final_price -%}
-                    <span class="cart-page__item-compare">{{ item.original_price | money }}</span>
-                    <span class="cart-page__item-price cart-page__item-price--sale">{{ item.final_price | money }}</span>
-                  {%- else -%}
-                    <span class="cart-page__item-price">{{ item.original_price | money }}</span>
-                  {%- endif -%}
-                </div>
-
-                <div class="cart-page__item-col cart-page__item-col--qty">
-                  <div class="cart-page__qty-stepper" role="group" aria-label="Quantity for {{ item.product_title | escape }}">
-                    <button type="button" class="cart-page__qty-btn cart-page__qty-btn--minus" aria-label="Decrease quantity" data-qty-minus>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    </button>
-                    <span class="cart-page__qty-value" data-qty-value aria-live="polite" aria-atomic="true">{{ item.quantity }}</span>
-                    <button type="button" class="cart-page__qty-btn cart-page__qty-btn--plus" aria-label="Increase quantity" data-qty-plus>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="cart-page__item-col cart-page__item-col--total">
-                  <span class="cart-page__item-line-price" data-line-price>{{ item.line_price | money }}</span>
-                </div>
-
-                <button
-                  type="button"
-                  class="cart-page__item-remove"
-                  aria-label="Remove {{ item.product_title | escape }} from cart"
-                  data-remove-item
+          <table class="ecombio-cart-page__table" data-ecombio-cart-table>
+            <thead class="ecombio-cart-page__thead">
+              <tr>
+                <th scope="col" class="ecombio-cart-page__th ecombio-cart-page__th--product">Product</th>
+                <th scope="col" class="ecombio-cart-page__th ecombio-cart-page__th--price">Price</th>
+                <th scope="col" class="ecombio-cart-page__th ecombio-cart-page__th--qty">Quantity</th>
+                <th scope="col" class="ecombio-cart-page__th ecombio-cart-page__th--total">Total</th>
+                <th scope="col" class="ecombio-cart-page__th ecombio-cart-page__th--remove">
+                  <span class="visually-hidden">Remove</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {%- for item in cart.items -%}
+                <tr
+                  class="ecombio-cart-page__row"
+                  data-cart-item-key="{{ item.key }}"
+                  data-cart-product-id="{{ item.product_id }}"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </li>
-            {%- endfor -%}
-          </ul>
 
-          <div class="cart-page__note-section">
-            <button type="button" class="cart-page__note-toggle" data-note-toggle aria-expanded="false" aria-controls="cart-page-note">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              Add an order note
-              <svg class="cart-page__note-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="cart-page__note-body" id="cart-page-note" hidden>
-              <label class="cart-page__note-label" for="cart-note-input">Order note</label>
-              <textarea
-                id="cart-note-input"
-                class="cart-page__note-textarea"
-                name="note"
-                rows="4"
-                placeholder="Special instructions, gift messages, delivery preferences…"
-                data-note-input
-              >{{ cart.note }}</textarea>
-              <p class="cart-page__note-hint" aria-live="polite" data-note-status></p>
-            </div>
-          </div>
+                  {%- comment -%} Product cell {%- endcomment -%}
+                  <td class="ecombio-cart-page__td ecombio-cart-page__td--product">
+                    <div class="ecombio-cart-page__product">
+                      <a href="{{ item.url }}" class="ecombio-cart-page__item-image-link" tabindex="-1" aria-hidden="true">
+                        {%- if item.image -%}
+                          {{-
+                            item.image
+                            | image_url: width: 200
+                            | image_tag:
+                              width: 100,
+                              height: 100,
+                              loading: 'lazy',
+                              class: 'ecombio-cart-page__item-image',
+                              sizes: '100px',
+                              widths: '100, 200'
+                          -}}
+                        {%- else -%}
+                          <div class="ecombio-cart-page__item-image ecombio-cart-page__item-image--placeholder"></div>
+                        {%- endif -%}
+                      </a>
+                      <div class="ecombio-cart-page__item-meta">
+                        <a href="{{ item.url }}" class="ecombio-cart-page__item-title">
+                          {{ item.product.title }}
+                        </a>
+                        {%- unless item.product.has_only_default_variant -%}
+                          <p class="ecombio-cart-page__item-variant">{{ item.variant.title }}</p>
+                        {%- endunless -%}
+                        {%- if item.selling_plan_allocation -%}
+                          <p class="ecombio-cart-page__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name }}</p>
+                        {%- endif -%}
+                      </div>
+                    </div>
+                  </td>
+
+                  {%- comment -%} Unit price cell {%- endcomment -%}
+                  <td class="ecombio-cart-page__td ecombio-cart-page__td--price" data-label="Price">
+                    {%- if item.original_price != item.final_price -%}
+                      <s class="ecombio-cart-page__price--was">{{ item.original_price | money }}</s>
+                    {%- endif -%}
+                    <span class="ecombio-cart-page__price">{{ item.final_price | money }}</span>
+                  </td>
+
+                  {%- comment -%} Quantity cell {%- endcomment -%}
+                  <td class="ecombio-cart-page__td ecombio-cart-page__td--qty" data-label="Quantity">
+                    <div
+                      class="ecombio-cart-page__qty"
+                      role="group"
+                      aria-label="Quantity for {{ item.product.title | escape }}"
+                    >
+                      <button
+                        type="button"
+                        class="ecombio-cart-page__qty-btn"
+                        data-ecombio-page-qty-change
+                        data-key="{{ item.key }}"
+                        data-delta="-1"
+                        aria-label="{% if item.quantity == 1 %}Remove {{ item.product.title | escape }} from cart{% else %}Decrease quantity of {{ item.product.title | escape }}{% endif %}"
+                      >
+                        {%- if item.quantity == 1 -%}
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                            <path d="M10 11v6M14 11v6"></path>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                          </svg>
+                        {%- else -%}
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                          </svg>
+                        {%- endif -%}
+                      </button>
+
+                      <span
+                        class="ecombio-cart-page__qty-value"
+                        data-qty-value="{{ item.key }}"
+                        aria-live="polite"
+                      >{{ item.quantity }}</span>
+
+                      <button
+                        type="button"
+                        class="ecombio-cart-page__qty-btn"
+                        data-ecombio-page-qty-change
+                        data-key="{{ item.key }}"
+                        data-delta="1"
+                        aria-label="Increase quantity of {{ item.product.title | escape }}"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+
+                  {%- comment -%} Line total cell {%- endcomment -%}
+                  <td class="ecombio-cart-page__td ecombio-cart-page__td--total" data-label="Total">
+                    {%- if item.original_line_price != item.final_line_price -%}
+                      <s class="ecombio-cart-page__price--was">{{ item.original_line_price | money }}</s>
+                    {%- endif -%}
+                    <span
+                      class="ecombio-cart-page__price"
+                      data-line-price="{{ item.key }}"
+                    >{{ item.final_line_price | money }}</span>
+                  </td>
+
+                  {%- comment -%} Remove cell {%- endcomment -%}
+                  <td class="ecombio-cart-page__td ecombio-cart-page__td--remove">
+                    <button
+                      type="button"
+                      class="ecombio-cart-page__remove"
+                      data-ecombio-page-remove-item
+                      data-key="{{ item.key }}"
+                      aria-label="Remove {{ item.product.title | escape }} from cart"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                        <path d="M10 11v6M14 11v6"></path>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                      </svg>
+                    </button>
+                  </td>
+
+                </tr>
+              {%- endfor -%}
+            </tbody>
+          </table>
+
+          {%- comment -%} Rec rail below items {%- endcomment -%}
+          {%- render 'cart-recommendations',
+                show_related: show_related,
+                show_complementary: show_complementary,
+                related_label: related_label,
+                complementary_label: complementary_label
+          -%}
 
         </div>
 
-        {%- comment -%} ── Right col: summary ── {%- endcomment -%}
-        <aside class="cart-page__summary" aria-label="Order summary" data-cart-summary>
+        {%- comment -%} ── Right column: order summary ── {%- endcomment -%}
+        <aside class="ecombio-cart-page__summary" aria-label="Order summary" data-ecombio-cart-page-summary>
 
-          <h2 class="cart-page__summary-title">Summary</h2>
+          <h2 class="ecombio-cart-page__summary-heading">Order summary</h2>
 
-          <div class="cart-page__summary-rows">
-            <div class="cart-page__summary-row">
-              <span class="cart-page__summary-label">
-                Subtotal
-                <span class="cart-page__summary-count" data-cart-item-count-summary>({{ item_count }} {{ item_count | pluralize: 'item', 'items' }})</span>
-              </span>
-              <span class="cart-page__summary-value" data-cart-subtotal>{{ cart.total_price | money }}</span>
-            </div>
-
-            <div class="cart-page__summary-row cart-page__summary-row--shipping">
-              <span class="cart-page__summary-label">Shipping</span>
-              <span class="cart-page__summary-value cart-page__summary-value--muted">Calculated at checkout</span>
-            </div>
-
-            {%- if cart.cart_level_discount_applications.size > 0 -%}
+          {%- if cart.cart_level_discount_applications.size > 0 -%}
+            <ul class="ecombio-cart-page__discounts" aria-label="Applied discounts">
               {%- for discount in cart.cart_level_discount_applications -%}
-                <div class="cart-page__summary-row cart-page__summary-row--discount">
-                  <span class="cart-page__summary-label cart-page__summary-label--discount">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-                    {{ discount.title }}
-                  </span>
-                  <span class="cart-page__summary-value cart-page__summary-value--discount">−{{ discount.total_allocated_amount | money }}</span>
-                </div>
+                <li class="ecombio-cart-page__discount">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                  </svg>
+                  {{ discount.title | escape }}
+                  <span class="ecombio-cart-page__discount-amount">(−{{ discount.total_allocated_amount | money }})</span>
+                </li>
               {%- endfor -%}
-            {%- endif -%}
+            </ul>
+          {%- endif -%}
+
+          <div class="ecombio-cart-page__subtotal-row">
+            <span>Subtotal</span>
+            <span data-ecombio-cart-subtotal>{{ cart.total_price | money_with_currency }}</span>
           </div>
 
-          <div class="cart-page__summary-total-row">
-            <span class="cart-page__summary-total-label">Total</span>
-            <span class="cart-page__summary-total-value" data-cart-total>{{ cart.total_price | money }} <small>{{ cart.currency }}</small></span>
-          </div>
-          <p class="cart-page__summary-tax-note">Taxes and shipping calculated at checkout</p>
+          <p class="ecombio-cart-page__tax-note">{{ 'cart.general.taxes_and_shipping' | t }}</p>
 
-          <a href="/checkout" class="cart-page__checkout-btn" data-checkout-btn>
-            Go to shipping
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <a
+            href="{{ routes.checkout_url }}"
+            class="ecombio-btn ecombio-btn--primary ecombio-cart-page__checkout"
+          >
+            Check out
           </a>
 
-          <div class="cart-page__trust-badges">
-            <div class="cart-page__trust-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Secure checkout
-            </div>
-            <div class="cart-page__trust-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Free returns
-            </div>
-            <div class="cart-page__trust-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              Fast shipping
-            </div>
-          </div>
+          <a href="{{ routes.all_products_collection_url }}" class="ecombio-cart-page__continue">
+            Continue shopping
+          </a>
 
         </aside>
 
       </div>
 
-      <section class="cart-page__recommendations" data-cart-recommendations aria-label="Product recommendations" hidden>
-        <h2 class="cart-page__recommendations-title">You might also like</h2>
-        <ul class="cart-page__recommendations-list" data-cart-recommendations-list></ul>
-      </section>
+    {%- endif -%}
 
+    {%- comment -%} Loading overlay — covers the whole page during AJAX updates {%- endcomment -%}
+    <div
+      class="ecombio-cart-page__loading"
+      data-ecombio-page-loading
+      aria-hidden="true"
+      hidden
+    >
+      <div class="ecombio-cart-page__spinner" role="status" aria-label="Updating cart"></div>
     </div>
 
   </div>
+</main>
 
-  {{ 'cart.js' | asset_url | script_tag }}
-
-{%- else -%}
-
-  {%- comment -%} ── Empty state ── {%- endcomment -%}
-  <div class="cart-empty-bm">
-    <div class="cart-empty-bm__left">
-      <p class="cart-empty-bm__eyebrow">Buzzkill alert</p>
-      <h1 class="cart-empty-bm__heading">There's nothing in your cart.</h1>
-      <p class="cart-empty-bm__sub">All this stellar merch isn't gonna shop itself!</p>
-      <a href="{{ routes.all_products_collection_url }}" class="cart-empty-bm__cta">Browse sweet deals</a>
-    </div>
-    <div class="cart-empty-bm__right" aria-hidden="true">
-      {{ 'cart-empty-illustration.svg' | asset_url | img_tag: '', 'cart-empty-bm__illustration' }}
-    </div>
-  </div>
-
-  <style>
-    .cart-empty-bm {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 60vh;
-      padding: 64px 0;
-      gap: 40px;
-      background: #f4f4f6;
+{% schema %}
+{
+  "name": "Cart",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Product Recommendations"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_related",
+      "label": "Show \"You may also like\"",
+      "info": "Powered by Shopify's recommendation engine. Works out of the box — no configuration needed.",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "related_label",
+      "label": "\"You may also like\" heading",
+      "default": "You may also like"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_complementary",
+      "label": "Show \"Frequently bought together\"",
+      "info": "Requires the Shopify Search & Discovery app. You must also configure complementary products per product in your Admin.",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "complementary_label",
+      "label": "\"Frequently bought together\" heading",
+      "default": "Frequently bought together"
+    },
+    {
+      "type": "range",
+      "id": "rec_limit",
+      "label": "Products to show per rail",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
     }
-
-    .cart-empty-bm__left {
-      flex: 0 0 auto;
-      max-width: 420px;
-    }
-
-    .cart-empty-bm__eyebrow {
-      font-size: 13px;
-      font-weight: 500;
-      color: #6b6b6b;
-      margin: 0 0 12px;
-    }
-
-    .cart-empty-bm__heading {
-      font-size: clamp(28px, 4vw, 40px);
-      font-weight: 800;
-      color: #111;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      margin: 0 0 16px;
-    }
-
-    .cart-empty-bm__sub {
-      font-size: 15px;
-      color: #444;
-      line-height: 1.6;
-      margin: 0 0 32px;
-    }
-
-    .cart-empty-bm__cta {
-      display: inline-block;
-      background: #111;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      padding: 14px 28px;
-      border-radius: 4px;
-      text-decoration: none;
-      transition: opacity 0.2s ease;
-    }
-
-    .cart-empty-bm__cta:hover {
-      opacity: 0.82;
-    }
-
-    .cart-empty-bm__right {
-      flex: 0 0 auto;
-    }
-
-    .cart-empty-bm__illustration {
-      width: clamp(280px, 38vw, 480px);
-      height: auto;
-      display: block;
-    }
-
-    @media (max-width: 640px) {
-      .cart-empty-bm {
-        flex-direction: column-reverse;
-        padding: 40px 0;
-        text-align: center;
-      }
-
-      .cart-empty-bm__left {
-        max-width: 100%;
-      }
-
-      .cart-empty-bm__illustration {
-        width: 240px;
-      }
-    }
-  </style>
-
-{%- endif -%}
-
-<template id="cart-rec-item-tpl">
-  <li class="cart-page__rec-item">
-    <a class="cart-page__rec-link" href="">
-      <div class="cart-page__rec-img-wrap">
-        <img class="cart-page__rec-img" src="" alt="" width="160" height="160" loading="lazy">
-      </div>
-      <div class="cart-page__rec-info">
-        <p class="cart-page__rec-title"></p>
-        <p class="cart-page__rec-price"></p>
-        <span class="cart-page__rec-cta">View</span>
-      </div>
-    </a>
-  </li>
-</template>
+  ]
+}
+{% endschema %}
