@@ -30,7 +30,11 @@
 
   assign shipping_policy_body = shop.policies.shipping_policy.body
   assign refund_policy_body   = shop.policies.refund_policy.body
-  assign warranty_policy_body = product.metafields.custom.warranty_policy | default: ''
+
+  assign warranty_policy_body = product.metafields.custom.warranty_policy
+  if warranty_policy_body == blank
+    assign warranty_policy_body = shop.policies.privacy_policy.body
+  endif
 -%}
 
 <div
