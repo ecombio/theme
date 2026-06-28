@@ -830,3 +830,132 @@ html.quick-view-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .quick-view__tab { transition: none; }
 }
+/* ============================================================
+   6. RECOMMENDATION ROW  (snippets/quick-view-recommendation.liquid)
+   Add this block to the END of assets/quick-view.css.
+   ============================================================ */
+
+/* ── Root: full-width grid column (same pattern as .quick-view__desc-wrap) ── */
+.quick-view-rec {
+  grid-column:    1 / -1;
+  display:        flex;
+  flex-direction: column;
+  background:     var(--quick-view-bg);
+  border-top:     1px solid var(--quick-view-border-color);
+  padding:        1.25rem var(--quick-view-detail-padding) 1.5rem;
+}
+
+/* ── Header row: heading + "See all" link ─────────────────────────────────── */
+.quick-view-rec__header {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  gap:             1rem;
+  margin-bottom:   0.9rem;
+}
+
+.quick-view-rec__heading {
+  font-family:    var(--quick-view-font);
+  font-size:      0.78rem;
+  font-weight:    700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color:          var(--quick-view-color-text);
+  margin:         0;
+  line-height:    1;
+}
+
+.quick-view-rec__see-all {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             0.3rem;
+  font-family:     var(--quick-view-font);
+  font-size:       0.72rem;
+  font-weight:     600;
+  color:           var(--quick-view-color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space:     nowrap;
+  flex-shrink:     0;
+  transition:      color 0.15s ease;
+}
+
+.quick-view-rec__see-all:hover {
+  color: var(--quick-view-color-link-hover);
+}
+
+.quick-view-rec__see-all:focus-visible {
+  outline:        2px solid var(--quick-view-accent);
+  outline-offset: 2px;
+}
+
+/* ── Horizontal scroll list ───────────────────────────────────────────────── */
+.quick-view-rec__list {
+  --rec-card-width:    180px;     /* card width on desktop */
+  --rec-gap:           12px;
+
+  display:             flex;
+  gap:                 var(--rec-gap);
+  list-style:          none;
+  margin:              0;
+  padding:             4px 2px 12px; /* bottom: room for card shadow */
+  overflow-x:          auto;
+  overflow-y:          visible;       /* cards lift on hover without clip */
+  scroll-snap-type:    x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width:     thin;
+  scrollbar-color:     var(--quick-view-border-color) transparent;
+}
+
+.quick-view-rec__list::-webkit-scrollbar       { height: 3px; }
+.quick-view-rec__list::-webkit-scrollbar-track { background: transparent; }
+.quick-view-rec__list::-webkit-scrollbar-thumb {
+  background:    var(--quick-view-border-color);
+  border-radius: 2px;
+}
+
+/* ── Individual card slot ─────────────────────────────────────────────────── */
+.quick-view-rec__item {
+  flex:            0 0 var(--rec-card-width);
+  scroll-snap-align: start;
+  /* Cards use height: 100% internally; the item sets the column height. */
+}
+
+/* ── Tighten product-card internals for the compact modal context ─────────── */
+.quick-view-rec__item .product-card__body {
+  padding:  10px 10px 12px;
+  gap:      4px;
+}
+
+.quick-view-rec__item .product-card__price {
+  font-size: 0.9rem;
+}
+
+.quick-view-rec__item .product-card__atc-btn {
+  font-size: 0.72rem;
+  padding:   7px 8px;
+}
+
+/* Hide Judge.me stars inside the rec row — they load async and cause layout
+   shift; the rating is available on the PDP anyway. */
+.quick-view-rec__item .product-card__reviews {
+  display: none;
+}
+
+/* ── Mobile (<700px) ──────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .quick-view-rec {
+    padding: 1rem var(--quick-view-detail-padding-mobile) 1.25rem;
+  }
+
+  .quick-view-rec__list {
+    --rec-card-width: 150px;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .quick-view-rec__list {
+    scroll-behavior: auto;
+  }
+}
