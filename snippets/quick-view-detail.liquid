@@ -1,55 +1,20 @@
 {%- comment -%}
   snippets/quick-view-detail.liquid
   Right column (desktop) / bottom section (mobile) of the Quick View modal.
-
-  Renders (in order):
-    • Vendor
-    • Title (linked to PDP)
-    • Judge.me reviews widget
-    • Price block               [data-quick-view-price]
-    • Variant options           .quick-view__options  (swatches + pills)
-    • Hidden variant <select>   [data-quick-view-variant-select]
-    • Variant JSON island       [data-quick-view-variant-data]
-    • ETA metafield             .quick-view__eta
-    • Add to cart button        [data-atc-btn]
-    • View full details link    .quick-view__pdp-link
-
-  Parameters (passed via render tag from sections/quick-view.liquid):
-    product         {Object}  required — Shopify product object
-    variants        {Array}   required — product.variants
-    first_variant   {Object}  required — first available (or first) variant
-    options         {Array}   required — product.options_with_values
-    has_single_var  {Boolean} required — true when product has only default variant
-    on_sale         {Boolean} required — true when compare_at_price > price
-    save_pct        {Number}  required — integer % saved (0 when not on sale)
-    eta_text        {String}  optional — custom.eta_text metafield value
-
-  JS hooks:
-    [data-quick-view-price]           — container replaced by updateVariant() on option change
-    [data-quick-view-swatch]          — color option buttons
-    [data-quick-view-option-btn]      — non-color option buttons (size, material…)
-    [data-quick-view-option-selected] — live label span updated by JS on selection
-    [data-quick-view-variant-select]  — hidden <select> kept in sync with active variant
-    [data-quick-view-variant-data]    — <script> JSON island parsed by initVariantUI()
-    [data-atc-btn]                    — handled by product-card.js initAddToCart()
-    [data-atc-label]                  — label span swapped during ATC lifecycle
 {%- endcomment -%}
 
 <div class="quick-view__detail">
 
-  {%- comment -%}── Vendor ──{%- endcomment -%}
   {%- if product.vendor != blank -%}
     <p class="quick-view__vendor">{{ product.vendor }}</p>
   {%- endif -%}
 
-  {%- comment -%}── Title ──{%- endcomment -%}
   <h2 class="quick-view__title">
     <a href="{{ product.url }}" class="quick-view__title-link">
       {{- product.title -}}
     </a>
   </h2>
 
-  {%- comment -%}── Judge.me reviews widget ──{%- endcomment -%}
   <div class="quick-view__reviews">
     <div
       class="jdgm-widget jdgm-preview-badge"
@@ -58,7 +23,6 @@
     ></div>
   </div>
 
-  {%- comment -%}── Price ──{%- endcomment -%}
   <div class="quick-view__price" data-quick-view-price>
     {%- if on_sale -%}
       <span class="quick-view__price-current quick-view__price-current--sale">
@@ -75,15 +39,6 @@
     {%- endif -%}
   </div>
 
-  {%- comment -%}────────────────────────────────────────────────────────────
-    VARIANT OPTIONS
-    Each product option renders as:
-      • Color / Colour  → circular swatch buttons  [data-quick-view-swatch]
-      • All others      → pill buttons             [data-quick-view-option-btn]
-
-    data-option-index (0-based) on every button lets JS reconstruct the
-    full currentOptions array when matching variants after any selection.
-  ──────────────────────────────────────────────────────────────────────{%- endcomment -%}
   {%- unless has_single_var -%}
     <div class="quick-view__options">
       {%- for option in options -%}
@@ -96,16 +51,13 @@
           endif
           assign first_value = option.values | first
         -%}
-
         <div class="quick-view__option" data-option-name="{{ option.name | escape }}">
-
           <div class="quick-view__option-label">
             <span class="quick-view__option-name">{{ option.name }}:</span>
             <span class="quick-view__option-selected" data-quick-view-option-selected>
               {{- first_value -}}
             </span>
           </div>
-
           <div
             class="quick-view__option-values{% if is_color %} quick-view__option-values--swatches{% endif %}"
             role="radiogroup"
@@ -116,7 +68,6 @@
                 assign is_first     = forloop.first
                 assign value_handle = value | handleize
               -%}
-
               {%- if is_color -%}
                 <button
                   type="button"
@@ -131,7 +82,6 @@
                 >
                   <span class="quick-view__swatch-inner" aria-hidden="true"></span>
                 </button>
-
               {%- else -%}
                 <button
                   type="button"
@@ -145,23 +95,13 @@
                   {{- value -}}
                 </button>
               {%- endif -%}
-
             {%- endfor -%}
           </div>
-
         </div>
       {%- endfor -%}
     </div>
   {%- endunless -%}
 
-  {%- comment -%}────────────────────────────────────────────────────────────
-    VARIANT DATA
-    Two purely-data elements consumed by quick-view.js:
-      1. Hidden <select> — kept in sync by updateVariant(); aria-hidden from AT
-      2. JSON island     — parsed by initVariantUI() for variant matching,
-                           price updates, image swaps, and availability
-    Scoped by product ID so multiple quick views in one session never collide.
-  ──────────────────────────────────────────────────────────────────────{%- endcomment -%}
   <select
     class="quick-view__variant-select"
     data-quick-view-variant-select
@@ -205,7 +145,6 @@
     ]
   </script>
 
-  {%- comment -%}── ETA metafield ──{%- endcomment -%}
   {%- if eta_text != blank -%}
     <div class="quick-view__eta" aria-label="Estimated delivery">
       <svg class="quick-view__eta-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -218,7 +157,6 @@
     </div>
   {%- endif -%}
 
-  {%- comment -%}── Add to cart ──{%- endcomment -%}
   <div class="quick-view__atc-wrap">
     <button
       type="button"
@@ -235,8 +173,7 @@
     </button>
   </div>
 
-  {%- comment -%}── View full details ──{%- endcomment -%}
-  
+  <a
     href="{{ product.url }}"
     class="quick-view__pdp-link"
     aria-label="View full details for {{ product.title | escape }}"

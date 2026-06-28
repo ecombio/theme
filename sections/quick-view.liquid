@@ -1,19 +1,10 @@
 {%- comment -%}
   sections/quick-view.liquid
   ==========================
-  Modal shell for the Quick View feature.
+  Modal shell. Renders once in theme.liquid; reused for every product open.
 
-  Flow:
-    1. product-card.js fires 'quickview:open' with { handle, trigger }
-    2. quick-view.js listens, fetches /products/${handle}?sections=quick-view
-       and injects the returned HTML into .quick-view-modal__body
-    3. snippets/quick-view-media.liquid + snippets/quick-view-detail.liquid
-       produce the two-column inner HTML.
-    4. snippets/quick-view-description.liquid renders the full-width tab strip
-       (Description / Shipping Policy / Returns & Refunds) below.
-
-  NOTE: shop.policies is not in render-tag scope, so we pass policy bodies
-  down explicitly as string parameters to quick-view-description.
+  Passes all shop.policies bodies as explicit strings into render tags
+  because shop.policies is NOT accessible inside render-tag isolated scope.
 {%- endcomment -%}
 
 {%- liquid
@@ -39,6 +30,7 @@
 
   assign shipping_policy_body = shop.policies.shipping_policy.body
   assign refund_policy_body   = shop.policies.refund_policy.body
+  assign warranty_policy_body = product.metafields.custom.warranty_policy | default: ''
 -%}
 
 <div
@@ -73,7 +65,7 @@
           data-product-id="{{ product.id }}"
           data-product-handle="{{ product.handle }}"
         >
-          {%- comment -%}── Row 1: two-column media + detail ──{%- endcomment -%}
+          {%- comment -%}── Row 1: media + detail (two-column grid) ──{%- endcomment -%}
           {%- render 'quick-view-media',
             product:  product,
             featured: featured,
@@ -90,11 +82,12 @@
             eta_text:       eta_text
           -%}
 
-          {%- comment -%}── Row 2: full-width description + policy tabs ──{%- endcomment -%}
+          {%- comment -%}── Row 2: full-width description / policy tabs ──{%- endcomment -%}
           {%- render 'quick-view-description',
             product:         product,
             shipping_policy: shipping_policy_body,
-            refund_policy:   refund_policy_body
+            refund_policy:   refund_policy_body,
+            warranty_policy: warranty_policy_body
           -%}
         </div>
       {%- endif -%}
