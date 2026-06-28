@@ -1,0 +1,417 @@
+{%- comment -%}
+  Social Proof Section
+  --------------------------------------------------
+  Flexible section for displaying credibility signals:
+  - Reviews
+  - Customer Count
+  - UGC (user-generated content / images)
+  - "As Seen On" (press/media logos)
+  Each block type renders its own markup.
+{%- endcomment -%}
+
+<section class="social-proof" data-section-id="{{ section.id }}" data-section-type="social-proof">
+  <div class="social-proof__container page-width">
+
+    {%- if section.settings.heading != blank -%}
+      <h2 class="social-proof__heading">{{ section.settings.heading | escape }}</h2>
+    {%- endif -%}
+
+    {%- if section.blocks.size > 0 -%}
+      <div class="social-proof__blocks">
+        {%- for block in section.blocks -%}
+
+          {%- case block.type -%}
+
+            {%- when 'reviews' -%}
+              <div class="social-proof__block social-proof__reviews" {{ block.shopify_attributes }}>
+                <div class="social-proof__stars" aria-label="{{ block.settings.rating }} out of 5 stars">
+                  {%- assign full_stars = block.settings.rating | floor -%}
+                  {%- for i in (1..5) -%}
+                    <span class="social-proof__star{% if i > full_stars %} social-proof__star--empty{% endif %}">★</span>
+                  {%- endfor -%}
+                </div>
+                {%- if block.settings.review_count != blank -%}
+                  <p class="social-proof__review-count">
+                    {{ block.settings.rating }} / 5 based on {{ block.settings.review_count }} reviews
+                  </p>
+                {%- endif -%}
+                {%- if block.settings.quote != blank -%}
+                  <blockquote class="social-proof__quote">
+                    “{{ block.settings.quote | escape }}”
+                    {%- if block.settings.author != blank -%}
+                      <cite class="social-proof__author">— {{ block.settings.author | escape }}</cite>
+                    {%- endif -%}
+                  </blockquote>
+                {%- endif -%}
+              </div>
+
+            {%- when 'customer_count' -%}
+              <div class="social-proof__block social-proof__customer-count" {{ block.shopify_attributes }}>
+                {%- if block.settings.count != blank -%}
+                  <p class="social-proof__count-number">{{ block.settings.count | escape }}</p>
+                {%- endif -%}
+                {%- if block.settings.label != blank -%}
+                  <p class="social-proof__count-label">{{ block.settings.label | escape }}</p>
+                {%- endif -%}
+              </div>
+
+            {%- when 'ugc' -%}
+              <div class="social-proof__block social-proof__ugc" {{ block.shopify_attributes }}>
+                {%- if block.settings.image != blank -%}
+                  <div class="social-proof__ugc-image-wrap">
+                    <img
+                      class="social-proof__ugc-image"
+                      src="{{ block.settings.image | image_url: width: 600 }}"
+                      alt="{{ block.settings.caption | escape }}"
+                      loading="lazy"
+                      width="300"
+                      height="300"
+                    >
+                  </div>
+                {%- endif -%}
+                {%- if block.settings.caption != blank -%}
+                  <p class="social-proof__ugc-caption">{{ block.settings.caption | escape }}</p>
+                {%- endif -%}
+                {%- if block.settings.handle != blank -%}
+                  <p class="social-proof__ugc-handle">{{ block.settings.handle | escape }}</p>
+                {%- endif -%}
+              </div>
+
+            {%- when 'as_seen_on' -%}
+              <div class="social-proof__block social-proof__as-seen-on" {{ block.shopify_attributes }}>
+                {%- if block.settings.label != blank -%}
+                  <p class="social-proof__as-seen-on-label">{{ block.settings.label | escape }}</p>
+                {%- endif -%}
+                <div class="social-proof__logo-row">
+                  {%- for i in (1..6) -%}
+                    {%- assign logo_key = 'logo_' | append: i -%}
+                    {%- assign logo_image = block.settings[logo_key] -%}
+                    {%- if logo_image != blank -%}
+                      <img
+                        class="social-proof__logo"
+                        src="{{ logo_image | image_url: width: 200 }}"
+                        alt="Featured publication logo"
+                        loading="lazy"
+                        width="100"
+                        height="40"
+                      >
+                    {%- endif -%}
+                  {%- endfor -%}
+                </div>
+              </div>
+
+          {%- endcase -%}
+
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+  </div>
+</section>
+
+{%- style -%}
+  .social-proof {
+    padding: {{ section.settings.padding_top }}px 0 {{ section.settings.padding_bottom }}px;
+    background-color: {{ section.settings.background_color }};
+  }
+
+  .social-proof__heading {
+    text-align: center;
+    margin: 0 0 30px;
+    font-size: 1.6rem;
+  }
+
+  .social-proof__blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .social-proof__block {
+    text-align: center;
+  }
+
+  /* Reviews */
+  .social-proof__stars {
+    color: #f5a623;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+  }
+
+  .social-proof__star--empty {
+    color: #e0e0e0;
+  }
+
+  .social-proof__review-count {
+    font-size: 0.9rem;
+    color: rgba(0, 0, 0, 0.6);
+    margin: 6px 0 0;
+  }
+
+  .social-proof__quote {
+    max-width: 600px;
+    margin: 16px auto 0;
+    font-style: italic;
+    font-size: 1.1rem;
+  }
+
+  .social-proof__author {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    font-style: normal;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  /* Customer count */
+  .social-proof__count-number {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .social-proof__count-label {
+    font-size: 1rem;
+    color: rgba(0, 0, 0, 0.65);
+    margin: 4px 0 0;
+  }
+
+  /* UGC */
+  .social-proof__ugc-image-wrap {
+    display: flex;
+    justify-content: center;
+  }
+
+  .social-proof__ugc-image {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .social-proof__ugc-caption {
+    margin: 12px 0 0;
+    font-size: 0.95rem;
+  }
+
+  .social-proof__ugc-handle {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  /* As seen on */
+  .social-proof__as-seen-on-label {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.5);
+    margin: 0 0 20px;
+  }
+
+  .social-proof__logo-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .social-proof__logo {
+    max-width: 120px;
+    max-height: 40px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    opacity: 0.75;
+  }
+{%- endstyle -%}
+
+{% schema %}
+{
+  "name": "Social Proof",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Loved by Thousands"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "reviews",
+      "name": "Reviews",
+      "settings": [
+        {
+          "type": "range",
+          "id": "rating",
+          "label": "Average rating",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "default": 5
+        },
+        {
+          "type": "text",
+          "id": "review_count",
+          "label": "Number of reviews",
+          "default": "1,200"
+        },
+        {
+          "type": "textarea",
+          "id": "quote",
+          "label": "Featured review quote",
+          "default": "This is the best purchase I've made all year."
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Review author",
+          "default": "Verified Customer"
+        }
+      ]
+    },
+    {
+      "type": "customer_count",
+      "name": "Customer Count",
+      "settings": [
+        {
+          "type": "text",
+          "id": "count",
+          "label": "Number",
+          "default": "50,000+"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Happy Customers Worldwide"
+        }
+      ]
+    },
+    {
+      "type": "ugc",
+      "name": "UGC (Customer Photo)",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Customer photo"
+        },
+        {
+          "type": "text",
+          "id": "caption",
+          "label": "Caption",
+          "default": "Absolutely love this!"
+        },
+        {
+          "type": "text",
+          "id": "handle",
+          "label": "Customer handle",
+          "default": "@happycustomer"
+        }
+      ]
+    },
+    {
+      "type": "as_seen_on",
+      "name": "As Seen On",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "As Featured In"
+        },
+        {
+          "type": "image_picker",
+          "id": "logo_1",
+          "label": "Logo 1"
+        },
+        {
+          "type": "image_picker",
+          "id": "logo_2",
+          "label": "Logo 2"
+        },
+        {
+          "type": "image_picker",
+          "id": "logo_3",
+          "label": "Logo 3"
+        },
+        {
+          "type": "image_picker",
+          "id": "logo_4",
+          "label": "Logo 4"
+        },
+        {
+          "type": "image_picker",
+          "id": "logo_5",
+          "label": "Logo 5"
+        },
+        {
+          "type": "image_picker",
+          "id": "logo_6",
+          "label": "Logo 6"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 10,
+  "presets": [
+    {
+      "name": "Social Proof",
+      "blocks": [
+        {
+          "type": "reviews",
+          "settings": {
+            "rating": 5,
+            "review_count": "1,200",
+            "quote": "This is the best purchase I've made all year.",
+            "author": "Verified Customer"
+          }
+        },
+        {
+          "type": "customer_count",
+          "settings": {
+            "count": "50,000+",
+            "label": "Happy Customers Worldwide"
+          }
+        },
+        {
+          "type": "as_seen_on",
+          "settings": {
+            "label": "As Featured In"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
