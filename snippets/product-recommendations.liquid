@@ -1,89 +1,173 @@
-<div class="product-recommendations-section">
-  <h3 class="recommendations-title">Perfect Match With</h3>
+{%- comment -%}
+  snippets/product-recommendations.liquid
+  ══════════════════════════════════════════════════════════════════════════════
+  PURPOSE
+    Lightweight recommendation cards for the cart drawer.
+    Pure presentation layer — no <script>, no <style>.
 
-  <div class="recommendations-grid">
+  PARAMETERS (pass via `with` or set before render)
+    products          {Array}   Required. Array of product objects to display.
+    cart_item_ids     {Array}   Required. Array of variant IDs already in cart
+                                (used to suppress "Add" on already-carted items).
+    recs_limit        {Number}  Optional. Max cards to render. Default: 4.
+    recs_title        {String}  Optional. Section heading. Default: "You might also like".
 
-    <div class="recommendation-item">
-      <a href="#" class="recommendation-link" aria-label="View Arc Chair">
-        <img
-          src="https://placehold.co/200x200/c8946a/ffffff?text=Arc+Chair"
-          alt="Arc Chair"
-          width="200"
-          height="200"
-          loading="lazy"
-          class="recommendation-image"
+  CALLED BY
+    sections/cart-recommendations.liquid  (via Section Rendering API)
+
+  BEM NAMESPACE
+    .ecd-recs__*  ("ecombio cart drawer recommendations")
+    Tokens: inherits --ecd-* from cart-drawer.css (already on :root).
+
+  ARCHITECTURE NOTE
+    This snippet is intentionally dumb — it just loops and renders.
+    All API orchestration, fallback logic, and ATC calls live in
+    assets/cart-recommendations.js. The JS fetches this section and
+    swaps the innerHTML of [data-ecd-recs-container] in the drawer.
+  ══════════════════════════════════════════════════════════════════════════════
+{%- endcomment -%}
+
+{%- liquid
+  assign recs_limit = recs_limit | default: 4
+  assign recs_title = recs_title | default: 'You might also like'
+
+  comment
+    Build a quick-lookup array of variant IDs already in cart so we
+    can mark cards that are already added. We receive this as a flat
+    array of integers (built by the parent section from cart.items).
+  endcomment
+  assign cart_ids_str = cart_item_ids | join: ','
+-%}
+
+{%- if products != blank and products.size > 0 -%}
+
+  <div class="ecd-recs" data-ecd-recs aria-label="{{ recs_title | escape }}">
+
+    <p class="ecd-recs__title" aria-hidden="true">{{ recs_title | escape }}</p>
+
+    <ul class="ecd-recs__list" role="list">
+      {%- for product in products limit: recs_limit -%}
+
+        {%- comment -%}
+          Use the first available variant for the ATC payload.
+          If a product has only one variant (default), its first_available_variant
+          gives us a clean variant_id. Complex variant selection is intentionally
+          out of scope for recommendation cards — clicking the title navigates
+          to the full PDP where the customer selects options.
+        {%- endcomment -%}
+        {%- assign rec_variant = product.first_available_variant -%}
+
+        {%- comment -%} Is this product's default variant already in cart? {%- endcomment -%}
+        {%- assign already_in_cart = false -%}
+        {%- if rec_variant -%}
+          {%- assign variant_id_str = rec_variant.id | append: '' -%}
+          {%- if cart_ids_str contains variant_id_str -%}
+            {%- assign already_in_cart = true -%}
+          {%- endif -%}
+        {%- endif -%}
+
+        {%- comment -%} Pricing helpers {%- endcomment -%}
+        {%- assign rec_price = product.price_min -%}
+        {%- assign rec_compare = product.compare_at_price_min -%}
+        {%- assign rec_on_sale = false -%}
+        {%- if rec_compare > rec_price -%}
+          {%- assign rec_on_sale = true -%}
+        {%- endif -%}
+
+        <li
+          class="ecd-recs__item"
+          data-ecd-recs-item
+          data-product-id="{{ product.id }}"
         >
-      </a>
-      <div class="recommendation-info">
-        <h4 class="recommendation-product-title">Arc Chair</h4>
-        <div class="recommendation-price">
-          <span class="price sale">$699.00</span>
-          <span class="compare-price">$729.00</span>
-        </div>
-      </div>
-      <button class="view-button" type="button" onclick="window.location.href='#'">View</button>
-    </div>
 
-    <div class="recommendation-item">
-      <a href="#" class="recommendation-link" aria-label="View Atella Jug">
-        <img
-          src="https://placehold.co/200x200/5b7c5b/ffffff?text=Atella+Jug"
-          alt="Atella Jug"
-          width="200"
-          height="200"
-          loading="lazy"
-          class="recommendation-image"
-        >
-      </a>
-      <div class="recommendation-info">
-        <h4 class="recommendation-product-title">Atella Jug</h4>
-        <div class="recommendation-price">
-          <span class="price">$115.00</span>
-        </div>
-      </div>
-      <button class="view-button" type="button" onclick="window.location.href='#'">View</button>
-    </div>
+          {%- comment -%} ── Image ── {%- endcomment -%}
+          <a
+            href="{{ product.url }}"
+            class="ecd-recs__img-link"
+            tabindex="-1"
+            aria-hidden="true"
+          >
+            {%- if product.featured_image -%}
+              <img
+                src="{{ product.featured_image | image_url: width: 160 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                width="80"
+                height="80"
+                loading="lazy"
+                class="ecd-recs__img"
+              >
+            {%- else -%}
+              <div class="ecd-recs__img-placeholder" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="28" height="28">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+            {%- endif -%}
+          </a>
 
-    <div class="recommendation-item">
-      <a href="#" class="recommendation-link" aria-label="View Beam Table">
-        <img
-          src="https://placehold.co/200x200/c8a93a/ffffff?text=Beam+Table"
-          alt="Beam Table"
-          width="200"
-          height="200"
-          loading="lazy"
-          class="recommendation-image"
-        >
-      </a>
-      <div class="recommendation-info">
-        <h4 class="recommendation-product-title">Beam Table</h4>
-        <div class="recommendation-price">
-          <span class="price">$215.00</span>
-        </div>
-      </div>
-      <button class="view-button" type="button" onclick="window.location.href='#'">View</button>
-    </div>
+          {%- comment -%} ── Info ── {%- endcomment -%}
+          <div class="ecd-recs__info">
+
+            {%- if product.vendor != blank -%}
+              <span class="ecd-recs__vendor">{{ product.vendor | escape }}</span>
+            {%- endif -%}
+
+            <a
+              href="{{ product.url }}"
+              class="ecd-recs__name"
+              aria-label="{{ product.title | escape }}"
+            >
+              {{- product.title | escape -}}
+            </a>
+
+            <div class="ecd-recs__pricing">
+              {%- if rec_on_sale -%}
+                <span class="ecd-recs__price ecd-recs__price--sale">{{ rec_price | money }}</span>
+                <s class="ecd-recs__price--was">{{ rec_compare | money }}</s>
+              {%- else -%}
+                <span class="ecd-recs__price">{{ rec_price | money }}</span>
+              {%- endif -%}
+            </div>
+
+          </div>
+
+          {%- comment -%} ── Quick-add button ── {%- endcomment -%}
+          {%- if rec_variant and product.available -%}
+            <button
+              type="button"
+              class="ecd-recs__atc{% if already_in_cart %} is-added{% endif %}"
+              data-ecd-recs-atc
+              data-variant-id="{{ rec_variant.id }}"
+              data-product-title="{{ product.title | escape }}"
+              aria-label="{% if already_in_cart %}{{ product.title | escape }} already in cart{% else %}Add {{ product.title | escape }} to cart{% endif %}"
+              {% if already_in_cart %}aria-pressed="true"{% endif %}
+            >
+              {%- if already_in_cart -%}
+                {%- comment -%} Checkmark icon — shown when already added {%- endcomment -%}
+                <svg class="ecd-recs__atc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span data-atc-label>In cart</span>
+              {%- else -%}
+                {%- comment -%} Plus icon — default state {%- endcomment -%}
+                <svg class="ecd-recs__atc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span data-atc-label>Add</span>
+              {%- endif -%}
+            </button>
+          {%- elsif product.available == false -%}
+            <span class="ecd-recs__sold-out">Sold out</span>
+          {%- endif -%}
+
+        </li>
+
+      {%- endfor -%}
+    </ul>
 
   </div>
 
-  <div class="social-share">
-    <span class="share-label">Share:</span>
-    <div class="share-buttons">
-      <a href="https://www.facebook.com/sharer.php?u=#" target="_blank" rel="noopener noreferrer" class="share-button" aria-label="Share on Facebook">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M9.1875 13.5223V21H13.2656V13.5223H16.3066L16.9395 10.084H13.2656V8.86758C13.2656 7.05 13.9793 6.35391 15.8215 6.35391C16.3945 6.35391 16.8551 6.36797 17.1223 6.39609V3.27773C16.6195 3.14062 15.3891 3 14.6789 3C10.9207 3 9.1875 4.77539 9.1875 8.60391V10.084H6.86719V13.5223H9.1875Z" fill="currentColor"/>
-        </svg>
-      </a>
-      <a href="https://twitter.com/share?text=Task+Chair+Luxe&url=#" target="_blank" rel="noopener noreferrer" class="share-button" aria-label="Share on X">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M3.04221 4L9.72655 12.9408L3 20.21H4.51388L10.403 13.8457L15.1612 20.21H20.313L13.2525 10.7663L19.5135 4H17.9997L12.5761 9.86141L8.19399 4H3.04221ZM5.26848 5.11552H7.63522L18.0863 19.0943H15.7196L5.26848 5.11552Z" fill="currentColor"/>
-        </svg>
-      </a>
-      <a href="https://pinterest.com/pin/create/button/?url=#&description=Task+Chair+Luxe" target="_blank" rel="noopener noreferrer" class="share-button" aria-label="Share on Pinterest">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.852 0 1.265.64 1.265 1.408 0 .858-.546 2.14-.828 3.33-.236.995.499 1.806 1.476 1.806 1.772 0 3.137-1.868 3.137-4.564 0-2.387-1.715-4.057-4.163-4.057-2.836 0-4.498 2.126-4.498 4.324 0 .856.33 1.774.741 2.274a.3.3 0 01.069.285l-.275 1.118c-.044.18-.147.219-.338.132-1.249-.581-2.03-2.407-2.03-3.874 0-3.154 2.292-6.052 6.608-6.052 3.469 0 6.165 2.473 6.165 5.776 0 3.447-2.173 6.22-5.19 6.22-1.013 0-1.967-.527-2.292-1.148l-.623 2.378c-.226.869-.835 1.958-1.244 2.621.937.29 1.931.446 2.962.446 5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="currentColor"/>
-        </svg>
-      </a>
-    </div>
-  </div>
-</div>
+{%- endif -%}
