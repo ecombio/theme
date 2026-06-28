@@ -10,6 +10,9 @@
        and injects the returned HTML into .quick-view-modal__body
     3. snippets/quick-view-media.liquid + snippets/quick-view-detail.liquid
        produce that inner HTML on demand.
+    4. snippets/quick-view-description.liquid renders the tab strip
+       (Description / Shipping Policy / Returns & Refunds) as a full-width
+       row beneath the two-column layout.
 
   This section renders once in theme.liquid and is reused for every open.
   When fetched via /products/${handle}?sections=quick-view, Shopify passes
@@ -76,6 +79,7 @@
           data-product-id="{{ product.id }}"
           data-product-handle="{{ product.handle }}"
         >
+          {%- comment -%}── Two-column row: media + detail ──{%- endcomment -%}
           {%- render 'quick-view-media',
             product:  product,
             featured: featured,
@@ -90,6 +94,11 @@
             on_sale:        on_sale,
             save_pct:       save_pct,
             eta_text:       eta_text
+          -%}
+
+          {%- comment -%}── Full-width row: description / policy tabs ──{%- endcomment -%}
+          {%- render 'quick-view-description',
+            product: product
           -%}
         </div>
       {%- endif -%}
