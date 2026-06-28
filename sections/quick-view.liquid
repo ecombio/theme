@@ -1,0 +1,141 @@
+{% comment %}
+  Quick View Modal Section
+  ========================
+  Renders a modal overlay for product quick view.
+
+  Triggered by product-card.liquid's existing button:
+    data-quickview-btn + data-product-url="{{ product.url }}"
+
+  No changes needed to product-card.liquid — the button is already wired.
+  quick-view.js listens for clicks on [data-quickview-btn] via event delegation.
+{% endcomment %}
+
+<div
+  id="quick-view-modal"
+  class="quick-view-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Quick view"
+  aria-hidden="true"
+>
+  <div class="quick-view-modal__backdrop js-quick-view-close"></div>
+
+  <div class="quick-view-modal__container">
+    <button
+      class="quick-view-modal__close js-quick-view-close"
+      aria-label="Close quick view"
+    >
+      {%- render 'icon-close' -%}
+      <svg class="quick-view-modal__close-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="quick-view-modal__content" id="quick-view-content">
+      {{- 'quick-view-loading' | t -}}
+    </div>
+  </div>
+</div>
+
+{% comment %} Quick View Product Template (rendered via JS fetch) {% endcomment %}
+<template id="quick-view-template">
+  <div class="quick-view-product">
+
+    {%- comment -%} Images {%- endcomment -%}
+    <div class="quick-view-product__gallery">
+      <div class="quick-view-product__image-main">
+        <img
+          id="quick-view-main-image"
+          src=""
+          alt=""
+          width="600"
+          height="600"
+          loading="lazy"
+        >
+      </div>
+      <div class="quick-view-product__thumbnails" id="quick-view-thumbnails">
+        {{- 'thumbnails-placeholder' | t -}}
+      </div>
+    </div>
+
+    {%- comment -%} Product Info {%- endcomment -%}
+    <div class="quick-view-product__info">
+      <p class="quick-view-product__vendor" id="quick-view-vendor"></p>
+      <h2 class="quick-view-product__title" id="quick-view-title"></h2>
+
+      <div class="quick-view-product__price" id="quick-view-price"></div>
+
+      {%- comment -%} Variant Selector {%- endcomment -%}
+      <div class="quick-view-product__variants" id="quick-view-variants"></div>
+
+      {%- comment -%} Description {%- endcomment -%}
+      <div class="quick-view-product__description" id="quick-view-description"></div>
+
+      {%- comment -%} Add to Cart {%- endcomment -%}
+      <div class="quick-view-product__atc">
+        <div class="quick-view-product__quantity">
+          <label for="quick-view-qty">{{ 'products.product.quantity.label' | t }}</label>
+          <div class="quick-view-product__quantity-controls">
+            <button type="button" class="qty-btn js-qty-minus" aria-label="{{ 'products.product.quantity.decrease' | t }}">−</button>
+            <input
+              type="number"
+              id="quick-view-qty"
+              name="quantity"
+              value="1"
+              min="1"
+              aria-label="{{ 'products.product.quantity.input_label' | t }}"
+            >
+            <button type="button" class="qty-btn js-qty-plus" aria-label="{{ 'products.product.quantity.increase' | t }}">+</button>
+          </div>
+        </div>
+
+        <button
+          id="quick-view-atc-btn"
+          class="quick-view-product__atc-btn btn btn--primary js-quick-view-atc"
+          type="button"
+          data-variant-id=""
+        >
+          {{ 'products.product.add_to_cart' | t }}
+        </button>
+      </div>
+
+      <a
+        class="quick-view-product__full-link"
+        id="quick-view-full-link"
+        href=""
+      >
+        {{ 'products.product.view_full_details' | t }} →
+      </a>
+    </div>
+  </div>
+</template>
+
+{% schema %}
+{
+  "name": "Quick View",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show product vendor",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_description",
+      "label": "Show product description",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "description_word_limit",
+      "label": "Description word limit",
+      "min": 20,
+      "max": 200,
+      "step": 10,
+      "default": 80
+    }
+  ]
+}
+{% endschema %}
