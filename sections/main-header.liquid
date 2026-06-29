@@ -2,38 +2,22 @@
   Main Header Section
   File: sections/main-header.liquid
 
-  Renders the sticky header bar:
-    Hamburger · Logo · Search (inline desktop / search-row mobile) · Icon cluster
+  we just removed our header-icons and would like to utilize a wrapper instead, comprised of the following; 
 
-  This section does NOT render the utility bar or menu bar — those live in their
-  own sections composed via header-group.json:
-    1. utility-bar      (sections/utility-bar.liquid)
-    2. main-header      (sections/main-header.liquid)   ← this file
-    3. header-menu      (sections/header-menu.liquid)
+  <ul class="main-header__icons" role="list" aria-label="Header actions">
+  {%- if show_store != false -%}
+    <li>{%- render 'header-store' -%}</li>
+  {%- endif -%}
 
-  The mobile nav drawer (#main-header-mobile-nav) is rendered inline below so
-  main-header.js can own its open/close/focus-trap behaviour without a cross-section
-  DOM dependency.
+  {%- if show_account != false -%}
+    <li>{%- render 'header-account' -%}</li>
+  {%- endif -%}
 
-  Snippet tree:
-    header-logo     (logo, logo_width)
-    header-search   (show_category, id_suffix)  ← rendered twice: desktop + mobile
-    header-icons    (show_store, show_account, show_cart)
-      ├── header-account                         ← account link (when show_account)
-      └── header-cart                            ← cart icon + badge (when show_cart)
+  {%- if show_cart != false -%}
+    <li>{%- render 'header-cart' -%}</li>
+  {%- endif -%}
+</ul>
 
-  Asset loading order (critical: CSS before JS, search JS before main-header JS):
-    1. header-search.css    — search component styles
-    2. main-header.css      — header layout styles
-    3. header-cart.css      — cart icon + badge styles
-    4. header-account.css   — account icon styles
-    5. header-search.js     — search component (defer) — must init before main-header.js
-    6. main-header.js       — header controller (defer)
-    7. header-cart.js       — cart badge sync + drawer open (defer)
-    8. header-account.js    — account link click event (defer, optional)
-
-  NOTE: Remove 'ecombio-search.css' and 'ecombio-search.js' from theme.liquid —
-  they are superseded by header-search.css / header-search.js.
 {% endcomment %}
 
 {{ 'header-search.css'  | asset_url | stylesheet_tag }}
