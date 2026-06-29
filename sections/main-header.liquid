@@ -1,26 +1,6 @@
 {% comment %}
   Main Header Section
   File: sections/main-header.liquid
-
-  PIVOT: header-search moved off the official predictive-search
-  pipeline (Section Rendering API), so this section no longer needs to
-  pass trending terms, category labels/values, or colour settings
-  through to the snippet — that whole rendering path now lives in
-  Liquid inside sections/predictive-search.liquid. The only thing
-  header-search.liquid actually needs to make its decision is whether
-  predictive search is on at all.
-
-  search-form.css / search-form.js are no longer loaded here —
-  snippets/header-search.liquid now owns and loads its own assets
-  (header-search.css always, header-search.js only when predictive
-  search is enabled), the same way header-logo etc. are self-contained.
-
-  Composition stays a flat, explicit sequence:
-    main-header
-      └─ header-logo
-      └─ header-search   (single param: enable_predictive_search)
-      └─ header-account
-      └─ header-cart
 {% endcomment %}
 
 {{ 'main-header.css'    | asset_url | stylesheet_tag }}
@@ -52,8 +32,6 @@
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
-      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
-
       <ul class="main-header__icons" role="list" aria-label="Header actions">
         {%- if show_acct != false -%}
           <li>{%- render 'header-account' -%}</li>
@@ -65,6 +43,13 @@
 
     </div>
   </div>
+
+  {%- comment -%}
+    Search renders outside main-header__inner so both --desktop and --mobile
+    variants can be positioned correctly via CSS without fighting the flex row.
+    header-search.css controls which variant is visible at each breakpoint.
+  {%- endcomment -%}
+  {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
 
   <nav class="main-header__mobile-nav"
        id="main-header-mobile-nav"
