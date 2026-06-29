@@ -1,52 +1,16 @@
 {% comment %}
-  snippets/header-account.liquid
-  Account icon link for sections/main-header.liquid.
+  ECOMBIO Header — Account Icon
+  File: snippets/ecombio-header-icon-account.liquid
 
-  Parameters: none — reads global `customer` and `routes` objects directly.
-
-  Responsibilities:
-    • Link to account dashboard when customer is logged in
-    • Link to login page when customer is a guest
-    • Render person SVG icon + label, matching the icon cluster pattern
-
-  No JS dependency — this is a plain anchor, no drawer or event needed.
+  Renders: Account link with person SVG icon and label.
+  No parameters required — reads routes from global Liquid context.
 {% endcomment %}
 
-{%- if customer -%}
-  <a
-    href="{{ routes.account_url }}"
-    class="main-header__icon-btn main-header__account-btn"
-    aria-label="My account"
-    data-account-link
-  >
-{%- else -%}
-  <a
-    href="{{ routes.account_login_url }}"
-    class="main-header__icon-btn main-header__account-btn"
-    aria-label="Sign in or register"
-    data-account-link
-  >
-{%- endif -%}
-
-  <svg
-    class="main-header__icon main-header__account-icon"
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.75"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <circle cx="12" cy="8" r="4"/>
-    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+<a href="{{ routes.account_url }}" class="ecombio-header__icon-link" aria-label="Sign in or register">
+  <svg class="ecombio-icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
   </svg>
-
-  <span class="main-header__icon-label" aria-hidden="true">
-    {%- if customer -%}Account{%- else -%}Sign in{%- endif -%}
-  </span>
-
+  <span class="ecombio-header__icon-label">Sign in/ Register</span>
 </a>
