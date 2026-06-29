@@ -7,11 +7,13 @@
   picker right. Assets (utility-bar.css / utility-bar.js) are loaded by the
   parent section.
 
-  Parameters (passed via section.settings):
-    bar_style   {String}  — 'hyper' | 'focus'
-    show_curr   {Boolean} — show currency selector
-    show_loc    {Boolean} — show language selector
-    section.blocks of type 'link' are rendered as utility links
+  Parameters (all from section.settings):
+    bar_style         {String}  — 'hyper' | 'focus'
+    show_curr         {Boolean} — show currency selector
+    show_loc          {Boolean} — show language selector
+    utility_link_N_enabled {Boolean} — show/hide link slot N (1–5)
+    utility_link_N_label   {String}  — link text
+    utility_link_N_url     {String}  — link href
 {% endcomment %}
 
 <div class="utility-bar utility-bar--{{ bar_style }}"
@@ -21,14 +23,20 @@
 
   <div class="utility-bar__inner">
 
-    {%- comment -%} ── LEFT: utility links ── {%- endcomment -%}
+    {%- comment -%} ── LEFT: utility links (settings-driven, slots 1–5) ── {%- endcomment -%}
     <div class="utility-bar__col utility-bar__col--left">
       <ul class="utility-bar__links" role="list">
-        {%- for block in section.blocks -%}
-          {%- if block.type == 'link' -%}
-            <li {{ block.shopify_attributes }}>
-              <a href="{{ block.settings.url }}" class="utility-bar__link">
-                {{- block.settings.label | escape -}}
+        {%- for i in (1..5) -%}
+          {%- assign enabled_key = 'utility_link_' | append: i | append: '_enabled' -%}
+          {%- assign label_key   = 'utility_link_' | append: i | append: '_label' -%}
+          {%- assign url_key     = 'utility_link_' | append: i | append: '_url' -%}
+          {%- assign link_enabled = section.settings[enabled_key] -%}
+          {%- assign link_label   = section.settings[label_key] -%}
+          {%- assign link_url     = section.settings[url_key] -%}
+          {%- if link_enabled and link_label != blank and link_url != blank -%}
+            <li>
+              <a href="{{ link_url }}" class="utility-bar__link">
+                {{- link_label | escape -}}
               </a>
             </li>
           {%- endif -%}
