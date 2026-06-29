@@ -2,40 +2,57 @@
   Main Header
   File: sections/main-header.liquid
 
-  Single section that renders both the utility bar and the main header bar.
-  Replaces sections/utility-bar.liquid — remove that section tag from
-  layout/theme.liquid and keep only this one.
+  Merged section — combines what used to be sections/main-header.liquid
+  with the desktop menu bar + mobile nav drawer markup that used to live in
+  snippets/header-menu.liquid. That snippet is now rendered from here
+  (see snippets/header-menu.liquid), and this section's schema is the one
+  source of truth for the blocks (single/highlight/dropdown/mega/flyout)
+  and the mobile navigation link list that drive it — snippets don't have
+  their own schema, so those settings have to live on the section that
+  renders the snippet.
 
   Renders:
-    1. snippets/header-utility-bar.liquid  — slim top bar (links, switchers, region picker)
-    2. Header bar                          — hamburger · logo · search · icons
-    3. Search row                          — tablet + mobile only
-    4. Mobile nav drawer                   — populated from nav_link blocks
+    1. snippets/header-utility.liquid — slim top bar (links, switchers, region picker)
+    2. Header bar                     — hamburger · logo · search · icons
+    3. Search row                     — tablet + mobile only
+    4. snippets/header-menu.liquid    — desktop menu bar + mobile nav drawer
+
+  Block types (defined here, passed into snippets/header-menu.liquid as `blocks`):
+    single, highlight, dropdown, mega, flyout — desktop menu bar items
 
   Assets loaded here:
-    utility-bar.css / utility-bar.js  — utility bar styles + behaviour
-    search-form.css                   — search form styles
-    main-header.css / main-header.js  — header styles + behaviour
+    utility-bar.css / utility-bar.js   — utility bar styles + behaviour
+    search-form.css                    — search form styles
+    main-header.css / main-header.js   — header bar styles + behaviour
+    header-menu.css                    — desktop menu bar + mobile drawer styles
+                                          (used by snippets/header-menu.liquid)
+    header-mega-menu.js / flyout-panel.js / flyout-menu.js / flyout.js
+                                        — desktop mega menu + flyout behaviour
+                                          (used by snippets/header-menu.liquid)
 
   layout/theme.liquid usage:
     {%- section 'main-header' -%}
+    (the old {%- section 'header-menu' -%} call should be removed — that
+    file is now a snippet, rendered automatically from this section)
 {% endcomment %}
 
-{{ 'utility-bar.css'  | asset_url | stylesheet_tag }}
-{{ 'search-form.css'  | asset_url | stylesheet_tag }}
-{{ 'main-header.css'  | asset_url | stylesheet_tag }}
+{{ 'utility-bar.css'    | asset_url | stylesheet_tag }}
+{{ 'search-form.css'    | asset_url | stylesheet_tag }}
+{{ 'main-header.css'    | asset_url | stylesheet_tag }}
+{{ 'header-menu.css'    | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
   assign logo_width = section.settings.logo_width | default: 140
-  assign logo_2x    = logo_width | times: 2
-  assign show_cat   = section.settings.show_category_filter
-  assign show_store = section.settings.show_icon_store
-  assign show_acct  = section.settings.show_icon_account
-  assign show_cart  = section.settings.show_icon_cart
-  assign bar_style  = section.settings.bar_style | default: 'hyper'
-  assign show_curr  = section.settings.show_currency
-  assign show_loc   = section.settings.show_locale
+  assign logo_2x     = logo_width | times: 2
+  assign show_cat    = section.settings.show_category_filter
+  assign show_store  = section.settings.show_icon_store
+  assign show_acct   = section.settings.show_icon_account
+  assign show_cart   = section.settings.show_icon_cart
+  assign bar_style   = section.settings.bar_style | default: 'hyper'
+  assign show_curr   = section.settings.show_currency
+  assign show_loc    = section.settings.show_locale
+  assign nav_menu     = linklists[section.settings.mobile_menu] | default: linklists['main-menu']
 -%}
 
 {%- comment -%} ═══════════════════════════════════════
@@ -56,13 +73,13 @@
   <div class="main-header__bar">
     <div class="main-header__inner">
 
-      {%- comment -%} ── Hamburger (mobile + tablet) ── {%- endcomment -%}
+      {%- comment -%} ── Hamburger (mobile + tablet) — opens the mobile nav drawer below ── {%- endcomment -%}
       <button class="main-header__hamburger"
               id="main-header-nav-toggle"
               type="button"
               aria-label="Open navigation"
               aria-expanded="false"
-              aria-controls="main-header-mobile-nav">
+              aria-controls="mobile-nav">
         <span class="main-header__hamburger-line"></span>
         <span class="main-header__hamburger-line"></span>
         <span class="main-header__hamburger-line"></span>
@@ -89,7 +106,7 @@
 
       {%- comment -%} ── Search (inline — desktop only) ── {%- endcomment -%}
       <div class="main-header__search main-header__search--inline">
-        {%- render 'header-search', show_category: show_cat, id_suffix: 'desktop' -%}
+        {%- render 'search-form', show_category: show_cat, id_suffix: 'desktop' -%}
       </div>
 
       {%- comment -%} ── Right icons ── {%- endcomment -%}
@@ -177,37 +194,24 @@
   ═══════════════════════════════════════ {%- endcomment -%}
   <div class="main-header__search-row">
     <div class="main-header__search-row-inner">
-      {%- render 'header-search', show_category: show_cat, id_suffix: 'mobile' -%}
+      {%- render 'search-form', show_category: show_cat, id_suffix: 'mobile' -%}
     </div>
   </div>
 
-  {%- comment -%} ═══════════════════════════════════════
-      MOBILE NAV DRAWER
-      Populated from nav_link blocks in schema.
-  ═══════════════════════════════════════ {%- endcomment -%}
-  <nav class="main-header__mobile-nav"
-       id="main-header-mobile-nav"
-       aria-label="Mobile navigation"
-       aria-hidden="true"
-       hidden>
-    <ul class="main-header__mobile-nav-list" role="list">
-      {%- for block in section.blocks -%}
-        {%- if block.type == 'nav_link' -%}
-          <li {{ block.shopify_attributes }}>
-            <a href="{{ block.settings.url }}"
-               class="main-header__mobile-nav-link">
-              {{ block.settings.label | escape }}
-            </a>
-          </li>
-        {%- endif -%}
-      {%- endfor -%}
-    </ul>
-  </nav>
-
 </header>
+
+{%- comment -%} ═══════════════════════════════════════
+    DESKTOP MENU BAR + MOBILE NAV DRAWER
+    (snippets/header-menu.liquid — blocks/settings defined in this section's schema)
+═══════════════════════════════════════ {%- endcomment -%}
+{%- render 'header-menu', blocks: section.blocks, nav_menu: nav_menu -%}
 
 <script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
 <script src="{{ 'main-header.js' | asset_url }}" defer></script>
+{{- 'header-mega-menu.js' | asset_url | script_tag }}
+{{- 'flyout-panel.js'     | asset_url | script_tag }}
+{{- 'flyout-menu.js'      | asset_url | script_tag }}
+{{- 'flyout.js'           | asset_url | script_tag }}
 
 {% schema %}
 {
@@ -266,6 +270,17 @@
       "id": "show_icon_cart",
       "label": "Show cart icon",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mobile navigation"
+    },
+    {
+      "type": "link_list",
+      "id": "mobile_menu",
+      "label": "Mobile navigation menu",
+      "default": "main-menu",
+      "info": "Used for the mobile drawer (up to 3 levels). Desktop menu bar items are configured via blocks below."
     },
     {
       "type": "header",
@@ -398,8 +413,8 @@
   ],
   "blocks": [
     {
-      "type": "nav_link",
-      "name": "Navigation link",
+      "type": "single",
+      "name": "Link",
       "settings": [
         {
           "type": "text",
@@ -409,8 +424,121 @@
         },
         {
           "type": "url",
-          "id": "url",
+          "id": "link",
           "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name",
+          "info": "Optional. Rendered via snippets/menu-icon.liquid."
+        }
+      ]
+    },
+    {
+      "type": "highlight",
+      "name": "Highlight link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "On Sale"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "dropdown",
+      "name": "Dropdown menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Dropdown menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "mega",
+      "name": "Mega menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Mega menu"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_products",
+          "label": "Show featured products",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "flyout",
+      "name": "Flyout panel",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Browse all categories"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Flyout menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
         }
       ]
     }
@@ -419,6 +547,7 @@
     {
       "name": "Main Header",
       "settings": {
+        "mobile_menu": "main-menu",
         "utility_link_1_enabled": true,
         "utility_link_1_label": "Track Order",
         "utility_link_1_url": "/apps/track",
@@ -427,9 +556,9 @@
         "utility_link_2_url": "/pages/stores"
       },
       "blocks": [
-        { "type": "nav_link", "settings": { "label": "Shop",    "url": "/collections/all" } },
-        { "type": "nav_link", "settings": { "label": "About",   "url": "/pages/about" } },
-        { "type": "nav_link", "settings": { "label": "Contact", "url": "/pages/contact" } }
+        { "type": "single", "settings": { "label": "Shop",    "link": "/collections/all" } },
+        { "type": "single", "settings": { "label": "About",   "link": "/pages/about" } },
+        { "type": "single", "settings": { "label": "Contact", "link": "/pages/contact" } }
       ]
     }
   ]
