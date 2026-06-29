@@ -1,0 +1,140 @@
+{% comment %}
+  Header Search — block
+  File: blocks/header-search.liquid
+
+  Added by merchants inside the Main Header section's block list. Owns
+  ALL search-related settings (previously these lived on the section).
+  Renders search-form.liquid twice — once for desktop, once for mobile
+  — sharing this single block's settings, so there is one source of
+  truth for "is predictive search on" regardless of viewport. Desktop
+  vs. mobile visibility is handled by CSS breakpoints in main-header.css,
+  exactly as before.
+
+  MULTIPLE BLOCKS: merchants can add more than one Header Search block
+  (no max_blocks cap). block.id is passed into every search-form render
+  as block_id and folded into that snippet's element ids, so two blocks
+  on the same page never produce duplicate HTML ids.
+
+  NOTE — search-modal is NOT rendered from this file. window.HS_SETTINGS
+  is global (shared by every search-form instance on the page, by
+  design — see the project notes on this decision), so it must only be
+  rendered ONCE total, regardless of how many Header Search blocks
+  exist. That single render is handled by sections/main-header.liquid,
+  which renders search-modal ahead of the blocks loop if ANY block has
+  predictive search enabled. Rendering it here too would emit a
+  duplicate <script> tag per predictive-enabled block, with the last
+  one silently overwriting window.HS_SETTINGS for all of them.
+
+  {{ block.shopify_attributes }} on the wrapper makes this block
+  selectable/highlightable in the theme editor.
+{% endcomment %}
+
+{%- liquid
+  assign enable_predictive = block.settings.enable_predictive_search
+  assign show_cat          = block.settings.show_category_filter
+-%}
+
+<div class="header-search-block" {{ block.shopify_attributes }}>
+
+  {%- comment -%} ── Desktop search (hidden via CSS below 1024 px) ── {%- endcomment -%}
+  <div class="main-header__search main-header__search--inline">
+    {%- render 'search-form',
+          block_id:      block.id,
+          id_suffix:     'desktop',
+          show_category: show_cat,
+          cat_1_label:   block.settings.search_category_1_label,
+          cat_1_value:   block.settings.search_category_1_value,
+          cat_2_label:   block.settings.search_category_2_label,
+          cat_2_value:   block.settings.search_category_2_value,
+          cat_3_label:   block.settings.search_category_3_label,
+          cat_3_value:   block.settings.search_category_3_value,
+          accent_color:  block.settings.search_accent_color,
+          highlight_bg:  block.settings.search_highlight_bg,
+          hover_bg:      block.settings.search_hover_bg,
+          border_focus:  block.settings.search_border_focus,
+          predictive:    enable_predictive
+    -%}
+  </div>
+
+  {%- comment -%} ── Tablet / mobile search row (hidden via CSS above 1024 px) ── {%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'search-form',
+            block_id:      block.id,
+            id_suffix:     'mobile',
+            show_category: show_cat,
+            cat_1_label:   block.settings.search_category_1_label,
+            cat_1_value:   block.settings.search_category_1_value,
+            cat_2_label:   block.settings.search_category_2_label,
+            cat_2_value:   block.settings.search_category_2_value,
+            cat_3_label:   block.settings.search_category_3_label,
+            cat_3_value:   block.settings.search_category_3_value,
+            accent_color:  block.settings.search_accent_color,
+            highlight_bg:  block.settings.search_highlight_bg,
+            hover_bg:      block.settings.search_hover_bg,
+            border_focus:  block.settings.search_border_focus,
+            predictive:    enable_predictive
+      -%}
+    </div>
+  </div>
+
+</div>
+
+{% schema %}
+{
+  "name": "Header Search",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_predictive_search",
+      "label": "Enable predictive search",
+      "info": "Suggestions, recent searches, trending terms, voice input.",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_filter",
+      "label": "Show category filter pill",
+      "default": true
+    },
+    { "type": "header", "content": "Trending searches" },
+    { "type": "text", "id": "search_trending_1", "label": "Trending search 1" },
+    { "type": "text", "id": "search_trending_2", "label": "Trending search 2" },
+    { "type": "text", "id": "search_trending_3", "label": "Trending search 3" },
+    { "type": "text", "id": "search_trending_4", "label": "Trending search 4" },
+    { "type": "text", "id": "search_trending_5", "label": "Trending search 5" },
+    { "type": "header", "content": "Category pills" },
+    { "type": "text", "id": "search_category_1_label", "label": "Category 1 label" },
+    { "type": "text", "id": "search_category_1_value", "label": "Category 1 tag value" },
+    { "type": "text", "id": "search_category_2_label", "label": "Category 2 label" },
+    { "type": "text", "id": "search_category_2_value", "label": "Category 2 tag value" },
+    { "type": "text", "id": "search_category_3_label", "label": "Category 3 label" },
+    { "type": "text", "id": "search_category_3_value", "label": "Category 3 tag value" },
+    { "type": "header", "content": "Colours" },
+    {
+      "type": "color",
+      "id": "search_accent_color",
+      "label": "Accent colour",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "search_highlight_bg",
+      "label": "Match highlight colour",
+      "default": "#FFF3CD"
+    },
+    {
+      "type": "color",
+      "id": "search_hover_bg",
+      "label": "Row hover colour",
+      "default": "#F5F5F5"
+    },
+    {
+      "type": "color",
+      "id": "search_border_focus",
+      "label": "Focus border colour",
+      "default": "#1a1a1a"
+    }
+  ]
+}
+{% endschema %}
