@@ -6,12 +6,17 @@
 
   Responsibilities:
     • Render the cart bag SVG + item-count badge
-    • Provide the drawer open trigger (dispatches 'cart:open' via header-cart.js)
+    • Provide the drawer open trigger (cart-drawer.js delegates on data-ecombio-cart-trigger)
     • aria-controls targets #ecombio-cart-drawer (cart-drawer section)
 
-  Event contract (matches cart-drawer.js + main-header.js):
-    Dispatches : 'cart:open'    — picked up by cart-drawer.js to open drawer
-    Listens for: 'cart:updated' — picked up by header-cart.js to update badge
+  Event contract (matches cart-drawer.js + header-cart.js):
+    cart-drawer.js  — owns open/close via click on [data-ecombio-cart-trigger]
+    header-cart.js  — syncs badge via 'cart:updated', syncs aria-expanded via
+                      'cart:drawer:open' / 'cart:drawer:close'
+
+  SOURCE OF TRUTH — trigger attribute : data-ecombio-cart-trigger
+  SOURCE OF TRUTH — badge attribute   : data-cart-count
+  SOURCE OF TRUTH — drawer id         : ecombio-cart-drawer
 {% endcomment %}
 
 <button
@@ -22,7 +27,7 @@
   aria-haspopup="dialog"
   aria-expanded="false"
   aria-controls="ecombio-cart-drawer"
-  data-cart-toggle
+  data-ecombio-cart-trigger
 >
   <span class="main-header__cart-wrap">
 
