@@ -18,6 +18,15 @@
     border_focus        {String}  — focus border colour
     voice_enabled       {Boolean} — enable voice search
     placeholder_animate {Boolean} — enable typewriter placeholder
+    enable_predictive   {Boolean} — master toggle for the full predictive
+                                    search experience (dropdown, suggestions,
+                                    recent searches, trending, voice, animated
+                                    placeholder). When false, renders/behaves
+                                    as a plain search form.
+
+  FIX: Previously read settings.search_* (global theme settings) — those keys
+  don't exist in config/settings_schema.json, they're section settings.
+  Snippet now reads params passed from main-header.liquid via section.settings.*.
 
   Assets loaded by sections/main-header.liquid (NOT here):
     assets/header-search.css
@@ -26,10 +35,25 @@
   BEM prefix: .hs  (matches assets/header-search.css)
 {% endcomment %}
 
-{%- assign sfx      = id_suffix     | default: 'desktop' -%}
-{%- assign show_cat = show_category | default: true -%}
+{%- assign sfx        = id_suffix     | default: 'desktop' -%}
+{%- assign show_cat    = show_category | default: true -%}
 
-{%- comment -%} ── Build trending array from passed params ── {%- endcomment -%}
+{%- comment -%}
+  IMPORTANT: Liquid's `default` filter treats `false` as "no value" and
+  swaps in the default — so `enable_predictive | default: true` would
+  silently turn a real `false` back into `true` and the toggle could
+  never disable anything. We guard explicitly instead: only treat the
+  setting as off when it's exactly `false`; blank/nil (e.g. an older
+  theme version that doesn't pass the param yet) still falls back to
+  the safe default of `true`.
+{%- endcomment -%}
+{%- if enable_predictive == false -%}
+  {%- assign predictive = false -%}
+{%- else -%}
+  {%- assign predictive = true -%}
+{%- endif -%}
+
+{%- comment -%} ── Build trending searches from passed params ── {%- endcomment -%}
 {%- assign trending_raw = '' -%}
 {%- if trending_1 != blank -%}{%- assign trending_raw = trending_raw | append: trending_1 | append: '|' -%}{%- endif -%}
 {%- if trending_2 != blank -%}{%- assign trending_raw = trending_raw | append: trending_2 | append: '|' -%}{%- endif -%}
@@ -53,12 +77,11 @@
     RECENT_SEARCHES_LIMIT: 5,
     VOICE_ENABLED:         {{ voice_enabled       | default: true }},
     PLACEHOLDER_ANIMATE:   {{ placeholder_animate | default: true }},
+    ENABLE_PREDICTIVE:     {{ predictive }},
     TRENDING_SEARCHES: [
-      {%- assign trend_sep = '' -%}
       {%- for term in trending_array -%}
         {%- unless term == blank -%}
-          {{ trend_sep }}{{ term | json }}
-          {%- assign trend_sep = ',' -%}
+          {{ term | json }}{% unless forloop.last %},{% endunless %}
         {%- endunless -%}
       {%- endfor -%}
     ]
@@ -66,14 +89,15 @@
 </script>
 {%- endif -%}
 
-<div class="hs"
+<div class="hs{% unless predictive %} hs--basic{% endunless %}"
      id="hs-{{ sfx }}"
      data-search-instance="{{ sfx }}"
+     data-predictive="{{ predictive }}"
      style="
-       --hs-accent:       {{ accent_color | default: '#1a1a1a' }};
-       --hs-highlight-bg: {{ highlight_bg | default: '#FFF3CD' }};
-       --hs-bg-hover:     {{ hover_bg     | default: '#F5F5F5' }};
-       --hs-border-focus: {{ border_focus | default: '#1a1a1a' }};
+       --hs-accent:       {{ accent_color  | default: '#1a1a1a' }};
+       --hs-highlight-bg: {{ highlight_bg  | default: '#FFF3CD' }};
+       --hs-bg-hover:     {{ hover_bg      | default: '#F5F5F5' }};
+       --hs-border-focus: {{ border_focus  | default: '#1a1a1a' }};
      ">
 
   <form action="{{ routes.search_url }}"
@@ -175,7 +199,8 @@
     </button>
 
     {%- comment -%}
-      MIC BUTTON — injected by header-search.js if Web Speech API is available.
+      MIC BUTTON — injected by header-search.js if Web Speech API is available
+      AND predictive search is enabled (HS_CONFIG.ENABLE_PREDICTIVE).
     {%- endcomment -%}
 
     {%- comment -%} ── SUBMIT ── {%- endcomment -%}
@@ -190,20 +215,27 @@
 
   </form>
 
-  {%- comment -%} ── DROPDOWN (all content injected by header-search.js) ── {%- endcomment -%}
-  <div class="hs__dropdown"
-       id="hs-dropdown-{{ sfx }}"
-       role="listbox"
-       aria-label="Search suggestions"
-       aria-live="polite"
-       hidden>
-  </div>
+  {%- comment -%}
+    ── DROPDOWN (all content injected by header-search.js) ──
+    Only rendered when predictive search is enabled. With the toggle off,
+    there is no dropdown markup at all, so there's nothing for JS to open
+    even as a defensive fallback.
+  {%- endcomment -%}
+  {%- if predictive -%}
+    <div class="hs__dropdown"
+         id="hs-dropdown-{{ sfx }}"
+         role="listbox"
+         aria-label="Search suggestions"
+         aria-live="polite"
+         hidden>
+    </div>
 
-  {%- comment -%} ── MOBILE BACKDROP ── {%- endcomment -%}
-  <div class="hs__backdrop"
-       id="hs-backdrop-{{ sfx }}"
-       aria-hidden="true"
-       hidden>
-  </div>
+    {%- comment -%} ── MOBILE BACKDROP ── {%- endcomment -%}
+    <div class="hs__backdrop"
+         id="hs-backdrop-{{ sfx }}"
+         aria-hidden="true"
+         hidden>
+    </div>
+  {%- endif -%}
 
 </div>
