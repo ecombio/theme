@@ -7,30 +7,28 @@
   they sit in different places in the header layout — and, when
   predictive search is on, a results panel.
 
-  PIVOT NOTE: results are no longer built in JavaScript. When predictive
-  search is enabled, assets/header-search.js fetches Shopify's official
-  Predictive Search API through the Section Rendering API:
+  Results are built server-side. When predictive search is enabled,
+  assets/header-search.js fetches Shopify's official Predictive Search
+  API through the Section Rendering API:
 
       {{ routes.predictive_search_url }}?q=...&section_id=predictive-search
 
   ...and injects the HTML that comes back (rendered by
   sections/predictive-search.liquid) directly into the results panel
-  below. No client-side JSON parsing, no hand-built row markup, no
-  custom highlighting/money-formatting logic in JS — all of that now
-  lives in Liquid, the same way every other resource is rendered in
-  this theme. This is the main fix for the "Search unavailable" issue:
-  far less custom code between the API and the screen.
+  below.
 
   Rendered from sections/main-header.liquid with a single param:
     {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
 
-  Everything else (search_url, predictive_search_url, current search
-  terms) comes from Liquid globals already available here, so
-  main-header.liquid doesn't need to pass anything else through.
+  TYPEWRITER PLACEHOLDER
+  When predictive search is on, this snippet injects window.HS_TRENDING
+  from the predictive-search-trending linklist — the same menu used by
+  sections/predictive-search.liquid for empty-state recovery. If the
+  menu doesn't exist or has no links, the array is empty and the
+  typewriter never starts. No separate merchant config is needed.
 
-  When enable_predictive_search is false: same markup minus the
-  results panel and header-search.js never gets loaded. The form still
-  works as a plain GET to {{ routes.search_url }} — no JS dependency.
+  To add trending terms: Admin → Content → Menus → predictive-search-trending.
+  Each link title becomes a typewriter term. The URL is unused.
 
   Assets:
     assets/header-search.css — loaded always (form needs styling either way)
@@ -48,6 +46,20 @@
 {{ 'header-search.css' | asset_url | stylesheet_tag }}
 {%- if predictive -%}
   <script src="{{ 'header-search.js' | asset_url }}" defer="defer"></script>
+
+  {%- comment -%}
+    Inject trending terms for the animated typewriter placeholder.
+    Sourced from the predictive-search-trending linklist so merchants
+    can edit terms without touching code. Empty array = no typewriter.
+  {%- endcomment -%}
+  {%- assign trending_menu = linklists['predictive-search-trending'] -%}
+  <script>
+    window.HS_TRENDING = [
+      {%- for link in trending_menu.links -%}
+        {{ link.title | json }}{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    ];
+  </script>
 {%- endif -%}
 
 {%- for viewport in (1..2) -%}
@@ -105,7 +117,7 @@
       {%- comment -%}
         Voice button — markup always present, hidden by default.
         header-search.js only un-hides it if the browser supports the
-        Web Speech API, so there's no JS-built DOM for this either.
+        Web Speech API.
       {%- endcomment -%}
       <button type="button" class="header-search__voice" data-search-voice hidden aria-label="Search by voice">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -129,8 +141,7 @@
     {%- if predictive -%}
       {%- comment -%}
         Empty until header-search.js fetches and injects the rendered
-        output of sections/predictive-search.liquid. No markup here is
-        ever hand-built — it's always whatever Liquid rendered.
+        output of sections/predictive-search.liquid.
       {%- endcomment -%}
       <div class="header-search__panel"
            id="HeaderSearchResults-{{ sfx }}"
