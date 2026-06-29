@@ -1,3 +1,388 @@
-"main-header": {
-"type": "main-header",
-"settings":}
+{%- liquid
+  assign header_sticky = section.settings.sticky_header
+  assign logo_width    = section.settings.logo_width | default: 160
+-%}
+
+<div
+  id="main-header"
+  class="main-header{% if header_sticky %} main-header--sticky{% endif %}"
+  role="banner"
+>
+
+  {%- render 'header-utility', section: section -%}
+
+  {%- render 'header-body', section: section, logo_width: logo_width -%}
+
+  {%- render 'header-menu', section: section, blocks: section.blocks -%}
+
+</div>
+
+{% schema %}
+{
+  "name": "Header",
+  "class": "section-header",
+  "tag": "header",
+  "limit": 1,
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo_dark",
+      "label": "Logo image (dark mode)"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Logo width",
+      "min": 80,
+      "max": 280,
+      "step": 4,
+      "unit": "px",
+      "default": 160
+    },
+    {
+      "type": "header",
+      "content": "Utility bar"
+    },
+    {
+      "type": "text",
+      "id": "announcement_text",
+      "label": "Announcement text",
+      "default": "Free Express Shipping on orders $500!"
+    },
+    {
+      "type": "url",
+      "id": "announcement_url",
+      "label": "Announcement link"
+    },
+    {
+      "type": "text",
+      "id": "announcement_icon",
+      "label": "Announcement emoji / icon",
+      "default": "🔥"
+    },
+    {
+      "type": "link_list",
+      "id": "utility_nav",
+      "label": "Utility navigation",
+      "info": "Track My Order · Store Finder · Help Centre"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale_selector",
+      "label": "Show locale selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency_selector",
+      "label": "Show currency selector",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Body bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search bar",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder",
+      "default": "Try \"bookshelf\""
+    },
+    {
+      "type": "checkbox",
+      "id": "show_voice_search",
+      "label": "Show voice search button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_store_finder",
+      "label": "Show store finder link",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "store_finder_label",
+      "label": "Store finder label",
+      "default": "Find a store"
+    },
+    {
+      "type": "url",
+      "id": "store_finder_url",
+      "label": "Store finder URL"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "Show account link",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_cart",
+      "label": "Show cart icon",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "cart_icon",
+      "label": "Cart icon style",
+      "options": [
+        { "value": "bag", "label": "Bag" },
+        { "value": "cart", "label": "Cart" }
+      ],
+      "default": "bag"
+    },
+    {
+      "type": "header",
+      "content": "Menu bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_browse_all",
+      "label": "Show \"Browse all categories\" toggle",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "browse_all_label",
+      "label": "Browse all label",
+      "default": "Browse all categories"
+    },
+    {
+      "type": "header",
+      "content": "Behaviour"
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky_header",
+      "label": "Sticky header",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "dropdown_trigger",
+      "label": "Dropdown trigger",
+      "options": [
+        { "value": "hover", "label": "Hover" },
+        { "value": "click", "label": "Click" }
+      ],
+      "default": "hover"
+    },
+    {
+      "type": "header",
+      "content": "Colours"
+    },
+    {
+      "type": "color",
+      "id": "color_utility_bg",
+      "label": "Utility bar background",
+      "default": "#1a2e6b"
+    },
+    {
+      "type": "color",
+      "id": "color_utility_text",
+      "label": "Utility bar text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_body_bg",
+      "label": "Body bar background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_body_text",
+      "label": "Body bar text",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "color_menu_bg",
+      "label": "Menu bar background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_menu_text",
+      "label": "Menu bar text",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "color_menu_border",
+      "label": "Menu bar border",
+      "default": "#e5e5e5"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "menu-item--link",
+      "name": "Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "URL"
+        }
+      ]
+    },
+    {
+      "type": "menu-item--dropdown",
+      "name": "Dropdown",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "info": "Leave blank to use the menu title"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Navigation menu"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Flyout style",
+          "options": [
+            { "value": "dropdown", "label": "Dropdown" },
+            { "value": "mega", "label": "Mega menu" }
+          ],
+          "default": "dropdown"
+        },
+        {
+          "type": "image_picker",
+          "id": "promo_image",
+          "label": "Promo image (mega only)"
+        },
+        {
+          "type": "text",
+          "id": "promo_heading",
+          "label": "Promo heading (mega only)"
+        },
+        {
+          "type": "url",
+          "id": "promo_url",
+          "label": "Promo link (mega only)"
+        }
+      ]
+    },
+    {
+      "type": "menu-item--promo",
+      "name": "Promo item",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "On Sale"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon (emoji or SVG class)",
+          "default": "♡"
+        },
+        {
+          "type": "color",
+          "id": "color",
+          "label": "Label colour",
+          "default": "#e53935"
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Badge text",
+          "info": "Short superscript label e.g. New, + or a number"
+        }
+      ]
+    },
+    {
+      "type": "menu-item--divider",
+      "name": "Divider",
+      "settings": [
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "options": [
+            { "value": "line", "label": "Vertical line" },
+            { "value": "gap", "label": "Gap only" }
+          ],
+          "default": "gap"
+        },
+        {
+          "type": "range",
+          "id": "size",
+          "label": "Size",
+          "min": 8,
+          "max": 64,
+          "step": 4,
+          "unit": "px",
+          "default": 16
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Header",
+      "blocks": [
+        {
+          "type": "menu-item--dropdown",
+          "settings": {
+            "label": "Shop by Room",
+            "style": "dropdown"
+          }
+        },
+        {
+          "type": "menu-item--dropdown",
+          "settings": {
+            "label": "Tables & Desks",
+            "style": "dropdown"
+          }
+        },
+        {
+          "type": "menu-item--promo",
+          "settings": {
+            "label": "On Sale",
+            "icon": "♡",
+            "badge": "+"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
