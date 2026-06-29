@@ -1,80 +1,260 @@
-<div class="main-header">
-  <div class="main-header__inner page-width">
+{% comment %}
+  Main Header
+  File: sections/main-header.liquid
 
-    <div class="main-header__logo">
-      <a href="{{ routes.root_url }}" aria-label="{{ shop.name }}">
-        {%- if section.settings.logo != blank -%}
-          {{
-            section.settings.logo
-            | image_url: width: section.settings.logo_width
-            | image_tag:
-              width: section.settings.logo_width,
-              alt: shop.name,
-              loading: 'eager',
-              fetchpriority: 'high'
-          }}
+  Renders the full site header:
+    – Top bar:  hamburger · logo · inline search (desktop) · icons
+    – Search row: search form visible on tablet + mobile only
+
+  Assets:
+    assets/main-header.css  — all styles
+    assets/main-header.js   — behaviour (sticky, mobile nav, search, cart drawer trigger)
+
+  Add to layout/theme.liquid, below {%- section 'utility-bar' -%}:
+    {%- section 'main-header' -%}
+{% endcomment %}
+
+{{ 'main-header.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign logo       = section.settings.logo
+  assign logo_width = section.settings.logo_width | default: 140
+  assign show_cat   = section.settings.show_category_filter
+  assign show_store = section.settings.show_icon_store
+  assign show_acct  = section.settings.show_icon_account
+  assign show_cart  = section.settings.show_icon_cart
+-%}
+
+<header class="main-header" id="main-header" role="banner">
+
+  {%- comment -%} ═══════════════════════════════════════
+      TOP BAR — Hamburger · Logo · Search · Icons
+  ═══════════════════════════════════════ {%- endcomment -%}
+  <div class="main-header__bar">
+    <div class="main-header__inner">
+
+      {%- comment -%} ── Hamburger (mobile + tablet) ── {%- endcomment -%}
+      <button class="main-header__hamburger"
+              id="main-header-nav-toggle"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded="false"
+              aria-controls="main-header-mobile-nav">
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+      </button>
+
+      {%- comment -%} ── Logo ── {%- endcomment -%}
+      <a href="{{ routes.root_url }}"
+         class="main-header__logo-link"
+         aria-label="{{ shop.name }} — home">
+        {%- if logo != blank -%}
+          <img class="main-header__logo-img"
+               src="{{ logo | image_url: width: logo_width }}"
+               srcset="{{ logo | image_url: width: logo_width }} 1x,
+                       {{ logo | image_url: width: logo_width | times: 2 }} 2x"
+               alt="{{ logo.alt | default: shop.name | escape }}"
+               width="{{ logo_width }}"
+               height="{{ logo_width | divided_by: logo.aspect_ratio | round }}"
+               loading="eager">
         {%- else -%}
-          {{ shop.name }}
+          <span class="main-header__logo-text">{{ shop.name }}</span>
         {%- endif -%}
       </a>
-    </div>
 
-    <div class="main-header__search">
-      <form action="{{ routes.search_url }}" method="get" role="search">
-        <input type="hidden" name="type" value="product">
-        <input type="hidden" name="options[prefix]" value="last">
-        <input
-          type="search"
-          name="q"
-          placeholder="{{ section.settings.search_placeholder }}"
-          autocomplete="off"
-          aria-label="{{ section.settings.search_placeholder }}"
-        >
-        <button type="submit" aria-label="Submit search">
-          {%- render 'icon-search' -%}
-        </button>
-      </form>
-    </div>
+      {%- comment -%} ── Search (inline — desktop only) ── {%- endcomment -%}
+      <div class="main-header__search main-header__search--inline">
+        {%- render 'search-form', show_category: show_cat, id_suffix: 'desktop' -%}
+      </div>
 
-    <div class="main-header__icons">
-      <a href="{{ routes.cart_url }}" aria-label="Cart">
-        {%- render 'icon-shopping-bag' -%}
-        <span>{{ cart.item_count }}</span>
-      </a>
-    </div>
+      {%- comment -%} ── Right icons ── {%- endcomment -%}
+      <div class="main-header__icons" role="list" aria-label="Header actions">
 
+        {%- if show_store -%}
+          <a href="{{ routes.root_url }}pages/stores"
+             class="main-header__icon-btn"
+             role="listitem"
+             aria-label="Store locator">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </a>
+        {%- endif -%}
+
+        {%- if show_acct -%}
+          {%- if customer -%}
+            <a href="{{ routes.account_url }}"
+               class="main-header__icon-btn"
+               role="listitem"
+               aria-label="My account">
+          {%- else -%}
+            <a href="{{ routes.account_login_url }}"
+               class="main-header__icon-btn"
+               role="listitem"
+               aria-label="Log in">
+          {%- endif -%}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </a>
+        {%- endif -%}
+
+        {%- if show_cart -%}
+          <button type="button"
+                  class="main-header__icon-btn main-header__cart-btn"
+                  role="listitem"
+                  aria-label="Cart ({{ cart.item_count }} items)"
+                  id="main-header-cart-toggle"
+                  aria-controls="cart-drawer"
+                  aria-expanded="false">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            {%- if cart.item_count > 0 -%}
+              <span class="main-header__cart-count" aria-hidden="true">
+                {{ cart.item_count }}
+              </span>
+            {%- endif -%}
+          </button>
+        {%- endif -%}
+
+      </div>{%- comment -%} /.main-header__icons {%- endcomment -%}
+
+    </div>{%- comment -%} /.main-header__inner {%- endcomment -%}
+  </div>{%- comment -%} /.main-header__bar {%- endcomment -%}
+
+  {%- comment -%} ═══════════════════════════════════════
+      SEARCH ROW — tablet + mobile only
+  ═══════════════════════════════════════ {%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'search-form', show_category: show_cat, id_suffix: 'mobile' -%}
+    </div>
   </div>
-</div>
+
+  {%- comment -%} ═══════════════════════════════════════
+      MOBILE NAV DRAWER
+      Content populated by navigation blocks defined in schema.
+  ═══════════════════════════════════════ {%- endcomment -%}
+  <nav class="main-header__mobile-nav"
+       id="main-header-mobile-nav"
+       aria-label="Mobile navigation"
+       aria-hidden="true"
+       hidden>
+    <ul class="main-header__mobile-nav-list" role="list">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'nav_link' -%}
+          <li {{ block.shopify_attributes }}>
+            <a href="{{ block.settings.url }}"
+               class="main-header__mobile-nav-link">
+              {{ block.settings.label | escape }}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </nav>
+
+</header>
+
+<script src="{{ 'main-header.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
-  "name": "Main header",
+  "name": "Main Header",
+  "tag": "div",
+  "class": "main-header-section",
+  "limit": 1,
   "settings": [
+    {
+      "type": "header",
+      "content": "Logo"
+    },
     {
       "type": "image_picker",
       "id": "logo",
-      "label": "Logo"
+      "label": "Logo image"
     },
     {
       "type": "range",
       "id": "logo_width",
-      "label": "Logo width",
-      "min": 80,
-      "max": 280,
-      "step": 4,
-      "unit": "px",
-      "default": 160
+      "label": "Logo width (px)",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "default": 140,
+      "unit": "px"
     },
     {
-      "type": "text",
-      "id": "search_placeholder",
-      "label": "Search placeholder",
-      "default": "Search"
+      "type": "header",
+      "content": "Search"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_filter",
+      "label": "Show category filter in search",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Icons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_store",
+      "label": "Show store locator icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_account",
+      "label": "Show account icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_cart",
+      "label": "Show cart icon",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "nav_link",
+      "name": "Navigation link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "URL"
+        }
+      ]
     }
   ],
   "presets": [
     {
-      "name": "Main header"
+      "name": "Main Header",
+      "blocks": [
+        { "type": "nav_link", "settings": { "label": "Shop",     "url": "/collections/all" } },
+        { "type": "nav_link", "settings": { "label": "About",    "url": "/pages/about" } },
+        { "type": "nav_link", "settings": { "label": "Contact",  "url": "/pages/contact" } }
+      ]
     }
   ]
 }
