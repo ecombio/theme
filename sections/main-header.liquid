@@ -2,13 +2,30 @@
   Main Header Section
   File: sections/main-header.liquid
 
-  PIVOT: search-related settings have moved off this section and onto
-  the "Header Search" block (blocks/header-search.liquid). This section
-  now only owns layout (logo, hamburger, icons, mobile nav) and loops
-  over section.blocks to render whatever blocks a merchant has added —
-  currently just the one allowed block type, "header-search". This
-  is what makes the search bar addable/removable/reorderable in the
-  theme editor.
+  POST-PIVOT: header-search is back to being a snippet, not a block.
+  All search-related settings now live directly on this section's
+  schema (Search header group below) and are passed explicitly into
+  {%- render 'header-search' -%}, the same way logo/logo_width are
+  already passed into {%- render 'header-logo' -%}.
+
+  This removes the old block-loop machinery entirely: header-search is
+  no longer addable/removable/reorderable by merchants in the theme
+  editor — it is a fixed, always-present part of the header, alongside
+  header-logo, header-account, and header-cart. Composition is now a
+  flat, explicit sequence:
+
+    main-header
+      └─ header-logo
+      └─ header-search   (snippet: search-form × 2 + search-modal)
+      └─ header-account
+      └─ header-cart
+
+  Because there is now exactly one Header Search instance per page
+  (not N merchant-added blocks), window.HS_SETTINGS — which is global
+  by design — no longer needs the cross-file "scan all blocks, render
+  search-modal once, ahead of the loop" coordination that used to live
+  here. snippets/header-search.liquid now owns that single guarded
+  render internally.
 {% endcomment %}
 
 {{ 'header-search.css'   | asset_url | stylesheet_tag }}
@@ -42,55 +59,25 @@
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
-      {%- comment -%}
-        ── Global predictive-search config (rendered at most once) ──
-        window.HS_SETTINGS is global — every search-form instance on
-        the page reads the same one (this was a deliberate simplicity
-        trade-off: per-block settings would need per-block config
-        objects, which we decided against). So search-modal.liquid can
-        only be rendered ONCE total, no matter how many Header Search
-        blocks exist. We scan for the first block with predictive
-        search enabled and use ITS trending-term settings for the page;
-        if no block has it enabled, search-modal is skipped entirely
-        and HS_CONFIG.ENABLE_PREDICTIVE defaults to false in the JS.
-      {%- endcomment -%}
-      {%- liquid
-        assign predictive_block = nil
-        for block in section.blocks
-          if block.type == 'header-search' and block.settings.enable_predictive_search != false
-            assign predictive_block = block
-            break
-          endif
-        endfor
+      {%- render 'header-search',
+            enable_predictive_search: section.settings.enable_predictive_search,
+            show_category_filter:     section.settings.show_category_filter,
+            search_trending_1:        section.settings.search_trending_1,
+            search_trending_2:        section.settings.search_trending_2,
+            search_trending_3:        section.settings.search_trending_3,
+            search_trending_4:        section.settings.search_trending_4,
+            search_trending_5:        section.settings.search_trending_5,
+            search_category_1_label:  section.settings.search_category_1_label,
+            search_category_1_value:  section.settings.search_category_1_value,
+            search_category_2_label:  section.settings.search_category_2_label,
+            search_category_2_value:  section.settings.search_category_2_value,
+            search_category_3_label:  section.settings.search_category_3_label,
+            search_category_3_value:  section.settings.search_category_3_value,
+            search_accent_color:      section.settings.search_accent_color,
+            search_highlight_bg:      section.settings.search_highlight_bg,
+            search_hover_bg:          section.settings.search_hover_bg,
+            search_border_focus:      section.settings.search_border_focus
       -%}
-      {%- if predictive_block -%}
-        {%- render 'search-modal',
-              trending_1:          predictive_block.settings.search_trending_1,
-              trending_2:          predictive_block.settings.search_trending_2,
-              trending_3:          predictive_block.settings.search_trending_3,
-              trending_4:          predictive_block.settings.search_trending_4,
-              trending_5:          predictive_block.settings.search_trending_5,
-              voice_enabled:       true,
-              placeholder_animate: true
-        -%}
-      {%- endif -%}
-
-      {%- comment -%}
-        ── Blocks ──
-        Currently only "header-search" is an allowed block type, but
-        looping (rather than grabbing section.blocks.first) means any
-        future block types added to the schema render correctly too,
-        and merchants can reorder/remove the search block freely.
-        No max_blocks cap — multiple Header Search blocks are allowed;
-        see blocks/header-search.liquid for how that's kept safe
-        (unique element ids per block via block.id).
-      {%- endcomment -%}
-      {%- for block in section.blocks -%}
-        {%- case block.type -%}
-          {%- when 'header-search' -%}
-            {%- render 'header-search', block: block -%}
-        {%- endcase -%}
-      {%- endfor -%}
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
         {%- if show_acct != false -%}
@@ -152,6 +139,58 @@
       "label": "Mobile menu",
       "default": "main-menu"
     },
+    { "type": "header", "content": "Search" },
+    {
+      "type": "checkbox",
+      "id": "enable_predictive_search",
+      "label": "Enable predictive search",
+      "info": "Suggestions, recent searches, trending terms, voice input.",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_filter",
+      "label": "Show category filter pill",
+      "default": true
+    },
+    { "type": "header", "content": "Search — trending searches" },
+    { "type": "text", "id": "search_trending_1", "label": "Trending search 1" },
+    { "type": "text", "id": "search_trending_2", "label": "Trending search 2" },
+    { "type": "text", "id": "search_trending_3", "label": "Trending search 3" },
+    { "type": "text", "id": "search_trending_4", "label": "Trending search 4" },
+    { "type": "text", "id": "search_trending_5", "label": "Trending search 5" },
+    { "type": "header", "content": "Search — category pills" },
+    { "type": "text", "id": "search_category_1_label", "label": "Category 1 label" },
+    { "type": "text", "id": "search_category_1_value", "label": "Category 1 tag value" },
+    { "type": "text", "id": "search_category_2_label", "label": "Category 2 label" },
+    { "type": "text", "id": "search_category_2_value", "label": "Category 2 tag value" },
+    { "type": "text", "id": "search_category_3_label", "label": "Category 3 label" },
+    { "type": "text", "id": "search_category_3_value", "label": "Category 3 tag value" },
+    { "type": "header", "content": "Search — colours" },
+    {
+      "type": "color",
+      "id": "search_accent_color",
+      "label": "Accent colour",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "search_highlight_bg",
+      "label": "Match highlight colour",
+      "default": "#FFF3CD"
+    },
+    {
+      "type": "color",
+      "id": "search_hover_bg",
+      "label": "Row hover colour",
+      "default": "#F5F5F5"
+    },
+    {
+      "type": "color",
+      "id": "search_border_focus",
+      "label": "Focus border colour",
+      "default": "#1a1a1a"
+    },
     { "type": "header", "content": "Icons" },
     {
       "type": "checkbox",
@@ -172,16 +211,8 @@
       "default": true
     }
   ],
-  "blocks": [
-    { "type": "header-search" }
-  ],
   "presets": [
-    {
-      "name": "Main Header",
-      "blocks": [
-        { "type": "header-search" }
-      ]
-    }
+    { "name": "Main Header" }
   ]
 }
 {% endschema %}
