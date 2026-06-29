@@ -3,10 +3,10 @@
   File: sections/main-header.liquid
 {% endcomment %}
 
-{{ 'header-search.css'  | asset_url | stylesheet_tag }}
-{{ 'main-header.css'   | asset_url | stylesheet_tag }}
-{{ 'header-cart.css'   | asset_url | stylesheet_tag }}
-{{ 'header-account.css' | asset_url | stylesheet_tag }}
+{{ 'header-search.css'   | asset_url | stylesheet_tag }}
+{{ 'main-header.css'     | asset_url | stylesheet_tag }}
+{{ 'header-cart.css'     | asset_url | stylesheet_tag }}
+{{ 'header-account.css'  | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
@@ -19,15 +19,9 @@
 
 <header class="main-header" id="main-header" role="banner">
 
-  {%- comment -%} ═══════════════════════════════════════
-      TOP BAR — Hamburger · Logo · Search (desktop) · Icons
-      All four live inside .main-header__inner so they sit in the same
-      flex row and align correctly.
-  ═══════════════════════════════════════ {%- endcomment -%}
   <div class="main-header__bar">
     <div class="main-header__inner">
 
-      {%- comment -%} ── Hamburger — controls #main-header-mobile-nav below ── {%- endcomment -%}
       <button class="main-header__hamburger"
               id="main-header-nav-toggle"
               type="button"
@@ -39,58 +33,72 @@
         <span class="main-header__hamburger-line"></span>
       </button>
 
-      {%- comment -%} ── Logo ── {%- endcomment -%}
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
-      {%- comment -%} ── Inline search — desktop only (hidden via CSS below 1024px) ── {%- endcomment -%}
+      {%- comment -%} ── Desktop search ── {%- endcomment -%}
       <div class="main-header__search main-header__search--inline">
-        {%- render 'header-search', show_category: show_cat, id_suffix: 'desktop' -%}
+        {%- render 'header-search',
+              id_suffix:           'desktop',
+              show_category:       show_cat,
+              trending_1:          section.settings.search_trending_1,
+              trending_2:          section.settings.search_trending_2,
+              trending_3:          section.settings.search_trending_3,
+              trending_4:          section.settings.search_trending_4,
+              trending_5:          section.settings.search_trending_5,
+              cat_1_label:         section.settings.search_category_1_label,
+              cat_1_value:         section.settings.search_category_1_value,
+              cat_2_label:         section.settings.search_category_2_label,
+              cat_2_value:         section.settings.search_category_2_value,
+              cat_3_label:         section.settings.search_category_3_label,
+              cat_3_value:         section.settings.search_category_3_value,
+              accent_color:        section.settings.search_accent_color,
+              highlight_bg:        section.settings.search_highlight_bg,
+              hover_bg:            section.settings.search_hover_bg,
+              border_focus:        section.settings.search_border_focus,
+              voice_enabled:       true,
+              placeholder_animate: true
+        -%}
       </div>
 
-      {%- comment -%} ── Icon cluster — account + cart. Sits at the end of the
-          flex row so it stays right-aligned next to the search bar.
-          FIX: was incorrectly outside .main-header__inner as a sibling of
-          .main-header__bar, which caused icons to escape the flex row and
-          render in the top-left corner.
-      ── {%- endcomment -%}
       <ul class="main-header__icons" role="list" aria-label="Header actions">
-
         {%- if show_acct != false -%}
-          <li>
-            {%- render 'header-account' -%}
-          </li>
+          <li>{%- render 'header-account' -%}</li>
         {%- endif -%}
-
         {%- if show_cart != false -%}
-          <li>
-            {%- comment -%}
-              FIX: cart button was duplicated here AND in snippets/header-cart.liquid.
-              We now render it only via the snippet to keep a single source of truth.
-              The snippet owns the button markup, header-cart.js owns the click behaviour,
-              and cart-drawer.js owns the drawer open/close logic.
-            {%- endcomment -%}
-            {%- render 'header-cart' -%}
-          </li>
+          <li>{%- render 'header-cart' -%}</li>
         {%- endif -%}
-
       </ul>
 
-    </div>{%- comment -%} /.main-header__inner {%- endcomment -%}
-  </div>{%- comment -%} /.main-header__bar {%- endcomment -%}
-
-  {%- comment -%} ═══════════════════════════════════════
-      SEARCH ROW — tablet + mobile (hidden via CSS above 1024px)
-  ═══════════════════════════════════════ {%- endcomment -%}
-  <div class="main-header__search-row">
-    <div class="main-header__search-row-inner">
-      {%- render 'header-search', show_category: show_cat, id_suffix: 'mobile' -%}
     </div>
   </div>
 
-  {%- comment -%} ═══════════════════════════════════════
-      MOBILE NAV DRAWER
-      ID must match aria-controls on the hamburger button above.
-  ═══════════════════════════════════════ {%- endcomment -%}
+  {%- comment -%} ── Tablet/mobile search row ── {%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'header-search',
+            id_suffix:           'mobile',
+            show_category:       show_cat,
+            trending_1:          section.settings.search_trending_1,
+            trending_2:          section.settings.search_trending_2,
+            trending_3:          section.settings.search_trending_3,
+            trending_4:          section.settings.search_trending_4,
+            trending_5:          section.settings.search_trending_5,
+            cat_1_label:         section.settings.search_category_1_label,
+            cat_1_value:         section.settings.search_category_1_value,
+            cat_2_label:         section.settings.search_category_2_label,
+            cat_2_value:         section.settings.search_category_2_value,
+            cat_3_label:         section.settings.search_category_3_label,
+            cat_3_value:         section.settings.search_category_3_value,
+            accent_color:        section.settings.search_accent_color,
+            highlight_bg:        section.settings.search_highlight_bg,
+            hover_bg:            section.settings.search_hover_bg,
+            border_focus:        section.settings.search_border_focus,
+            voice_enabled:       true,
+            placeholder_animate: true
+      -%}
+    </div>
+  </div>
+
   <nav class="main-header__mobile-nav"
        id="main-header-mobile-nav"
        aria-label="Mobile navigation"
@@ -109,12 +117,6 @@
 
 </header>
 
-{%- comment -%}
-  JS load order matters: header-cart.js dispatches 'cart:open'; cart-drawer.js
-  must already be registered to listen for it. Both use defer so they execute
-  in source order after DOM parse — cart-drawer.js is loaded in theme.liquid,
-  which runs before section scripts, so the listener is always ready.
-{%- endcomment -%}
 <script src="{{ 'header-search.js'  | asset_url }}" defer></script>
 <script src="{{ 'main-header.js'    | asset_url }}" defer></script>
 <script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
@@ -126,155 +128,39 @@
   "tag": "div",
   "class": "main-header-section",
   "settings": [
-    {
-      "type": "header",
-      "content": "Logo"
-    },
-    {
-      "type": "image_picker",
-      "id": "logo",
-      "label": "Logo image"
-    },
+    { "type": "header", "content": "Logo" },
+    { "type": "image_picker", "id": "logo", "label": "Logo image" },
     {
       "type": "range",
       "id": "logo_width",
       "label": "Logo width (px)",
-      "min": 60,
-      "max": 300,
-      "step": 10,
-      "default": 140,
-      "unit": "px"
+      "min": 60, "max": 300, "step": 10, "default": 140, "unit": "px"
     },
-    {
-      "type": "header",
-      "content": "Navigation"
-    },
-    {
-      "type": "link_list",
-      "id": "mobile_menu",
-      "label": "Mobile menu",
-      "default": "main-menu"
-    },
-    {
-      "type": "header",
-      "content": "Search"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_category_filter",
-      "label": "Show category filter pill",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "search_trending_1",
-      "label": "Trending search 1"
-    },
-    {
-      "type": "text",
-      "id": "search_trending_2",
-      "label": "Trending search 2"
-    },
-    {
-      "type": "text",
-      "id": "search_trending_3",
-      "label": "Trending search 3"
-    },
-    {
-      "type": "text",
-      "id": "search_trending_4",
-      "label": "Trending search 4"
-    },
-    {
-      "type": "text",
-      "id": "search_trending_5",
-      "label": "Trending search 5"
-    },
-    {
-      "type": "text",
-      "id": "search_category_1_label",
-      "label": "Category 1 label"
-    },
-    {
-      "type": "text",
-      "id": "search_category_1_value",
-      "label": "Category 1 tag value"
-    },
-    {
-      "type": "text",
-      "id": "search_category_2_label",
-      "label": "Category 2 label"
-    },
-    {
-      "type": "text",
-      "id": "search_category_2_value",
-      "label": "Category 2 tag value"
-    },
-    {
-      "type": "text",
-      "id": "search_category_3_label",
-      "label": "Category 3 label"
-    },
-    {
-      "type": "text",
-      "id": "search_category_3_value",
-      "label": "Category 3 tag value"
-    },
-    {
-      "type": "header",
-      "content": "Icons"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_icon_store",
-      "label": "Show store locator icon",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_icon_account",
-      "label": "Show account icon",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_icon_cart",
-      "label": "Show cart icon",
-      "default": true
-    },
-    {
-      "type": "header",
-      "content": "Search colours"
-    },
-    {
-      "type": "color",
-      "id": "search_accent_color",
-      "label": "Accent colour",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "color",
-      "id": "search_highlight_bg",
-      "label": "Match highlight colour",
-      "default": "#FFF3CD"
-    },
-    {
-      "type": "color",
-      "id": "search_hover_bg",
-      "label": "Row hover colour",
-      "default": "#F5F5F5"
-    },
-    {
-      "type": "color",
-      "id": "search_border_focus",
-      "label": "Focus border colour",
-      "default": "#1a1a1a"
-    }
+    { "type": "header", "content": "Navigation" },
+    { "type": "link_list", "id": "mobile_menu", "label": "Mobile menu", "default": "main-menu" },
+    { "type": "header", "content": "Search" },
+    { "type": "checkbox", "id": "show_category_filter", "label": "Show category filter pill", "default": true },
+    { "type": "text", "id": "search_trending_1", "label": "Trending search 1" },
+    { "type": "text", "id": "search_trending_2", "label": "Trending search 2" },
+    { "type": "text", "id": "search_trending_3", "label": "Trending search 3" },
+    { "type": "text", "id": "search_trending_4", "label": "Trending search 4" },
+    { "type": "text", "id": "search_trending_5", "label": "Trending search 5" },
+    { "type": "text", "id": "search_category_1_label", "label": "Category 1 label" },
+    { "type": "text", "id": "search_category_1_value", "label": "Category 1 tag value" },
+    { "type": "text", "id": "search_category_2_label", "label": "Category 2 label" },
+    { "type": "text", "id": "search_category_2_value", "label": "Category 2 tag value" },
+    { "type": "text", "id": "search_category_3_label", "label": "Category 3 label" },
+    { "type": "text", "id": "search_category_3_value", "label": "Category 3 tag value" },
+    { "type": "header", "content": "Icons" },
+    { "type": "checkbox", "id": "show_icon_store",   "label": "Show store locator icon", "default": true },
+    { "type": "checkbox", "id": "show_icon_account", "label": "Show account icon",       "default": true },
+    { "type": "checkbox", "id": "show_icon_cart",    "label": "Show cart icon",           "default": true },
+    { "type": "header", "content": "Search colours" },
+    { "type": "color", "id": "search_accent_color",  "label": "Accent colour",        "default": "#1a1a1a" },
+    { "type": "color", "id": "search_highlight_bg",  "label": "Match highlight colour","default": "#FFF3CD" },
+    { "type": "color", "id": "search_hover_bg",      "label": "Row hover colour",      "default": "#F5F5F5" },
+    { "type": "color", "id": "search_border_focus",  "label": "Focus border colour",   "default": "#1a1a1a" }
   ],
-  "presets": [
-    {
-      "name": "Main Header"
-    }
-  ]
+  "presets": [{ "name": "Main Header" }]
 }
 {% endschema %}
