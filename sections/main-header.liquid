@@ -19,23 +19,27 @@
     header-logo     (logo, logo_width)
     header-search   (show_category, id_suffix)  ← rendered twice: desktop + mobile
     header-icons    (show_store, show_account, show_cart)
+      ├── header-account                         ← account link (when show_account)
       └── header-cart                            ← cart icon + badge (when show_cart)
 
   Asset loading order (critical: CSS before JS, search JS before main-header JS):
-    1. header-search.css  — search component styles
-    2. main-header.css    — header layout styles
-    3. header-cart.css    — cart icon + badge styles
-    4. header-search.js   — search component (defer) — must init before main-header.js
-    5. main-header.js     — header controller (defer)
-    6. header-cart.js     — cart badge sync + drawer open (defer)
+    1. header-search.css    — search component styles
+    2. main-header.css      — header layout styles
+    3. header-cart.css      — cart icon + badge styles
+    4. header-account.css   — account icon styles
+    5. header-search.js     — search component (defer) — must init before main-header.js
+    6. main-header.js       — header controller (defer)
+    7. header-cart.js       — cart badge sync + drawer open (defer)
+    8. header-account.js    — account link click event (defer, optional)
 
   NOTE: Remove 'ecombio-search.css' and 'ecombio-search.js' from theme.liquid —
   they are superseded by header-search.css / header-search.js.
 {% endcomment %}
 
-{{ 'header-search.css' | asset_url | stylesheet_tag }}
+{{ 'header-search.css'  | asset_url | stylesheet_tag }}
 {{ 'main-header.css'   | asset_url | stylesheet_tag }}
 {{ 'header-cart.css'   | asset_url | stylesheet_tag }}
+{{ 'header-account.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
@@ -120,12 +124,14 @@
   JS: defer all files so they execute after DOM is parsed.
   header-search.js must appear before main-header.js because both listen on
   DOMContentLoaded — order in source determines execution order after defer.
-  header-cart.js loads last; it depends on cart-drawer.js (loaded in theme.liquid)
-  already being registered to listen for 'cart:open'.
+  header-cart.js depends on cart-drawer.js (loaded in theme.liquid) already
+  being registered to listen for 'cart:open'.
+  header-account.js is optional — remove if no flyout/intercept is needed.
 {%- endcomment -%}
-<script src="{{ 'header-search.js' | asset_url }}" defer></script>
-<script src="{{ 'main-header.js'   | asset_url }}" defer></script>
-<script src="{{ 'header-cart.js'   | asset_url }}" defer></script>
+<script src="{{ 'header-search.js'  | asset_url }}" defer></script>
+<script src="{{ 'main-header.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-account.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
