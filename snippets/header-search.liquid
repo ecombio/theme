@@ -1,104 +1,145 @@
 {% comment %}
-  Header Search — snippet
+  Header Search
   File: snippets/header-search.liquid
 
-  POST-PIVOT: header-search is a plain snippet rendered once from
-  sections/main-header.liquid, alongside header-logo, header-account,
-  and header-cart. It is no longer a merchant-addable block — there is
-  exactly one Header Search per page, always present, not
-  reorderable/removable in the theme editor. All search-related
-  settings now live directly on the Main Header section schema and are
-  passed in here as explicit params (mirrors how header-logo already
-  receives `logo` / `logo_width` from the section).
+  Single owner of the search experience in the header. Renders the
+  always-visible search bar — once for desktop, once for mobile, since
+  they sit in different places in the header layout — and, when
+  predictive search is on, a results panel.
 
-  This snippet composes the two pieces named in the project brief:
-    search-form   — the always-visible search bar (desktop + mobile)
-    search-modal  — the predictive-search dropdown's config script
+  PIVOT NOTE: results are no longer built in JavaScript. When predictive
+  search is enabled, assets/header-search.js fetches Shopify's official
+  Predictive Search API through the Section Rendering API:
 
-  Renders search-form.liquid TWICE — once for desktop, once for mobile
-  — sharing the same settings, so there is one source of truth for
-  "is predictive search on" regardless of viewport. Desktop vs. mobile
-  visibility is handled by CSS breakpoints in main-header.css, exactly
-  as before.
+      {{ routes.predictive_search_url }}?q=...&section_id=predictive-search
 
-  search-modal is rendered at most ONCE here, only when predictive
-  search is enabled, immediately before the two search-form renders.
-  window.HS_SETTINGS is global (shared by every search-form instance on
-  the page, by design), and since there is now only ever one Header
-  Search snippet per page, a single guarded render here is sufficient —
-  no cross-file coordination with main-header.liquid is needed anymore
-  (previously this had to be hoisted up to the section because multiple
-  blocks could exist; that constraint no longer applies).
+  ...and injects the HTML that comes back (rendered by
+  sections/predictive-search.liquid) directly into the results panel
+  below. No client-side JSON parsing, no hand-built row markup, no
+  custom highlighting/money-formatting logic in JS — all of that now
+  lives in Liquid, the same way every other resource is rendered in
+  this theme. This is the main fix for the "Search unavailable" issue:
+  far less custom code between the API and the screen.
 
-  Params (passed from sections/main-header.liquid):
-    enable_predictive_search {Boolean} — default true
-    show_category_filter     {Boolean} — default true
-    search_trending_1..5     {String}
-    search_category_1..3_label/value {String}
-    search_accent_color      {String}
-    search_highlight_bg      {String}
-    search_hover_bg          {String}
-    search_border_focus      {String}
+  Rendered from sections/main-header.liquid with a single param:
+    {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
+
+  Everything else (search_url, predictive_search_url, current search
+  terms) comes from Liquid globals already available here, so
+  main-header.liquid doesn't need to pass anything else through.
+
+  When enable_predictive_search is false: same markup minus the
+  results panel and header-search.js never gets loaded. The form still
+  works as a plain GET to {{ routes.search_url }} — no JS dependency.
+
+  Assets:
+    assets/header-search.css — loaded always (form needs styling either way)
+    assets/header-search.js  — loaded only when predictive search is on
 {% endcomment %}
 
 {%- liquid
-  assign show_cat = show_category_filter
-
   if enable_predictive_search == false
-    assign is_predictive = false
+    assign predictive = false
   else
-    assign is_predictive = true
+    assign predictive = true
   endif
 -%}
 
-{%- if is_predictive -%}
-  {%- render 'search-modal',
-        trending_1:          search_trending_1,
-        trending_2:          search_trending_2,
-        trending_3:          search_trending_3,
-        trending_4:          search_trending_4,
-        trending_5:          search_trending_5,
-        voice_enabled:       true,
-        placeholder_animate: true
-  -%}
+{{ 'header-search.css' | asset_url | stylesheet_tag }}
+{%- if predictive -%}
+  <script src="{{ 'header-search.js' | asset_url }}" defer="defer"></script>
 {%- endif -%}
 
-{%- comment -%} ── Desktop search (hidden via CSS below 1024 px) ── {%- endcomment -%}
-<div class="main-header__search main-header__search--inline">
-  {%- render 'search-form',
-        id_suffix:     'desktop',
-        show_category: show_cat,
-        cat_1_label:   search_category_1_label,
-        cat_1_value:   search_category_1_value,
-        cat_2_label:   search_category_2_label,
-        cat_2_value:   search_category_2_value,
-        cat_3_label:   search_category_3_label,
-        cat_3_value:   search_category_3_value,
-        accent_color:  search_accent_color,
-        highlight_bg:  search_highlight_bg,
-        hover_bg:      search_hover_bg,
-        border_focus:  search_border_focus,
-        predictive:    is_predictive
-  -%}
-</div>
+{%- for viewport in (1..2) -%}
+  {%- assign sfx = 'desktop' -%}
+  {%- if viewport == 2 -%}
+    {%- assign sfx = 'mobile' -%}
+  {%- endif -%}
 
-{%- comment -%} ── Tablet / mobile search row (hidden via CSS above 1024 px) ── {%- endcomment -%}
-<div class="main-header__search-row">
-  <div class="main-header__search-row-inner">
-    {%- render 'search-form',
-          id_suffix:     'mobile',
-          show_category: show_cat,
-          cat_1_label:   search_category_1_label,
-          cat_1_value:   search_category_1_value,
-          cat_2_label:   search_category_2_label,
-          cat_2_value:   search_category_2_value,
-          cat_3_label:   search_category_3_label,
-          cat_3_value:   search_category_3_value,
-          accent_color:  search_accent_color,
-          highlight_bg:  search_highlight_bg,
-          hover_bg:      search_hover_bg,
-          border_focus:  search_border_focus,
-          predictive:    is_predictive
-    -%}
+  <div class="header-search header-search--{{ sfx }}{% unless predictive %} header-search--basic{% endunless %}"
+       data-search-root
+       {%- if predictive %}
+       data-predictive
+       data-predictive-search-url="{{ routes.predictive_search_url }}"
+       {%- endif %}>
+
+    <form action="{{ routes.search_url }}"
+          method="get"
+          role="search"
+          class="header-search__form"
+          id="HeaderSearchForm-{{ sfx }}"
+          autocomplete="off">
+
+      <input type="hidden" name="type" value="product">
+
+      <label class="visually-hidden" for="HeaderSearch-{{ sfx }}">Search</label>
+      <input
+        type="search"
+        name="q"
+        id="HeaderSearch-{{ sfx }}"
+        class="header-search__input"
+        data-search-input
+        placeholder="What are you looking for?"
+        value="{{ search.terms | escape }}"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        {%- if predictive %}
+        role="combobox"
+        aria-expanded="false"
+        aria-owns="HeaderSearchResults-{{ sfx }}"
+        aria-controls="HeaderSearchResults-{{ sfx }}"
+        aria-haspopup="listbox"
+        aria-autocomplete="list"
+        {%- endif %}>
+
+      {%- comment -%} Clear button — works with or without predictive search {%- endcomment -%}
+      <button type="button" class="header-search__clear" data-search-clear hidden aria-label="Clear search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      {%- comment -%}
+        Voice button — markup always present, hidden by default.
+        header-search.js only un-hides it if the browser supports the
+        Web Speech API, so there's no JS-built DOM for this either.
+      {%- endcomment -%}
+      <button type="button" class="header-search__voice" data-search-voice hidden aria-label="Search by voice">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+
+      <button type="submit" class="header-search__submit" aria-label="Search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+    </form>
+
+    {%- if predictive -%}
+      {%- comment -%}
+        Empty until header-search.js fetches and injects the rendered
+        output of sections/predictive-search.liquid. No markup here is
+        ever hand-built — it's always whatever Liquid rendered.
+      {%- endcomment -%}
+      <div class="header-search__panel"
+           id="HeaderSearchResults-{{ sfx }}"
+           data-search-results
+           role="listbox"
+           aria-label="Search results"
+           tabindex="-1"
+           hidden></div>
+      <span class="visually-hidden" role="status" aria-live="polite" data-search-status></span>
+    {%- endif -%}
   </div>
-</div>
+{%- endfor -%}
