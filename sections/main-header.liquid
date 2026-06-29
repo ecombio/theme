@@ -2,36 +2,30 @@
   Main Header Section
   File: sections/main-header.liquid
 
-  POST-PIVOT: header-search is back to being a snippet, not a block.
-  All search-related settings now live directly on this section's
-  schema (Search header group below) and are passed explicitly into
-  {%- render 'header-search' -%}, the same way logo/logo_width are
-  already passed into {%- render 'header-logo' -%}.
+  PIVOT: header-search moved off the official predictive-search
+  pipeline (Section Rendering API), so this section no longer needs to
+  pass trending terms, category labels/values, or colour settings
+  through to the snippet — that whole rendering path now lives in
+  Liquid inside sections/predictive-search.liquid. The only thing
+  header-search.liquid actually needs to make its decision is whether
+  predictive search is on at all.
 
-  This removes the old block-loop machinery entirely: header-search is
-  no longer addable/removable/reorderable by merchants in the theme
-  editor — it is a fixed, always-present part of the header, alongside
-  header-logo, header-account, and header-cart. Composition is now a
-  flat, explicit sequence:
+  search-form.css / search-form.js are no longer loaded here —
+  snippets/header-search.liquid now owns and loads its own assets
+  (header-search.css always, header-search.js only when predictive
+  search is enabled), the same way header-logo etc. are self-contained.
 
+  Composition stays a flat, explicit sequence:
     main-header
       └─ header-logo
-      └─ header-search   (snippet: search-modal once + search-form × 2)
+      └─ header-search   (single param: enable_predictive_search)
       └─ header-account
       └─ header-cart
-
-  Asset ownership:
-    search-form.css / search-form.js — loaded here; own all .hs__*
-      styles and the HeaderSearch class (form, dropdown, voice, etc.)
-    search-modal.liquid             — emits window.HS_SETTINGS only;
-      no CSS or JS of its own
-    header-search.liquid            — coordinator snippet; no assets
 {% endcomment %}
 
-{{ 'search-form.css'   | asset_url | stylesheet_tag }}
-{{ 'main-header.css'   | asset_url | stylesheet_tag }}
-{{ 'header-cart.css'   | asset_url | stylesheet_tag }}
-{{ 'header-account.css'| asset_url | stylesheet_tag }}
+{{ 'main-header.css'    | asset_url | stylesheet_tag }}
+{{ 'header-cart.css'    | asset_url | stylesheet_tag }}
+{{ 'header-account.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
@@ -58,25 +52,7 @@
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
-      {%- render 'header-search',
-            enable_predictive_search: section.settings.enable_predictive_search,
-            show_category_filter:     section.settings.show_category_filter,
-            search_trending_1:        section.settings.search_trending_1,
-            search_trending_2:        section.settings.search_trending_2,
-            search_trending_3:        section.settings.search_trending_3,
-            search_trending_4:        section.settings.search_trending_4,
-            search_trending_5:        section.settings.search_trending_5,
-            search_category_1_label:  section.settings.search_category_1_label,
-            search_category_1_value:  section.settings.search_category_1_value,
-            search_category_2_label:  section.settings.search_category_2_label,
-            search_category_2_value:  section.settings.search_category_2_value,
-            search_category_3_label:  section.settings.search_category_3_label,
-            search_category_3_value:  section.settings.search_category_3_value,
-            search_accent_color:      section.settings.search_accent_color,
-            search_highlight_bg:      section.settings.search_highlight_bg,
-            search_hover_bg:          section.settings.search_hover_bg,
-            search_border_focus:      section.settings.search_border_focus
-      -%}
+      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
         {%- if show_acct != false -%}
@@ -108,10 +84,9 @@
 
 </header>
 
-<script src="{{ 'search-form.js'   | asset_url }}" defer></script>
-<script src="{{ 'main-header.js'   | asset_url }}" defer></script>
-<script src="{{ 'header-cart.js'   | asset_url }}" defer></script>
-<script src="{{ 'header-account.js'| asset_url }}" defer></script>
+<script src="{{ 'main-header.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-account.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -143,52 +118,8 @@
       "type": "checkbox",
       "id": "enable_predictive_search",
       "label": "Enable predictive search",
-      "info": "Suggestions, recent searches, trending terms, voice input.",
+      "info": "Shows product, collection and query suggestions as the customer types.",
       "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_category_filter",
-      "label": "Show category filter pill",
-      "default": true
-    },
-    { "type": "header", "content": "Search — trending searches" },
-    { "type": "text", "id": "search_trending_1", "label": "Trending search 1" },
-    { "type": "text", "id": "search_trending_2", "label": "Trending search 2" },
-    { "type": "text", "id": "search_trending_3", "label": "Trending search 3" },
-    { "type": "text", "id": "search_trending_4", "label": "Trending search 4" },
-    { "type": "text", "id": "search_trending_5", "label": "Trending search 5" },
-    { "type": "header", "content": "Search — category pills" },
-    { "type": "text", "id": "search_category_1_label", "label": "Category 1 label" },
-    { "type": "text", "id": "search_category_1_value", "label": "Category 1 tag value" },
-    { "type": "text", "id": "search_category_2_label", "label": "Category 2 label" },
-    { "type": "text", "id": "search_category_2_value", "label": "Category 2 tag value" },
-    { "type": "text", "id": "search_category_3_label", "label": "Category 3 label" },
-    { "type": "text", "id": "search_category_3_value", "label": "Category 3 tag value" },
-    { "type": "header", "content": "Search — colours" },
-    {
-      "type": "color",
-      "id": "search_accent_color",
-      "label": "Accent colour",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "color",
-      "id": "search_highlight_bg",
-      "label": "Match highlight colour",
-      "default": "#FFF3CD"
-    },
-    {
-      "type": "color",
-      "id": "search_hover_bg",
-      "label": "Row hover colour",
-      "default": "#F5F5F5"
-    },
-    {
-      "type": "color",
-      "id": "search_border_focus",
-      "label": "Focus border colour",
-      "default": "#1a1a1a"
     },
     { "type": "header", "content": "Icons" },
     {
