@@ -18,18 +18,27 @@
   it doesn't need to know anything about header-menu.liquid's markup or
   schema, since that's a DOM id, not a render dependency.
 
+  Snippet tree (this section is the orchestrator — it reads section.settings
+  and forwards values down by name; each snippet only knows the params it
+  declares, nothing leaks in implicitly):
+    header-logo            (logo, logo_width)
+    header-search          (show_category, id_suffix — desktop + mobile instances)
+    header-icons           (show_store, show_account, show_cart)
+      ├── header-icon-store    (no params — leaf)
+      ├── header-icon-account  (no params — leaf, uses global `customer`)
+      └── header-icon-cart     (no params — leaf, uses global `cart`)
+
   Assets loaded here (this section's own CSS/behaviour only):
-    search-form.css
+    header-search.css / header-search.js
     main-header.css / main-header.js
 {% endcomment %}
 
-{{ 'search-form.css' | asset_url | stylesheet_tag }}
-{{ 'main-header.css' | asset_url | stylesheet_tag }}
+{{ 'header-search.css' | asset_url | stylesheet_tag }}
+{{ 'main-header.css'   | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
   assign logo_width = section.settings.logo_width | default: 140
-  assign logo_2x     = logo_width | times: 2
   assign show_cat    = section.settings.show_category_filter
   assign show_store  = section.settings.show_icon_store
   assign show_acct   = section.settings.show_icon_account
@@ -57,105 +66,19 @@
       </button>
 
       {%- comment -%} ── Logo ── {%- endcomment -%}
-      <a href="{{ routes.root_url }}"
-         class="main-header__logo-link"
-         aria-label="{{ shop.name }} — home">
-        {%- if logo != blank -%}
-          <img class="main-header__logo-img"
-               src="{{ logo | image_url: width: logo_width }}"
-               srcset="{{ logo | image_url: width: logo_width }} 1x,
-                       {{ logo | image_url: width: logo_2x }} 2x"
-               alt="{{ logo.alt | default: shop.name | escape }}"
-               width="{{ logo_width }}"
-               height="{{ logo_width | divided_by: logo.aspect_ratio | round }}"
-               loading="eager"
-               fetchpriority="high">
-        {%- else -%}
-          <span class="main-header__logo-text">{{ shop.name }}</span>
-        {%- endif -%}
-      </a>
+      {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
       {%- comment -%} ── Search (inline — desktop only) ── {%- endcomment -%}
       <div class="main-header__search main-header__search--inline">
-        {%- render 'search-form', show_category: show_cat, id_suffix: 'desktop' -%}
+        {%- render 'header-search', show_category: show_cat, id_suffix: 'desktop' -%}
       </div>
 
       {%- comment -%} ── Right icons ── {%- endcomment -%}
-      <ul class="main-header__icons" role="list" aria-label="Header actions">
-
-        {%- if show_store -%}
-          <li>
-            <a href="{{ routes.root_url }}pages/stores"
-               class="main-header__icon-btn"
-               aria-label="Store locator">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.75"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-              <span class="main-header__icon-label">Stores</span>
-            </a>
-          </li>
-        {%- endif -%}
-
-        {%- comment -%} ── Account icon ── {%- endcomment -%}
-        {%- if show_acct -%}
-          <li>
-            {%- if customer -%}
-              <a href="{{ routes.account_url }}"
-                 class="main-header__icon-btn"
-                 aria-label="My account">
-            {%- else -%}
-              <a href="{{ routes.account_login_url }}"
-                 class="main-header__icon-btn"
-                 aria-label="Sign in or register">
-            {%- endif -%}
-              <svg class="main-header__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.75"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              <span class="main-header__icon-label" aria-hidden="true">
-                {%- if customer -%}Account{%- else -%}Sign in / Register{%- endif -%}
-              </span>
-            </a>
-          </li>
-        {%- endif -%}
-
-        {%- comment -%} ── Cart icon ── {%- endcomment -%}
-        {%- if show_cart -%}
-          <li>
-            <button type="button"
-                    class="main-header__icon-btn main-header__cart-btn"
-                    aria-label="Open cart, {{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}"
-                    aria-haspopup="dialog"
-                    id="main-header-cart-toggle"
-                    aria-controls="cart-drawer"
-                    aria-expanded="false">
-              <span class="main-header__cart-wrap">
-                <svg class="main-header__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.75"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <path d="M16 10a4 4 0 0 1-8 0"/>
-                </svg>
-                <span
-                  class="main-header__cart-badge{% unless cart.item_count > 0 %} main-header__cart-badge--hidden{% endunless %}"
-                  data-cart-count
-                  aria-live="polite"
-                  aria-atomic="true">
-                  {{ cart.item_count }}
-                </span>
-              </span>
-              <span class="main-header__icon-label" aria-hidden="true">Cart</span>
-            </button>
-          </li>
-        {%- endif -%}
-
-      </ul>{%- comment -%} /.main-header__icons {%- endcomment -%}
+      {%- render 'header-icons',
+            show_store:   show_store,
+            show_account: show_acct,
+            show_cart:    show_cart
+      -%}
 
     </div>{%- comment -%} /.main-header__inner {%- endcomment -%}
   </div>{%- comment -%} /.main-header__bar {%- endcomment -%}
@@ -165,7 +88,7 @@
   ═══════════════════════════════════════ {%- endcomment -%}
   <div class="main-header__search-row">
     <div class="main-header__search-row-inner">
-      {%- render 'search-form', show_category: show_cat, id_suffix: 'mobile' -%}
+      {%- render 'header-search', show_category: show_cat, id_suffix: 'mobile' -%}
     </div>
   </div>
 
