@@ -21,13 +21,11 @@
     {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
 
   TYPEWRITER PLACEHOLDER
-  When predictive search is on, this snippet injects window.HS_TRENDING
-  from the predictive-search-trending linklist — the same menu used by
-  sections/predictive-search.liquid for empty-state recovery. If the
-  menu doesn't exist or has no links, the array is empty and the
-  typewriter never starts. No separate merchant config is needed.
+  Sourced from the predictive-search-trending linklist. If that menu
+  doesn't exist or is empty, falls back to built-in default terms so
+  the typewriter always runs when predictive search is on.
 
-  To add trending terms: Admin → Content → Menus → predictive-search-trending.
+  To customise terms: Admin → Content → Menus → predictive-search-trending.
   Each link title becomes a typewriter term. The URL is unused.
 
   Assets:
@@ -48,17 +46,31 @@
   <script src="{{ 'header-search.js' | asset_url }}" defer="defer"></script>
 
   {%- comment -%}
-    Inject trending terms for the animated typewriter placeholder.
-    Sourced from the predictive-search-trending linklist so merchants
-    can edit terms without touching code. Empty array = no typewriter.
+    Build the trending terms array. Prefer the merchant-editable
+    predictive-search-trending linklist; fall back to defaults so the
+    typewriter always has something to cycle through.
   {%- endcomment -%}
   {%- assign trending_menu = linklists['predictive-search-trending'] -%}
+  {%- if trending_menu and trending_menu.links.size > 0 -%}
+    {%- assign trending_source = trending_menu.links -%}
+    {%- assign trending_use_menu = true -%}
+  {%- else -%}
+    {%- assign trending_use_menu = false -%}
+  {%- endif -%}
+
   <script>
-    window.HS_TRENDING = [
-      {%- for link in trending_menu.links -%}
-        {{ link.title | json }}{%- unless forloop.last -%},{%- endunless -%}
-      {%- endfor -%}
-    ];
+    {%- if trending_use_menu -%}
+      window.HS_TRENDING = [
+        {%- for link in trending_source -%}
+          {{ link.title | json }}{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      ];
+    {%- else -%}
+      window.HS_TRENDING = [
+        "sneakers","hoodies","summer dresses","running shoes","gift sets",
+        "new arrivals","accessories","sale items"
+      ];
+    {%- endif -%}
   </script>
 {%- endif -%}
 
