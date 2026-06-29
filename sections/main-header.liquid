@@ -16,29 +16,28 @@
 
     main-header
       └─ header-logo
-      └─ header-search   (snippet: search-form × 2 + search-modal)
+      └─ header-search   (snippet: search-modal once + search-form × 2)
       └─ header-account
       └─ header-cart
 
-  Because there is now exactly one Header Search instance per page
-  (not N merchant-added blocks), window.HS_SETTINGS — which is global
-  by design — no longer needs the cross-file "scan all blocks, render
-  search-modal once, ahead of the loop" coordination that used to live
-  here. snippets/header-search.liquid now owns that single guarded
-  render internally.
+  Asset ownership:
+    search-form.css / search-form.js — loaded here; own all .hs__*
+      styles and the HeaderSearch class (form, dropdown, voice, etc.)
+    search-modal.liquid             — emits window.HS_SETTINGS only;
+      no CSS or JS of its own
+    header-search.liquid            — coordinator snippet; no assets
 {% endcomment %}
 
-{{ 'header-search.css'   | asset_url | stylesheet_tag }}
-{{ 'main-header.css'     | asset_url | stylesheet_tag }}
-{{ 'header-cart.css'     | asset_url | stylesheet_tag }}
-{{ 'header-account.css'  | asset_url | stylesheet_tag }}
+{{ 'search-form.css'   | asset_url | stylesheet_tag }}
+{{ 'main-header.css'   | asset_url | stylesheet_tag }}
+{{ 'header-cart.css'   | asset_url | stylesheet_tag }}
+{{ 'header-account.css'| asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
   assign logo_width = section.settings.logo_width | default: 140
-  assign show_store  = section.settings.show_icon_store
-  assign show_acct   = section.settings.show_icon_account
-  assign show_cart   = section.settings.show_icon_cart
+  assign show_acct  = section.settings.show_icon_account
+  assign show_cart  = section.settings.show_icon_cart
 -%}
 
 <header class="main-header" id="main-header" role="banner">
@@ -109,10 +108,10 @@
 
 </header>
 
-<script src="{{ 'header-search.js'  | asset_url }}" defer></script>
-<script src="{{ 'main-header.js'    | asset_url }}" defer></script>
-<script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
-<script src="{{ 'header-account.js' | asset_url }}" defer></script>
+<script src="{{ 'search-form.js'   | asset_url }}" defer></script>
+<script src="{{ 'main-header.js'   | asset_url }}" defer></script>
+<script src="{{ 'header-cart.js'   | asset_url }}" defer></script>
+<script src="{{ 'header-account.js'| asset_url }}" defer></script>
 
 {% schema %}
 {
