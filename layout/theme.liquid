@@ -19,10 +19,9 @@
     {{ 'flyout.css'                | asset_url | stylesheet_tag }}
 
     {%- comment -%}
-      NOTE: ecombio-search.css and ecombio-search.js have been REMOVED from here.
-      The predictive search is now handled entirely by:
-        assets/header-search.css  — loaded by sections/main-header.liquid
-        assets/header-search.js   — loaded by sections/main-header.liquid (defer)
+      header-search.css and header-search.js are intentionally NOT loaded here.
+      They are loaded by sections/main-header.liquid so they are scoped to the
+      header section and only included when the section is present on the page.
     {%- endcomment -%}
 
     {% render 'css-variables' %}
@@ -71,10 +70,16 @@
     {% section 'cart-drawer' %}
     {% section 'quick-view' %}
 
-    {{- 'cart-recommendations.js' | asset_url | script_tag }}
-<script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
-<script src="{{ 'header-cart.js' | asset_url }}" defer></script>
-    {{- 'quick-view.js'           | asset_url | script_tag }}
+    {%- comment -%}
+      Load order: cart-drawer.js MUST precede cart-recommendations.js and
+      quick-view.js because both dispatch events that cart-drawer.js listens for.
+      header-cart.js is loaded by sections/main-header.liquid with defer and is
+      NOT duplicated here — Shopify CDN would deduplicate same-URL scripts anyway,
+      but keeping it out of theme.liquid keeps this file clean.
+    {%- endcomment -%}
+    <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
+    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
+    <script src="{{ 'quick-view.js'           | asset_url }}" defer></script>
 
   </body>
 </html>
