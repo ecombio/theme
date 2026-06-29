@@ -1,0 +1,280 @@
+{% comment %}
+  Main Header Section
+  File: sections/main-header.liquid
+
+  Renders the sticky header bar:
+    Hamburger · Logo · Search (inline desktop / search-row mobile) · Icon cluster
+
+  This section does NOT render the utility bar or menu bar — those live in their
+  own sections composed via header-group.json:
+    1. utility-bar      (sections/utility-bar.liquid)
+    2. main-header      (sections/main-header.liquid)   ← this file
+    3. header-menu      (sections/header-menu.liquid)
+
+  The mobile nav drawer (#main-header-mobile-nav) is rendered inline below so
+  main-header.js can own its open/close/focus-trap behaviour without a cross-section
+  DOM dependency.
+
+  Snippet tree:
+    header-logo     (logo, logo_width)
+    header-search   (show_category, id_suffix)  ← rendered twice: desktop + mobile
+    header-icons    (show_store, show_account, show_cart)
+
+  Asset loading order (critical: CSS before JS, search JS before main-header JS):
+    1. header-search.css  — search component styles
+    2. main-header.css    — header layout styles
+    3. header-search.js   — search component (defer) — must init before main-header.js
+    4. main-header.js     — header controller (defer)
+
+  NOTE: Remove 'ecombio-search.css' and 'ecombio-search.js' from theme.liquid —
+  they are superseded by header-search.css / header-search.js.
+{% endcomment %}
+
+{{ 'header-search.css' | asset_url | stylesheet_tag }}
+{{ 'main-header.css'   | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign logo       = section.settings.logo
+  assign logo_width = section.settings.logo_width | default: 140
+  assign show_cat   = section.settings.show_category_filter
+  assign show_store = section.settings.show_icon_store
+  assign show_acct  = section.settings.show_icon_account
+  assign show_cart  = section.settings.show_icon_cart
+-%}
+
+<header class="main-header" id="main-header" role="banner">
+
+  {%- comment -%} ═══════════════════════════════════════
+      TOP BAR — Hamburger · Logo · Search (desktop) · Icons
+  ═══════════════════════════════════════ {%- endcomment -%}
+  <div class="main-header__bar">
+    <div class="main-header__inner">
+
+      {%- comment -%} ── Hamburger — controls #main-header-mobile-nav below ── {%- endcomment -%}
+      <button class="main-header__hamburger"
+              id="main-header-nav-toggle"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded="false"
+              aria-controls="main-header-mobile-nav">
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+      </button>
+
+      {%- comment -%} ── Logo ── {%- endcomment -%}
+      {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
+
+      {%- comment -%} ── Inline search — desktop only (hidden via CSS below 1024px) ── {%- endcomment -%}
+      <div class="main-header__search main-header__search--inline">
+        {%- render 'header-search', show_category: show_cat, id_suffix: 'desktop' -%}
+      </div>
+
+      {%- comment -%} ── Right icon cluster ── {%- endcomment -%}
+      {%- render 'header-icons',
+            show_store:   show_store,
+            show_account: show_acct,
+            show_cart:    show_cart
+      -%}
+
+    </div>
+  </div>
+
+  {%- comment -%} ═══════════════════════════════════════
+      SEARCH ROW — tablet + mobile (hidden via CSS above 1024px)
+  ═══════════════════════════════════════ {%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'header-search', show_category: show_cat, id_suffix: 'mobile' -%}
+    </div>
+  </div>
+
+  {%- comment -%} ═══════════════════════════════════════
+      MOBILE NAV DRAWER
+      ID must match aria-controls on the hamburger button above.
+      Content (links) is managed by the theme's menu settings.
+  ═══════════════════════════════════════ {%- endcomment -%}
+  <nav class="main-header__mobile-nav"
+       id="main-header-mobile-nav"
+       aria-label="Mobile navigation"
+       aria-hidden="true"
+       hidden>
+    <ul class="main-header__mobile-nav-list">
+      {%- for link in section.settings.mobile_menu.links -%}
+        <li>
+          <a class="main-header__mobile-nav-link" href="{{ link.url }}">
+            {{ link.title }}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+
+</header>
+
+{%- comment -%}
+  JS: defer both files so they execute after DOM is parsed.
+  header-search.js must appear before main-header.js because both listen on
+  DOMContentLoaded — order in source determines execution order after defer.
+{%- endcomment -%}
+<script src="{{ 'header-search.js' | asset_url }}" defer></script>
+<script src="{{ 'main-header.js'   | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Main Header",
+  "tag": "div",
+  "class": "main-header-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Logo width (px)",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "default": 140,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Navigation"
+    },
+    {
+      "type": "link_list",
+      "id": "mobile_menu",
+      "label": "Mobile menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "header",
+      "content": "Search"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_filter",
+      "label": "Show category filter pill",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "search_trending_1",
+      "label": "Trending search 1"
+    },
+    {
+      "type": "text",
+      "id": "search_trending_2",
+      "label": "Trending search 2"
+    },
+    {
+      "type": "text",
+      "id": "search_trending_3",
+      "label": "Trending search 3"
+    },
+    {
+      "type": "text",
+      "id": "search_trending_4",
+      "label": "Trending search 4"
+    },
+    {
+      "type": "text",
+      "id": "search_trending_5",
+      "label": "Trending search 5"
+    },
+    {
+      "type": "text",
+      "id": "search_category_1_label",
+      "label": "Category 1 label"
+    },
+    {
+      "type": "text",
+      "id": "search_category_1_value",
+      "label": "Category 1 tag value"
+    },
+    {
+      "type": "text",
+      "id": "search_category_2_label",
+      "label": "Category 2 label"
+    },
+    {
+      "type": "text",
+      "id": "search_category_2_value",
+      "label": "Category 2 tag value"
+    },
+    {
+      "type": "text",
+      "id": "search_category_3_label",
+      "label": "Category 3 label"
+    },
+    {
+      "type": "text",
+      "id": "search_category_3_value",
+      "label": "Category 3 tag value"
+    },
+    {
+      "type": "header",
+      "content": "Icons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_store",
+      "label": "Show store locator icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_account",
+      "label": "Show account icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_cart",
+      "label": "Show cart icon",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Search colours"
+    },
+    {
+      "type": "color",
+      "id": "search_accent_color",
+      "label": "Accent colour",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "search_highlight_bg",
+      "label": "Match highlight colour",
+      "default": "#FFF3CD"
+    },
+    {
+      "type": "color",
+      "id": "search_hover_bg",
+      "label": "Row hover colour",
+      "default": "#F5F5F5"
+    },
+    {
+      "type": "color",
+      "id": "search_border_focus",
+      "label": "Focus border colour",
+      "default": "#1a1a1a"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Main Header"
+    }
+  ]
+}
+{% endschema %}
