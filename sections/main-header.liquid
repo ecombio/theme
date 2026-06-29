@@ -2,19 +2,28 @@
   Main Header
   File: sections/main-header.liquid
 
-  Renders the full site header:
-    – Top bar:  hamburger · logo · inline search (desktop) · icons
-    – Search row: search form visible on tablet + mobile only
+  Single section that renders both the utility bar and the main header bar.
+  Replaces sections/utility-bar.liquid — remove that section tag from
+  layout/theme.liquid and keep only this one.
 
-  Assets:
-    assets/main-header.css  — all styles
-    assets/main-header.js   — behaviour (sticky, mobile nav, search, cart drawer trigger)
+  Renders:
+    1. snippets/header-utility-bar.liquid  — slim top bar (links, switchers, region picker)
+    2. Header bar                          — hamburger · logo · search · icons
+    3. Search row                          — tablet + mobile only
+    4. Mobile nav drawer                   — populated from nav_link blocks
 
-  Add to layout/theme.liquid, below {%- section 'utility-bar' -%}:
+  Assets loaded here:
+    utility-bar.css / utility-bar.js  — utility bar styles + behaviour
+    search-form.css                   — search form styles
+    main-header.css / main-header.js  — header styles + behaviour
+
+  layout/theme.liquid usage:
     {%- section 'main-header' -%}
 {% endcomment %}
-{{ 'search-form.css' | asset_url | stylesheet_tag }}
-{{ 'main-header.css' | asset_url | stylesheet_tag }}
+
+{{ 'utility-bar.css'  | asset_url | stylesheet_tag }}
+{{ 'search-form.css'  | asset_url | stylesheet_tag }}
+{{ 'main-header.css'  | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = section.settings.logo
@@ -24,6 +33,19 @@
   assign show_store = section.settings.show_icon_store
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
+  assign bar_style  = section.settings.bar_style | default: 'hyper'
+  assign show_curr  = section.settings.show_currency
+  assign show_loc   = section.settings.show_locale
+-%}
+
+{%- comment -%} ═══════════════════════════════════════
+    UTILITY BAR
+═══════════════════════════════════════ {%- endcomment -%}
+{%- render 'header-utility-bar',
+  bar_style:  bar_style,
+  show_curr:  show_curr,
+  show_loc:   show_loc,
+  section:    section
 -%}
 
 <header class="main-header" id="main-header" role="banner">
@@ -89,7 +111,7 @@
           </li>
         {%- endif -%}
 
-        {%- comment -%} ── Account icon (ecombio pattern) ── {%- endcomment -%}
+        {%- comment -%} ── Account icon ── {%- endcomment -%}
         {%- if show_acct -%}
           <li>
             {%- if customer -%}
@@ -114,7 +136,7 @@
           </li>
         {%- endif -%}
 
-        {%- comment -%} ── Cart icon (ecombio pattern) ── {%- endcomment -%}
+        {%- comment -%} ── Cart icon ── {%- endcomment -%}
         {%- if show_cart -%}
           <li>
             <button type="button"
@@ -161,7 +183,7 @@
 
   {%- comment -%} ═══════════════════════════════════════
       MOBILE NAV DRAWER
-      Content populated by navigation blocks defined in schema.
+      Populated from nav_link blocks in schema.
   ═══════════════════════════════════════ {%- endcomment -%}
   <nav class="main-header__mobile-nav"
        id="main-header-mobile-nav"
@@ -184,6 +206,7 @@
 
 </header>
 
+<script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
 <script src="{{ 'main-header.js' | asset_url }}" defer></script>
 
 {% schema %}
@@ -243,6 +266,32 @@
       "id": "show_icon_cart",
       "label": "Show cart icon",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Utility Bar"
+    },
+    {
+      "type": "select",
+      "id": "bar_style",
+      "label": "Bar style",
+      "default": "hyper",
+      "options": [
+        { "value": "hyper", "label": "Hyper (white)" },
+        { "value": "focus", "label": "Focus (warm grey)" }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency",
+      "label": "Show currency selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale",
+      "label": "Show language selector",
+      "default": true
     }
   ],
   "blocks": [
@@ -262,15 +311,35 @@
           "label": "URL"
         }
       ]
+    },
+    {
+      "type": "link",
+      "name": "Utility link",
+      "limit": 5,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Track Order"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "URL"
+        }
+      ]
     }
   ],
   "presets": [
     {
       "name": "Main Header",
       "blocks": [
-        { "type": "nav_link", "settings": { "label": "Shop",     "url": "/collections/all" } },
-        { "type": "nav_link", "settings": { "label": "About",    "url": "/pages/about" } },
-        { "type": "nav_link", "settings": { "label": "Contact",  "url": "/pages/contact" } }
+        { "type": "link",     "settings": { "label": "Track Order",   "url": "/apps/track" } },
+        { "type": "link",     "settings": { "label": "Store Locator", "url": "/pages/stores" } },
+        { "type": "nav_link", "settings": { "label": "Shop",          "url": "/collections/all" } },
+        { "type": "nav_link", "settings": { "label": "About",         "url": "/pages/about" } },
+        { "type": "nav_link", "settings": { "label": "Contact",       "url": "/pages/contact" } }
       ]
     }
   ]
