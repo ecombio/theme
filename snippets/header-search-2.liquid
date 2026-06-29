@@ -1,0 +1,24 @@
+{%- if sfx == 'desktop' -%}
+<script>
+  window.HS_SETTINGS = {
+    MIN_QUERY_LENGTH:      2,
+    DEBOUNCE_MS:           200,
+    MAX_QUERIES:           3,
+    MAX_PRODUCTS:          5,
+    MAX_COLLECTIONS:       2,
+    RECENT_SEARCHES_LIMIT: 5,
+    VOICE_ENABLED:         {{ voice_enabled       | default: true }},
+    PLACEHOLDER_ANIMATE:   {{ placeholder_animate | default: true }},
+    TRENDING_SEARCHES: [
+      {%- assign trend_items = '' -%}
+      {%- for term in trending_array -%}
+        {%- unless term == blank -%}
+          {%- unless trend_items == '' -%},{%- endunless -%}
+          {{ term | json }}
+          {%- assign trend_items = 'has_items' -%}
+        {%- endunless -%}
+      {%- endfor -%}
+    ]
+  };
+</script>
+{%- endif -%}
