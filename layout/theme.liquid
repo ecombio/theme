@@ -1,24 +1,30 @@
 <!doctype html>
 <html lang="{{ request.locale.iso_code }}">
-  <head> 
-    {{ 'quick-view.css' | asset_url | stylesheet_tag }}
-   {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
-   {{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
-    {{ 'article-card.css' | asset_url | stylesheet_tag }}
-    {{ 'product-card.css' | asset_url | stylesheet_tag }}
-    {{ 'collection-layout.css' | asset_url | stylesheet_tag }}
-    {{ 'base.css' | asset_url | stylesheet_tag }}
-    {{ 'theme.css' | asset_url | stylesheet_tag }}
-    {{ 'header.css' | asset_url | stylesheet_tag }}
-    {{ 'compare-bar.css' | asset_url | stylesheet_tag }}
-    {{ 'section-accordion.css' | asset_url | stylesheet_tag }}
- 
-    {{ 'related-products.css' | asset_url | stylesheet_tag }}
-    {{ 'header-mega-menu.css' | asset_url | stylesheet_tag }}
-    {{ 'ecombio-search.css' | asset_url | stylesheet_tag }}
-    {{ 'flyout-panel.css' | asset_url | stylesheet_tag }}
-    {{ 'flyout-menu.css'  | asset_url | stylesheet_tag }}
-    {{ 'flyout.css'       | asset_url | stylesheet_tag }}
+  <head>
+    {{ 'quick-view.css'            | asset_url | stylesheet_tag }}
+    {{ 'cart-drawer.css'           | asset_url | stylesheet_tag }}
+    {{ 'cart-recommendations.css'  | asset_url | stylesheet_tag }}
+    {{ 'article-card.css'          | asset_url | stylesheet_tag }}
+    {{ 'product-card.css'          | asset_url | stylesheet_tag }}
+    {{ 'collection-layout.css'     | asset_url | stylesheet_tag }}
+    {{ 'base.css'                  | asset_url | stylesheet_tag }}
+    {{ 'theme.css'                 | asset_url | stylesheet_tag }}
+    {{ 'header.css'                | asset_url | stylesheet_tag }}
+    {{ 'compare-bar.css'           | asset_url | stylesheet_tag }}
+    {{ 'section-accordion.css'     | asset_url | stylesheet_tag }}
+    {{ 'related-products.css'      | asset_url | stylesheet_tag }}
+    {{ 'header-mega-menu.css'      | asset_url | stylesheet_tag }}
+    {{ 'flyout-panel.css'          | asset_url | stylesheet_tag }}
+    {{ 'flyout-menu.css'           | asset_url | stylesheet_tag }}
+    {{ 'flyout.css'                | asset_url | stylesheet_tag }}
+
+    {%- comment -%}
+      NOTE: ecombio-search.css and ecombio-search.js have been REMOVED from here.
+      The predictive search is now handled entirely by:
+        assets/header-search.css  — loaded by sections/main-header.liquid
+        assets/header-search.js   — loaded by sections/main-header.liquid (defer)
+    {%- endcomment -%}
+
     {% render 'css-variables' %}
 
     {% unless settings.type_primary_font.system? %}
@@ -27,14 +33,12 @@
     {% endunless %}
 
     {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
+
     {% render 'meta-tags' %}
 
     {% if settings.favicon != blank %}
-      <link
-        rel="icon"
-        type="image/png"
-        href="{{ settings.favicon | image_url: width: 32, height: 32 }}"
-      >
+      <link rel="icon" type="image/png"
+            href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
     {% endif %}
 
     {{ content_for_header }}
@@ -42,7 +46,7 @@
 
   <body class="{{ settings.theme_preset }}" data-header-layout="{{ settings.header_layout }}">
 
-        {% sections 'header-group' %}
+    {% sections 'header-group' %}
 
     <main role="main">
       <div class="page-width">
@@ -61,15 +65,16 @@
     {{- 'header.js'             | asset_url | script_tag }}
     {{- 'countdown-timer.js'    | asset_url | script_tag }}
     {{- 'copy-to-clipboard.js'  | asset_url | script_tag }}
-    {{- 'ecombio-search.js'     | asset_url | script_tag }}
     {{- 'collection-filters.js' | asset_url | script_tag }}
     {{- 'product-card.js'       | asset_url | script_tag }}
+
     {% render 'compare-bar' %}
     {% section 'cart-drawer' %}
     {% section 'quick-view' %}
+
     {{- 'cart-recommendations.js' | asset_url | script_tag }}
-    {{- 'cart-drawer.js' | asset_url | script_tag }}
-    {{- 'quick-view.js'  | asset_url | script_tag }}
+    {{- 'cart-drawer.js'          | asset_url | script_tag }}
+    {{- 'quick-view.js'           | asset_url | script_tag }}
 
   </body>
 </html>
