@@ -1,26 +1,29 @@
 {% comment %}
-  Snippet: header-logo.liquid
-  Renders the site logo (image or text fallback).
+  Header — Logo
+  File: snippets/header-logo.liquid
 
-  Usage:
-    render 'header-logo', logo: section.settings.logo, logo_width: section.settings.logo_width
+  Leaf component — renders the shop logo (or text fallback) linked to home.
+
+  Parameters:
+    logo       {image}   — required. e.g. section.settings.logo
+    logo_width {integer} — required. base render width in px (2x is derived)
 {% endcomment %}
 
-<div class="ecombio-header__logo">
-  <a href="{{ routes.root_url }}" class="ecombio-header__logo-link" aria-label="{{ shop.name }}">
-    {%- if logo != blank -%}
-      {{
-        logo
-        | image_url: width: logo_width
-        | image_tag:
-          loading: 'eager',
-          fetchpriority: 'high',
-          width: logo_width,
-          alt: shop.name,
-          class: 'ecombio-header__logo-img'
-      }}
-    {%- else -%}
-      <span class="ecombio-header__logo-text">{{ shop.name }}</span>
-    {%- endif -%}
-  </a>
-</div>
+<a href="{{ routes.root_url }}"
+   class="main-header__logo-link"
+   aria-label="{{ shop.name }} — home">
+  {%- if logo != blank -%}
+    {%- assign logo_2x = logo_width | times: 2 -%}
+    <img class="main-header__logo-img"
+         src="{{ logo | image_url: width: logo_width }}"
+         srcset="{{ logo | image_url: width: logo_width }} 1x,
+                 {{ logo | image_url: width: logo_2x }} 2x"
+         alt="{{ logo.alt | default: shop.name | escape }}"
+         width="{{ logo_width }}"
+         height="{{ logo_width | divided_by: logo.aspect_ratio | round }}"
+         loading="eager"
+         fetchpriority="high">
+  {%- else -%}
+    <span class="main-header__logo-text">{{ shop.name }}</span>
+  {%- endif -%}
+</a>
