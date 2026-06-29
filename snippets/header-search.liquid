@@ -3,52 +3,60 @@
   File: snippets/header-search.liquid
 
   Rendered by sections/main-header.liquid — called twice:
-    {%- render 'header-search', show_category: show_cat, id_suffix: 'desktop' -%}
-    {%- render 'header-search', show_category: show_cat, id_suffix: 'mobile'  -%}
+    {%- render 'header-search', ..., id_suffix: 'desktop' -%}
+    {%- render 'header-search', ..., id_suffix: 'mobile'  -%}
 
-  Params:
-    id_suffix     {String}  — 'desktop' | 'mobile'  (keeps element IDs unique)
-    show_category {Boolean} — show/hide the category pill
+  Params (all passed explicitly from main-header.liquid):
+    id_suffix           {String}  — 'desktop' | 'mobile'
+    show_category       {Boolean} — show/hide the category pill
+    trending_1..5       {String}  — trending search terms
+    cat_1..3_label      {String}  — category pill labels
+    cat_1..3_value      {String}  — category pill tag values
+    accent_color        {String}  — CSS accent colour
+    highlight_bg        {String}  — match highlight background
+    hover_bg            {String}  — row hover background
+    border_focus        {String}  — focus border colour
+    voice_enabled       {Boolean} — enable voice search
+    placeholder_animate {Boolean} — enable typewriter placeholder
+
+  FIX: Previously read settings.search_* (global theme settings) — those keys
+  don't exist in config/settings_schema.json, they're section settings.
+  Snippet now reads params passed from main-header.liquid via section.settings.*.
 
   Assets loaded by sections/main-header.liquid (NOT here):
     assets/header-search.css
     assets/header-search.js
 
-  The JS config object window.HS_SETTINGS is injected once (desktop instance only).
-  header-search.js merges it with its own defaults via Object.assign.
-
   BEM prefix: .hs  (matches assets/header-search.css)
 {% endcomment %}
 
-{%- assign sfx          = id_suffix    | default: 'desktop' -%}
-{%- assign show_cat     = show_category | default: true -%}
+{%- assign sfx      = id_suffix      | default: 'desktop' -%}
+{%- assign show_cat = show_category  | default: true -%}
 
-{%- comment -%} ── Build trending searches pipe-delimited string from settings ── {%- endcomment -%}
+{%- comment -%} ── Build trending searches from passed params ── {%- endcomment -%}
 {%- assign trending_raw = '' -%}
-{%- for i in (1..5) -%}
-  {%- assign setting_key = 'search_trending_' | append: i -%}
-  {%- assign term        = settings[setting_key] -%}
-  {%- if term != blank -%}
-    {%- assign trending_raw = trending_raw | append: term | append: '|' -%}
-  {%- endif -%}
-{%- endfor -%}
+{%- if trending_1 != blank -%}{%- assign trending_raw = trending_raw | append: trending_1 | append: '|' -%}{%- endif -%}
+{%- if trending_2 != blank -%}{%- assign trending_raw = trending_raw | append: trending_2 | append: '|' -%}{%- endif -%}
+{%- if trending_3 != blank -%}{%- assign trending_raw = trending_raw | append: trending_3 | append: '|' -%}{%- endif -%}
+{%- if trending_4 != blank -%}{%- assign trending_raw = trending_raw | append: trending_4 | append: '|' -%}{%- endif -%}
+{%- if trending_5 != blank -%}{%- assign trending_raw = trending_raw | append: trending_5 | append: '|' -%}{%- endif -%}
 {%- assign trending_array = trending_raw | split: '|' -%}
 
 {%- comment -%}
-  Inject JS config once — guarded by sfx == 'desktop' so we don't double-declare
-  when the mobile instance renders.
+  Inject JS config once — guarded by sfx == 'desktop' so we don't
+  double-declare when the mobile instance renders.
 {%- endcomment -%}
 {%- if sfx == 'desktop' -%}
 <script>
   window.HS_SETTINGS = {
-    MIN_QUERY_LENGTH:      {{ settings.search_min_chars       | default: 2 }},
-    DEBOUNCE_MS:           {{ settings.search_debounce_ms     | default: 200 }},
-    MAX_QUERIES:           {{ settings.search_max_queries     | default: 3 }},
-    MAX_PRODUCTS:          {{ settings.search_max_products    | default: 5 }},
-    MAX_COLLECTIONS:       {{ settings.search_max_collections | default: 2 }},
-    RECENT_SEARCHES_LIMIT: {{ settings.search_recent_limit    | default: 5 }},
-    VOICE_ENABLED:         {{ settings.search_voice_enabled   | default: true }},
-    PLACEHOLDER_ANIMATE:   {{ settings.search_placeholder_animate | default: true }},
+    MIN_QUERY_LENGTH:      2,
+    DEBOUNCE_MS:           200,
+    MAX_QUERIES:           3,
+    MAX_PRODUCTS:          5,
+    MAX_COLLECTIONS:       2,
+    RECENT_SEARCHES_LIMIT: 5,
+    VOICE_ENABLED:         {{ voice_enabled       | default: true }},
+    PLACEHOLDER_ANIMATE:   {{ placeholder_animate | default: true }},
     TRENDING_SEARCHES: [
       {%- for term in trending_array -%}
         {%- unless term == blank -%}
@@ -64,10 +72,10 @@
      id="hs-{{ sfx }}"
      data-search-instance="{{ sfx }}"
      style="
-       --hs-accent:        {{ settings.search_accent_color | default: '#1a1a1a' }};
-       --hs-highlight-bg:  {{ settings.search_highlight_bg | default: '#FFF3CD' }};
-       --hs-bg-hover:      {{ settings.search_hover_bg     | default: '#F5F5F5' }};
-       --hs-border-focus:  {{ settings.search_border_focus | default: '#1a1a1a' }};
+       --hs-accent:       {{ accent_color  | default: '#1a1a1a' }};
+       --hs-highlight-bg: {{ highlight_bg  | default: '#FFF3CD' }};
+       --hs-bg-hover:     {{ hover_bg      | default: '#F5F5F5' }};
+       --hs-border-focus: {{ border_focus  | default: '#1a1a1a' }};
      ">
 
   <form action="{{ routes.search_url }}"
@@ -107,24 +115,29 @@
               data-value="" data-label="All"
               tabindex="0">All Categories</li>
 
-          {%- for i in (1..5) -%}
-            {%- assign lk = 'search_category_' | append: i | append: '_label' -%}
-            {%- assign vk = 'search_category_' | append: i | append: '_value' -%}
-            {%- assign cat_label = settings[lk] -%}
-            {%- assign cat_value = settings[vk] -%}
-            {%- if cat_label != blank and cat_value != blank -%}
-              <li role="option" aria-selected="false"
-                  data-value="{{ cat_value | escape }}"
-                  data-label="{{ cat_label | escape }}"
-                  tabindex="0">
-                {{ cat_label | escape }}
-              </li>
-            {%- endif -%}
-          {%- endfor -%}
+          {%- if cat_1_label != blank and cat_1_value != blank -%}
+            <li role="option" aria-selected="false"
+                data-value="{{ cat_1_value | escape }}"
+                data-label="{{ cat_1_label | escape }}"
+                tabindex="0">{{ cat_1_label | escape }}</li>
+          {%- endif -%}
+
+          {%- if cat_2_label != blank and cat_2_value != blank -%}
+            <li role="option" aria-selected="false"
+                data-value="{{ cat_2_value | escape }}"
+                data-label="{{ cat_2_label | escape }}"
+                tabindex="0">{{ cat_2_label | escape }}</li>
+          {%- endif -%}
+
+          {%- if cat_3_label != blank and cat_3_value != blank -%}
+            <li role="option" aria-selected="false"
+                data-value="{{ cat_3_value | escape }}"
+                data-label="{{ cat_3_label | escape }}"
+                tabindex="0">{{ cat_3_label | escape }}</li>
+          {%- endif -%}
 
         </ul>
 
-        {%- comment -%} Hidden input — value is kept in sync by header-search.js and submitted with the form {%- endcomment -%}
         <input type="hidden"
                class="hs__cat-value"
                id="hs-cat-value-{{ sfx }}"
@@ -140,7 +153,7 @@
            name="q"
            id="hs-input-{{ sfx }}"
            class="hs__input"
-           placeholder="{{ settings.search_placeholder | default: 'What are you looking for?' | escape }}"
+           placeholder="What are you looking for?"
            aria-label="Search products"
            aria-autocomplete="list"
            aria-controls="hs-dropdown-{{ sfx }}"
@@ -164,8 +177,7 @@
     </button>
 
     {%- comment -%}
-      MIC BUTTON — injected here by header-search.js if the Web Speech API
-      is available in the browser. Nothing to render in Liquid.
+      MIC BUTTON — injected by header-search.js if Web Speech API is available.
     {%- endcomment -%}
 
     {%- comment -%} ── SUBMIT ── {%- endcomment -%}
@@ -180,7 +192,7 @@
 
   </form>
 
-  {%- comment -%} ── DROPDOWN  (all content injected by header-search.js) ── {%- endcomment -%}
+  {%- comment -%} ── DROPDOWN (all content injected by header-search.js) ── {%- endcomment -%}
   <div class="hs__dropdown"
        id="hs-dropdown-{{ sfx }}"
        role="listbox"
