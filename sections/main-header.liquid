@@ -1,0 +1,301 @@
+{%- liquid
+  assign logo               = section.settings.logo
+  assign logo_dark          = section.settings.logo_dark
+  assign logo_width         = section.settings.logo_width | default: 160
+  assign show_search        = section.settings.show_search
+  assign search_placeholder = section.settings.search_placeholder
+  assign show_voice_search  = section.settings.show_voice_search
+  assign show_store_finder  = section.settings.show_store_finder
+  assign store_finder_label = section.settings.store_finder_label
+  assign store_finder_url   = section.settings.store_finder_url
+  assign show_account       = section.settings.show_account
+  assign show_cart          = section.settings.show_cart
+  assign cart_icon          = section.settings.cart_icon
+  assign cart_count         = cart.item_count
+-%}
+
+<div
+  class="main-header"
+  style="
+    background-color: {{ section.settings.color_body_bg }};
+    color: {{ section.settings.color_body_text }};
+  "
+>
+  <div class="main-header__inner page-width">
+
+    {%- comment -%} Logo {%- endcomment -%}
+    <div class="main-header__logo">
+      <a href="{{ routes.root_url }}" class="main-header__logo-link" aria-label="{{ shop.name }}">
+        {%- if logo != blank -%}
+          {{
+            logo
+            | image_url: width: logo_width
+            | image_tag:
+              width: logo_width,
+              class: 'main-header__logo-image main-header__logo-image--light',
+              alt: shop.name,
+              loading: 'eager',
+              fetchpriority: 'high'
+          }}
+          {%- if logo_dark != blank -%}
+            {{
+              logo_dark
+              | image_url: width: logo_width
+              | image_tag:
+                width: logo_width,
+                class: 'main-header__logo-image main-header__logo-image--dark',
+                alt: shop.name,
+                loading: 'eager',
+                fetchpriority: 'high'
+            }}
+          {%- endif -%}
+        {%- else -%}
+          <span class="main-header__logo-text">{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+    </div>
+
+    {%- comment -%} Search {%- endcomment -%}
+    {%- if show_search -%}
+      <div class="main-header__search">
+        <form
+          action="{{ routes.search_url }}"
+          method="get"
+          class="main-header__search-form"
+          role="search"
+        >
+          <input type="hidden" name="type" value="product">
+          <input type="hidden" name="options[prefix]" value="last">
+
+          <label for="MainHeaderSearchInput" class="visually-hidden">
+            {{ 'general.search.label' | t | default: 'Search' }}
+          </label>
+
+          <input
+            id="MainHeaderSearchInput"
+            class="main-header__search-input"
+            type="search"
+            name="q"
+            placeholder="{{ search_placeholder }}"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="{{ search_placeholder }}"
+            aria-autocomplete="list"
+            aria-controls="MainHeaderSearchResults"
+            aria-expanded="false"
+          >
+
+          {%- if show_voice_search -%}
+            <button
+              type="button"
+              class="main-header__search-voice"
+              aria-label="{{ 'general.search.voice' | t | default: 'Search by voice' }}"
+            >
+              {%- render 'icon-microphone' -%}
+            </button>
+          {%- endif -%}
+
+          <button
+            type="submit"
+            class="main-header__search-submit"
+            aria-label="{{ 'general.search.submit' | t | default: 'Submit search' }}"
+          >
+            {%- render 'icon-search' -%}
+          </button>
+        </form>
+
+        <div
+          id="MainHeaderSearchResults"
+          class="main-header__search-results"
+          role="listbox"
+          aria-label="{{ 'general.search.results' | t | default: 'Search results' }}"
+          hidden
+        ></div>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Icons {%- endcomment -%}
+    <div class="main-header__icons">
+
+      {%- if show_store_finder -%}
+        <a
+          class="main-header__icon-link main-header__icon-link--store-finder"
+          href="{{ store_finder_url | default: '#' }}"
+          aria-label="{{ store_finder_label }}"
+        >
+          {%- render 'icon-map-pin' -%}
+          <span class="main-header__icon-label">{{ store_finder_label }}</span>
+        </a>
+      {%- endif -%}
+
+      {%- if show_account -%}
+        {%- if customer -%}
+          {%- assign account_url   = routes.account_url -%}
+          {%- assign account_label = customer.first_name -%}
+        {%- else -%}
+          {%- assign account_url   = routes.account_login_url -%}
+          {%- assign account_label = 'customer.login.sign_in_register' | t | default: 'Sign in / Register' -%}
+        {%- endif -%}
+        <a
+          class="main-header__icon-link main-header__icon-link--account"
+          href="{{ account_url }}"
+          aria-label="{{ account_label }}"
+        >
+          {%- render 'icon-user' -%}
+          <span class="main-header__icon-label">
+            {{ account_label }}
+          </span>
+        </a>
+      {%- endif -%}
+
+      {%- if show_cart -%}
+        <a
+          class="main-header__icon-link main-header__icon-link--cart"
+          href="{{ routes.cart_url }}"
+          aria-label="{{ 'sections.header.cart' | t | default: 'Cart' }}"
+          data-cart-link
+        >
+          {%- if cart_icon == 'bag' -%}
+            {%- render 'icon-shopping-bag' -%}
+          {%- else -%}
+            {%- render 'icon-shopping-cart' -%}
+          {%- endif -%}
+          <span class="main-header__icon-label">
+            {{ 'sections.header.cart' | t | default: 'Cart' }}
+          </span>
+          <span
+            class="main-header__cart-count{% if cart_count == 0 %} is-hidden{% endif %}"
+            aria-hidden="true"
+            data-cart-count
+          >
+            {{ cart_count }}
+          </span>
+        </a>
+      {%- endif -%}
+
+    </div>
+
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Main header",
+  "tag": "div",
+  "class": "section-main-header",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo_dark",
+      "label": "Logo image (dark mode)"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Logo width",
+      "min": 80,
+      "max": 280,
+      "step": 4,
+      "unit": "px",
+      "default": 160
+    },
+    {
+      "type": "header",
+      "content": "Search"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search bar",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder",
+      "default": "Try \"bookshelf\""
+    },
+    {
+      "type": "checkbox",
+      "id": "show_voice_search",
+      "label": "Show voice search button",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Icons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_store_finder",
+      "label": "Show store finder",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "store_finder_label",
+      "label": "Store finder label",
+      "default": "Find a store"
+    },
+    {
+      "type": "url",
+      "id": "store_finder_url",
+      "label": "Store finder URL"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "Show account link",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_cart",
+      "label": "Show cart icon",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "cart_icon",
+      "label": "Cart icon style",
+      "options": [
+        { "value": "bag", "label": "Bag" },
+        { "value": "cart", "label": "Cart" }
+      ],
+      "default": "bag"
+    },
+    {
+      "type": "header",
+      "content": "Colours"
+    },
+    {
+      "type": "color",
+      "id": "color_body_bg",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_body_text",
+      "label": "Text",
+      "default": "#111111"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Main header"
+    }
+  ]
+}
+{% endschema %}
