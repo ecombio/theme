@@ -1,0 +1,124 @@
+{% comment %}
+  Predictive Search — results
+  File: sections/predictive-search.liquid
+
+  This section is NEVER added to a template, section group, or the
+  theme editor — it has no {% schema %} for that reason (matches
+  Shopify's own Dawn theme, which omits one here too). Its only job is
+  to be rendered on demand through the Predictive Search API combined
+  with the Section Rendering API:
+
+      GET {{ routes.predictive_search_url }}?q=TERM&section_id=predictive-search&resources[type]=...
+
+  assets/header-search.js makes that fetch, pulls the
+  #shopify-section-predictive-search wrapper (added automatically by
+  Shopify around every section-rendered response) out of the response
+  HTML, and injects its innerHTML into the [data-search-results] panel
+  owned by snippets/header-search.liquid.
+
+  `predictive_search` is ONLY populated during that special render —
+  on a normal page load `predictive_search.performed` is false and
+  this whole file renders nothing.
+
+  Resource types requested: product, collection, query (see the
+  resources[type] param in header-search.js). Pages and articles can
+  be added later by requesting them in that param and adding loops
+  below — predictive_search.resources.pages / .articles work the same
+  way as products/collections.
+{% endcomment %}
+
+{%- if predictive_search.performed -%}
+  {%- liquid
+    assign terms       = predictive_search.terms
+    assign queries     = predictive_search.resources.queries
+    assign collections = predictive_search.resources.collections
+    assign products    = predictive_search.resources.products
+    assign has_results = false
+    if queries.size > 0 or collections.size > 0 or products.size > 0
+      assign has_results = true
+    endif
+  -%}
+
+  {%- if has_results -%}
+
+    {%- if queries.size > 0 or collections.size > 0 -%}
+      <div class="predictive-search__group">
+        <p class="predictive-search__group-label" id="PredictiveSearchSuggestions">Suggestions</p>
+        <ul class="predictive-search__list" role="group" aria-labelledby="PredictiveSearchSuggestions">
+          {%- for query in queries -%}
+            <li role="option" class="predictive-search__list-item">
+              <a href="{{ query.url }}" class="predictive-search__item predictive-search__item--query" tabindex="-1">
+                {%- comment -%} styled_text already has the matched portion wrapped for us {%- endcomment -%}
+                <span aria-label="{{ query.text | escape }}">{{ query.styled_text }}</span>
+              </a>
+            </li>
+          {%- endfor -%}
+
+          {%- for collection in collections -%}
+            <li role="option" class="predictive-search__list-item">
+              <a href="{{ collection.url }}" class="predictive-search__item predictive-search__item--collection" tabindex="-1">
+                <span class="predictive-search__item-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </span>
+                {{ collection.title | escape }}
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    {%- if products.size > 0 -%}
+      <div class="predictive-search__group">
+        <p class="predictive-search__group-label" id="PredictiveSearchProducts">Products</p>
+        <ul class="predictive-search__list" role="group" aria-labelledby="PredictiveSearchProducts">
+          {%- for product in products -%}
+            <li role="option" class="predictive-search__list-item">
+              <a href="{{ product.url }}" class="predictive-search__item predictive-search__item--product" tabindex="-1">
+                <span class="predictive-search__item-media">
+                  {%- if product.featured_media -%}
+                    {{ product.featured_media | image_url: width: 80 | image_tag: width: 40, height: 40, loading: 'lazy', alt: product.title }}
+                  {%- else -%}
+                    <span class="predictive-search__item-media--placeholder" aria-hidden="true"></span>
+                  {%- endif -%}
+                </span>
+                <span class="predictive-search__item-info">
+                  <span class="predictive-search__item-title">{{ product.title | escape }}</span>
+                  <span class="predictive-search__item-meta">
+                    {%- if product.price_varies -%}
+                      <span class="predictive-search__item-price">From {{ product.price_min | money }}</span>
+                    {%- else -%}
+                      <span class="predictive-search__item-price">{{ product.price | money }}</span>
+                    {%- endif -%}
+                    {%- unless product.available -%}
+                      <span class="predictive-search__item-badge">Sold out</span>
+                    {%- endunless -%}
+                  </span>
+                </span>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    <div class="predictive-search__group predictive-search__group--footer">
+      <a href="{{ routes.search_url }}?q={{ terms | url_encode }}&type=product"
+         class="predictive-search__view-all"
+         role="option"
+         tabindex="-1">
+        View all results for &ldquo;{{ terms }}&rdquo;
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+
+  {%- else -%}
+    <div class="predictive-search__empty">
+      <p>No results found for &ldquo;{{ terms }}&rdquo;.</p>
+    </div>
+  {%- endif -%}
+{%- endif -%}
