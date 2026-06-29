@@ -1,7 +1,11 @@
 /* =============================================================
-   Main Header
+   Main Header Layout
    File: assets/main-header.css
    Loaded by: sections/main-header.liquid
+
+   Scope: header shell, top bar, hamburger, logo, icon cluster,
+          search row, mobile nav drawer, scroll shadow.
+   Search component styles live in assets/header-search.css.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -17,15 +21,14 @@
   transition: box-shadow 0.2s ease;
 }
 .main-header.is-scrolled {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
 }
 
 /* ─────────────────────────────────────────────
    TOP BAR
    ───────────────────────────────────────────── */
-.main-header__bar {
-  width: 100%;
-}
+.main-header__bar { width: 100%; }
+
 .main-header__inner {
   display: flex;
   align-items: center;
@@ -38,7 +41,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   HAMBURGER (mobile + tablet, hidden on desktop)
+   HAMBURGER  (hidden on desktop ≥ 1024px)
    ───────────────────────────────────────────── */
 .main-header__hamburger {
   display: flex;
@@ -55,9 +58,8 @@
   border-radius: 4px;
   transition: background 0.15s ease;
 }
-.main-header__hamburger:hover {
-  background: #f5f5f5;
-}
+.main-header__hamburger:hover { background: #f5f5f5; }
+
 .main-header__hamburger-line {
   display: block;
   width: 100%;
@@ -67,7 +69,8 @@
   transition: transform 0.22s ease, opacity 0.22s ease;
   transform-origin: center;
 }
-/* Open state — animates to ✕ */
+
+/* Animates to ✕ when open */
 .main-header__hamburger.is-open .main-header__hamburger-line:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
@@ -78,10 +81,9 @@
 .main-header__hamburger.is-open .main-header__hamburger-line:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
+
 @media (min-width: 1024px) {
-  .main-header__hamburger {
-    display: none;
-  }
+  .main-header__hamburger { display: none; }
 }
 
 /* ─────────────────────────────────────────────
@@ -95,8 +97,9 @@
 }
 .main-header__logo-img {
   display: block;
-  width: auto;
-  max-height: 40px;
+  width: var(--logo-width, 140px);
+  max-width: 100%;
+  height: auto;
   object-fit: contain;
 }
 .main-header__logo-text {
@@ -108,7 +111,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   SEARCH (inline — desktop only)
+   INLINE SEARCH  (desktop only, ≥ 1024px)
    ───────────────────────────────────────────── */
 .main-header__search--inline {
   flex: 1;
@@ -123,7 +126,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   ICONS (right cluster)
+   RIGHT ICON CLUSTER
    ───────────────────────────────────────────── */
 .main-header__icons {
   display: flex;
@@ -137,7 +140,7 @@
   padding: 0;
 }
 
-/* Shared base for both <a> and <button> icon triggers */
+/* Shared base — works for both <a> and <button> */
 .main-header__icon-btn {
   position: relative;
   display: flex;
@@ -155,41 +158,23 @@
   white-space: nowrap;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.main-header__icon-btn:hover {
-  background: #f5f5f5;
-  color: #1a1a1a;
-}
-.main-header__icon-btn:focus-visible {
-  outline: 2px solid #1a1a1a;
-  outline-offset: 2px;
-}
+.main-header__icon-btn:hover          { background: #f5f5f5; color: #1a1a1a; }
+.main-header__icon-btn:focus-visible  { outline: 2px solid #1a1a1a; outline-offset: 2px; }
 
-/* SVG icon inside a button/link */
-.main-header__icon {
-  display: block;
-  flex-shrink: 0;
-}
+.main-header__icon { display: block; flex-shrink: 0; }
 
-/* Icon label — visible on tablet, hidden on mobile */
-.main-header__icon-label {
-  display: none;
-}
+/* Icon label — visible tablet+, hidden mobile */
+.main-header__icon-label { display: none; }
 
 /* ─────────────────────────────────────────────
-   CART
+   CART ICON + BADGE
    ───────────────────────────────────────────── */
-.main-header__cart-btn {
-  /* Inherits .main-header__icon-btn — no extra layout needed */
-}
-
-/* Wrapper provides the positioning context for the badge */
 .main-header__cart-wrap {
   display: flex;
   align-items: center;
   position: relative;
 }
 
-/* Badge */
 .main-header__cart-badge {
   position: absolute;
   top: -7px;
@@ -207,12 +192,10 @@
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
-.main-header__cart-badge--hidden {
-  opacity: 0;
-}
+.main-header__cart-badge--hidden { opacity: 0; }
 
 /* ─────────────────────────────────────────────
-   SEARCH ROW (tablet + mobile only)
+   SEARCH ROW  (tablet + mobile, hidden ≥ 1024px)
    ───────────────────────────────────────────── */
 .main-header__search-row {
   display: flex;
@@ -225,9 +208,7 @@
   padding: 8px 24px;
 }
 @media (min-width: 1024px) {
-  .main-header__search-row {
-    display: none;
-  }
+  .main-header__search-row { display: none; }
 }
 
 /* ─────────────────────────────────────────────
@@ -235,18 +216,16 @@
    ───────────────────────────────────────────── */
 .main-header__mobile-nav {
   position: fixed;
-  inset: 0;
   top: 0;
   left: 0;
   width: 280px;
   height: 100%;
   background: #fff;
   border-right: 1px solid #e5e5e5;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 24px rgba(0,0,0,.1);
   z-index: 300;
   transform: translateX(-100%);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.28s;
+  transition: transform 0.28s cubic-bezier(.4,0,.2,1), visibility 0.28s;
   visibility: hidden;
   overflow-y: auto;
   padding: 24px 0 48px;
@@ -255,13 +234,14 @@
   transform: translateX(0);
   visibility: visible;
 }
-/* Overlay backdrop */
+
+/* Dimmed backdrop overlay */
 .main-header__mobile-nav::before {
   content: '';
   position: fixed;
   inset: 0;
   left: 280px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0,0,0,.4);
   opacity: 0;
   transition: opacity 0.28s ease;
   pointer-events: none;
@@ -292,47 +272,27 @@
 }
 
 @media (min-width: 1024px) {
-  .main-header__mobile-nav {
-    display: none;
-  }
+  .main-header__mobile-nav { display: none; }
 }
 
-/* ─────────────────────────────────────────────
-   MOBILE NAV — body scroll lock
-   Applied to <body> by JS when nav is open
-   ───────────────────────────────────────────── */
-body.nav-is-open {
-  overflow: hidden;
-}
+/* Body scroll lock — applied by main-header.js */
+body.nav-is-open { overflow: hidden; }
 
 /* ─────────────────────────────────────────────
-   RESPONSIVE — TABLET  (600px – 1023px)
-   Icon labels visible; tighter gaps
+   TABLET  (600px – 1023px)
    ───────────────────────────────────────────── */
 @media (min-width: 600px) and (max-width: 1023px) {
-  .main-header__icon-label {
-    display: inline;
-  }
-  .main-header__icons {
-    gap: 4px;
-  }
+  .main-header__icon-label { display: inline; }
+  .main-header__icons      { gap: 4px; }
 }
 
 /* ─────────────────────────────────────────────
-   RESPONSIVE — MOBILE  (< 600px)
-   Icon labels hidden; tighter padding
+   MOBILE  (< 600px)
    ───────────────────────────────────────────── */
 @media (max-width: 599px) {
-  .main-header__inner {
-    padding: 0 16px;
-    gap: 8px;
-  }
-  .main-header__icon-btn {
-    padding: 6px;
-  }
-  .main-header__search-row-inner {
-    padding: 6px 12px;
-  }
+  .main-header__inner          { padding: 0 16px; gap: 8px; }
+  .main-header__icon-btn       { padding: 6px; }
+  .main-header__search-row-inner { padding: 6px 12px; }
 }
 
 /* ─────────────────────────────────────────────
@@ -343,7 +303,5 @@ body.nav-is-open {
   .main-header__hamburger-line,
   .main-header__mobile-nav,
   .main-header__icon-btn,
-  .main-header__cart-badge {
-    transition: none;
-  }
+  .main-header__cart-badge { transition: none; }
 }
