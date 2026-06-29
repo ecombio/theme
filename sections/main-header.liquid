@@ -32,6 +32,11 @@
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
+      {%- comment -%}Desktop search — flex-grows to fill the bar, hidden below 1024px via CSS{%- endcomment -%}
+      <div class="main-header__search--inline">
+        {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
+      </div>
+
       <ul class="main-header__icons" role="list" aria-label="Header actions">
         {%- if show_acct != false -%}
           <li>{%- render 'header-account' -%}</li>
@@ -44,12 +49,12 @@
     </div>
   </div>
 
-  {%- comment -%}
-    Search renders outside main-header__inner so both --desktop and --mobile
-    variants can be positioned correctly via CSS without fighting the flex row.
-    header-search.css controls which variant is visible at each breakpoint.
-  {%- endcomment -%}
-  {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search -%}
+  {%- comment -%}Mobile/tablet search row — sits below the bar, hidden at 1024px+ via CSS{%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
+    </div>
+  </div>
 
   <nav class="main-header__mobile-nav"
        id="main-header-mobile-nav"
