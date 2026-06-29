@@ -2,7 +2,7 @@
   Search Form — always-visible bar
   File: snippets/search-form.liquid
 
-  Rendered by blocks/header-search.liquid — called twice:
+  Rendered by snippets/header-search.liquid — called twice:
     {%- render 'search-form', ..., id_suffix: 'desktop' -%}
     {%- render 'search-form', ..., id_suffix: 'mobile'  -%}
 
@@ -19,12 +19,15 @@
   exists alongside this file only to hold the inline HS_SETTINGS config
   script; it injects no dropdown HTML of its own.
 
-  Params (all passed explicitly from blocks/header-search.liquid):
-    block_id       {String}  — block.id of the parent block. Folded into
-                                every element id in this snippet so that
-                                multiple "Header Search" blocks on the
-                                same page never collide (merchants can
-                                add more than one — see main-header.liquid).
+  NOTE — POST-PIVOT (snippet, not block): header-search is now a plain
+  snippet rendered once from sections/main-header.liquid, not a
+  merchant-addable block, so there is exactly one desktop instance and
+  one mobile instance on the page, ever. The old `block_id` param (which
+  folded a Shopify block.id into every element id to keep multiple
+  Header Search blocks from colliding) has been removed — id_suffix
+  alone ('desktop' | 'mobile') is now guaranteed unique.
+
+  Params (all passed explicitly from snippets/header-search.liquid):
     id_suffix      {String}  — 'desktop' | 'mobile'
     show_category  {Boolean} — show/hide the category pill
     cat_1..3_label {String}  — category pill labels
@@ -39,27 +42,13 @@
                                 Controls aria-controls/aria-haspopup wiring
                                 and the .hs--basic modifier class. Does NOT
                                 control whether the modal renders — that's
-                                the block's job.
+                                header-search.liquid's job.
 
   BEM prefix: .hs  (matches assets/header-search.css)
 {% endcomment %}
 
-{%- assign sfx_raw  = id_suffix     | default: 'desktop' -%}
+{%- assign sfx       = id_suffix     | default: 'desktop' -%}
 {%- assign show_cat  = show_category | default: true -%}
-
-{%- comment -%}
-  Fold block_id into the suffix used for every element id below. Without
-  this, two "Header Search" blocks on the same page would both render
-  id="hs-desktop", breaking aria-controls wiring and any querySelector
-  that expects a unique match (header-search.js scopes its own lookups
-  to each .hs root via data-search-instance, so this is purely about
-  HTML id uniqueness / valid markup — not a JS behaviour requirement).
-{%- endcomment -%}
-{%- if block_id != blank -%}
-  {%- assign sfx = block_id | append: '-' | append: sfx_raw -%}
-{%- else -%}
-  {%- assign sfx = sfx_raw -%}
-{%- endif -%}
 
 {%- comment -%}
   Same false-vs-default guard as the predictive toggle: a real `false`
@@ -73,8 +62,7 @@
 
 <div class="hs{% unless is_predictive %} hs--basic{% endunless %}"
      id="hs-{{ sfx }}"
-     data-search-instance="{{ sfx_raw }}"
-     data-block-id="{{ block_id }}"
+     data-search-instance="{{ sfx }}"
      data-predictive="{{ is_predictive }}"
      style="
        --hs-accent:       {{ accent_color  | default: '#1a1a1a' }};

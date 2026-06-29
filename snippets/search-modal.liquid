@@ -2,8 +2,8 @@
   Search Modal — predictive search configuration
   File: snippets/search-modal.liquid
 
-  Rendered by blocks/header-search.liquid ONLY when predictive search
-  is enabled (block.settings.enable_predictive_search == true). Skipped
+  Rendered by snippets/header-search.liquid ONLY when predictive search
+  is enabled (section.settings.enable_predictive_search != false). Skipped
   entirely otherwise — its absence is itself part of how the toggle
   works (no config, no dropdown elements, no fetches).
 
@@ -17,14 +17,14 @@
   element creation removes that dependency entirely. This file's only
   job is to inject the window.HS_SETTINGS config object the JS reads.
 
-  Params (passed explicitly from blocks/header-search.liquid):
+  Params (passed explicitly from snippets/header-search.liquid):
     trending_1..5 {String}  — trending search terms
     voice_enabled {Boolean} — enable voice search
     placeholder_animate {Boolean} — enable typewriter placeholder
 
-  Rendered once per page (guarded by the block, not by id_suffix here)
-  — there is exactly one window.HS_SETTINGS for both the desktop and
-  mobile search-form instances to share.
+  Rendered at most once per page (guarded by header-search.liquid, not
+  by id_suffix here) — there is exactly one window.HS_SETTINGS for both
+  the desktop and mobile search-form instances to share.
 {% endcomment %}
 
 {%- comment -%} ── Build trending searches from passed params ── {%- endcomment -%}
