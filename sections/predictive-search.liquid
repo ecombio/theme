@@ -2,53 +2,90 @@
   Predictive Search — results
   File: sections/predictive-search.liquid
 
-  This section is NEVER added to a template, section group, or the
-  theme editor — it has no {% schema %} for that reason (matches
-  Shopify's own Dawn theme, which omits one here too). Its only job is
-  to be rendered on demand through the Predictive Search API combined
-  with the Section Rendering API:
+  Rendered ONLY through the Section Rendering API:
+    GET {{ routes.predictive_search_url }}?q=TERM&section_id=predictive-search&resources[type]=...
 
-      GET {{ routes.predictive_search_url }}?q=TERM&section_id=predictive-search&resources[type]=...
+  No {% schema %}, never added to a template/section group/theme editor
+  (same as Dawn) — there is no settings UI for this file. On a normal
+  page load `predictive_search.performed` is false and nothing renders.
 
-  assets/header-search.js makes that fetch, pulls the
-  #shopify-section-predictive-search wrapper (added automatically by
-  Shopify around every section-rendered response) out of the response
-  HTML, and injects its innerHTML into the [data-search-results] panel
-  owned by snippets/header-search.liquid.
+  assets/header-search.js pulls #shopify-section-predictive-search out
+  of the response and injects its innerHTML into the
+  [data-search-results] panel owned by snippets/header-search.liquid.
 
-  `predictive_search` is ONLY populated during that special render —
-  on a normal page load `predictive_search.performed` is false and
-  this whole file renders nothing.
+  ── SECURITY ──────────────────────────────────────────────────────
+  `predictive_search.terms` is the literal string the visitor typed,
+  and it lands in the DOM via .innerHTML with no further sanitization
+  on the JS side. It needs different handling per context:
+    - visible text          → escape with `| escape`        (safe_terms, below)
+    - inside a `?q=` URL    → `| url_encode` on the RAW term, NOT
+                               on safe_terms — escaping first would
+                               double-encode entities into the URL.
+  Every other dynamic value here (titles, query.text) was already
+  escaped correctly in the previous version; only `terms` was missed.
 
-  Resource types requested: product, collection, query (see the
-  resources[type] param in header-search.js). Pages and articles can
-  be added later by requesting them in that param and adding loops
-  below — predictive_search.resources.pages / .articles work the same
-  way as products/collections.
+  `query.styled_text` is the one intentional exception — Shopify
+  generates that value itself (matched substring pre-wrapped in safe
+  markup), it isn't visitor-controlled HTML, so it's used raw.
+
+  ── STRUCTURE ─────────────────────────────────────────────────────
+  1. Suggestions  — queries + collections, "did you mean" style
+  2. Products
+  3. Empty state  — zero matches; offers trending searches as a
+                     recovery path (see "Trending searches" below)
+  4. View-all footer — shown whenever there ARE results
+
+  To add a new resource type later (pages, articles): request it in
+  header-search.js's `resources[type]` param, assign it below next to
+  `queries`/`collections`/`products`, add it to `has_suggestions` or
+  its own guard, and add a `<ul>` group following the same pattern as
+  the others. Nothing else needs to change.
+
+  ── TRENDING SEARCHES (empty-state recovery) ──────────────────────
+  Sourced from a Shopify navigation menu, NOT hardcoded — since this
+  section has no settings UI, a linklist is the natural merchant-
+  editable knob: create a menu handled `predictive-search-trending`
+  in Admin → Content → Menus, and each link's title/url become a
+  suggestion. If the menu doesn't exist, this block renders nothing
+  extra — just the plain "no results" message.
 {% endcomment %}
 
 {%- if predictive_search.performed -%}
   {%- liquid
-    assign terms       = predictive_search.terms
-    assign queries     = predictive_search.resources.queries
-    assign collections = predictive_search.resources.collections
-    assign products    = predictive_search.resources.products
+    assign safe_terms  = predictive_search.terms | escape
+
+    assign queries      = predictive_search.resources.queries
+    assign collections   = predictive_search.resources.collections
+    assign products      = predictive_search.resources.products
+
+    assign has_suggestions = false
+    if queries.size > 0 or collections.size > 0
+      assign has_suggestions = true
+    endif
+
     assign has_results = false
-    if queries.size > 0 or collections.size > 0 or products.size > 0
+    if has_suggestions or products.size > 0
       assign has_results = true
+    endif
+
+    assign trending_menu = linklists['predictive-search-trending']
+    assign has_trending  = false
+    if trending_menu and trending_menu.links.size > 0
+      assign has_trending = true
     endif
   -%}
 
   {%- if has_results -%}
 
-    {%- if queries.size > 0 or collections.size > 0 -%}
+    {%- comment -%} ── 1. Suggestions: queries + collections ── {%- endcomment -%}
+    {%- if has_suggestions -%}
       <div class="predictive-search__group">
         <p class="predictive-search__group-label" id="PredictiveSearchSuggestions">Suggestions</p>
         <ul class="predictive-search__list" role="group" aria-labelledby="PredictiveSearchSuggestions">
+
           {%- for query in queries -%}
             <li role="option" class="predictive-search__list-item">
               <a href="{{ query.url }}" class="predictive-search__item predictive-search__item--query" tabindex="-1">
-                {%- comment -%} styled_text already has the matched portion wrapped for us {%- endcomment -%}
                 <span aria-label="{{ query.text | escape }}">{{ query.styled_text }}</span>
               </a>
             </li>
@@ -66,10 +103,12 @@
               </a>
             </li>
           {%- endfor -%}
+
         </ul>
       </div>
     {%- endif -%}
 
+    {%- comment -%} ── 2. Products ── {%- endcomment -%}
     {%- if products.size > 0 -%}
       <div class="predictive-search__group">
         <p class="predictive-search__group-label" id="PredictiveSearchProducts">Products</p>
@@ -104,12 +143,17 @@
       </div>
     {%- endif -%}
 
+    {%- comment -%} ── 4. View all footer ── {%- endcomment -%}
     <div class="predictive-search__group predictive-search__group--footer">
-      <a href="{{ routes.search_url }}?q={{ terms | url_encode }}&type=product"
+      {%- comment -%}
+        url_encode runs on the RAW term here, not safe_terms — see
+        security note above. Visible text below uses safe_terms.
+      {%- endcomment -%}
+      <a href="{{ routes.search_url }}?q={{ predictive_search.terms | url_encode }}&type=product"
          class="predictive-search__view-all"
          role="option"
          tabindex="-1">
-        View all results for &ldquo;{{ terms }}&rdquo;
+        View all results for &ldquo;{{ safe_terms }}&rdquo;
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
@@ -117,8 +161,24 @@
     </div>
 
   {%- else -%}
+
+    {%- comment -%} ── 3. Empty state — zero matches, offer a way forward ── {%- endcomment -%}
     <div class="predictive-search__empty">
-      <p>No results found for &ldquo;{{ terms }}&rdquo;.</p>
+      <p>No results found for &ldquo;{{ safe_terms }}&rdquo;.</p>
+
+      {%- if has_trending -%}
+        <p class="predictive-search__group-label" id="PredictiveSearchTrending">Trending searches</p>
+        <ul class="predictive-search__list" role="group" aria-labelledby="PredictiveSearchTrending">
+          {%- for link in trending_menu.links -%}
+            <li role="option" class="predictive-search__list-item">
+              <a href="{{ link.url }}" class="predictive-search__item predictive-search__item--query" tabindex="-1">
+                {{ link.title | escape }}
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
     </div>
+
   {%- endif -%}
 {%- endif -%}
