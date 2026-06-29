@@ -21,6 +21,8 @@
 
   {%- comment -%} ═══════════════════════════════════════
       TOP BAR — Hamburger · Logo · Search (desktop) · Icons
+      All four live inside .main-header__inner so they sit in the same
+      flex row and align correctly.
   ═══════════════════════════════════════ {%- endcomment -%}
   <div class="main-header__bar">
     <div class="main-header__inner">
@@ -44,82 +46,37 @@
       <div class="main-header__search main-header__search--inline">
         {%- render 'header-search', show_category: show_cat, id_suffix: 'desktop' -%}
       </div>
-    </div>
-  </div>
 
-  <ul class="main-header__icons" role="list" aria-label="Header actions">
+      {%- comment -%} ── Icon cluster — account + cart. Sits at the end of the
+          flex row so it stays right-aligned next to the search bar.
+          FIX: was incorrectly outside .main-header__inner as a sibling of
+          .main-header__bar, which caused icons to escape the flex row and
+          render in the top-left corner.
+      ── {%- endcomment -%}
+      <ul class="main-header__icons" role="list" aria-label="Header actions">
 
-  {%- if show_account != false -%}
-    <li>
-      {%- if customer -%}
-  <a
-    href="{{ routes.account_url }}"
-    class="main-header__icon-btn main-header__account-btn"
-    aria-label="My account"
-    data-account-link
-  >
-{%- else -%}
-  <a
-    href="{{ routes.account_login_url }}"
-    class="main-header__icon-btn main-header__account-btn"
-    aria-label="Sign in or register"
-    data-account-link
-  >
-{%- endif -%}
+        {%- if show_acct != false -%}
+          <li>
+            {%- render 'header-account' -%}
+          </li>
+        {%- endif -%}
 
-  <svg
-    class="main-header__icon main-header__account-icon"
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.75"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <circle cx="12" cy="8" r="4"/>
-    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
+        {%- if show_cart != false -%}
+          <li>
+            {%- comment -%}
+              FIX: cart button was duplicated here AND in snippets/header-cart.liquid.
+              We now render it only via the snippet to keep a single source of truth.
+              The snippet owns the button markup, header-cart.js owns the click behaviour,
+              and cart-drawer.js owns the drawer open/close logic.
+            {%- endcomment -%}
+            {%- render 'header-cart' -%}
+          </li>
+        {%- endif -%}
 
-  <span class="main-header__icon-label" aria-hidden="true">
-    {%- if customer -%}Account{%- else -%}Sign in{%- endif -%}
-  </span>
+      </ul>
 
-</a>
-    </li>
-  {%- endif -%}
-
-  {%- if show_cart != false -%}
-    <li>
-      <button type="button"
-        class="main-header__icon-btn main-header__cart-btn"
-        aria-label="Open cart, {{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}"
-        aria-haspopup="dialog"
-        id="main-header-cart-toggle"
-        aria-controls="ecombio-cart-drawer"
-        aria-expanded="false">
-  <span class="main-header__cart-wrap">
-    <svg class="main-header__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="1.75"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <path d="M16 10a4 4 0 0 1-8 0"/>
-    </svg>
-    <span
-      class="main-header__cart-badge{% unless cart.item_count > 0 %} main-header__cart-badge--hidden{% endunless %}"
-      data-cart-count
-      aria-live="polite"
-      aria-atomic="true">({{ cart.item_count }})</span>
-  </span>
-  <span class="main-header__icon-label" aria-hidden="true">Cart</span>
-</button>
-</li>
-  {%- endif -%}
-</ul>
+    </div>{%- comment -%} /.main-header__inner {%- endcomment -%}
+  </div>{%- comment -%} /.main-header__bar {%- endcomment -%}
 
   {%- comment -%} ═══════════════════════════════════════
       SEARCH ROW — tablet + mobile (hidden via CSS above 1024px)
@@ -133,7 +90,6 @@
   {%- comment -%} ═══════════════════════════════════════
       MOBILE NAV DRAWER
       ID must match aria-controls on the hamburger button above.
-      Content (links) is managed by the theme's menu settings.
   ═══════════════════════════════════════ {%- endcomment -%}
   <nav class="main-header__mobile-nav"
        id="main-header-mobile-nav"
@@ -154,12 +110,10 @@
 </header>
 
 {%- comment -%}
-  JS: defer all files so they execute after DOM is parsed.
-  header-search.js must appear before main-header.js because both listen on
-  DOMContentLoaded — order in source determines execution order after defer.
-  header-cart.js depends on cart-drawer.js (loaded in theme.liquid) already
-  being registered to listen for 'cart:open'.
-  header-account.js is optional — remove if no flyout/intercept is needed.
+  JS load order matters: header-cart.js dispatches 'cart:open'; cart-drawer.js
+  must already be registered to listen for it. Both use defer so they execute
+  in source order after DOM parse — cart-drawer.js is loaded in theme.liquid,
+  which runs before section scripts, so the listener is always ready.
 {%- endcomment -%}
 <script src="{{ 'header-search.js'  | asset_url }}" defer></script>
 <script src="{{ 'main-header.js'    | asset_url }}" defer></script>
