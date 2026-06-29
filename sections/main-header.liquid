@@ -1,0 +1,187 @@
+{% comment %}
+  Main Header Section
+  File: sections/main-header.liquid
+
+  PIVOT: search-related settings have moved off this section and onto
+  the "Header Search" block (blocks/header-search.liquid). This section
+  now only owns layout (logo, hamburger, icons, mobile nav) and loops
+  over section.blocks to render whatever blocks a merchant has added —
+  currently just the one allowed block type, "header-search". This
+  is what makes the search bar addable/removable/reorderable in the
+  theme editor.
+{% endcomment %}
+
+{{ 'header-search.css'   | asset_url | stylesheet_tag }}
+{{ 'main-header.css'     | asset_url | stylesheet_tag }}
+{{ 'header-cart.css'     | asset_url | stylesheet_tag }}
+{{ 'header-account.css'  | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign logo       = section.settings.logo
+  assign logo_width = section.settings.logo_width | default: 140
+  assign show_store  = section.settings.show_icon_store
+  assign show_acct   = section.settings.show_icon_account
+  assign show_cart   = section.settings.show_icon_cart
+-%}
+
+<header class="main-header" id="main-header" role="banner">
+
+  <div class="main-header__bar">
+    <div class="main-header__inner">
+
+      <button class="main-header__hamburger"
+              id="main-header-nav-toggle"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded="false"
+              aria-controls="main-header-mobile-nav">
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+      </button>
+
+      {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
+
+      {%- comment -%}
+        ── Global predictive-search config (rendered at most once) ──
+        window.HS_SETTINGS is global — every search-form instance on
+        the page reads the same one (this was a deliberate simplicity
+        trade-off: per-block settings would need per-block config
+        objects, which we decided against). So search-modal.liquid can
+        only be rendered ONCE total, no matter how many Header Search
+        blocks exist. We scan for the first block with predictive
+        search enabled and use ITS trending-term settings for the page;
+        if no block has it enabled, search-modal is skipped entirely
+        and HS_CONFIG.ENABLE_PREDICTIVE defaults to false in the JS.
+      {%- endcomment -%}
+      {%- liquid
+        assign predictive_block = nil
+        for block in section.blocks
+          if block.type == 'header-search' and block.settings.enable_predictive_search != false
+            assign predictive_block = block
+            break
+          endif
+        endfor
+      -%}
+      {%- if predictive_block -%}
+        {%- render 'search-modal',
+              trending_1:          predictive_block.settings.search_trending_1,
+              trending_2:          predictive_block.settings.search_trending_2,
+              trending_3:          predictive_block.settings.search_trending_3,
+              trending_4:          predictive_block.settings.search_trending_4,
+              trending_5:          predictive_block.settings.search_trending_5,
+              voice_enabled:       true,
+              placeholder_animate: true
+        -%}
+      {%- endif -%}
+
+      {%- comment -%}
+        ── Blocks ──
+        Currently only "header-search" is an allowed block type, but
+        looping (rather than grabbing section.blocks.first) means any
+        future block types added to the schema render correctly too,
+        and merchants can reorder/remove the search block freely.
+        No max_blocks cap — multiple Header Search blocks are allowed;
+        see blocks/header-search.liquid for how that's kept safe
+        (unique element ids per block via block.id).
+      {%- endcomment -%}
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when 'header-search' -%}
+            {%- render 'header-search', block: block -%}
+        {%- endcase -%}
+      {%- endfor -%}
+
+      <ul class="main-header__icons" role="list" aria-label="Header actions">
+        {%- if show_acct != false -%}
+          <li>{%- render 'header-account' -%}</li>
+        {%- endif -%}
+        {%- if show_cart != false -%}
+          <li>{%- render 'header-cart' -%}</li>
+        {%- endif -%}
+      </ul>
+
+    </div>
+  </div>
+
+  <nav class="main-header__mobile-nav"
+       id="main-header-mobile-nav"
+       aria-label="Mobile navigation"
+       aria-hidden="true"
+       hidden>
+    <ul class="main-header__mobile-nav-list">
+      {%- for link in section.settings.mobile_menu.links -%}
+        <li>
+          <a class="main-header__mobile-nav-link" href="{{ link.url }}">
+            {{ link.title }}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+
+</header>
+
+<script src="{{ 'header-search.js'  | asset_url }}" defer></script>
+<script src="{{ 'main-header.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-account.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Main Header",
+  "tag": "div",
+  "class": "main-header-section",
+  "settings": [
+    { "type": "header", "content": "Logo" },
+    { "type": "image_picker", "id": "logo", "label": "Logo image" },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Logo width (px)",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "default": 140,
+      "unit": "px"
+    },
+    { "type": "header", "content": "Navigation" },
+    {
+      "type": "link_list",
+      "id": "mobile_menu",
+      "label": "Mobile menu",
+      "default": "main-menu"
+    },
+    { "type": "header", "content": "Icons" },
+    {
+      "type": "checkbox",
+      "id": "show_icon_store",
+      "label": "Show store locator icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_account",
+      "label": "Show account icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_cart",
+      "label": "Show cart icon",
+      "default": true
+    }
+  ],
+  "blocks": [
+    { "type": "header-search" }
+  ],
+  "presets": [
+    {
+      "name": "Main Header",
+      "blocks": [
+        { "type": "header-search" }
+      ]
+    }
+  ]
+}
+{% endschema %}
