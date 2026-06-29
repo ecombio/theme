@@ -1,0 +1,61 @@
+{% comment %}
+  snippets/header-cart.liquid
+  Cart icon button for sections/main-header.liquid.
+
+  Parameters: none — reads global `cart` object directly.
+
+  Responsibilities:
+    • Render the cart bag SVG + item-count badge
+    • Provide the drawer open trigger (dispatches 'cart:open' via header-cart.js)
+    • aria-controls targets #ecombio-cart-drawer (cart-drawer section)
+
+  Event contract (matches cart-drawer.js + main-header.js):
+    Dispatches : 'cart:open'    — picked up by cart-drawer.js to open drawer
+    Listens for: 'cart:updated' — picked up by header-cart.js to update badge
+{% endcomment %}
+
+<button
+  type="button"
+  class="main-header__icon-btn main-header__cart-btn"
+  id="main-header-cart-toggle"
+  aria-label="Open cart, {{ cart.item_count }} {{ cart.item_count | pluralize: 'item', 'items' }}"
+  aria-haspopup="dialog"
+  aria-expanded="false"
+  aria-controls="ecombio-cart-drawer"
+  data-cart-toggle
+>
+  <span class="main-header__cart-wrap">
+
+    {%- comment -%} Bag icon {%- endcomment -%}
+    <svg
+      class="main-header__icon main-header__cart-icon"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+
+    {%- comment -%} Count badge — hidden when cart is empty {%- endcomment -%}
+    <span
+      class="main-header__cart-badge{% unless cart.item_count > 0 %} main-header__cart-badge--hidden{% endunless %}"
+      data-cart-count
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {{- cart.item_count -}}
+    </span>
+
+  </span>
+
+  <span class="main-header__icon-label" aria-hidden="true">Cart</span>
+</button>
