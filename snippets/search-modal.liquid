@@ -1,0 +1,58 @@
+{% comment %}
+  Search Modal — predictive search configuration
+  File: snippets/search-modal.liquid
+
+  Rendered by blocks/header-search.liquid ONLY when predictive search
+  is enabled (block.settings.enable_predictive_search == true). Skipped
+  entirely otherwise — its absence is itself part of how the toggle
+  works (no config, no dropdown elements, no fetches).
+
+  IMPORTANT — this file does NOT render .hs__dropdown / .hs__backdrop
+  markup. Those elements are created by header-search.js at runtime and
+  appended into the .hs wrapper that snippets/search-form.liquid owns.
+  Why: the dropdown's CSS positioning (`position: absolute` / `fixed`
+  on mobile) is anchored to .hs, so it must live inside the same
+  wrapper as the form. Two separate Liquid files can't reliably agree
+  on shared nested markup without coupling them — letting the JS own
+  element creation removes that dependency entirely. This file's only
+  job is to inject the window.HS_SETTINGS config object the JS reads.
+
+  Params (passed explicitly from blocks/header-search.liquid):
+    trending_1..5 {String}  — trending search terms
+    voice_enabled {Boolean} — enable voice search
+    placeholder_animate {Boolean} — enable typewriter placeholder
+
+  Rendered once per page (guarded by the block, not by id_suffix here)
+  — there is exactly one window.HS_SETTINGS for both the desktop and
+  mobile search-form instances to share.
+{% endcomment %}
+
+{%- comment -%} ── Build trending searches from passed params ── {%- endcomment -%}
+{%- assign trending_raw = '' -%}
+{%- if trending_1 != blank -%}{%- assign trending_raw = trending_raw | append: trending_1 | append: '|' -%}{%- endif -%}
+{%- if trending_2 != blank -%}{%- assign trending_raw = trending_raw | append: trending_2 | append: '|' -%}{%- endif -%}
+{%- if trending_3 != blank -%}{%- assign trending_raw = trending_raw | append: trending_3 | append: '|' -%}{%- endif -%}
+{%- if trending_4 != blank -%}{%- assign trending_raw = trending_raw | append: trending_4 | append: '|' -%}{%- endif -%}
+{%- if trending_5 != blank -%}{%- assign trending_raw = trending_raw | append: trending_5 | append: '|' -%}{%- endif -%}
+{%- assign trending_array = trending_raw | split: '|' -%}
+
+<script>
+  window.HS_SETTINGS = {
+    MIN_QUERY_LENGTH:      2,
+    DEBOUNCE_MS:           200,
+    MAX_QUERIES:           3,
+    MAX_PRODUCTS:          5,
+    MAX_COLLECTIONS:       2,
+    RECENT_SEARCHES_LIMIT: 5,
+    VOICE_ENABLED:         {{ voice_enabled       | default: true }},
+    PLACEHOLDER_ANIMATE:   {{ placeholder_animate | default: true }},
+    ENABLE_PREDICTIVE:     true,
+    TRENDING_SEARCHES: [
+      {%- for term in trending_array -%}
+        {%- unless term == blank -%}
+          {{ term | json }}{% unless forloop.last %},{% endunless %}
+        {%- endunless -%}
+      {%- endfor -%}
+    ]
+  };
+</script>
