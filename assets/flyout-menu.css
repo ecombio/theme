@@ -21,39 +21,22 @@
    - FIXED (earlier): ".flyout-panel:hover" could never match because the
      panel is display:none by default. Replaced with
      ".menu-bar__item--has-flyout:hover" so the panel opens on hover.
-   - FIXED (earlier): open selector had no keyboard fallback. Hover and
-     the JS ".is-open" toggle were covered, but a keyboard user tabbing
-     into a link *inside* the panel with the mouse no longer over the
-     trigger could lose the panel mid-tab. Added ":focus-within" as a
-     third condition so CSS alone keeps the panel open while focus is
-     inside it.
-   - FIXED (earlier): .flyout-panel__content had no height cap, so a
-     category panel taller than the sidebar's 70vh could grow past the
-     viewport with no scroll. Added the same max-height + overflow-y
-     treatment used on .flyout-panel__categories.
-   - FIXED (earlier): accent color was hardcoded as #c4301c throughout
-     (category hover/active states, "all" link, etc.), which doesn't
-     match the site's actual design token, --hdr-accent (#e11d27),
-     declared in header.css / header-menu.css. Swapped all instances to
+   - FIXED: open selector had no keyboard fallback. Hover and the JS
+     ".is-open" toggle were covered, but a keyboard user tabbing into a
+     link *inside* the panel with the mouse no longer over the trigger
+     could lose the panel mid-tab. Added ":focus-within" as a third
+     condition so CSS alone keeps the panel open while focus is inside it.
+   - FIXED: .flyout-panel__content had no height cap, so a category panel
+     taller than the sidebar's 70vh could grow past the viewport with no
+     scroll. Added the same max-height + overflow-y treatment used on
+     .flyout-panel__categories.
+   - FIXED: accent color was hardcoded as #c4301c throughout (category
+     hover/active states, "all" link, etc.), which doesn't match the
+     site's actual design token, --hdr-accent (#e11d27), declared in
+     header.css / header-menu.css. Swapped all instances to
      var(--hdr-accent, #e11d27) so this file follows the same source of
      truth as the rest of the header. Fallback value kept in case this
      file is ever loaded somewhere header.css isn't.
-   - ADDED: .flyout-panel--full-width modifier, paired with the new
-     "Flyout panel style" block setting in sections/header-menu.liquid /
-     snippets/flyout-menu.liquid. Widens and repositions the panel to
-     span most of the header instead of staying left-aligned/compact.
-   - FIXED (this revision — the actual bug): the previous full-width
-     attempt restyled .flyout-panel__content (and/or .flyout-panel__panel)
-     with display:flex/grid in a way that was NOT scoped to .is-active,
-     which knocked out the "only show the active category" toggle and
-     caused every category's panel to render stacked on top of each
-     other in document flow. The base display:none / .is-active
-     display:flex rule on .flyout-panel__panel is now the single source
-     of truth for visibility and is never touched or overridden by the
-     --full-width modifier. All --full-width rules below are strictly
-     sizing/positioning (width, max-width, columns) — never display or
-     visibility — so exactly one category panel is ever visible
-     regardless of which style is selected.
    - Added a small opacity/translateY transition on open so it doesn't
      just snap into view.
    ============================================================================= */
@@ -93,42 +76,6 @@
   overflow: hidden;
   width: max-content;
   max-width: calc(100vw - 48px);
-}
-
-/* ── Style modifier: Full-width span ──────────────────────────────────
-   Toggled via the "Flyout panel style" block setting. Only changes
-   sizing/positioning of the panel container — never touches display or
-   visibility of .flyout-panel__panel / .flyout-panel__content, so the
-   "only the active category shows" behavior from the base rules further
-   down this file is completely unaffected. */
-
-.flyout-panel--full-width {
-  left: 50%;
-  transform: translate(-50%, -4px);
-  width: calc(100vw - 48px);
-  max-width: 1400px;
-}
-
-.menu-bar__item--has-flyout:hover > .flyout-panel--full-width,
-.menu-bar__item--has-flyout.is-open > .flyout-panel--full-width,
-.menu-bar__item--has-flyout:focus-within > .flyout-panel--full-width {
-  transform: translate(-50%, 0);
-}
-
-.flyout-panel--full-width .flyout-panel__container {
-  width: 100%;
-}
-
-.flyout-panel--full-width .flyout-panel__content {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Full-width gets a 3rd column instead of 2, since there's more room —
-   still driven purely by CSS grid on the existing markup, no extra
-   Liquid columns required. */
-.flyout-panel--full-width .flyout-panel__columns {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* ── Left: category sidebar ── */
@@ -203,11 +150,6 @@
   overflow-y: auto;
 }
 
-/* Single source of truth for which category's panel is visible.
-   IMPORTANT: do not add display/visibility rules for
-   .flyout-panel__panel anywhere else in this file (including inside
-   .flyout-panel--full-width) — everything must funnel through .is-active
-   here, or every category renders stacked at once. */
 .flyout-panel__panel {
   display: none;
   align-items: flex-start;
@@ -309,7 +251,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .flyout-panel,
-  .flyout-panel--full-width,
   .flyout-panel__category-link,
   .flyout-panel__category-link .icon-caret-right,
   .flyout-panel__group,
