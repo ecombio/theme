@@ -1,0 +1,42 @@
+{% comment %}
+  SNIPPET: link-list.liquid
+  Renders a link list with support for one level of nested children.
+  Use this for dropdowns and flyouts.
+{% endcomment %}
+
+{%- assign menu = menu | default: blank -%}
+
+{%- if menu != blank and menu.links.size > 0 -%}
+
+  <ul class="{{ ul_class | default: 'link-list' }}">
+    {%- for link in menu.links -%}
+
+      <li class="link-list__item{% if link.links.size > 0 %} link-list__item--has-children{% endif %}">
+
+        {%- if link.links.size > 0 -%}
+          {# Has children #}
+          <span class="link-list__parent">{{ link.title }}</span>
+
+          <ul class="link-list__children">
+            {%- for child in link.links -%}
+              <li>
+                <a href="{{ child.url }}" class="link-list__link">
+                  {{ child.title }}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+
+        {%- else -%}
+          {# No children #}
+          <a href="{{ link.url }}" class="link-list__link">
+            {{ link.title }}
+          </a>
+        {%- endif -%}
+
+      </li>
+
+    {%- endfor -%}
+  </ul>
+
+{%- endif -%}
