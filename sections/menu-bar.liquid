@@ -1,0 +1,52 @@
+{% comment %}
+  Menu Bar
+  File: sections/menu-bar.liquid
+
+  Renders the desktop nav bar as a <ul> of theme blocks. Each block type
+  (mega-menu, plus any other @theme block you allow) owns its own <li>
+  markup and settings — this section just provides the menu setting and
+  loops over section.blocks, rendering whichever block each one is.
+
+  Add to layout/theme.liquid, wherever the nav bar should sit:
+    {%- section 'menu-bar' -%}
+{% endcomment %}
+
+{{ 'header-menu.css' | asset_url | stylesheet_tag }}
+{{ 'mega-menu-promo.css' | asset_url | stylesheet_tag }}
+
+{%- if section.blocks.size > 0 -%}
+  <nav class="menu-bar" aria-label="Primary navigation">
+    <div class="menu-bar__container page-width">
+      <ul class="menu-bar__list">
+        {%- for block in section.blocks -%}
+          {%- render block -%}
+        {%- endfor -%}
+      </ul>
+    </div>
+  </nav>
+{%- endif -%}
+
+{{- 'header-mega-menu.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Menu Bar",
+  "tag": "div",
+  "class": "menu-bar-section",
+  "limit": 1,
+  "settings": [],
+  "blocks": [
+    { "type": "mega-menu" },
+    { "type": "@theme" },
+    { "type": "@app" }
+  ],
+  "presets": [
+    {
+      "name": "Menu Bar",
+      "blocks": [
+        { "type": "mega-menu" }
+      ]
+    }
+  ]
+}
+{% endschema %}
