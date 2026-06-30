@@ -1,12 +1,17 @@
 {% comment %}
   MEGA MENU BLOCK
   For use inside sections/header-menu.liquid
-  Add this block type in your section schema under "blocks"
 {% endcomment %}
 
 {%- liquid
   assign menu = block.settings.menu
   assign heading = block.settings.heading | default: menu.title
+
+  assign promo_image = block.settings.promo_image
+  assign promo_heading = block.settings.promo_heading
+  assign promo_text = block.settings.promo_text
+  assign promo_link = block.settings.promo_link
+  assign promo_button = block.settings.promo_button | default: "Shop now"
 -%}
 
 <div class="mega-menu" {{ block.shopify_attributes }}>
@@ -17,31 +22,63 @@
       </div>
     {% endif %}
 
-    {% if menu != blank %}
-      <ul class="mega-menu__links" role="list">
-        {% for link in menu.links %}
-          <li class="mega-menu__item">
-            <a href="{{ link.url }}" class="mega-menu__link{% if link.active %} mega-menu__link--active{% endif %}">
-              {{ link.title }}
-            </a>
+    <div class="mega-menu__inner {% if promo_image != blank or promo_heading != blank or promo_text != blank %}mega-menu__inner--with-promo{% endif %}">
+      {% if menu != blank %}
+        <ul class="mega-menu__links" role="list">
+          {% for link in menu.links %}
+            <li class="mega-menu__item">
+              <a href="{{ link.url }}" class="mega-menu__link{% if link.active %} mega-menu__link--active{% endif %}">
+                {{ link.title }}
+              </a>
 
-            {% if link.links != blank %}
-              <ul class="mega-menu__sublinks">
-                {% for child in link.links %}
-                  <li>
-                    <a href="{{ child.url }}" class="mega-menu__sublink{% if child.active %} mega-menu__sublink--active{% endif %}">
-                      {{ child.title }}
-                    </a>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="mega-menu__empty">No menu selected</p>
-    {% endif %}
+              {% if link.links != blank %}
+                <ul class="mega-menu__sublinks">
+                  {% for child in link.links %}
+                    <li>
+                      <a href="{{ child.url }}" class="mega-menu__sublink{% if child.active %} mega-menu__sublink--active{% endif %}">
+                        {{ child.title }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mega-menu__empty">No menu selected</p>
+      {% endif %}
+
+      {% if promo_image != blank or promo_heading != blank or promo_text != blank %}
+        <div class="mega-menu__promo">
+          {% if promo_image != blank %}
+            <div class="mega-menu__promo-image">
+              <img 
+                src="{{ promo_image | image_url: width: 600 }}" 
+                alt="{{ promo_heading | escape }}" 
+                loading="lazy"
+              >
+            </div>
+          {% endif %}
+
+          {% if promo_heading != blank or promo_text != blank %}
+            <div class="mega-menu__promo-content">
+              {% if promo_heading != blank %}
+                <h4 class="mega-menu__promo-heading">{{ promo_heading }}</h4>
+              {% endif %}
+              {% if promo_text != blank %}
+                <p class="mega-menu__promo-text">{{ promo_text }}</p>
+              {% endif %}
+              {% if promo_link != blank %}
+                <a href="{{ promo_link }}" class="mega-menu__promo-button button button--primary">
+                  {{ promo_button }}
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 
@@ -62,6 +99,36 @@
       "id": "menu",
       "label": "Menu",
       "default": "main-menu"
+    },
+    {
+      "type": "header",
+      "content": "In-menu Promo"
+    },
+    {
+      "type": "image_picker",
+      "id": "promo_image",
+      "label": "Promo image"
+    },
+    {
+      "type": "text",
+      "id": "promo_heading",
+      "label": "Promo heading"
+    },
+    {
+      "type": "textarea",
+      "id": "promo_text",
+      "label": "Promo text"
+    },
+    {
+      "type": "url",
+      "id": "promo_link",
+      "label": "Promo link"
+    },
+    {
+      "type": "text",
+      "id": "promo_button",
+      "label": "Button text",
+      "default": "Shop now"
     }
   ],
   "presets": [
