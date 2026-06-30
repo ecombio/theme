@@ -9,30 +9,31 @@
 
   Block types: single-link | link-list | mega | highlight | flyout
 
-  The `mega` block type is rendered fully INLINE in this file, directly
-  below `link-list`. It no longer delegates to blocks/mega-menu.liquid,
-  and no longer loads a separate header-mega-menu.css/js — those files
-  have been removed. The mega menu now owns its own pair of files instead:
-  assets/mega-menu.css (styling, same branding as before) and
-  assets/mega-menu.js (click/keyboard open behavior). It's still a real
-  Shopify block type (see schema below), so "Add block > Mega menu"
-  continues to work as normal in the theme editor.
+  Both `mega` and `flyout` are rendered fully INLINE in this file — neither
+  delegates to a separate block/snippet file, and each owns its own
+  styling/behavior pair:
+    mega    → assets/mega-menu.css  + assets/mega-menu.js
+    flyout  → assets/flyout.css     + assets/flyout.js
+  Both remain real Shopify block types (see schema below), so "Add block"
+  continues to offer Mega menu / Flyout panel as normal in the theme editor.
 
   The `link-list` block type is also rendered inline (no block file). It
-  owns its own panel classes (.link-list-panel__*) in link-list.css — it
-  no longer reuses .dropdown classes, since the `dropdown` block type and
-  its CSS have been removed.
+  owns its own panel classes (.link-list-panel__*) in link-list.css.
 
   Assets (loaded once, here):
-    assets/flyout-panel.js
-    assets/flyout-menu.js
-    assets/flyout.js
     assets/link-list.css
     assets/link-list.js
     assets/mega-menu.css
     assets/mega-menu.js
+    assets/flyout.css
+    assets/flyout.js
 
-  REMOVE FROM THEME (no longer referenced by anything):
+  REMOVED — delete these from the theme, nothing references them anymore:
+    snippets/flyout.liquid
+    assets/flyout-panel.js
+    assets/flyout-menu.js
+    assets/flyout.js   (the OLD file — this comment refers to the NEW
+                         assets/flyout.js created alongside flyout.css)
     blocks/mega-menu.liquid
     assets/header-mega-menu.css
     assets/header-mega-menu.js
@@ -41,6 +42,7 @@
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
 {{ 'link-list.css' | asset_url | stylesheet_tag }}
 {{ 'mega-menu.css' | asset_url | stylesheet_tag }}
+{{ 'flyout.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign nav_menu = linklists[section.settings.menu] | default: linklists['main-menu']
@@ -106,13 +108,8 @@
 
           {%- when 'mega' -%}
             {%- comment -%}
-              Inline mega menu — no blocks/mega-menu.liquid, no separate
-              header-mega-menu.css/js. Markup below maps 1:1 onto the
-              existing branded classes in assets/mega-menu.css
-              (mega-menu-items, mega-menu-heading, mega-menu-link, etc.),
-              the same classes already used site-wide for this component.
-              Still a registered block type (see schema), so
-              "Add block > Mega menu" in the theme editor is unaffected.
+              Inline mega menu — markup maps 1:1 onto assets/mega-menu.css
+              (mega-menu-items, mega-menu-heading, mega-menu-link, etc.).
             {%- endcomment -%}
             {%- assign mega_menu = linklists[block.settings.menu] -%}
             <li class="menu-bar__item menu-bar__item--has-mega" {{ block.shopify_attributes }}>
@@ -223,12 +220,20 @@
             </li>
 
           {%- when 'flyout' -%}
+            {%- comment -%}
+              Inline sidebar-category flyout — left-hand category list,
+              right-hand multi-column content panel that swaps per
+              category, plus an optional promo image. Markup maps 1:1
+              onto assets/flyout.css. No more snippets/flyout.liquid or
+              the old flyout-panel.js / flyout-menu.js / flyout.js.
+            {%- endcomment -%}
             {%- assign flyout_menu = linklists[block.settings.menu] -%}
             <li class="menu-bar__item menu-bar__item--has-flyout" {{ block.shopify_attributes }}>
-              <a href="{{ block.settings.link | default: '#' }}"
-                 class="menu-bar__link menu-bar__link--flyout"
+              <a href="{{ block.settings.link | default: flyout_menu.links.first.url | default: '#' }}"
+                 class="menu-bar__link menu-bar__link--caret flyout-trigger"
                  aria-haspopup="true"
-                 aria-expanded="false">
+                 aria-expanded="false"
+                 data-flyout-trigger>
                 {%- if block.settings.icon != blank -%}
                   <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
                 {%- endif -%}
@@ -237,9 +242,109 @@
                   <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </a>
+
               {%- if flyout_menu != blank and flyout_menu.links.size > 0 -%}
-                <div class="mega-menu mega-menu--flyout" role="region">
-                  {%- render 'flyout', menu: flyout_menu, uid: block.id -%}
+                <div class="flyout-panel" role="region" data-flyout-panel>
+                  <div class="flyout-panel__container">
+
+                    <ul class="flyout-panel__categories" role="list">
+                      {%- for link in flyout_menu.links -%}
+                        <li class="flyout-panel__category{% if forloop.first %} is-active{% endif %}">
+                          <a href="{{ link.url }}"
+                             class="flyout-panel__category-link"
+                             data-flyout-category-trigger
+                             data-flyout-target="flyout-panel-{{ block.id }}-{{ forloop.index }}"
+                             {% if link.current %}aria-current="page"{% endif %}>
+                            {{ link.title }}
+                            <svg class="icon-caret-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                              <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </a>
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+
+                    <div class="flyout-panel__content" data-flyout-content>
+                      {%- for link in flyout_menu.links -%}
+                        {%- assign sub_links = link.links -%}
+                        {%- assign sub_half = sub_links.size | plus: 1 | divided_by: 2 -%}
+                        <div class="flyout-panel__panel{% if forloop.first %} is-active{% endif %}"
+                             id="flyout-panel-{{ block.id }}-{{ forloop.index }}"
+                             data-flyout-panel-item>
+
+                          <div class="flyout-panel__columns">
+                            <div class="flyout-panel__column">
+                              {%- for sublink in sub_links limit: sub_half -%}
+                                <a href="{{ sublink.url }}"
+                                   class="flyout-panel__group"
+                                   {% if sublink.current %}aria-current="page"{% endif %}>
+                                  {{ sublink.title }}
+                                </a>
+                                {%- if sublink.links.size > 0 -%}
+                                  <ul class="flyout-panel__sublist" role="list">
+                                    {%- for grandchild in sublink.links -%}
+                                      <li>
+                                        <a href="{{ grandchild.url }}"
+                                           class="flyout-panel__sublink"
+                                           {% if grandchild.current %}aria-current="page"{% endif %}>
+                                          {{ grandchild.title }}
+                                        </a>
+                                      </li>
+                                    {%- endfor -%}
+                                  </ul>
+                                {%- endif -%}
+                              {%- endfor -%}
+                            </div>
+
+                            <div class="flyout-panel__column">
+                              {%- for sublink in sub_links offset: sub_half -%}
+                                <a href="{{ sublink.url }}"
+                                   class="flyout-panel__group"
+                                   {% if sublink.current %}aria-current="page"{% endif %}>
+                                  {{ sublink.title }}
+                                </a>
+                                {%- if sublink.links.size > 0 -%}
+                                  <ul class="flyout-panel__sublist" role="list">
+                                    {%- for grandchild in sublink.links -%}
+                                      <li>
+                                        <a href="{{ grandchild.url }}"
+                                           class="flyout-panel__sublink"
+                                           {% if grandchild.current %}aria-current="page"{% endif %}>
+                                          {{ grandchild.title }}
+                                        </a>
+                                      </li>
+                                    {%- endfor -%}
+                                  </ul>
+                                {%- endif -%}
+                              {%- endfor -%}
+
+                              <a href="{{ link.url }}" class="flyout-panel__all-link">
+                                All {{ link.title }}
+                                <svg class="icon-arrow-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                  <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                              </a>
+                            </div>
+                          </div>
+
+                          {%- if block.settings.promo_image != blank -%}
+                            <a href="{{ block.settings.promo_link | default: '#' }}" class="flyout-panel__promo">
+                              <img src="{{ block.settings.promo_image | image_url: width: 400 }}"
+                                   alt="{{ block.settings.promo_image.alt | default: block.settings.promo_caption | escape }}"
+                                   loading="lazy"
+                                   width="{{ block.settings.promo_image.width }}"
+                                   height="{{ block.settings.promo_image.height }}">
+                              {%- if block.settings.promo_caption != blank -%}
+                                <span class="flyout-panel__promo-caption">{{ block.settings.promo_caption }}</span>
+                              {%- endif -%}
+                            </a>
+                          {%- endif -%}
+
+                        </div>
+                      {%- endfor -%}
+                    </div>
+
+                  </div>
                 </div>
               {%- endif -%}
             </li>
@@ -361,11 +466,9 @@
   </nav>
 </div>
 
-{{- 'flyout-panel.js'     | asset_url | script_tag }}
-{{- 'flyout-menu.js'      | asset_url | script_tag }}
-{{- 'flyout.js'           | asset_url | script_tag }}
-{{- 'link-list.js'        | asset_url | script_tag }}
-{{- 'mega-menu.js'        | asset_url | script_tag }}
+{{- 'link-list.js' | asset_url | script_tag }}
+{{- 'mega-menu.js' | asset_url | script_tag }}
+{{- 'flyout.js'    | asset_url | script_tag }}
 
 {% schema %}
 {
@@ -505,6 +608,10 @@
       "name": "Flyout panel",
       "settings": [
         {
+          "type": "header",
+          "content": "Nav bar"
+        },
+        {
           "type": "text",
           "id": "label",
           "label": "Label",
@@ -518,12 +625,32 @@
         {
           "type": "link_list",
           "id": "menu",
-          "label": "Flyout menu"
+          "label": "Flyout menu",
+          "info": "Top-level links become the left-hand category list. Their child links become the column content; grandchild links become indented sub-items."
         },
         {
           "type": "text",
           "id": "icon",
           "label": "Icon name"
+        },
+        {
+          "type": "header",
+          "content": "Promo"
+        },
+        {
+          "type": "image_picker",
+          "id": "promo_image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "promo_caption",
+          "label": "Caption"
+        },
+        {
+          "type": "url",
+          "id": "promo_link",
+          "label": "Link"
         }
       ]
     }
