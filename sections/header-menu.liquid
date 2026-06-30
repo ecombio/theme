@@ -1,0 +1,110 @@
+{{ 'header-menu.css' | asset_url | stylesheet_tag }}
+
+{% comment %}
+  Simple Header Menu Navigation Bar
+  Supports: single links + mega menus
+{% endcomment %}
+
+<nav class="header-menu" aria-label="Main navigation">
+  <ul class="header-menu__list">
+
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+
+        {%- when 'single' -%}
+          <li class="header-menu__item" {{ block.shopify_attributes }}>
+            <a href="{{ block.settings.link }}" class="header-menu__link">
+              {{ block.settings.label }}
+            </a>
+          </li>
+
+        {%- when 'mega' -%}
+          <li class="header-menu__item header-menu__item--mega" {{ block.shopify_attributes }}>
+            {%- render block -%}
+          </li>
+
+      {%- endcase -%}
+    {%- endfor -%}
+
+  </ul>
+</nav>
+
+<script src="{{ 'header-menu.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "header-menu",
+  "class": "header-menu-section",
+  "blocks": [
+    {
+      "type": "single",
+      "name": "Single Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Link"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL"
+        }
+      ]
+    },
+    {
+      "type": "mega",
+      "name": "Mega Menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu"
+        },
+        {
+          "type": "header",
+          "content": "Promo (optional)"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_promo",
+          "label": "Show promo",
+          "default": false
+        },
+        {
+          "type": "image_picker",
+          "id": "promo_image",
+          "label": "Promo image"
+        },
+        {
+          "type": "text",
+          "id": "promo_heading",
+          "label": "Heading"
+        },
+        {
+          "type": "textarea",
+          "id": "promo_text",
+          "label": "Text"
+        },
+        {
+          "type": "url",
+          "id": "promo_link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "header-menu"
+    }
+  ]
+}
+{% endschema %}
