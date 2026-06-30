@@ -12,10 +12,10 @@
   The `mega` block type delegates its panel markup entirely to
   blocks/mega-menu.liquid via Shopify's shared block system.
 
-  The `link-list` block type delegates its panel markup entirely to
-  blocks/link-list.liquid (same pattern as `mega`). Its panel reuses the
-  shared .dropdown classes from header-menu.css for brand consistency;
-  link-list.css/.js only add the click/keyboard/touch toggle behavior.
+  The `link-list` block type is rendered inline (no block file), same as
+  `dropdown`. Its panel reuses the shared .dropdown classes from
+  header-menu.css for brand consistency; link-list.css/.js only add the
+  click/keyboard/touch toggle behavior.
 
   Assets (loaded once, here):
     assets/header-mega-menu.js
@@ -58,12 +58,38 @@
   </li>
 
           {%- when 'link-list' -%}
-            {%- comment -%}
-              Delegates entirely to blocks/link-list.liquid.
-              The block file owns both the <li> wrapper and the dropdown
-              panel markup, mirroring the `mega` delegation pattern.
-            {%- endcomment -%}
-            {%- render block -%}
+            {%- assign ll_menu = linklists[block.settings.menu] -%}
+            <li class="menu-bar__item menu-bar__item--has-link-list" {{ block.shopify_attributes }}>
+              <a href="{{ block.settings.link | default: ll_menu.links.first.url | default: '#' }}"
+                 class="menu-bar__link menu-bar__link--caret link-list-trigger"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                {%- if block.settings.icon != blank -%}
+                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+                {%- endif -%}
+                {{ block.settings.label | default: ll_menu.title | default: 'Menu' }}
+                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+              {%- if ll_menu != blank and ll_menu.links.size > 0 -%}
+                <div class="dropdown link-list-panel" role="region">
+                  <div class="dropdown__container">
+                    <ul class="dropdown__nav" role="list">
+                      {%- for link in ll_menu.links -%}
+                        <li class="dropdown__item">
+                          <a href="{{ link.url }}"
+                             class="dropdown__link"
+                             {% if link.current %}aria-current="page"{% endif %}>
+                            {{ link.title }}
+                          </a>
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  </div>
+                </div>
+              {%- endif -%}
+            </li>
 
           {%- when 'highlight' -%}
             <li class="menu-bar__item menu-bar__item--highlight" {{ block.shopify_attributes }}>
