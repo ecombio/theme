@@ -42,6 +42,16 @@
     blocks/mega-menu.liquid
     assets/header-mega-menu.css
     assets/header-mega-menu.js
+
+  CHANGELOG (this revision):
+  - ADDED: "Flyout panel style" setting (`panel_style`) to the `flyout`
+    block schema, under a new "Style" header. Merchant-facing choice
+    between "Compact (left-aligned)" and "Full-width span". Defaults to
+    `compact`, so existing flyout blocks render exactly as before until
+    a merchant explicitly switches the option. The setting is consumed
+    in snippets/flyout-menu.liquid, which appends
+    `flyout-panel--full-width` to the panel's class when full-width is
+    selected — no other markup or section logic changed.
 {% endcomment %}
 
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
@@ -510,6 +520,27 @@
           "type": "text",
           "id": "icon",
           "label": "Icon name"
+        },
+        {
+          "type": "header",
+          "content": "Style"
+        },
+        {
+          "type": "select",
+          "id": "panel_style",
+          "label": "Flyout panel style",
+          "info": "Compact keeps the panel left-aligned under its trigger. Full-width span stretches it across most of the header for a bigger, more modern look.",
+          "options": [
+            {
+              "value": "compact",
+              "label": "Compact (left-aligned)"
+            },
+            {
+              "value": "full-width",
+              "label": "Full-width span"
+            }
+          ],
+          "default": "compact"
         }
       ]
     }
