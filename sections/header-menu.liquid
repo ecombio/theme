@@ -12,14 +12,22 @@
   The `mega` block type delegates its panel markup entirely to
   blocks/mega-menu.liquid via Shopify's shared block system.
 
+  The `link-list` block type delegates its panel markup entirely to
+  blocks/link-list.liquid (same pattern as `mega`). Its panel reuses the
+  shared .dropdown classes from header-menu.css for brand consistency;
+  link-list.css/.js only add the click/keyboard/touch toggle behavior.
+
   Assets (loaded once, here):
     assets/header-mega-menu.js
     assets/flyout-panel.js
     assets/flyout-menu.js
     assets/flyout.js
+    assets/link-list.css
+    assets/link-list.js
 {% endcomment %}
 
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
+{{ 'link-list.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign nav_menu = linklists[section.settings.menu] | default: linklists['main-menu']
@@ -50,18 +58,12 @@
   </li>
 
           {%- when 'link-list' -%}
-            {%- assign ll_menu = linklists[block.settings.menu] -%}
-            {%- if ll_menu != blank -%}
-              {%- for link in ll_menu.links -%}
-                <li class="menu-bar__item" {{ block.shopify_attributes }}>
-                  <a href="{{ link.url }}"
-                     class="menu-bar__link"
-                     {% if link.current %}aria-current="page"{% endif %}>
-                    {{ link.title }}
-                  </a>
-                </li>
-              {%- endfor -%}
-            {%- endif -%}
+            {%- comment -%}
+              Delegates entirely to blocks/link-list.liquid.
+              The block file owns both the <li> wrapper and the dropdown
+              panel markup, mirroring the `mega` delegation pattern.
+            {%- endcomment -%}
+            {%- render block -%}
 
           {%- when 'highlight' -%}
             <li class="menu-bar__item menu-bar__item--highlight" {{ block.shopify_attributes }}>
@@ -275,6 +277,7 @@
 {{- 'flyout-panel.js'     | asset_url | script_tag }}
 {{- 'flyout-menu.js'      | asset_url | script_tag }}
 {{- 'flyout.js'           | asset_url | script_tag }}
+{{- 'link-list.js'        | asset_url | script_tag }}
 
 {% schema %}
 {
@@ -320,10 +323,24 @@
       "name": "Link list",
       "settings": [
         {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
           "type": "link_list",
           "id": "menu",
-          "label": "Menu",
-          "info": "Each link in this menu is rendered as its own flat menu-bar item (no dropdown)."
+          "label": "Link list menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
         }
       ]
     },
