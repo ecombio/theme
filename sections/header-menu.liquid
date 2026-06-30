@@ -1,0 +1,460 @@
+{% comment %}
+  sections/header-menu.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders inside sections/groups/header-group.json.
+  The GROUP owns the <header role="banner"> wrapper — this section must NOT
+  define "tag" in its schema or render its own <header> element.
+  This section is purely the menu bar: logo, nav, actions, mobile drawer.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- liquid
+  assign sticky        = section.settings.sticky_header
+  assign transparent   = section.settings.transparent_header
+  assign bg_color      = section.settings.background_color
+  assign border_bottom = section.settings.border_bottom
+  assign menu_align    = section.settings.menu_alignment
+  assign logo_width    = section.settings.logo_width
+  assign cta_label     = section.settings.cta_label
+  assign cta_url       = section.settings.cta_url
+-%}
+
+{%- capture logo_sizes -%}{{ logo_width }}px{%- endcapture -%}
+
+{%- style -%}
+  #shopify-section-{{ section.id }} {
+    --header-bg:         {{ bg_color }};
+    --header-logo-width: {{ logo_width }}px;
+  }
+{%- endstyle -%}
+
+{{ 'mega-menu.css' | asset_url | stylesheet_tag }}
+{{ 'in-menu-promo.css' | asset_url | stylesheet_tag }}
+
+<div
+  id="header-menu-{{ section.id }}"
+  class="header-menu
+    {% if sticky %} header-menu--sticky{% endif %}
+    {% if transparent %} header-menu--transparent{% endif %}
+    {% if border_bottom %} header-menu--bordered{% endif %}"
+  data-section-id="{{ section.id }}"
+  data-sticky="{{ sticky }}"
+>
+  <div class="header-menu__inner">
+
+    {%- comment -%} ── Logo ── {%- endcomment -%}
+    <div class="header-menu__logo">
+      <a href="{{ routes.root_url }}" class="header-menu__logo-link" aria-label="{{ shop.name }}">
+        {%- if section.settings.logo != blank -%}
+          {{
+            section.settings.logo
+            | image_url: width: 400
+            | image_tag:
+              loading: 'eager',
+              fetchpriority: 'high',
+              alt: section.settings.logo.alt | default: shop.name,
+              class: 'header-menu__logo-img',
+              widths: '120, 200, 300, 400',
+              sizes: logo_sizes
+          }}
+        {%- else -%}
+          <span class="header-menu__logo-text">{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+    </div>
+
+    {%- comment -%} ── Primary Nav — mega-menu + single-link blocks ── {%- endcomment -%}
+    <nav
+      id="site-nav-{{ section.id }}"
+      class="site-nav site-nav--align-{{ menu_align }}"
+      aria-label="Primary navigation"
+    >
+      <ul class="site-nav__list" role="menubar">
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+
+            {%- when 'mega_menu' -%}
+              <li
+                class="site-nav__item site-nav__item--mega"
+                role="none"
+                {{ block.shopify_attributes }}
+              >
+                {%- render 'mega-menu', block: block -%}
+              </li>
+
+            {%- when 'single_link' -%}
+              <li
+                class="site-nav__item site-nav__item--single"
+                role="none"
+                {{ block.shopify_attributes }}
+              >
+                {%- render 'single-link', block: block -%}
+              </li>
+
+          {%- endcase -%}
+        {%- endfor -%}
+      </ul>
+    </nav>
+
+    {%- comment -%} ── Actions ── {%- endcomment -%}
+    <div class="header-menu__actions">
+
+      <button
+        class="header-menu__icon-btn"
+        aria-label="{{ 'general.search.placeholder' | t }}"
+        data-action="open-search"
+        type="button"
+      >
+        <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+
+      {%- if shop.customer_accounts_enabled -%}
+        <a
+          href="{%- if customer -%}{{ routes.account_url }}{%- else -%}{{ routes.account_login_url }}{%- endif -%}"
+          class="header-menu__icon-btn"
+          aria-label="{%- if customer -%}{{ 'customer.account.title' | t }}{%- else -%}{{ 'customer.login_page.title' | t }}{%- endif -%}"
+        >
+          <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </a>
+      {%- endif -%}
+
+      <a
+        href="{{ routes.cart_url }}"
+        class="header-menu__icon-btn header-menu__cart"
+        aria-label="{{ 'sections.cart_icon_bubble.title' | t }}"
+      >
+        <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        {%- if cart.item_count > 0 -%}
+          <span class="header-menu__cart-count" aria-label="{{ cart.item_count }} items">
+            {{- cart.item_count -}}
+          </span>
+        {%- endif -%}
+      </a>
+
+      {%- if cta_label != blank and cta_url != blank -%}
+        <a href="{{ cta_url }}" class="header-menu__cta btn btn--primary">
+          {{- cta_label | escape -}}
+        </a>
+      {%- endif -%}
+
+      <button
+        id="mobile-menu-toggle-{{ section.id }}"
+        class="header-menu__hamburger"
+        aria-label="Toggle navigation"
+        aria-expanded="false"
+        aria-controls="mobile-nav-drawer-{{ section.id }}"
+        type="button"
+      >
+        <span class="hamburger__line"></span>
+        <span class="hamburger__line"></span>
+        <span class="hamburger__line"></span>
+      </button>
+
+    </div>
+  </div><!-- /.header-menu__inner -->
+</div><!-- /.header-menu -->
+
+{%- comment -%} ── Mobile Nav Drawer — sibling, not nested in nav ── {%- endcomment -%}
+<div
+  id="mobile-nav-drawer-{{ section.id }}"
+  class="mobile-drawer"
+  aria-hidden="true"
+  role="dialog"
+  aria-label="Mobile navigation"
+>
+  <div class="mobile-drawer__overlay" data-action="close-drawer"></div>
+  <div class="mobile-drawer__panel" role="document">
+    <button
+      class="mobile-drawer__close"
+      aria-label="Close navigation"
+      data-action="close-drawer"
+      type="button"
+    >
+      <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <ul class="mobile-nav__list">
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+
+            {%- when 'mega_menu' -%}
+              {%- liquid
+                assign mobile_menu   = linklists[block.settings.menu]
+                assign trigger_label = block.settings.label | default: mobile_menu.title
+              -%}
+              {%- if mobile_menu != blank -%}
+                <li class="mobile-nav__item mobile-nav__item--has-children">
+                  <button
+                    class="mobile-nav__trigger"
+                    aria-expanded="false"
+                    aria-controls="mobile-submenu-{{ block.id }}"
+                    type="button"
+                  >
+                    {{- trigger_label | escape -}}
+                    <svg class="mobile-nav__chevron" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <ul
+                    id="mobile-submenu-{{ block.id }}"
+                    class="mobile-nav__submenu"
+                    hidden
+                  >
+                    {%- for link in mobile_menu.links -%}
+                      {%- if link.links != blank -%}
+                        <li class="mobile-nav__subitem mobile-nav__subitem--group">
+                          <span class="mobile-nav__group-title">{{- link.title | escape -}}</span>
+                          <ul class="mobile-nav__sublist">
+                            {%- for child in link.links -%}
+                              <li class="mobile-nav__subitem">
+                                <a href="{{ child.url }}" class="mobile-nav__link">{{- child.title | escape -}}</a>
+                              </li>
+                            {%- endfor -%}
+                          </ul>
+                        </li>
+                      {%- else -%}
+                        <li class="mobile-nav__subitem">
+                          <a href="{{ link.url }}" class="mobile-nav__link">{{- link.title | escape -}}</a>
+                        </li>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  </ul>
+                </li>
+              {%- endif -%}
+
+            {%- when 'single_link' -%}
+              <li class="mobile-nav__item">
+                <a
+                  href="{{ block.settings.url }}"
+                  class="mobile-nav__link mobile-nav__link--top"
+                  {% if block.settings.open_new_tab %}target="_blank" rel="noopener"{% endif %}
+                >
+                  {{- block.settings.label | escape -}}
+                </a>
+              </li>
+
+          {%- endcase -%}
+        {%- endfor -%}
+      </ul>
+
+      {%- if cta_label != blank and cta_url != blank -%}
+        <div class="mobile-nav__cta">
+          <a href="{{ cta_url }}" class="btn btn--primary btn--full">{{- cta_label | escape -}}</a>
+        </div>
+      {%- endif -%}
+    </nav>
+  </div>
+</div>
+
+<script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
+<script src="{{ 'in-menu-promo.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Header Menu",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Logo width",
+      "min": 60,
+      "max": 300,
+      "step": 5,
+      "unit": "px",
+      "default": 140
+    },
+    {
+      "type": "header",
+      "content": "Layout & Style"
+    },
+    {
+      "type": "select",
+      "id": "menu_alignment",
+      "label": "Menu alignment",
+      "options": [
+        { "value": "left",   "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right",  "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Header background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "checkbox",
+      "id": "border_bottom",
+      "label": "Show bottom border",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky_header",
+      "label": "Sticky header",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_header",
+      "label": "Transparent on hero (homepage)",
+      "default": false,
+      "info": "Becomes solid once the page is scrolled."
+    },
+    {
+      "type": "header",
+      "content": "Call-to-action button"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "Button URL"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "mega_menu",
+      "name": "Mega Menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Nav label",
+          "info": "Overrides the link list title."
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Link list",
+          "default": "main-menu"
+        },
+        {
+          "type": "select",
+          "id": "columns",
+          "label": "Column count",
+          "options": [
+            { "value": "2", "label": "2 columns" },
+            { "value": "3", "label": "3 columns" },
+            { "value": "4", "label": "4 columns" }
+          ],
+          "default": "3"
+        },
+        {
+          "type": "header",
+          "content": "In-menu promo"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_promo",
+          "label": "Show promo block",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "promo_position",
+          "label": "Promo position",
+          "options": [
+            { "value": "left",  "label": "Left" },
+            { "value": "right", "label": "Right" }
+          ],
+          "default": "right"
+        },
+        {
+          "type": "image_picker",
+          "id": "promo_image",
+          "label": "Promo image"
+        },
+        {
+          "type": "text",
+          "id": "promo_eyebrow",
+          "label": "Promo eyebrow text"
+        },
+        {
+          "type": "text",
+          "id": "promo_heading",
+          "label": "Promo heading"
+        },
+        {
+          "type": "textarea",
+          "id": "promo_body",
+          "label": "Promo body text"
+        },
+        {
+          "type": "text",
+          "id": "promo_cta_label",
+          "label": "Promo button label"
+        },
+        {
+          "type": "url",
+          "id": "promo_cta_url",
+          "label": "Promo button URL"
+        },
+        {
+          "type": "color",
+          "id": "promo_bg_color",
+          "label": "Promo background color",
+          "default": "#f5f5f5"
+        }
+      ]
+    },
+    {
+      "type": "single_link",
+      "name": "Single Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Link label"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link URL"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_new_tab",
+          "label": "Open in new tab",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "nofollow",
+          "label": "Add nofollow",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Header Menu"
+    }
+  ]
+}
+{% endschema %}
