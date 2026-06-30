@@ -1,0 +1,31 @@
+{% comment %}
+  blocks/single-link.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders a flat, single navigation link in the primary nav.
+  Settings are defined in the section schema under type "single_link".
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- liquid
+  assign link_label    = block.settings.label
+  assign link_url      = block.settings.url
+  assign link_new_tab  = block.settings.open_new_tab
+  assign link_nofollow = block.settings.nofollow
+-%}
+
+{%- if link_label != blank and link_url != blank -%}
+  <a
+    href="{{ link_url }}"
+    class="site-nav__link"
+    role="menuitem"
+    {% if link_new_tab %}
+      target="_blank"
+      rel="noopener{% if link_nofollow %} nofollow{% endif %}"
+    {% elsif link_nofollow %}
+      rel="nofollow"
+    {% endif %}
+    {{ block.shopify_attributes }}
+  >
+    {{- link_label | escape -}}
+  </a>
+{%- endif -%}

@@ -1,0 +1,132 @@
+{% comment %}
+  snippets/mega-menu.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders a desktop mega-menu trigger + dropdown panel.
+
+  Parameters:
+    block   — the current section block (type: mega_menu)
+    section — the parent section
+
+  Accessibility:
+    • Trigger uses aria-expanded, aria-haspopup="true", aria-controls
+    • Panel uses role="region" and a matching id
+    • Sub-headings use role="heading" aria-level="3"
+    • Links use role="menuitem"
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- liquid
+  assign nav_link_list  = linklists[block.settings.menu]
+  assign trigger_label  = block.settings.label | default: nav_link_list.title
+  assign col_count      = block.settings.columns | default: '3'
+  assign show_promo     = block.settings.show_promo
+  assign promo_position = block.settings.promo_position | default: 'right'
+  assign panel_id       = 'mega-panel-' | append: block.id
+-%}
+
+{%- if nav_link_list == blank -%}
+  {%- comment -%} Bail silently if no link list is assigned {%- endcomment -%}
+  {%- break -%}
+{%- endif -%}
+
+{%- comment -%} ── Trigger button ── {%- endcomment -%}
+<button
+  class="site-nav__link site-nav__link--trigger"
+  type="button"
+  role="menuitem"
+  aria-haspopup="true"
+  aria-expanded="false"
+  aria-controls="{{ panel_id }}"
+  data-mega-trigger
+>
+  {{- trigger_label | escape -}}
+  <svg
+    class="site-nav__chevron"
+    aria-hidden="true"
+    focusable="false"
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+</button>
+
+{%- comment -%} ── Dropdown panel ── {%- endcomment -%}
+<div
+  id="{{ panel_id }}"
+  class="mega-panel mega-panel--cols-{{ col_count }}{% if show_promo %} mega-panel--has-promo mega-panel--promo-{{ promo_position }}{% endif %}"
+  role="region"
+  aria-label="{{ trigger_label | escape }} submenu"
+  hidden
+  data-mega-panel
+>
+  <div class="mega-panel__inner">
+
+    {%- comment -%} ── Promo — LEFT position ── {%- endcomment -%}
+    {%- if show_promo and promo_position == 'left' -%}
+      <div class="mega-panel__promo">
+        {%- render 'in-menu-promo', block: block -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} ── Link columns ── {%- endcomment -%}
+    <div class="mega-panel__columns">
+      {%- for link in nav_link_list.links -%}
+        <div class="mega-panel__col">
+
+          {%- comment -%} Column heading — either a link or a label {%- endcomment -%}
+          {%- if link.url != blank and link.url != '#' -%}
+            <a
+              href="{{ link.url }}"
+              class="mega-panel__col-heading mega-panel__col-heading--link"
+              role="menuitem"
+            >
+              {{- link.title | escape -}}
+            </a>
+          {%- else -%}
+            <span
+              class="mega-panel__col-heading"
+              role="heading"
+              aria-level="3"
+            >
+              {{- link.title | escape -}}
+            </span>
+          {%- endif -%}
+
+          {%- comment -%} Child links ── {%- endcomment -%}
+          {%- if link.links != blank -%}
+            <ul class="mega-panel__links" role="menu" aria-label="{{ link.title | escape }}">
+              {%- for child in link.links -%}
+                <li class="mega-panel__link-item" role="none">
+                  <a
+                    href="{{ child.url }}"
+                    class="mega-panel__link{% if child.active %} is-active{% endif %}"
+                    role="menuitem"
+                    {% if child.current %}aria-current="page"{% endif %}
+                  >
+                    {{- child.title | escape -}}
+                  </a>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+
+        </div>
+      {%- endfor -%}
+    </div>
+
+    {%- comment -%} ── Promo — RIGHT position ── {%- endcomment -%}
+    {%- if show_promo and promo_position == 'right' -%}
+      <div class="mega-panel__promo">
+        {%- render 'in-menu-promo', block: block -%}
+      </div>
+    {%- endif -%}
+
+  </div><!-- /.mega-panel__inner -->
+</div><!-- /.mega-panel -->

@@ -1,0 +1,90 @@
+{% comment %}
+  snippets/in-menu-promo.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  In-menu promotional card. Renders inside a mega-menu panel.
+
+  Parameters:
+    block — the mega_menu block whose promo settings we read
+
+  Settings used:
+    promo_image      — image_picker
+    promo_eyebrow    — text
+    promo_heading    — text
+    promo_body       — textarea
+    promo_cta_label  — text
+    promo_cta_url    — url
+    promo_bg_color   — color
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{%- liquid
+  assign promo_image     = block.settings.promo_image
+  assign promo_eyebrow   = block.settings.promo_eyebrow
+  assign promo_heading   = block.settings.promo_heading
+  assign promo_body      = block.settings.promo_body
+  assign promo_cta_label = block.settings.promo_cta_label
+  assign promo_cta_url   = block.settings.promo_cta_url
+  assign promo_bg        = block.settings.promo_bg_color | default: '#f5f5f5'
+-%}
+
+<article
+  class="promo-card"
+  style="--promo-bg: {{ promo_bg }};"
+  aria-label="Featured promotion{% if promo_heading != blank %}: {{ promo_heading | strip_html }}{% endif %}"
+>
+
+  {%- comment -%} ── Image ── {%- endcomment -%}
+  {%- if promo_image != blank -%}
+    <div class="promo-card__image-wrap">
+      <a
+        href="{{ promo_cta_url | default: '#' }}"
+        class="promo-card__image-link"
+        tabindex="-1"
+        aria-hidden="true"
+      >
+        {{
+          promo_image
+          | image_url: width: 600
+          | image_tag:
+            loading: 'lazy',
+            alt: promo_image.alt | default: promo_heading,
+            class: 'promo-card__image',
+            widths: '300, 400, 600',
+            sizes: '(min-width: 1200px) 300px, 50vw',
+            data-promo-img: ''
+        }}
+      </a>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Content ── {%- endcomment -%}
+  <div class="promo-card__body">
+
+    {%- if promo_eyebrow != blank -%}
+      <p class="promo-card__eyebrow">{{- promo_eyebrow | escape -}}</p>
+    {%- endif -%}
+
+    {%- if promo_heading != blank -%}
+      <h3 class="promo-card__heading">{{- promo_heading | escape -}}</h3>
+    {%- endif -%}
+
+    {%- if promo_body != blank -%}
+      <p class="promo-card__text">{{- promo_body | escape -}}</p>
+    {%- endif -%}
+
+    {%- if promo_cta_label != blank and promo_cta_url != blank -%}
+      <a
+        href="{{ promo_cta_url }}"
+        class="promo-card__cta btn btn--secondary"
+        aria-label="{{ promo_cta_label | escape }}{% if promo_heading != blank %} – {{ promo_heading | strip_html | escape }}{% endif %}"
+      >
+        {{- promo_cta_label | escape -}}
+        <svg class="promo-card__cta-arrow" aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    {%- endif -%}
+
+  </div><!-- /.promo-card__body -->
+
+</article><!-- /.promo-card -->
