@@ -7,7 +7,7 @@
   Add to layout/theme.liquid, directly after {%- section 'main-header' -%}:
     {%- section 'header-menu' -%}
 
-  Block types: single-link | highlight | dropdown | mega | flyout
+  Block types: single-link | link-list | highlight | dropdown | mega | flyout
 
   The `mega` block type delegates its panel markup entirely to
   blocks/mega-menu.liquid via Shopify's shared block system.
@@ -48,6 +48,20 @@
       {{ block.settings.label | default: 'Link' }}
     </a>
   </li>
+
+          {%- when 'link-list' -%}
+            {%- assign ll_menu = linklists[block.settings.menu] -%}
+            {%- if ll_menu != blank -%}
+              {%- for link in ll_menu.links -%}
+                <li class="menu-bar__item" {{ block.shopify_attributes }}>
+                  <a href="{{ link.url }}"
+                     class="menu-bar__link"
+                     {% if link.current %}aria-current="page"{% endif %}>
+                    {{ link.title }}
+                  </a>
+                </li>
+              {%- endfor -%}
+            {%- endif -%}
 
           {%- when 'highlight' -%}
             <li class="menu-bar__item menu-bar__item--highlight" {{ block.shopify_attributes }}>
@@ -301,6 +315,18 @@
     }
   ]
 },
+    {
+      "type": "link-list",
+      "name": "Link list",
+      "settings": [
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu",
+          "info": "Each link in this menu is rendered as its own flat menu-bar item (no dropdown)."
+        }
+      ]
+    },
     {
       "type": "highlight",
       "name": "Highlight link",
