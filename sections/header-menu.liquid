@@ -28,6 +28,11 @@
     assets/flyout.css
     assets/flyout.js
 
+  NOTE: flyout promo image support (settings + markup + CSS) has been
+  removed for now. Re-add promo_image / promo_caption / promo_link to the
+  flyout block schema, the markup inside the flyout panel loop, and the
+  .flyout-panel__promo* rules in flyout.css if/when it's needed again.
+
   REMOVED — delete these from the theme, nothing references them anymore:
     snippets/flyout.liquid
     assets/flyout-panel.js
@@ -223,9 +228,11 @@
             {%- comment -%}
               Inline sidebar-category flyout — left-hand category list,
               right-hand multi-column content panel that swaps per
-              category, plus an optional promo image. Markup maps 1:1
-              onto assets/flyout.css. No more snippets/flyout.liquid or
-              the old flyout-panel.js / flyout-menu.js / flyout.js.
+              category. Markup maps 1:1 onto assets/flyout.css. No more
+              snippets/flyout.liquid or the old flyout-panel.js /
+              flyout-menu.js / flyout.js.
+
+              Promo image support removed for now — see header comment.
             {%- endcomment -%}
             {%- assign flyout_menu = linklists[block.settings.menu] -%}
             <li class="menu-bar__item menu-bar__item--has-flyout" {{ block.shopify_attributes }}>
@@ -326,19 +333,6 @@
                               </a>
                             </div>
                           </div>
-
-                          {%- if block.settings.promo_image != blank -%}
-                            <a href="{{ block.settings.promo_link | default: '#' }}" class="flyout-panel__promo">
-                              <img src="{{ block.settings.promo_image | image_url: width: 400 }}"
-                                   alt="{{ block.settings.promo_image.alt | default: block.settings.promo_caption | escape }}"
-                                   loading="lazy"
-                                   width="{{ block.settings.promo_image.width }}"
-                                   height="{{ block.settings.promo_image.height }}">
-                              {%- if block.settings.promo_caption != blank -%}
-                                <span class="flyout-panel__promo-caption">{{ block.settings.promo_caption }}</span>
-                              {%- endif -%}
-                            </a>
-                          {%- endif -%}
 
                         </div>
                       {%- endfor -%}
@@ -632,25 +626,6 @@
           "type": "text",
           "id": "icon",
           "label": "Icon name"
-        },
-        {
-          "type": "header",
-          "content": "Promo"
-        },
-        {
-          "type": "image_picker",
-          "id": "promo_image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "promo_caption",
-          "label": "Caption"
-        },
-        {
-          "type": "url",
-          "id": "promo_link",
-          "label": "Link"
         }
       ]
     }
