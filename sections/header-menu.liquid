@@ -10,11 +10,13 @@
   Block types: single-link | link-list | mega | highlight | flyout
 
   The `mega` block type is rendered fully INLINE in this file, directly
-  below the `link-list` case. It no longer delegates to a separate
-  blocks/mega-menu.liquid block file — its markup, settings access, and
-  panel structure all live here. It is still a real Shopify block type
-  (see schema below), so "Add block > Mega menu" continues to work as
-  normal in the theme editor.
+  below `link-list`. It no longer delegates to blocks/mega-menu.liquid,
+  and no longer loads a separate header-mega-menu.css/js — those files
+  have been removed. The mega menu now owns its own pair of files instead:
+  assets/mega-menu.css (styling, same branding as before) and
+  assets/mega-menu.js (click/keyboard open behavior). It's still a real
+  Shopify block type (see schema below), so "Add block > Mega menu"
+  continues to work as normal in the theme editor.
 
   The `link-list` block type is also rendered inline (no block file). It
   owns its own panel classes (.link-list-panel__*) in link-list.css — it
@@ -29,6 +31,11 @@
     assets/link-list.js
     assets/mega-menu.css
     assets/mega-menu.js
+
+  REMOVE FROM THEME (no longer referenced by anything):
+    blocks/mega-menu.liquid
+    assets/header-mega-menu.css
+    assets/header-mega-menu.js
 {% endcomment %}
 
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
@@ -99,9 +106,13 @@
 
           {%- when 'mega' -%}
             {%- comment -%}
-              Inline mega menu (no longer delegates to blocks/mega-menu.liquid).
-              Still registered as a block type below, so "Add block > Mega
-              menu" in the theme editor is unaffected.
+              Inline mega menu — no blocks/mega-menu.liquid, no separate
+              header-mega-menu.css/js. Markup below maps 1:1 onto the
+              existing branded classes in assets/mega-menu.css
+              (mega-menu-items, mega-menu-heading, mega-menu-link, etc.),
+              the same classes already used site-wide for this component.
+              Still a registered block type (see schema), so
+              "Add block > Mega menu" in the theme editor is unaffected.
             {%- endcomment -%}
             {%- assign mega_menu = linklists[block.settings.menu] -%}
             <li class="menu-bar__item menu-bar__item--has-mega" {{ block.shopify_attributes }}>
@@ -120,24 +131,33 @@
               </a>
 
               {%- if mega_menu != blank and mega_menu.links.size > 0 -%}
-                {%- assign promo_position = block.settings.promo_position | default: 'right' -%}
-                <div class="mega-menu" role="region" data-mega-panel>
-                  <div class="mega-menu__container page-width">
+                {%- assign mega_col_count = mega_menu.links.size -%}
+                {%- assign mega_collection = blank -%}
+                {%- if block.settings.show_products -%}
+                  {%- for link in mega_menu.links -%}
+                    {%- if link.type == 'collection_link' and mega_collection == blank -%}
+                      {%- assign mega_collection = link.object -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                {%- endif -%}
 
-                    <div class="mega-menu__columns">
+                <div class="mega-menu" role="region" data-mega-panel>
+                  <div class="mega-menu-items{% if mega_collection != blank %} mega-menu-items--with-products{% endif %}">
+
+                    <div class="mega-menu__text-columns" style="--mega-col-count: {{ mega_col_count }};">
                       {%- for link in mega_menu.links -%}
-                        <div class="mega-menu__column">
+                        <div class="mega-menu-column">
                           <a href="{{ link.url }}"
-                             class="mega-menu__column-title"
+                             class="mega-menu-heading"
                              {% if link.current %}aria-current="page"{% endif %}>
                             {{ link.title }}
                           </a>
                           {%- if link.links.size > 0 -%}
-                            <ul class="mega-menu__sublist" role="list">
+                            <ul class="mega-menu-list" role="list">
                               {%- for sublink in link.links -%}
                                 <li>
                                   <a href="{{ sublink.url }}"
-                                     class="mega-menu__sublink"
+                                     class="mega-menu-link"
                                      {% if sublink.current %}aria-current="page"{% endif %}>
                                     {{ sublink.title }}
                                   </a>
@@ -149,32 +169,39 @@
                       {%- endfor -%}
                     </div>
 
-                    {%- if block.settings.promo_image != blank or block.settings.promo_heading != blank -%}
-                      <div class="mega-menu__promo mega-menu__promo--{{ promo_position }}">
-                        {%- if block.settings.promo_image != blank -%}
-                          <img src="{{ block.settings.promo_image | image_url: width: 600 }}"
-                               alt="{{ block.settings.promo_image.alt | default: block.settings.promo_heading | escape }}"
-                               class="mega-menu__promo-image"
-                               loading="lazy"
-                               width="{{ block.settings.promo_image.width }}"
-                               height="{{ block.settings.promo_image.height }}">
-                        {%- endif -%}
-                        {%- if block.settings.promo_heading != blank -%}
-                          <h3 class="mega-menu__promo-heading">{{ block.settings.promo_heading }}</h3>
-                        {%- endif -%}
-                        {%- if block.settings.promo_subtext != blank -%}
-                          <p class="mega-menu__promo-subtext">{{ block.settings.promo_subtext }}</p>
-                        {%- endif -%}
-                        {%- if block.settings.promo_cta_label != blank -%}
-                          <a href="{{ block.settings.promo_cta_link | default: '#' }}" class="mega-menu__promo-cta">
-                            {{ block.settings.promo_cta_label }}
-                          </a>
-                        {%- endif -%}
+                    {%- if mega_collection != blank -%}
+                      <div class="mega-menu__products">
+                        <div class="mega-menu__product-header">
+                          <span class="mega-menu-heading">Trending in {{ mega_collection.title }}</span>
+                        </div>
+                        <div class="mega-menu__product-grid">
+                          {%- for product in mega_collection.products limit: 3 -%}
+                            <a href="{{ product.url }}" class="mega-menu__product-card">
+                              <div class="mega-menu__product-image">
+                                <img src="{{ product.featured_image | image_url: width: 300 }}"
+                                     alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                                     loading="lazy"
+                                     width="300"
+                                     height="300">
+                                {%- if product.compare_at_price > product.price -%}
+                                  <span class="mega-menu__badge">Sale</span>
+                                {%- endif -%}
+                              </div>
+                              <div class="mega-menu__product-info">
+                                <p class="mega-menu__product-title">{{ product.title }}</p>
+                                <p class="mega-menu__product-price">
+                                  {%- if product.compare_at_price > product.price -%}
+                                    <span class="price--sale">{{ product.price | money }}</span>
+                                    <span class="price--compare">{{ product.compare_at_price | money }}</span>
+                                  {%- else -%}
+                                    {{ product.price | money }}
+                                  {%- endif -%}
+                                </p>
+                              </div>
+                            </a>
+                          {%- endfor -%}
+                        </div>
                       </div>
-                    {%- endif -%}
-
-                    {%- if block.settings.show_products -%}
-                      <div class="mega-menu__products" data-mega-products></div>
                     {%- endif -%}
 
                   </div>
@@ -444,47 +471,7 @@
           "id": "show_products",
           "label": "Show trending products",
           "default": false,
-          "info": "Reserves a slot (.mega-menu__products) for trending product markup rendered elsewhere, e.g. via the Section Rendering API."
-        },
-        {
-          "type": "header",
-          "content": "Promo"
-        },
-        {
-          "type": "select",
-          "id": "promo_position",
-          "label": "Position",
-          "default": "right",
-          "options": [
-            { "value": "right",  "label": "Right" },
-            { "value": "left",   "label": "Left" },
-            { "value": "bottom", "label": "Bottom" }
-          ]
-        },
-        {
-          "type": "image_picker",
-          "id": "promo_image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "promo_heading",
-          "label": "Heading"
-        },
-        {
-          "type": "text",
-          "id": "promo_subtext",
-          "label": "Subtext"
-        },
-        {
-          "type": "text",
-          "id": "promo_cta_label",
-          "label": "Button label"
-        },
-        {
-          "type": "url",
-          "id": "promo_cta_link",
-          "label": "Button URL"
+          "info": "Pulls the first 3 products from the first collection link found in the chosen menu."
         }
       ]
     },
