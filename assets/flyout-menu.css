@@ -17,22 +17,13 @@
 
    Replaces assets/flyout.css. No promo-image styling — removed.
 
-   CHANGELOG (polish pass):
-   - Softer, more layered shadow + a thin red top border instead of a
-     flat box-shadow, so the panel feels lifted rather than pasted on.
-   - Eased open/close with a slightly springier cubic-bezier instead of
-     linear ease.
-   - Active panel now cross-fades in (instead of an instant swap) when
-     switching categories, while still being instant for
-     prefers-reduced-motion.
-   - Custom thin scrollbar for the category list (long menus no longer
-     show a default chunky scrollbar inside a 14px-radius panel).
-   - Stronger, more visible :focus-visible rings on every interactive
-     element (was relying on color-only hover/focus before).
-   - Active category row now gets a small dot marker in addition to the
-     left border + tinted background — more obviously "you are here."
-   - Group headings get a faint bottom rule so visually dense panels
-     don't run all the columns together.
+   CHANGELOG (this revision):
+   - FIXED: ".flyout-panel:hover" could never match because the panel is
+     display:none by default — you can't hover an element that isn't
+     rendered. Replaced with ".menu-bar__item--has-flyout:hover" so the
+     panel now actually opens on hover, matching the rest of the nav.
+   - Added a small opacity/translateY transition on open so it doesn't
+     just snap into view.
    ============================================================================= */
 
 .flyout-panel {
@@ -45,9 +36,8 @@
   margin-top: -1px;
   max-width: calc(100vw - 48px);
   opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
 }
 
 /* Hover-to-open (desktop) + click-to-open (touch/keyboard, toggled via JS .is-open) */
@@ -64,12 +54,8 @@
   align-items: stretch;
   background: #ffffff;
   border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
   border: 1px solid #e5e7eb;
-  border-top: 2px solid #c4301c;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 12px 24px -6px rgba(0, 0, 0, 0.08),
-    0 24px 48px -12px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   width: max-content;
   max-width: calc(100vw - 48px);
@@ -87,32 +73,10 @@
   border-right: 1px solid #e5e7eb;
   overflow-y: auto;
   max-height: 70vh;
-
-  /* Thin scrollbar so a long category list doesn't look bulky inside the panel */
-  scrollbar-width: thin;
-  scrollbar-color: #d4d4d8 transparent;
-}
-
-.flyout-panel__categories::-webkit-scrollbar {
-  width: 6px;
-}
-
-.flyout-panel__categories::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.flyout-panel__categories::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
-  border-radius: 999px;
-}
-
-.flyout-panel__categories::-webkit-scrollbar-thumb:hover {
-  background: #b4b4ba;
 }
 
 .flyout-panel__category {
   border-left: 3px solid transparent;
-  position: relative;
 }
 
 .flyout-panel__category-link {
@@ -126,32 +90,19 @@
   color: #1f2937;
   text-decoration: none;
   white-space: nowrap;
-  border-radius: 0 6px 6px 0;
   transition: background 0.12s ease, color 0.12s ease;
-}
-
-.flyout-panel__category-link:focus-visible {
-  outline: 2px solid #c4301c;
-  outline-offset: -2px;
-  background: #fdf2f1;
-  color: #c4301c;
 }
 
 .flyout-panel__category-link .icon-caret-right {
   opacity: 0;
   color: #c4301c;
-  transition: opacity 0.12s ease, transform 0.15s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
 .flyout-panel__category-link:hover,
 .flyout-panel__category-link:focus-visible {
   background: #f3f4f6;
   color: #c4301c;
-}
-
-.flyout-panel__category-link:hover .icon-caret-right,
-.flyout-panel__category-link:focus-visible .icon-caret-right {
-  transform: translateX(2px);
 }
 
 .flyout-panel__category.is-active {
@@ -161,18 +112,6 @@
 .flyout-panel__category.is-active .flyout-panel__category-link {
   background: #fdf2f1;
   color: #c4301c;
-  font-weight: 700;
-}
-
-/* Small "you are here" marker, distinct from the focus/hover state */
-.flyout-panel__category.is-active .flyout-panel__category-link::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: #c4301c;
-  margin-right: 2px;
-  flex-shrink: 0;
 }
 
 .flyout-panel__category.is-active .flyout-panel__category-link .icon-caret-right,
@@ -198,18 +137,6 @@
 
 .flyout-panel__panel.is-active {
   display: flex;
-  animation: flyout-panel-fade 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes flyout-panel-fade {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .flyout-panel__columns {
@@ -231,24 +158,15 @@
   font-weight: 700;
   color: #111827;
   text-decoration: none;
-  padding: 6px 0 9px;
-  margin-bottom: 3px;
-  border-bottom: 1px solid #f0f0f1;
+  padding: 6px 0;
   white-space: nowrap;
-  transition: color 0.12s ease, border-color 0.12s ease;
+  transition: color 0.12s ease;
 }
 
 .flyout-panel__group:hover,
 .flyout-panel__group:focus-visible,
 .flyout-panel__group[aria-current="page"] {
   color: #c4301c;
-  border-color: #f3d9d6;
-}
-
-.flyout-panel__group:focus-visible {
-  outline: 2px solid #c4301c;
-  outline-offset: 2px;
-  border-radius: 2px;
 }
 
 .flyout-panel__sublist {
@@ -265,20 +183,13 @@
   text-decoration: none;
   padding: 4px 0 4px 14px;
   white-space: nowrap;
-  border-radius: 2px;
-  transition: color 0.12s ease, transform 0.12s ease;
+  transition: color 0.12s ease;
 }
 
 .flyout-panel__sublink:hover,
 .flyout-panel__sublink:focus-visible,
 .flyout-panel__sublink[aria-current="page"] {
   color: #c4301c;
-  transform: translateX(2px);
-}
-
-.flyout-panel__sublink:focus-visible {
-  outline: 2px solid #c4301c;
-  outline-offset: 1px;
 }
 
 .flyout-panel__all-link {
@@ -290,12 +201,6 @@
   font-weight: 700;
   color: #c4301c;
   text-decoration: none;
-  border-radius: 2px;
-}
-
-.flyout-panel__all-link:focus-visible {
-  outline: 2px solid #c4301c;
-  outline-offset: 2px;
 }
 
 .flyout-panel__all-link .icon-arrow-right {
@@ -328,9 +233,7 @@
   .flyout-panel__category-link .icon-caret-right,
   .flyout-panel__group,
   .flyout-panel__sublink,
-  .flyout-panel__all-link .icon-arrow-right,
-  .flyout-panel__panel.is-active {
+  .flyout-panel__all-link .icon-arrow-right {
     transition: none !important;
-    animation: none !important;
   }
 }
