@@ -1,0 +1,220 @@
+{% comment %}
+  Menu Bar — Mega Menu Block
+  File: blocks/mega-menu.liquid
+
+  Classic mega menu nav item: trigger link in the menu bar that opens a
+  full-width dropdown panel containing a column grid (from the linked
+  menu) plus an optional promo tile and trending-products rail.
+
+  Renders its own <li>, so it can be looped + rendered directly inside
+  a <ul> by a parent section (e.g. sections/menu-bar.liquid).
+{% endcomment %}
+
+{%- liquid
+  assign mega_menu = linklists[block.settings.menu]
+  assign trigger_url = block.settings.link | default: mega_menu.links.first.url | default: '#'
+  assign has_promo = false
+  if block.settings.promo_image != blank or block.settings.promo_heading != blank
+    assign has_promo = true
+  endif
+  assign col_count = mega_menu.links.size | default: 0
+  if col_count > 6
+    assign col_count = 6
+  endif
+  assign featured_collection = blank
+  if block.settings.show_products
+    assign first_link = mega_menu.links.first
+    if first_link.type == 'collection_link' or first_link.object
+      assign featured_collection = first_link.object
+    endif
+  endif
+-%}
+
+<li class="menu-bar__item menu-bar__item--has-mega" {{ block.shopify_attributes }}>
+  <a href="{{ trigger_url }}"
+     class="menu-bar__link menu-bar__link--caret"
+     aria-haspopup="true"
+     aria-expanded="false">
+    {%- if block.settings.icon != blank -%}
+      <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+    {%- endif -%}
+    {{ block.settings.label | default: mega_menu.title | default: 'Shop' }}
+    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  {%- if mega_menu != blank and mega_menu.links.size > 0 -%}
+    <div class="mega-menu" role="region">
+      <div class="mega-menu-items{% if has_promo %} mega-menu-items--promo-{{ block.settings.promo_position | default: 'right' }}{% endif %}{% if block.settings.show_products and featured_collection %} mega-menu-items--with-products{% endif %}">
+
+        {%- if has_promo and block.settings.promo_position == 'left' -%}
+          <div class="mega-menu__promo">
+            {%- if block.settings.promo_image != blank -%}
+              {{ block.settings.promo_image | image_url: width: 600 | image_tag: loading: 'lazy', alt: block.settings.promo_heading }}
+            {%- endif -%}
+            {%- if block.settings.promo_heading != blank -%}<p class="mega-menu__promo-heading">{{ block.settings.promo_heading }}</p>{%- endif -%}
+            {%- if block.settings.promo_subtext != blank -%}<p class="mega-menu__promo-subtext">{{ block.settings.promo_subtext }}</p>{%- endif -%}
+            {%- if block.settings.promo_cta_link != blank -%}
+              <a href="{{ block.settings.promo_cta_link }}" class="mega-menu__promo-cta">{{ block.settings.promo_cta_label | default: 'Shop now' }}</a>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        <div class="mega-menu__text-columns" style="--mega-col-count: {{ col_count }};">
+          {%- for column in mega_menu.links -%}
+            <div class="mega-menu-column">
+              <a href="{{ column.url }}" class="mega-menu-heading">{{ column.title }}</a>
+
+              {%- for item in column.links -%}
+                {%- if item.links.size > 0 -%}
+                  <div class="mega-menu-subheading">{{ item.title }}</div>
+                  <ul class="mega-menu-list">
+                    {%- for link in item.links -%}
+                      <li><a href="{{ link.url }}" class="mega-menu-link">{{ link.title }}</a></li>
+                    {%- endfor -%}
+                  </ul>
+                {%- else -%}
+                  <ul class="mega-menu-list">
+                    <li><a href="{{ item.url }}" class="mega-menu-link">{{ item.title }}</a></li>
+                  </ul>
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+          {%- endfor -%}
+        </div>
+
+        {%- if block.settings.show_products and featured_collection and featured_collection.products.size > 0 -%}
+          <div class="mega-menu__products">
+            <div class="mega-menu__product-header">
+              <span class="mega-menu-heading">Trending Now</span>
+            </div>
+            <div class="mega-menu__product-grid">
+              {%- for product in featured_collection.products limit: 3 -%}
+                <a href="{{ product.url }}" class="mega-menu__product-card">
+                  <div class="mega-menu__product-image">
+                    {%- if product.featured_media -%}
+                      {{ product.featured_media | image_url: width: 240 | image_tag: loading: 'lazy', alt: product.title }}
+                    {%- endif -%}
+                    {%- if product.compare_at_price > product.price -%}
+                      <span class="mega-menu__badge">Sale</span>
+                    {%- endif -%}
+                  </div>
+                  <div class="mega-menu__product-info">
+                    <p class="mega-menu__product-title">{{ product.title }}</p>
+                    <div class="mega-menu__product-price">
+                      {%- if product.compare_at_price > product.price -%}
+                        <span class="price--sale">{{ product.price | money }}</span>
+                        <span class="price--compare">{{ product.compare_at_price | money }}</span>
+                      {%- else -%}
+                        {{ product.price | money }}
+                      {%- endif -%}
+                    </div>
+                  </div>
+                </a>
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+
+        {%- if has_promo and block.settings.promo_position != 'left' -%}
+          <div class="mega-menu__promo">
+            {%- if block.settings.promo_image != blank -%}
+              {{ block.settings.promo_image | image_url: width: 600 | image_tag: loading: 'lazy', alt: block.settings.promo_heading }}
+            {%- endif -%}
+            {%- if block.settings.promo_heading != blank -%}<p class="mega-menu__promo-heading">{{ block.settings.promo_heading }}</p>{%- endif -%}
+            {%- if block.settings.promo_subtext != blank -%}<p class="mega-menu__promo-subtext">{{ block.settings.promo_subtext }}</p>{%- endif -%}
+            {%- if block.settings.promo_cta_link != blank -%}
+              <a href="{{ block.settings.promo_cta_link }}" class="mega-menu__promo-cta">{{ block.settings.promo_cta_label | default: 'Shop now' }}</a>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+      </div>
+    </div>
+  {%- endif -%}
+</li>
+
+{% schema %}
+{
+  "name": "Mega menu",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Nav bar"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Shop"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "URL",
+      "info": "Optional. Falls back to first menu link."
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu"
+    },
+    {
+      "type": "text",
+      "id": "icon",
+      "label": "Icon name"
+    },
+    {
+      "type": "header",
+      "content": "Products"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_products",
+      "label": "Show trending products",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Promo"
+    },
+    {
+      "type": "select",
+      "id": "promo_position",
+      "label": "Position",
+      "default": "right",
+      "options": [
+        { "value": "right",  "label": "Right" },
+        { "value": "left",   "label": "Left" },
+        { "value": "bottom", "label": "Bottom" }
+      ]
+    },
+    {
+      "type": "image_picker",
+      "id": "promo_image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "promo_heading",
+      "label": "Heading"
+    },
+    {
+      "type": "text",
+      "id": "promo_subtext",
+      "label": "Subtext"
+    },
+    {
+      "type": "text",
+      "id": "promo_cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "promo_cta_link",
+      "label": "Button URL"
+    }
+  ]
+}
+{% endschema %}
