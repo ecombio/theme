@@ -1,64 +1,148 @@
-{% comment %}
-  ECOMBIO Flyout Menu — Horizontal Column Panel
+{%- comment -%}
+  Flyout Menu
   File: snippets/flyout-menu.liquid
 
-  Renders one horizontal panel per sidebar category.
-  Hidden by default; flyout-panel.js toggles flyout-menu--visible.
+  Sidebar-style "browse all categories" flyout block — left-hand list of
+  top-level categories, right-hand content panel that swaps per category,
+  rendered for the 'flyout' block type in sections/header-menu.liquid.
 
-  Shopify nav depth (3 levels max):
-    Level 1  →  sidebar trigger          (flyout-panel)
-    Level 2  →  column heading           (this file — col)
-    Level 3  →  links under that column  (this file — link)
+  Pairs with:
+    assets/flyout-menu.css
+    assets/flyout-menu.js
 
-  Params:
-    cat      {link}    The Level-1 nav link (sidebar item)
-    panel_id {string}  Scoped ID — must match trigger's data-flyout-target
-    active   {bool}    True for the first panel only
-{% endcomment %}
+  Usage (from sections/header-menu.liquid):
+    {%- when 'flyout' -%}
+      {%- render 'flyout-menu', block: block -%}
 
-<div
-  class="flyout-menu{% if active %} flyout-menu--visible{% endif %}"
-  id="{{ panel_id }}"
-  role="region"
-  aria-label="{{ cat.title | escape }}"
-  aria-hidden="{% if active %}false{% else %}true{% endif %}"
->
-  {%- if cat.links.size > 0 -%}
+  Accepts:
+    block - the flyout block, with settings: menu, link, label, icon
 
-    <div class="flyout-menu__columns" style="--flyout-col-count: {{ cat.links.size }};">
-      {%- for col in cat.links -%}
-        <div class="flyout-menu__column">
+  Current-page awareness: `flyout_active_index` finds the top-level link
+  whose branch contains the page the visitor is currently on (via
+  Shopify's `link.active`, which is true for the link itself OR any of
+  its descendants) and pre-selects that category + panel instead of
+  always defaulting to the first one. Falls back to the first category
+  when nothing in the menu matches the current page (e.g. visitor is on
+  the homepage).
 
-          {%- if col.links.size > 0 -%}
-            {%- comment -%} Level 2 with children → heading + link list {%- endcomment -%}
-            <a href="{{ col.url }}" class="flyout-menu__col-heading">{{- col.title -}}</a>
-            <ul class="flyout-menu__link-list">
-              {%- for link in col.links -%}
-                <li>
-                  <a href="{{ link.url }}" class="flyout-menu__link">{{- link.title -}}</a>
-                </li>
-              {%- endfor -%}
-            </ul>
+  Column split: each category's sub_links are divided into two columns
+  via a single (0..1) loop below rather than duplicating the column
+  markup — column 0 gets the ceiling half, column 1 gets the remainder
+  plus the trailing "All {{ link.title }}" link.
 
-          {%- else -%}
-            {%- comment -%} Level 2 leaf → heading links directly {%- endcomment -%}
-            <a href="{{ col.url }}" class="flyout-menu__col-heading">{{- col.title -}}</a>
-            <a href="{{ col.url }}" class="flyout-menu__link">Shop all</a>
+  Promo image support intentionally not included — see prior removal.
+{%- endcomment -%}
 
-          {%- endif -%}
+{%- assign flyout_menu = linklists[block.settings.menu] -%}
 
+{%- if flyout_menu != blank and flyout_menu.links.size > 0 -%}
+  {%- assign flyout_active_index = 0 -%}
+  {%- for link in flyout_menu.links -%}
+    {%- if link.active and flyout_active_index == 0 -%}
+      {%- assign flyout_active_index = forloop.index -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if flyout_active_index == 0 -%}
+    {%- assign flyout_active_index = 1 -%}
+  {%- endif -%}
+{%- endif -%}
+
+<li class="menu-bar__item menu-bar__item--has-flyout" {{ block.shopify_attributes }}>
+  <a href="{{ block.settings.link | default: flyout_menu.links.first.url | default: '#' }}"
+     class="menu-bar__link menu-bar__link--caret flyout-trigger"
+     aria-haspopup="true"
+     aria-expanded="false"
+     data-flyout-trigger>
+    {%- if block.settings.icon != blank -%}
+      <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+    {%- endif -%}
+    {{ block.settings.label | default: 'Browse all categories' }}
+    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  {%- if flyout_menu != blank and flyout_menu.links.size > 0 -%}
+    <div class="flyout-panel"
+         role="region"
+         aria-label="{{ block.settings.label | default: 'Browse all categories' }}"
+         data-flyout-panel>
+      <div class="flyout-panel__container">
+
+        <ul class="flyout-panel__categories" role="list">
+          {%- for link in flyout_menu.links -%}
+            <li class="flyout-panel__category{% if forloop.index == flyout_active_index %} is-active{% endif %}">
+              <a href="{{ link.url }}"
+                 class="flyout-panel__category-link"
+                 data-flyout-category-trigger
+                 data-flyout-target="flyout-panel-{{ block.id }}-{{ forloop.index }}"
+                 {% if link.current %}aria-current="page"{% endif %}>
+                {{ link.title }}
+                <svg class="icon-caret-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+
+        <div class="flyout-panel__content" data-flyout-content>
+          {%- for link in flyout_menu.links -%}
+            {%- assign sub_links = link.links -%}
+            {%- assign col1_limit = sub_links.size | plus: 1 | divided_by: 2 -%}
+            {%- assign col2_limit = sub_links.size | minus: col1_limit -%}
+            <div class="flyout-panel__panel{% if forloop.index == flyout_active_index %} is-active{% endif %}"
+                 id="flyout-panel-{{ block.id }}-{{ forloop.index }}"
+                 data-flyout-panel-item>
+
+              <div class="flyout-panel__columns">
+                {%- for col in (0..1) -%}
+                  {%- if col == 0 -%}
+                    {%- assign col_offset = 0 -%}
+                    {%- assign col_limit = col1_limit -%}
+                  {%- else -%}
+                    {%- assign col_offset = col1_limit -%}
+                    {%- assign col_limit = col2_limit -%}
+                  {%- endif -%}
+                  <div class="flyout-panel__column">
+                    {%- for sublink in sub_links offset: col_offset limit: col_limit -%}
+                      <a href="{{ sublink.url }}"
+                         class="flyout-panel__group"
+                         {% if sublink.current %}aria-current="page"{% endif %}>
+                        {{ sublink.title }}
+                      </a>
+                      {%- if sublink.links.size > 0 -%}
+                        <ul class="flyout-panel__sublist" role="list">
+                          {%- for grandchild in sublink.links -%}
+                            <li>
+                              <a href="{{ grandchild.url }}"
+                                 class="flyout-panel__sublink"
+                                 {% if grandchild.current %}aria-current="page"{% endif %}>
+                                {{ grandchild.title }}
+                              </a>
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- if col == 1 -%}
+                      <a href="{{ link.url }}" class="flyout-panel__all-link">
+                        All {{ link.title }}
+                        <svg class="icon-arrow-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </a>
+                    {%- endif -%}
+                  </div>
+                {%- endfor -%}
+              </div>
+
+            </div>
+          {%- endfor -%}
         </div>
-      {%- endfor -%}
-    </div>
 
-  {%- else -%}
-
-    <div class="flyout-menu__columns" style="--flyout-col-count: 1;">
-      <div class="flyout-menu__column">
-        <a href="{{ cat.url }}" class="flyout-menu__col-heading">{{- cat.title -}}</a>
-        <a href="{{ cat.url }}" class="flyout-menu__link">Shop all</a>
       </div>
     </div>
-
   {%- endif -%}
-</div>
+</li>
