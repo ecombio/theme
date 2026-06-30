@@ -1,478 +1,291 @@
 {% comment %}
-  Header Menu
-  File: sections/header-menu.liquid
+  sections/header-menu.liquid
+  ─────────────────────────────────────────────────────────────────────────────
+  Pure menu bar. Renders inside sections/groups/header-group.json, which owns
+  the <header role="banner"> wrapper — this section must NOT define "tag" in
+  its schema.
 
-  Renders the desktop menu bar and the mobile nav drawer.
-
-  Add to layout/theme.liquid, directly after {%- section 'main-header' -%}:
-    {%- section 'header-menu' -%}
-
-  Block types: single | highlight | dropdown | mega | flyout
-
-  The `mega` block type delegates its panel markup entirely to
-  blocks/mega-menu.liquid via Shopify's shared block system.
-
-  Assets (loaded once, here):
-    assets/header-mega-menu.js
-    assets/flyout-panel.js
-    assets/flyout-menu.js
-    assets/flyout.js
+  This section does ONE job: render section.blocks (mega_menu / single_link)
+  as a horizontal nav on desktop and an accordion drawer on mobile.
+  No logo, no search/account/cart icons, no CTA button, no sticky/transparent
+  logic. Add those back in the group or a separate section if needed.
+  ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
-{{ 'header-menu.css' | asset_url | stylesheet_tag }}
+{{ 'mega-menu.css' | asset_url | stylesheet_tag }}
+{{ 'in-menu-promo.css' | asset_url | stylesheet_tag }}
 
-{%- liquid
-  assign nav_menu = linklists[section.settings.menu] | default: linklists['main-menu']
--%}
+<div
+  id="header-menu-{{ section.id }}"
+  class="header-menu"
+  data-section-id="{{ section.id }}"
+>
+  <div class="header-menu__inner">
 
-{%- comment -%} ═══════════════════════════════════════
-    DESKTOP MENU BAR
-═══════════════════════════════════════ {%- endcomment -%}
+    {%- comment -%} ── Desktop nav — mega-menu + single-link blocks ── {%- endcomment -%}
+    <nav
+      id="site-nav-{{ section.id }}"
+      class="site-nav"
+      aria-label="Primary navigation"
+    >
+      <ul class="site-nav__list" role="menubar">
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
 
-{%- if section.blocks.size > 0 -%}
+            {%- when 'mega_menu' -%}
+              <li
+                class="site-nav__item site-nav__item--mega"
+                role="none"
+                {{ block.shopify_attributes }}
+              >
+                {%- render 'mega-menu', block: block -%}
+              </li>
 
-<nav class="menu-bar" aria-label="Primary navigation">
-  <div class="menu-bar__container page-width">
-    <ul class="menu-bar__list">
+            {%- when 'single_link' -%}
+              <li
+                class="site-nav__item site-nav__item--single"
+                role="none"
+                {{ block.shopify_attributes }}
+              >
+                {%- render 'single-link', block: block -%}
+              </li>
 
-      {%- for block in section.blocks -%}
-        {%- case block.type -%}
+          {%- endcase -%}
+        {%- endfor -%}
+      </ul>
+    </nav>
 
-          {%- when 'single' -%}
-            <li class="menu-bar__item" {{ block.shopify_attributes }}>
-              <a href="{{ block.settings.link | default: '#' }}" class="menu-bar__link">
-                {%- if block.settings.icon != blank -%}
-                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
-                {%- endif -%}
-                {{ block.settings.label | default: 'Link' }}
-              </a>
-            </li>
+    {%- comment -%} ── Mobile hamburger ── {%- endcomment -%}
+    <button
+      id="mobile-menu-toggle-{{ section.id }}"
+      class="header-menu__hamburger"
+      aria-label="Toggle navigation"
+      aria-expanded="false"
+      aria-controls="mobile-nav-drawer-{{ section.id }}"
+      type="button"
+    >
+      <span class="hamburger__line"></span>
+      <span class="hamburger__line"></span>
+      <span class="hamburger__line"></span>
+    </button>
 
-          {%- when 'highlight' -%}
-            <li class="menu-bar__item menu-bar__item--highlight" {{ block.shopify_attributes }}>
-              <a href="{{ block.settings.link | default: '#' }}" class="menu-bar__link menu-bar__link--highlight">
-                {%- if block.settings.icon != blank -%}
-                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
-                {%- endif -%}
-                <span class="reversed-link">{{ block.settings.label | default: 'On Sale' }}</span>
-                <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
-                <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
-                <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
-              </a>
-            </li>
+  </div><!-- /.header-menu__inner -->
+</div><!-- /.header-menu -->
 
-          {%- when 'dropdown' -%}
-            {%- assign dd_menu = linklists[block.settings.menu] -%}
-            <li class="menu-bar__item menu-bar__item--has-dropdown" {{ block.shopify_attributes }}>
-              <a href="{{ block.settings.link | default: dd_menu.links.first.url | default: '#' }}"
-                 class="menu-bar__link menu-bar__link--caret"
-                 aria-haspopup="true"
-                 aria-expanded="false">
-                {%- if block.settings.icon != blank -%}
-                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
-                {%- endif -%}
-                {{ block.settings.label | default: dd_menu.title | default: 'Menu' }}
-                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-              {%- if dd_menu != blank and dd_menu.links.size > 0 -%}
-                <div class="dropdown" role="region">
-                  <div class="dropdown__container">
-                    <ul class="dropdown__nav" role="list">
-                      {%- for link in dd_menu.links -%}
-                        <li class="dropdown__item{% if link.links.size > 0 %} dropdown__item--has-child{% endif %}">
-                          {%- if link.links.size > 0 -%}
-                            <span class="dropdown__link dropdown__link--parent">
-                              {{ link.title }}
-                              <svg class="icon-caret-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                                <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                              </svg>
-                            </span>
-                            <div class="dropdown dropdown--child">
-                              <div class="dropdown__container">
-                                <ul class="dropdown__nav" role="list">
-                                  {%- for child in link.links -%}
-                                    <li><a href="{{ child.url }}" class="dropdown__link">{{ child.title }}</a></li>
-                                  {%- endfor -%}
-                                </ul>
-                              </div>
-                            </div>
-                          {%- else -%}
-                            <a href="{{ link.url }}" class="dropdown__link">{{ link.title }}</a>
-                          {%- endif -%}
+{%- comment -%} ── Mobile Nav Drawer — sibling, not nested in nav ── {%- endcomment -%}
+<div
+  id="mobile-nav-drawer-{{ section.id }}"
+  class="mobile-drawer"
+  aria-hidden="true"
+  role="dialog"
+  aria-label="Mobile navigation"
+>
+  <div class="mobile-drawer__overlay" data-action="close-drawer"></div>
+  <div class="mobile-drawer__panel" role="document">
+    <button
+      class="mobile-drawer__close"
+      aria-label="Close navigation"
+      data-action="close-drawer"
+      type="button"
+    >
+      <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <ul class="mobile-nav__list">
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+
+            {%- when 'mega_menu' -%}
+              {%- liquid
+                assign mobile_menu   = linklists[block.settings.menu]
+                assign trigger_label = block.settings.label | default: mobile_menu.title
+              -%}
+              {%- if mobile_menu != blank -%}
+                <li class="mobile-nav__item mobile-nav__item--has-children">
+                  <button
+                    class="mobile-nav__trigger"
+                    aria-expanded="false"
+                    aria-controls="mobile-submenu-{{ block.id }}"
+                    type="button"
+                  >
+                    {{- trigger_label | escape -}}
+                    <svg class="mobile-nav__chevron" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <ul
+                    id="mobile-submenu-{{ block.id }}"
+                    class="mobile-nav__submenu"
+                    hidden
+                  >
+                    {%- for link in mobile_menu.links -%}
+                      {%- if link.links != blank -%}
+                        <li class="mobile-nav__subitem mobile-nav__subitem--group">
+                          <span class="mobile-nav__group-title">{{- link.title | escape -}}</span>
+                          <ul class="mobile-nav__sublist">
+                            {%- for child in link.links -%}
+                              <li class="mobile-nav__subitem">
+                                <a href="{{ child.url }}" class="mobile-nav__link">{{- child.title | escape -}}</a>
+                              </li>
+                            {%- endfor -%}
+                          </ul>
                         </li>
-                      {%- endfor -%}
-                    </ul>
-                  </div>
-                </div>
+                      {%- else -%}
+                        <li class="mobile-nav__subitem">
+                          <a href="{{ link.url }}" class="mobile-nav__link">{{- link.title | escape -}}</a>
+                        </li>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  </ul>
+                </li>
               {%- endif -%}
-            </li>
 
-          {%- when 'mega' -%}
-            {%- comment -%}
-              Delegates entirely to blocks/mega-menu.liquid.
-              The block file owns both the <li> wrapper and the panel markup,
-              keeping this section lean and the mega logic self-contained.
-            {%- endcomment -%}
-            {%- render block -%}
+            {%- when 'single_link' -%}
+              <li class="mobile-nav__item">
+                <a
+                  href="{{ block.settings.url }}"
+                  class="mobile-nav__link mobile-nav__link--top"
+                  {% if block.settings.open_new_tab %}target="_blank" rel="noopener"{% endif %}
+                >
+                  {{- block.settings.label | escape -}}
+                </a>
+              </li>
 
-          {%- when 'flyout' -%}
-            {%- assign flyout_menu = linklists[block.settings.menu] -%}
-            <li class="menu-bar__item menu-bar__item--has-flyout" {{ block.shopify_attributes }}>
-              <a href="{{ block.settings.link | default: '#' }}"
-                 class="menu-bar__link menu-bar__link--flyout"
-                 aria-haspopup="true"
-                 aria-expanded="false">
-                {%- if block.settings.icon != blank -%}
-                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
-                {%- endif -%}
-                {{ block.settings.label | default: 'Browse all categories' }}
-                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-              {%- if flyout_menu != blank and flyout_menu.links.size > 0 -%}
-                <div class="mega-menu mega-menu--flyout" role="region">
-                  {%- render 'flyout', menu: flyout_menu, uid: block.id -%}
-                </div>
-              {%- endif -%}
-            </li>
-
-        {%- endcase -%}
-      {%- endfor -%}
-
-    </ul>
+          {%- endcase -%}
+        {%- endfor -%}
+      </ul>
+    </nav>
   </div>
-</nav>
-
-{%- endif -%}
-
-{%- comment -%} ═══════════════════════════════════════
-    MOBILE / TABLET DRAWER NAV
-    3-level accordion: top links → category headings → nested links
-═══════════════════════════════════════ {%- endcomment -%}
-
-<div class="mobile-nav" id="mobile-nav" aria-hidden="true">
-  <div class="mobile-nav__overlay" id="mobile-nav-overlay"></div>
-
-  <nav class="mobile-nav__panel" role="navigation" aria-label="Mobile navigation">
-
-    <div class="mobile-nav__header">
-      <span class="mobile-nav__header-label">Menu</span>
-      <button class="mobile-nav__close" id="mobile-nav-close" aria-label="Close navigation">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-
-    <ul class="mobile-nav__list" role="list">
-      {%- for link in nav_menu.links -%}
-
-        {%- if link.links.size > 0 -%}
-          <li class="mobile-nav__item mobile-nav__item--has-children{%- if link.active %} is-active{%- endif %}">
-
-            <div class="mobile-nav__row">
-              <a href="{{ link.url }}"
-                 class="mobile-nav__link"
-                 {% if link.current %}aria-current="page"{% endif %}>
-                {{ link.title }}
-              </a>
-              <button class="mobile-nav__toggle"
-                      aria-expanded="false"
-                      aria-label="Expand {{ link.title }}">
-                <svg class="mobile-nav__chevron" width="16" height="16"
-                     viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor"
-                        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </div>
-
-            <ul class="mobile-nav__sub" role="list" hidden>
-              {%- for child in link.links -%}
-
-                {%- if child.links.size > 0 -%}
-                  <li class="mobile-nav__item mobile-nav__item--has-children mobile-nav__item--l3">
-                    <div class="mobile-nav__row">
-                      <a href="{{ child.url }}"
-                         class="mobile-nav__link mobile-nav__link--sub"
-                         {% if child.current %}aria-current="page"{% endif %}>
-                        {{ child.title }}
-                      </a>
-                      <button class="mobile-nav__toggle"
-                              aria-expanded="false"
-                              aria-label="Expand {{ child.title }}">
-                        <svg class="mobile-nav__chevron" width="14" height="14"
-                             viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                          <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor"
-                                stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <ul class="mobile-nav__sub mobile-nav__sub--l3" role="list" hidden>
-                      {%- for grandchild in child.links -%}
-                        <li>
-                          <a href="{{ grandchild.url }}"
-                             class="mobile-nav__link mobile-nav__link--deep"
-                             {% if grandchild.current %}aria-current="page"{% endif %}>
-                            {{ grandchild.title }}
-                          </a>
-                        </li>
-                      {%- endfor -%}
-                    </ul>
-                  </li>
-
-                {%- else -%}
-                  <li class="mobile-nav__item">
-                    <a href="{{ child.url }}"
-                       class="mobile-nav__link mobile-nav__link--sub"
-                       {% if child.current %}aria-current="page"{% endif %}>
-                      {{ child.title }}
-                    </a>
-                  </li>
-                {%- endif -%}
-
-              {%- endfor -%}
-            </ul>
-          </li>
-
-        {%- else -%}
-          <li class="mobile-nav__item{% if link.active %} is-active{% endif %}">
-            <a href="{{ link.url }}"
-               class="mobile-nav__link"
-               {% if link.current %}aria-current="page"{% endif %}>
-              {{ link.title }}
-            </a>
-          </li>
-        {%- endif -%}
-
-      {%- endfor -%}
-    </ul>
-
-  </nav>
 </div>
 
-{{- 'header-mega-menu.js' | asset_url | script_tag }}
-{{- 'flyout-panel.js'     | asset_url | script_tag }}
-{{- 'flyout-menu.js'      | asset_url | script_tag }}
-{{- 'flyout.js'           | asset_url | script_tag }}
+<script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
+<script src="{{ 'in-menu-promo.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
-  "name": "Header Menu (BACKUP)",
-  "tag": "div",
-  "class": "header-menu-section",
-  "limit": 1,
-  "settings": [
-    {
-      "type": "link_list",
-      "id": "menu",
-      "label": "Mobile navigation menu",
-      "default": "main-menu",
-      "info": "Used for the mobile drawer. Desktop items are configured via blocks below."
-    }
-  ],
+  "name": "Header Menu",
+  "settings": [],
   "blocks": [
     {
-      "type": "single",
-      "name": "Link",
+      "type": "mega_menu",
+      "name": "Mega Menu",
       "settings": [
         {
           "type": "text",
           "id": "label",
-          "label": "Label",
-          "default": "Shop"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "URL"
-        },
-        {
-          "type": "text",
-          "id": "icon",
-          "label": "Icon name",
-          "info": "Optional. Rendered via snippets/menu-icon.liquid."
-        }
-      ]
-    },
-    {
-      "type": "highlight",
-      "name": "Highlight link",
-      "settings": [
-        {
-          "type": "text",
-          "id": "label",
-          "label": "Label",
-          "default": "On Sale"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "URL"
-        },
-        {
-          "type": "text",
-          "id": "icon",
-          "label": "Icon name"
-        }
-      ]
-    },
-    {
-      "type": "dropdown",
-      "name": "Dropdown menu",
-      "settings": [
-        {
-          "type": "text",
-          "id": "label",
-          "label": "Label"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Top-level URL (optional)"
+          "label": "Nav label",
+          "info": "Overrides the link list title."
         },
         {
           "type": "link_list",
           "id": "menu",
-          "label": "Dropdown menu"
+          "label": "Link list",
+          "default": "main-menu"
         },
         {
-          "type": "text",
-          "id": "icon",
-          "label": "Icon name"
-        }
-      ]
-    },
-    {
-      "type": "@app"
-    },
-    {
-      "type": "mega",
-      "name": "Mega menu",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Nav bar"
-        },
-        {
-          "type": "text",
-          "id": "label",
-          "label": "Label",
-          "default": "Shop"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "URL",
-          "info": "Optional. Falls back to first menu link."
-        },
-        {
-          "type": "link_list",
-          "id": "menu",
-          "label": "Menu"
-        },
-        {
-          "type": "text",
-          "id": "icon",
-          "label": "Icon name"
+          "type": "select",
+          "id": "columns",
+          "label": "Column count",
+          "options": [
+            { "value": "2", "label": "2 columns" },
+            { "value": "3", "label": "3 columns" },
+            { "value": "4", "label": "4 columns" }
+          ],
+          "default": "3"
         },
         {
           "type": "header",
-          "content": "Products"
+          "content": "In-menu promo"
         },
         {
           "type": "checkbox",
-          "id": "show_products",
-          "label": "Show trending products",
+          "id": "show_promo",
+          "label": "Show promo block",
           "default": false
-        },
-        {
-          "type": "header",
-          "content": "Promo"
         },
         {
           "type": "select",
           "id": "promo_position",
-          "label": "Position",
-          "default": "right",
+          "label": "Promo position",
           "options": [
-            { "value": "right",  "label": "Right" },
-            { "value": "left",   "label": "Left" },
-            { "value": "bottom", "label": "Bottom" }
-          ]
+            { "value": "left",  "label": "Left" },
+            { "value": "right", "label": "Right" }
+          ],
+          "default": "right"
         },
         {
           "type": "image_picker",
           "id": "promo_image",
-          "label": "Image"
+          "label": "Promo image"
+        },
+        {
+          "type": "text",
+          "id": "promo_eyebrow",
+          "label": "Promo eyebrow text"
         },
         {
           "type": "text",
           "id": "promo_heading",
-          "label": "Heading"
+          "label": "Promo heading"
         },
         {
-          "type": "text",
-          "id": "promo_subtext",
-          "label": "Subtext"
+          "type": "textarea",
+          "id": "promo_body",
+          "label": "Promo body text"
         },
         {
           "type": "text",
           "id": "promo_cta_label",
-          "label": "Button label"
+          "label": "Promo button label"
         },
         {
           "type": "url",
-          "id": "promo_cta_link",
-          "label": "Button URL"
+          "id": "promo_cta_url",
+          "label": "Promo button URL"
+        },
+        {
+          "type": "color",
+          "id": "promo_bg_color",
+          "label": "Promo background color",
+          "default": "#f5f5f5"
         }
       ]
     },
     {
-      "type": "flyout",
-      "name": "Flyout panel",
+      "type": "single_link",
+      "name": "Single Link",
       "settings": [
         {
           "type": "text",
           "id": "label",
-          "label": "Label",
-          "default": "Browse all categories"
+          "label": "Link label"
         },
         {
           "type": "url",
-          "id": "link",
-          "label": "Top-level URL (optional)"
+          "id": "url",
+          "label": "Link URL"
         },
         {
-          "type": "link_list",
-          "id": "menu",
-          "label": "Flyout menu"
+          "type": "checkbox",
+          "id": "open_new_tab",
+          "label": "Open in new tab",
+          "default": false
         },
         {
-          "type": "text",
-          "id": "icon",
-          "label": "Icon name"
+          "type": "checkbox",
+          "id": "nofollow",
+          "label": "Add nofollow",
+          "default": false
         }
       ]
     }
   ],
   "presets": [
     {
-      "name": "Header Menu",
-      "settings": {
-        "menu": "main-menu"
-      },
-      "blocks": [
-        { "type": "single",    "settings": { "label": "Shop",    "link": "/collections/all" } },
-        { "type": "mega" },
-        { "type": "single",    "settings": { "label": "About",   "link": "/pages/about" } },
-        { "type": "single",    "settings": { "label": "Contact", "link": "/pages/contact" } }
-      ]
+      "name": "Header Menu"
     }
   ]
 }
