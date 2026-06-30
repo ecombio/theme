@@ -9,27 +9,10 @@
 
   Block types: single | highlight | dropdown | mega | flyout
 
-  Every block type below is a theme block (its own file in /blocks),
-  each owning its <li> markup + settings schema:
-    blocks/single.liquid
-    blocks/highlight.liquid
-    blocks/dropdown.liquid
-    blocks/mega.liquid        (type "mega" — filename must match block type)
-    blocks/flyout.liquid
-
-  Shopify does not allow legacy section-defined block schemas to be
-  mixed with theme blocks in the same section, so this section's
-  schema only references block types by name — it defines none of
-  their settings itself.
-
-  Blocks array uses "@theme" + "@app" so that:
-    - any theme block in /blocks is available, not just the 5 listed
-      below (which are pinned to the top of the block picker)
-    - app blocks (via theme app extensions) are also supported
+  The `mega` block type delegates its panel markup entirely to
+  blocks/mega-menu.liquid via Shopify's shared block system.
 
   Assets (loaded once, here):
-    assets/header-menu.css
-    assets/mega-menu-promo.css
     assets/header-mega-menu.js
     assets/flyout-panel.js
     assets/flyout-menu.js
@@ -37,7 +20,6 @@
 {% endcomment %}
 
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
-{{ 'mega-menu-promo.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign nav_menu = linklists[section.settings.menu] | default: linklists['main-menu']
@@ -53,14 +35,111 @@
   <div class="menu-bar__container page-width">
     <ul class="menu-bar__list">
 
-      {%- comment -%}
-        Every block type (single, highlight, dropdown, mega, flyout, any
-        other theme block, plus any @app blocks) is a theme block now,
-        so each one fully owns its own <li> markup — this loop just
-        renders whichever block it is.
-      {%- endcomment -%}
       {%- for block in section.blocks -%}
-        {%- render block -%}
+        {%- case block.type -%}
+
+          {%- when 'single' -%}
+            <li class="menu-bar__item" {{ block.shopify_attributes }}>
+              <a href="{{ block.settings.link | default: '#' }}" class="menu-bar__link">
+                {%- if block.settings.icon != blank -%}
+                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+                {%- endif -%}
+                {{ block.settings.label | default: 'Link' }}
+              </a>
+            </li>
+
+          {%- when 'highlight' -%}
+            <li class="menu-bar__item menu-bar__item--highlight" {{ block.shopify_attributes }}>
+              <a href="{{ block.settings.link | default: '#' }}" class="menu-bar__link menu-bar__link--highlight">
+                {%- if block.settings.icon != blank -%}
+                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+                {%- endif -%}
+                <span class="reversed-link">{{ block.settings.label | default: 'On Sale' }}</span>
+                <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+                <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+                <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+              </a>
+            </li>
+
+          {%- when 'dropdown' -%}
+            {%- assign dd_menu = linklists[block.settings.menu] -%}
+            <li class="menu-bar__item menu-bar__item--has-dropdown" {{ block.shopify_attributes }}>
+              <a href="{{ block.settings.link | default: dd_menu.links.first.url | default: '#' }}"
+                 class="menu-bar__link menu-bar__link--caret"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                {%- if block.settings.icon != blank -%}
+                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+                {%- endif -%}
+                {{ block.settings.label | default: dd_menu.title | default: 'Menu' }}
+                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+              {%- if dd_menu != blank and dd_menu.links.size > 0 -%}
+                <div class="dropdown" role="region">
+                  <div class="dropdown__container">
+                    <ul class="dropdown__nav" role="list">
+                      {%- for link in dd_menu.links -%}
+                        <li class="dropdown__item{% if link.links.size > 0 %} dropdown__item--has-child{% endif %}">
+                          {%- if link.links.size > 0 -%}
+                            <span class="dropdown__link dropdown__link--parent">
+                              {{ link.title }}
+                              <svg class="icon-caret-right" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </span>
+                            <div class="dropdown dropdown--child">
+                              <div class="dropdown__container">
+                                <ul class="dropdown__nav" role="list">
+                                  {%- for child in link.links -%}
+                                    <li><a href="{{ child.url }}" class="dropdown__link">{{ child.title }}</a></li>
+                                  {%- endfor -%}
+                                </ul>
+                              </div>
+                            </div>
+                          {%- else -%}
+                            <a href="{{ link.url }}" class="dropdown__link">{{ link.title }}</a>
+                          {%- endif -%}
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  </div>
+                </div>
+              {%- endif -%}
+            </li>
+
+          {%- when 'mega' -%}
+            {%- comment -%}
+              Delegates entirely to blocks/mega-menu.liquid.
+              The block file owns both the <li> wrapper and the panel markup,
+              keeping this section lean and the mega logic self-contained.
+            {%- endcomment -%}
+            {%- render block -%}
+
+          {%- when 'flyout' -%}
+            {%- assign flyout_menu = linklists[block.settings.menu] -%}
+            <li class="menu-bar__item menu-bar__item--has-flyout" {{ block.shopify_attributes }}>
+              <a href="{{ block.settings.link | default: '#' }}"
+                 class="menu-bar__link menu-bar__link--flyout"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                {%- if block.settings.icon != blank -%}
+                  <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+                {%- endif -%}
+                {{ block.settings.label | default: 'Browse all categories' }}
+                <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+              {%- if flyout_menu != blank and flyout_menu.links.size > 0 -%}
+                <div class="mega-menu mega-menu--flyout" role="region">
+                  {%- render 'flyout', menu: flyout_menu, uid: block.id -%}
+                </div>
+              {%- endif -%}
+            </li>
+
+        {%- endcase -%}
       {%- endfor -%}
 
     </ul>
@@ -184,7 +263,7 @@
 
 {% schema %}
 {
-  "name": "Header Menu",
+  "name": "Header Menu (BACKUP)",
   "tag": "div",
   "class": "header-menu-section",
   "limit": 1,
@@ -198,7 +277,189 @@
     }
   ],
   "blocks": [
-    { "type": "header-mega-menu" }
+    {
+      "type": "single",
+      "name": "Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name",
+          "info": "Optional. Rendered via snippets/menu-icon.liquid."
+        }
+      ]
+    },
+    {
+      "type": "highlight",
+      "name": "Highlight link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "On Sale"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "dropdown",
+      "name": "Dropdown menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Dropdown menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    },
+    {
+      "type": "mega",
+      "name": "Mega menu",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Nav bar"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL",
+          "info": "Optional. Falls back to first menu link."
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        },
+        {
+          "type": "header",
+          "content": "Products"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_products",
+          "label": "Show trending products",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "Promo"
+        },
+        {
+          "type": "select",
+          "id": "promo_position",
+          "label": "Position",
+          "default": "right",
+          "options": [
+            { "value": "right",  "label": "Right" },
+            { "value": "left",   "label": "Left" },
+            { "value": "bottom", "label": "Bottom" }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "promo_image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "promo_heading",
+          "label": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "promo_subtext",
+          "label": "Subtext"
+        },
+        {
+          "type": "text",
+          "id": "promo_cta_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "promo_cta_link",
+          "label": "Button URL"
+        }
+      ]
+    },
+    {
+      "type": "flyout",
+      "name": "Flyout panel",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Browse all categories"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Flyout menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    }
   ],
   "presets": [
     {
@@ -207,7 +468,10 @@
         "menu": "main-menu"
       },
       "blocks": [
-        { "type": "header-mega-menu" }
+        { "type": "single",    "settings": { "label": "Shop",    "link": "/collections/all" } },
+        { "type": "mega" },
+        { "type": "single",    "settings": { "label": "About",   "link": "/pages/about" } },
+        { "type": "single",    "settings": { "label": "Contact", "link": "/pages/contact" } }
       ]
     }
   ]
