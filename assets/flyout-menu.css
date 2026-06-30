@@ -18,38 +18,12 @@
    Replaces assets/flyout.css. No promo-image styling — removed.
 
    CHANGELOG (this revision):
-   - .flyout-panel__panel now has an explicit white background instead
-     of relying on inheriting it from .flyout-panel__container.
-   - TRUE FULL-WIDTH BREAKOUT. Previously .flyout-panel was
-     position:absolute, anchored to its trigger <li> (.menu-bar__item),
-     so it could only ever be sized to/around that item, then capped
-     with max-width: calc(100vw - 48px) to stop it overflowing the
-     viewport when the trigger sat far right.
-
-     To get a genuine edge-to-edge panel regardless of where the
-     trigger sits in the nav, the containing block needs to change from
-     the <li> to the full-width <nav class="menu-bar"> itself (which is
-     already position:relative and spans the entire header width — see
-     assets/header-menu.css). We do that here with:
-
-       .menu-bar__item.menu-bar__item--has-flyout { position: static; }
-
-     This is scoped ONLY to the flyout variant (via the --has-flyout
-     modifier), so the mega-menu and link-list dropdowns — which rely
-     on the same "li is positioned, panel is absolute under it"
-     pattern — are completely unaffected and keep anchoring to their
-     own trigger as before.
-
-     Once the <li> is no longer a positioned ancestor, .flyout-panel's
-     absolute positioning bubbles up to .menu-bar, so left:0/right:0
-     now span the full nav width, and top:100% lands right at the
-     bottom of the whole nav bar (not just the one trigger) — which is
-     actually more correct than before, since it's now anchor-agnostic.
-
-     The visible white card is centered and capped via
-     .flyout-panel__container's max-width, so it reads as a deliberate
-     full-bleed "premium mega-menu" surface rather than the page-edge
-     literally touching the white card.
+   - FIXED: ".flyout-panel:hover" could never match because the panel is
+     display:none by default — you can't hover an element that isn't
+     rendered. Replaced with ".menu-bar__item--has-flyout:hover" so the
+     panel now actually opens on hover, matching the rest of the nav.
+   - Added a small opacity/translateY transition on open so it doesn't
+     just snap into view.
    ============================================================================= */
 
 .flyout-panel {
@@ -57,20 +31,13 @@
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
   z-index: 400;
-  padding: 12px 24px 0;
+  padding-top: 12px;
   margin-top: -1px;
-  box-sizing: border-box;
+  max-width: calc(100vw - 48px);
   opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-/* Re-anchor the flyout's containing block to the full-width nav bar
-   instead of the trigger <li> — see CHANGELOG above. */
-.menu-bar__item.menu-bar__item--has-flyout {
-  position: static;
+  transform: translateY(-4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
 }
 
 /* Hover-to-open (desktop) + click-to-open (touch/keyboard, toggled via JS .is-open) */
@@ -90,9 +57,8 @@
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
   border: 1px solid #e5e7eb;
   overflow: hidden;
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
+  width: max-content;
+  max-width: calc(100vw - 48px);
 }
 
 /* ── Left: category sidebar ── */
@@ -167,7 +133,6 @@
   align-items: flex-start;
   gap: 32px;
   padding: 28px 32px;
-  background: #ffffff;
 }
 
 .flyout-panel__panel.is-active {
