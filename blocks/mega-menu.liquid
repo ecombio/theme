@@ -1,0 +1,50 @@
+{% comment %} blocks/mega-menu.liquid {% endcomment %}
+
+{%- assign menu = linklists -%}
+
+<li class="menu-bar__item menu-bar__item--has-mega" {{ block.shopify_attributes }}>
+  <a href="{{ block.settings.link | default: '#' }}" 
+     class="menu-bar__link menu-bar__link--caret" 
+     aria-haspopup="true" 
+     aria-expanded="false">
+    {{ block.settings.label | default: 'Mega Menu' }}
+    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <div class="mega-menu" role="region">
+    {%- render 'header-mega-menu', menu: menu, show_products: block.settings.show_products -%}
+  </div>
+</li>
+
+{% schema %}
+{
+  "name": "Mega menu",
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Shop"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_products",
+      "label": "Show trending products",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
