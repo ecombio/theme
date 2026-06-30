@@ -1,0 +1,51 @@
+{% comment %}
+  SINGLE LINK BLOCK
+  Simple navigation link for use inside sections/header-menu.liquid
+{% endcomment %}
+
+{%- liquid
+  assign link = block.settings.link
+  assign label = block.settings.label | default: link.title
+  assign open_new_tab = block.settings.open_new_tab
+-%}
+
+<a 
+  href="{{ link.url }}" 
+  class="header-menu__link{% if link.active %} header-menu__link--active{% endif %}"
+  {% if open_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+  {{ block.shopify_attributes }}
+>
+  {{ label }}
+</a>
+
+{% schema %}
+{
+  "name": "single-link",
+  "tag": "a",
+  "class": "single-link-block",
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Link"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_new_tab",
+      "label": "Open in new tab",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "Single Link"
+    }
+  ]
+}
+{% endschema %}
