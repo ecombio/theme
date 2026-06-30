@@ -1,127 +1,73 @@
 {% comment %}
-  Mega Menu Block
-  File: blocks/mega-menu.liquid
-
-  Renders the <li> trigger + full mega panel with optional promo.
-  Settings defined in sections/header-menu.liquid schema (mega block type).
-  Assets: assets/mega-menu.css / assets/mega-menu.js
+  MEGA MENU BLOCK
+  For use inside sections/header-menu.liquid
+  Add this block type in your section schema under "blocks"
 {% endcomment %}
 
-{{ 'mega-menu.css' | asset_url | stylesheet_tag }}
-
 {%- liquid
-  assign mega_menu     = linklists[block.settings.menu]
-  assign show_products = block.settings.show_products
-  assign promo_pos     = block.settings.promo_position
-  assign has_promo     = false
-  if block.settings.promo_heading != blank or block.settings.promo_image != blank
-    assign has_promo = true
-  endif
-  assign col_count = mega_menu.links.size
-  if col_count > 6
-    assign col_count = 6
-  endif
-  assign featured_collection = blank
-  if show_products
-    assign first_link = mega_menu.links.first
-    if first_link.type == 'collection_link' or first_link.object
-      assign featured_collection = first_link.object
-    endif
-  endif
+  assign menu = block.settings.menu
+  assign heading = block.settings.heading | default: menu.title
 -%}
 
-<li class="menu-bar__item menu-bar__item--has-mega" {{ block.shopify_attributes }}>
-
-  <a href="{{ block.settings.link | default: mega_menu.links.first.url | default: '#' }}"
-     class="menu-bar__link menu-bar__link--caret"
-     aria-haspopup="true"
-     aria-expanded="false">
-    {%- if block.settings.icon != blank -%}
-      <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
-    {%- endif -%}
-    {{ block.settings.label | default: mega_menu.title | default: 'Menu' }}
-    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </a>
-
-  {%- if mega_menu != blank and mega_menu.links.size > 0 -%}
-    <div class="mega-menu" role="region">
-      <div class="mega-menu__inner{% if has_promo %} mega-menu__inner--promo-{{ promo_pos }}{% endif %}">
-
-        {%- if has_promo and promo_pos == 'left' -%}
-          {%- render 'mega-menu-promo', block: block -%}
-        {%- endif -%}
-
-        <div class="mega-menu__columns" style="--mega-col-count: {{ col_count }};">
-          {%- for column in mega_menu.links -%}
-            <div class="mega-menu__column">
-              <a href="{{ column.url }}" class="mega-menu__heading">{{ column.title }}</a>
-              {%- for item in column.links -%}
-                {%- if item.links.size > 0 -%}
-                  <p class="mega-menu__subheading">{{ item.title }}</p>
-                  <ul class="mega-menu__list">
-                    {%- for child in item.links -%}
-                      <li><a href="{{ child.url }}" class="mega-menu__link">{{ child.title }}</a></li>
-                    {%- endfor -%}
-                  </ul>
-                {%- else -%}
-                  <ul class="mega-menu__list">
-                    <li><a href="{{ item.url }}" class="mega-menu__link">{{ item.title }}</a></li>
-                  </ul>
-                {%- endif -%}
-              {%- endfor -%}
-            </div>
-          {%- endfor -%}
-        </div>
-
-        {%- if has_promo and promo_pos == 'right' -%}
-          {%- render 'mega-menu-promo', block: block -%}
-        {%- endif -%}
-
-        {%- if show_products and featured_collection and featured_collection.products.size > 0 -%}
-          <div class="mega-menu__products">
-            <p class="mega-menu__heading">Trending Now</p>
-            <div class="mega-menu__product-grid">
-              {%- for product in featured_collection.products limit: 3 -%}
-                <a href="{{ product.url }}" class="mega-menu__product-card">
-                  {%- if product.featured_media -%}
-                    <div class="mega-menu__product-image">
-                      {{ product.featured_media | image_url: width: 240 | image_tag: loading: 'lazy', alt: product.title }}
-                      {%- if product.compare_at_price > product.price -%}
-                        <span class="mega-menu__badge">Sale</span>
-                      {%- endif -%}
-                    </div>
-                  {%- endif -%}
-                  <p class="mega-menu__product-title">{{ product.title }}</p>
-                  <div class="mega-menu__product-price">
-                    {%- if product.compare_at_price > product.price -%}
-                      <span class="price--sale">{{ product.price | money }}</span>
-                      <span class="price--compare">{{ product.compare_at_price | money }}</span>
-                    {%- else -%}
-                      {{ product.price | money }}
-                    {%- endif -%}
-                  </div>
-                </a>
-              {%- endfor -%}
-            </div>
-          </div>
-        {%- endif -%}
-
-        {%- if has_promo and promo_pos == 'bottom' -%}
-          {%- render 'mega-menu-promo', block: block -%}
-        {%- endif -%}
-
+<div class="mega-menu" {{ block.shopify_attributes }}>
+  <div class="mega-menu__content">
+    {% if heading != blank %}
+      <div class="mega-menu__heading">
+        <h3>{{ heading }}</h3>
       </div>
-    </div>
-  {%- endif -%}
+    {% endif %}
 
-</li>
+    {% if menu != blank %}
+      <ul class="mega-menu__links" role="list">
+        {% for link in menu.links %}
+          <li class="mega-menu__item">
+            <a href="{{ link.url }}" class="mega-menu__link{% if link.active %} mega-menu__link--active{% endif %}">
+              {{ link.title }}
+            </a>
 
-<script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
+            {% if link.links != blank %}
+              <ul class="mega-menu__sublinks">
+                {% for child in link.links %}
+                  <li>
+                    <a href="{{ child.url }}" class="mega-menu__sublink{% if child.active %} mega-menu__sublink--active{% endif %}">
+                      {{ child.title }}
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mega-menu__empty">No menu selected</p>
+    {% endif %}
+  </div>
+</div>
 
 {% schema %}
 {
-  "name": "Mega menu"
+  "name": "mega-menu",
+  "tag": "div",
+  "class": "mega-menu-block",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Menu"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mega Menu"
+    }
+  ]
 }
 {% endschema %}
