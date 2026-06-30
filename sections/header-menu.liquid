@@ -44,6 +44,25 @@
     assets/header-mega-menu.js
 
   CHANGELOG (this revision):
+  - FIXED (containment): `.menu-bar__container`'s class changed from
+    the generic `page-width` to `page-width--header` (defined in
+    base.css, using `var(--header-width)` / `var(--header-margin)`).
+    Previously the menu bar used a *different* width container than the
+    rest of the header (logo / search / cart), so the nav row — and
+    anything positioned relative to it, including the flyout and mega
+    menu panels — could be wider than the header bar above it,
+    appearing to "break out" of the site's content width. Using
+    `page-width--header` here guarantees the menu bar always matches
+    the same width as the rest of the header, edge to edge. Pairs with
+    the matching `position: relative` added to `.menu-bar__container`
+    in assets/header-menu.css (needed so the full-width flyout panel
+    can anchor to this exact box — see assets/flyout-menu.css) and the
+    width-capping changes in assets/flyout-menu.css.
+  - No markup, block schema, or Liquid logic changed beyond that single
+    class swap — all block types (single-link, link-list, mega,
+    highlight, flyout) and the mobile drawer render exactly as before.
+
+  ── PRIOR CHANGELOG (earlier revision, unchanged here) ──────────────
   - ADDED: "Flyout panel style" setting (`panel_style`) to the `flyout`
     block schema, under a new "Style" header. Merchant-facing choice
     between "Compact (left-aligned)" and "Full-width span". Defaults to
@@ -70,7 +89,7 @@
 {%- if section.blocks.size > 0 -%}
 
 <nav class="menu-bar" aria-label="Primary navigation">
-  <div class="menu-bar__container page-width">
+  <div class="menu-bar__container page-width--header">
     <ul class="menu-bar__list">
 
       {%- for block in section.blocks -%}
