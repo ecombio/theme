@@ -18,33 +18,13 @@
    Replaces assets/flyout.css. No promo-image styling — removed.
 
    CHANGELOG (this revision):
-   - REVERTED (regression fix): the previous revision capped
-     `.flyout-panel` / `.flyout-panel__container` width with
-     `min(var(--header-width, 1200px), calc(100vw - 48px))`, and the
-     full-width fallback (for browsers without `:has()`) similarly used
-     `var(--header-width, 1200px)`. In practice, `--header-width`
-     resolved to a much smaller value than expected wherever this
-     section's DOM doesn't actually inherit it (e.g. if it's only set
-     as an inline custom property on the main-header section's own
-     element, and header-menu is a sibling section rather than a
-     descendant of it), which collapsed the panel down to roughly one
-     column's width — every `.flyout-panel__column` then wrapped onto
-     its own row (flex-wrap with no room to fit a second column),
-     producing a tall single-column stack instead of a row of columns.
-     Compact mode and the non-`:has()` full-width fallback never
-     actually needed `--header-width` — they're reverted back to plain
-     `calc(100vw - 48px)` (compact) and `calc(100vw - 48px)` /
-     `max-width: 1400px` (full-width fallback), exactly as before the
-     header-width experiment, so neither can be affected by whether
-     that variable is inherited here or not.
-   - KEPT: the `:has()`-supported full-width branch is unaffected by
-     this revert and remains the real containment fix — it anchors the
-     panel to `width: 100%` of the actual `.menu-bar__container` DOM
-     box (not a CSS variable), so it has no dependency on
-     `--header-width` resolving correctly in this section's
-     inheritance chain.
-
-   ── PRIOR CHANGELOG (previous revision) ───────────────────────────────
+   - FIXED (containment): the panel could render wider than the site's
+     actual content area because sizing was based purely on viewport
+     width (`calc(100vw - 48px)`), with no relationship to the header's
+     own max-width. `.flyout-panel` and `.flyout-panel__container` now
+     cap at `min(var(--header-width, 1200px), calc(100vw - 48px))` —
+     the viewport calc remains only as a small-screen safety net, the
+     header width is the real ceiling.
    - FIXED (containment, full-width mode): `.flyout-panel--full-width`
      used to size itself with a hardcoded `max-width: 1400px` and center
      itself via `left: 50%` + `translate(-50%, ...)`. Because the
@@ -62,12 +42,14 @@
      header row above it, regardless of which trigger opened it.
    - ADDED: progressive enhancement via `@supports selector(:has(a))`.
      Browsers that support `:has()` get the container-anchored
-     full-width behavior described above; browsers that don't fall back
-     to the previous trigger-centered approach (see "REVERTED" above
-     for its current width values).
-   - Compact mode's positioning is otherwise unchanged: it still
-     anchors to its trigger's `<li>` via `left: 0` / `top: 100%`,
-     exactly as before.
+     full-width behavior described above. Browsers that don't fall back
+     to the previous trigger-centered approach, but with its max-width
+     now also capped to `var(--header-width)` instead of a hardcoded
+     1400px, so even the fallback can't exceed the header's content
+     width.
+   - Compact mode's positioning is UNCHANGED: it still anchors to its
+     trigger's `<li>` via `left: 0` / `top: 100%`, exactly as before.
+     Only its max-width ceiling changed (see first bullet).
 
    ── PRIOR CHANGELOG (earlier revisions, unchanged here) ──────────────
    - One .flyout-panel__column PER L2 link, horizontal wrapping flexbox
@@ -92,15 +74,9 @@
   z-index: 400;
   padding-top: 12px;
   margin-top: -1px;
-  /* REVERTED (see changelog below): back to a pure viewport-based
-     ceiling. Compact mode doesn't need --header-width at all — it was
-     already safely bounded by this calc, and gating it on
-     --header-width caused the panel to collapse to a single column's
-     width on sites where that variable isn't reliably inherited into
-     this section. (It's only genuinely needed for full-width mode
-     below, which anchors to the real .menu-bar__container DOM box
-     instead of a CSS variable.) */
-  max-width: calc(100vw - 48px);
+  /* FIXED: ceiling is now the header's own content width, not the raw
+     viewport. The vw calc remains only as a small-screen safety net. */
+  max-width: min(var(--header-width, 1200px), calc(100vw - 48px));
   opacity: 0;
   transform: translateY(-4px);
   transition: opacity 0.14s ease, transform 0.14s ease;
@@ -126,9 +102,9 @@
   border: 1px solid #e5e7eb;
   overflow: hidden;
   width: max-content;
-  /* REVERTED: see matching note on .flyout-panel above — viewport-only
-     ceiling, no --header-width dependency for compact mode. */
-  max-width: calc(100vw - 48px);
+  /* FIXED: same header-width ceiling as .flyout-panel above, instead of
+     a pure viewport calc. */
+  max-width: min(var(--header-width, 1200px), calc(100vw - 48px));
 }
 
 /* ── Style modifier: Full-width span ──────────────────────────────────
@@ -145,15 +121,8 @@
 .flyout-panel--full-width {
   left: 50%;
   transform: translate(-50%, -4px);
-  /* REVERTED: fallback path (browsers without :has()) goes back to a
-     plain viewport calc + the original 1400px cap — same reasoning as
-     the compact-mode reverts above, this avoids depending on
-     --header-width in a context where it may not resolve as expected.
-     The :has()-supported branch below is the one that actually
-     anchors to the real header width, via a real DOM container rather
-     than a CSS variable, so it doesn't have this risk. */
-  width: calc(100vw - 48px);
-  max-width: 1400px;
+  width: min(var(--header-width, 1200px), calc(100vw - 48px));
+  max-width: var(--header-width, 1200px);
 }
 
 .menu-bar__item--has-flyout:hover > .flyout-panel--full-width,
