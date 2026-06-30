@@ -18,6 +18,27 @@
    Replaces assets/flyout.css. No promo-image styling — removed.
 
    CHANGELOG (this revision):
+   - FIXED (columns stacking vertically instead of in a row):
+     .flyout-panel__column previously had no `flex` shorthand, only
+     `min-width: 160px`. With `flex-wrap` on the parent and no
+     flex-basis/flex-grow declared, the column's effective flex-basis
+     was `auto`, and combined with its own `flex-direction: column`
+     content (group label + sublist), this was resolving to each
+     column consuming the full width of the flex line by itself —
+     pushing every subsequent column onto its own row, i.e. a vertical
+     stack instead of a horizontal row. Added an explicit
+     `flex: 0 1 200px` so each column has a real basis to lay out
+     from, can shrink to sit next to its siblings, but won't grow to
+     fill the row on its own. Also added `max-width: 280px` so a
+     short/lone column doesn't stretch unnecessarily wide.
+   - `.flyout-panel__columns` itself was already a correct row
+     (`display: flex; flex-wrap: wrap`) — unchanged, just re-confirmed
+     as the source of the horizontal layout.
+   - Did NOT touch `.flyout-panel__panel` / `.is-active` or any other
+     display/visibility logic — category show/hide behavior for
+     "only one panel active at a time" is completely unaffected.
+
+   ── PRIOR CHANGELOG (previous revision) ───────────────────────────────
    - REVERTED (regression fix): the previous revision capped
      `.flyout-panel` / `.flyout-panel__container` width with
      `min(var(--header-width, 1200px), calc(100vw - 48px))`, and the
@@ -44,7 +65,7 @@
      `--header-width` resolving correctly in this section's
      inheritance chain.
 
-   ── PRIOR CHANGELOG (previous revision) ───────────────────────────────
+   ── PRIOR CHANGELOG (earlier revision) ────────────────────────────────
    - FIXED (containment, full-width mode): `.flyout-panel--full-width`
      used to size itself with a hardcoded `max-width: 1400px` and center
      itself via `left: 50%` + `translate(-50%, ...)`. Because the
@@ -308,16 +329,23 @@
    getting clipped. */
 .flyout-panel__columns {
   display: flex;
-  flex-wrap: wrap;
+  flex-flow: row wrap;
   align-items: flex-start;
   gap: 8px 40px;
   width: 100%;
 }
 
+/* FIXED: explicit flex shorthand (grow 0 / shrink 1 / basis 200px) so
+   columns sit side-by-side and only wrap when the row actually runs
+   out of space, instead of each one claiming the full row width.
+   min-width is the hard floor so labels/sublinks never get crushed;
+   max-width keeps a lone/short column from stretching too wide. */
 .flyout-panel__column {
   display: flex;
   flex-direction: column;
+  flex: 0 1 200px;
   min-width: 160px;
+  max-width: 280px;
 }
 
 .flyout-panel__group {
