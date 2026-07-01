@@ -1,0 +1,487 @@
+{% comment %}
+  Header Section
+  File: sections/header.liquid
+
+  Consolidates three previously separate sections into one:
+    - sections/utility-bar.liquid   (top strip: links, currency/locale, region picker)
+    - sections/main-header.liquid   (logo, search, account/cart icons)
+    - sections/header-menu.liquid   (desktop nav bar, built from blocks)
+
+  Snippets used:
+    snippets/utility-links.liquid
+    snippets/currency-selector.liquid
+    snippets/locale-selector.liquid
+    snippets/region-picker.liquid
+    snippets/header-logo.liquid
+    snippets/header-search.liquid
+    snippets/header-account.liquid
+    snippets/header-cart.liquid
+    snippets/single-link.liquid
+    snippets/link-list.liquid
+    snippets/mega-menu.liquid
+    snippets/highlight.liquid
+    snippets/flyout-menu.liquid
+
+  If sections/utility-bar.liquid, sections/main-header.liquid, or
+  sections/header-menu.liquid are still referenced anywhere (layout
+  {%- section '...' -%} calls, or entries in header-group), remove them
+  to avoid rendering any of this twice.
+{% endcomment %}
+
+{{ 'utility-bar.css'    | asset_url | stylesheet_tag }}
+{{ 'main-header.css'    | asset_url | stylesheet_tag }}
+{{ 'header-cart.css'    | asset_url | stylesheet_tag }}
+{{ 'header-account.css' | asset_url | stylesheet_tag }}
+{{ 'header-menu.css'    | asset_url | stylesheet_tag }}
+{{ 'link-list.css'      | asset_url | stylesheet_tag }}
+{{ 'mega-menu.css'      | asset_url | stylesheet_tag }}
+{{ 'flyout-menu.css'    | asset_url | stylesheet_tag }}
+
+{% comment %}
+  Mobile Menu (commented out for future use)
+  {{ 'mobile-menu.css' | asset_url | stylesheet_tag }}
+  {%- render 'mobile-menu', nav_menu: mobile_menu -%}
+{% endcomment %}
+
+{%- liquid
+  assign logo       = settings.logo
+  assign logo_width = settings.logo_width | default: 140
+  assign show_acct  = section.settings.show_icon_account
+  assign show_cart  = section.settings.show_icon_cart
+
+  assign enable_bar = section.settings.enable_bar
+  assign bar_style  = section.settings.bar_style | default: 'hyper'
+  assign show_curr  = section.settings.show_currency
+  assign show_loc   = section.settings.show_locale
+
+  assign mobile_menu = section.settings.mobile_menu
+-%}
+
+{%- if enable_bar -%}
+  <div class="utility-bar utility-bar--{{ bar_style }}"
+       role="navigation"
+       aria-label="Utility bar"
+       id="utility-bar">
+
+    <div class="utility-bar__inner">
+
+      <div class="utility-bar__col utility-bar__col--left">
+        {%- render 'utility-links', settings: section.settings, count: 3 -%}
+      </div>
+
+      <div class="utility-bar__col utility-bar__col--right">
+        <div class="utility-bar__switchers">
+          {%- if show_curr -%}
+            {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
+          {%- endif -%}
+
+          {%- if show_loc -%}
+            {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
+          {%- endif -%}
+
+          {%- render 'region-picker' -%}
+        </div>
+      </div>
+
+    </div>
+  </div>
+{%- endif -%}
+
+<header class="main-header" id="main-header" role="banner">
+
+  <div class="main-header__bar">
+    <div class="main-header__inner">
+
+      <button class="main-header__hamburger"
+              id="main-header-nav-toggle"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded="false"
+              aria-controls="main-header-mobile-nav">
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+      </button>
+
+      {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
+
+      {%- comment -%}Desktop search — flex-grows to fill the bar, hidden below 1024px via CSS{%- endcomment -%}
+      <div class="main-header__search--inline">
+        {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
+      </div>
+
+      <ul class="main-header__icons" role="list" aria-label="Header actions">
+        {%- if show_acct != false -%}
+          <li>{%- render 'header-account' -%}</li>
+        {%- endif -%}
+        {%- if show_cart != false -%}
+          <li>{%- render 'header-cart' -%}</li>
+        {%- endif -%}
+      </ul>
+
+    </div>
+  </div>
+
+  {%- comment -%}Mobile/tablet search row — sits below the bar, hidden at 1024px+ via CSS{%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
+    </div>
+  </div>
+
+  {%- comment -%}Desktop nav bar — built from blocks, hidden below 1024px via CSS in favor of the hamburger drawer{%- endcomment -%}
+  {%- if section.blocks.size > 0 -%}
+    <nav class="menu-bar" aria-label="Primary navigation">
+      <div class="menu-bar__container page-width--header">
+        <ul class="menu-bar__list">
+          {%- for block in section.blocks -%}
+            {%- case block.type -%}
+              {%- when 'single-link' -%}
+                {%- render 'single-link', block: block -%}
+
+              {%- when 'link-list' -%}
+                {%- render 'link-list', block: block -%}
+
+              {%- when 'mega-menu' -%}
+                {%- render 'mega-menu', block: block -%}
+
+              {%- when 'highlight' -%}
+                {%- render 'highlight', block: block -%}
+
+              {%- when 'flyout' -%}
+                {%- render 'flyout-menu', block: block -%}
+
+            {%- endcase -%}
+          {%- endfor -%}
+        </ul>
+      </div>
+    </nav>
+  {%- endif -%}
+
+  <nav class="main-header__mobile-nav"
+       id="main-header-mobile-nav"
+       aria-label="Mobile navigation"
+       aria-hidden="true"
+       hidden>
+    <ul class="main-header__mobile-nav-list">
+      {%- for link in mobile_menu.links -%}
+        <li>
+          <a class="main-header__mobile-nav-link" href="{{ link.url }}">
+            {{ link.title }}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+
+</header>
+
+<script src="{{ 'utility-bar.js'    | asset_url }}" defer></script>
+<script src="{{ 'main-header.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
+<script src="{{ 'header-account.js' | asset_url }}" defer></script>
+{{- 'link-list.js'   | asset_url | script_tag }}
+{{- 'mega-menu.js'   | asset_url | script_tag }}
+{{- 'flyout-menu.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Header",
+  "tag": "div",
+  "class": "main-header-section",
+  "settings": [
+    { "type": "header", "content": "Utility bar" },
+    {
+      "type": "checkbox",
+      "id": "enable_bar",
+      "label": "Enable utility bar",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "bar_style",
+      "label": "Bar style",
+      "default": "hyper",
+      "options": [
+        { "value": "hyper", "label": "Hyper (white)" },
+        { "value": "focus", "label": "Focus (warm grey)" }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency",
+      "label": "Show currency selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale",
+      "label": "Show language selector",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "link_1_label",
+      "label": "Utility link 1 label",
+      "default": "Track Order"
+    },
+    {
+      "type": "url",
+      "id": "link_1_url",
+      "label": "Utility link 1 URL",
+      "default": "/"
+    },
+    {
+      "type": "text",
+      "id": "link_2_label",
+      "label": "Utility link 2 label",
+      "default": "Store Locator"
+    },
+    {
+      "type": "url",
+      "id": "link_2_url",
+      "label": "Utility link 2 URL",
+      "default": "/"
+    },
+    {
+      "type": "text",
+      "id": "link_3_label",
+      "label": "Utility link 3 label",
+      "default": "Track Order"
+    },
+    {
+      "type": "url",
+      "id": "link_3_url",
+      "label": "Utility link 3 URL",
+      "default": "/"
+    },
+    { "type": "header", "content": "Navigation" },
+    {
+      "type": "link_list",
+      "id": "mobile_menu",
+      "label": "Mobile navigation menu",
+      "default": "main-menu",
+      "info": "Used for the mobile drawer. Desktop items are configured via blocks below."
+    },
+    { "type": "header", "content": "Search" },
+    {
+      "type": "checkbox",
+      "id": "enable_predictive_search",
+      "label": "Enable predictive search",
+      "info": "Shows product, collection and query suggestions as the customer types.",
+      "default": true
+    },
+    { "type": "header", "content": "Icons" },
+    {
+      "type": "checkbox",
+      "id": "show_icon_store",
+      "label": "Show store locator icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_account",
+      "label": "Show account icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_cart",
+      "label": "Show cart icon",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "single-link",
+      "name": "Single Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Single Link"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name",
+          "info": "Optional. Uses snippets/menu-icon.liquid"
+        }
+      ]
+    },
+    {
+      "type": "link-list",
+      "name": "Link list",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Link list menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "mega-menu",
+      "name": "Mega menu",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Nav bar"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Mega menu"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL",
+          "info": "Optional. Falls back to first menu link."
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        },
+        {
+          "type": "header",
+          "content": "Products"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_products",
+          "label": "Show trending products",
+          "default": false,
+          "info": "Pulls the first 3 products from the first collection link found in the chosen menu."
+        }
+      ]
+    },
+    {
+      "type": "highlight",
+      "name": "Highlight",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "On Sale"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "URL"
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    },
+    {
+      "type": "flyout",
+      "name": "Flyout Menu",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Nav bar"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Browse all categories"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Top-level URL (optional)"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Flyout menu",
+          "info": "Top-level links become the left-hand category list. Their child links become the column content; grandchild links become indented sub-items."
+        },
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon name"
+        },
+        {
+          "type": "header",
+          "content": "Style"
+        },
+        {
+          "type": "select",
+          "id": "panel_style",
+          "label": "Flyout panel style",
+          "info": "Compact keeps the panel left-aligned under its trigger. Full-width span stretches it across most of the header for a bigger, more modern look.",
+          "options": [
+            {
+              "value": "compact",
+              "label": "Compact (left-aligned)"
+            },
+            {
+              "value": "full-width",
+              "label": "Full-width span"
+            }
+          ],
+          "default": "compact"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Header",
+      "settings": {
+        "mobile_menu": "main-menu",
+        "link_1_label": "Track Order",
+        "link_1_url": "/apps/track",
+        "link_2_label": "Store Locator",
+        "link_2_url": "/pages/stores",
+        "link_3_label": "Track Order",
+        "link_3_url": "/apps/track"
+      },
+      "blocks": [
+        { "type": "single-link", "settings": { "label": "Single link", "link": "/collections/all" } },
+        { "type": "link-list", "settings": { "label": "Link list" } },
+        { "type": "mega-menu", "settings": { "label": "Mega menu" } },
+        { "type": "highlight", "settings": { "label": "On Sale", "link": "/collections/sale" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
