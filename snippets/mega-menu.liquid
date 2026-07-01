@@ -1,132 +1,102 @@
 {% comment %}
-  snippets/mega-menu.liquid
-  ─────────────────────────────────────────────────────────────────────────────
-  Renders a desktop mega-menu trigger + dropdown panel.
-
-  Parameters:
-    block   — the current section block (type: mega_menu)
-    section — the parent section
-
-  Accessibility:
-    • Trigger uses aria-expanded, aria-haspopup="true", aria-controls
-    • Panel uses role="region" and a matching id
-    • Sub-headings use role="heading" aria-level="3"
-    • Links use role="menuitem"
-  ─────────────────────────────────────────────────────────────────────────────
+  Mega Menu - Header Menu
+  Renders the full mega menu block (columns + optional trending products).
 {% endcomment %}
 
 {%- liquid
-  assign nav_link_list  = linklists[block.settings.menu]
-  assign trigger_label  = block.settings.label | default: nav_link_list.title
-  assign col_count      = block.settings.columns | default: '3'
-  assign show_promo     = block.settings.show_promo
-  assign promo_position = block.settings.promo_position | default: 'right'
-  assign panel_id       = 'mega-panel-' | append: block.id
+  assign mega_menu = linklists[block.settings.menu]
 -%}
 
-{%- if nav_link_list == blank -%}
-  {%- comment -%} Bail silently if no link list is assigned {%- endcomment -%}
-  {%- break -%}
-{%- endif -%}
-
-{%- comment -%} ── Trigger button ── {%- endcomment -%}
-<button
-  class="site-nav__link site-nav__link--trigger"
-  type="button"
-  role="menuitem"
-  aria-haspopup="true"
-  aria-expanded="false"
-  aria-controls="{{ panel_id }}"
-  data-mega-trigger
->
-  {{- trigger_label | escape -}}
-  <svg
-    class="site-nav__chevron"
-    aria-hidden="true"
-    focusable="false"
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2.5"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <polyline points="6 9 12 15 18 9"/>
-  </svg>
-</button>
-
-{%- comment -%} ── Dropdown panel ── {%- endcomment -%}
-<div
-  id="{{ panel_id }}"
-  class="mega-panel mega-panel--cols-{{ col_count }}{% if show_promo %} mega-panel--has-promo mega-panel--promo-{{ promo_position }}{% endif %}"
-  role="region"
-  aria-label="{{ trigger_label | escape }} submenu"
-  hidden
-  data-mega-panel
->
-  <div class="mega-panel__inner">
-
-    {%- comment -%} ── Promo — LEFT position ── {%- endcomment -%}
-    {%- if show_promo and promo_position == 'left' -%}
-      <div class="mega-panel__promo">
-        {%- render 'in-menu-promo', block: block -%}
-      </div>
+<li class="menu-bar__item menu-bar__item--has-mega" {{ block.shopify_attributes }}>
+  <a href="{{ block.settings.link | default: mega_menu.links.first.url | default: '#' }}"
+     class="menu-bar__link menu-bar__link--caret mega-menu-trigger"
+     aria-haspopup="true"
+     aria-expanded="false"
+     data-mega-trigger>
+    {%- if block.settings.icon != blank -%}
+      <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
     {%- endif -%}
+    {{ block.settings.label | default: 'Shop' }}
+    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
 
-    {%- comment -%} ── Link columns ── {%- endcomment -%}
-    <div class="mega-panel__columns">
-      {%- for link in nav_link_list.links -%}
-        <div class="mega-panel__col">
-
-          {%- comment -%} Column heading — either a link or a label {%- endcomment -%}
-          {%- if link.url != blank and link.url != '#' -%}
-            <a
-              href="{{ link.url }}"
-              class="mega-panel__col-heading mega-panel__col-heading--link"
-              role="menuitem"
-            >
-              {{- link.title | escape -}}
-            </a>
-          {%- else -%}
-            <span
-              class="mega-panel__col-heading"
-              role="heading"
-              aria-level="3"
-            >
-              {{- link.title | escape -}}
-            </span>
-          {%- endif -%}
-
-          {%- comment -%} Child links ── {%- endcomment -%}
-          {%- if link.links != blank -%}
-            <ul class="mega-panel__links" role="menu" aria-label="{{ link.title | escape }}">
-              {%- for child in link.links -%}
-                <li class="mega-panel__link-item" role="none">
-                  <a
-                    href="{{ child.url }}"
-                    class="mega-panel__link{% if child.active %} is-active{% endif %}"
-                    role="menuitem"
-                    {% if child.current %}aria-current="page"{% endif %}
-                  >
-                    {{- child.title | escape -}}
-                  </a>
-                </li>
-              {%- endfor -%}
-            </ul>
-          {%- endif -%}
-
-        </div>
+  {%- if mega_menu != blank and mega_menu.links.size > 0 -%}
+    {%- assign mega_col_count = mega_menu.links.size -%}
+    {%- assign mega_collection = blank -%}
+    {%- if block.settings.show_products -%}
+      {%- for link in mega_menu.links -%}
+        {%- if link.type == 'collection_link' and mega_collection == blank -%}
+          {%- assign mega_collection = link.object -%}
+        {%- endif -%}
       {%- endfor -%}
-    </div>
-
-    {%- comment -%} ── Promo — RIGHT position ── {%- endcomment -%}
-    {%- if show_promo and promo_position == 'right' -%}
-      <div class="mega-panel__promo">
-        {%- render 'in-menu-promo', block: block -%}
-      </div>
     {%- endif -%}
 
-  </div><!-- /.mega-panel__inner -->
-</div><!-- /.mega-panel -->
+    <div class="mega-menu" role="region" data-mega-panel>
+      <div class="mega-menu-items{% if mega_collection != blank %} mega-menu-items--with-products{% endif %}">
+
+        <div class="mega-menu__text-columns" style="--mega-col-count: {{ mega_col_count }};">
+          {%- for link in mega_menu.links -%}
+            <div class="mega-menu-column">
+              <a href="{{ link.url }}"
+                 class="mega-menu-heading"
+                 {% if link.current %}aria-current="page"{% endif %}>
+                {{ link.title }}
+              </a>
+              {%- if link.links.size > 0 -%}
+                <ul class="mega-menu-list" role="list">
+                  {%- for sublink in link.links -%}
+                    <li>
+                      <a href="{{ sublink.url }}"
+                         class="mega-menu-link"
+                         {% if sublink.current %}aria-current="page"{% endif %}>
+                        {{ sublink.title }}
+                      </a>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        </div>
+
+        {%- if mega_collection != blank -%}
+          <div class="mega-menu__products">
+            <div class="mega-menu__product-header">
+              <span class="mega-menu-heading">Trending in {{ mega_collection.title }}</span>
+            </div>
+            <div class="mega-menu__product-grid">
+              {%- for product in mega_collection.products limit: 3 -%}
+                <a href="{{ product.url }}" class="mega-menu__product-card">
+                  <div class="mega-menu__product-image">
+                    <img src="{{ product.featured_image | image_url: width: 300 }}"
+                         alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                         loading="lazy"
+                         width="300"
+                         height="300">
+                    {%- if product.compare_at_price > product.price -%}
+                      <span class="mega-menu__badge">Sale</span>
+                    {%- endif -%}
+                  </div>
+                  <div class="mega-menu__product-info">
+                    <p class="mega-menu__product-title">{{ product.title }}</p>
+                    <p class="mega-menu__product-price">
+                      {%- if product.compare_at_price > product.price -%}
+                        <span class="price--sale">{{ product.price | money }}</span>
+                        <span class="price--compare">{{ product.compare_at_price | money }}</span>
+                      {%- else -%}
+                        {{ product.price | money }}
+                      {%- endif -%}
+                    </p>
+                  </div>
+                </a>
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+
+      </div>
+    </div>
+  {%- endif -%}
+</li>
