@@ -10,9 +10,10 @@
   var stickyHamburger = document.querySelector('.sticky-header__hamburger');
   var menuBar = document.querySelector('.menu-bar');
 
-  if (!header) return;
+  /* Only run if sticky header is enabled */
+  if (!header || !header.classList.contains('main-header--sticky-enabled')) return;
 
-  /* Handle scroll - add sticky + shadow */
+  /* Scroll handler */
   function handleScroll() {
     if (window.scrollY > 60) {
       header.classList.add('is-sticky');
@@ -21,7 +22,6 @@
       header.classList.remove('is-sticky');
       header.classList.remove('is-scrolled');
 
-      // Reset menu when scrolling back to top
       if (menuBar) menuBar.classList.remove('is-visible');
       if (stickyHamburger) stickyHamburger.classList.remove('is-active');
     }
@@ -30,7 +30,7 @@
   window.addEventListener('scroll', handleScroll, { passive: true });
   handleScroll();
 
-  /* Toggle menu bar + change icon when hamburger is clicked */
+  /* Hamburger toggle */
   if (stickyHamburger && menuBar) {
     stickyHamburger.addEventListener('click', function () {
       var isOpen = menuBar.classList.toggle('is-visible');
