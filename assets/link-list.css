@@ -1,12 +1,8 @@
 /* =============================================================================
    Link List (dropdown-style block) Styles  |  assets/link-list.css
-   Pairs with the `link-list` case in sections/header-menu.liquid
-
-   NOTE: This file previously reused the shared .dropdown / .dropdown__*
-   classes from header-menu.css. Those classes (and the `dropdown` block
-   type) have been removed from the theme, so link-list now owns its own
-   panel visuals below — values carried over 1:1 from the old .dropdown
-   rules so branding is unchanged (same radius, shadow, border, colors).
+   Pairs with snippets/link-list.liquid + assets/link-list.js
+   Renders the top-level dropdown panel plus a one-level flyout sub-panel.
+   Uses header design tokens (--hdr-accent, etc.) defined in header.css.
    ============================================================================= */
 
 .menu-bar__item--has-link-list {
@@ -25,7 +21,11 @@
   border-radius: 6px;
 }
 
-/* ── Panel ── */
+.icon-caret-down {
+  transition: transform 0.15s ease;
+}
+
+/* ── Top-level panel ── */
 
 .link-list-panel {
   display: none;
@@ -38,17 +38,23 @@
   padding-top: 6px;
 }
 
-/* Desktop pointer: hover reveals the panel */
-.menu-bar__item--has-link-list:hover > .link-list-panel,
 .menu-bar__item--has-link-list.is-open > .link-list-panel {
   display: block;
 }
 
+/* Hover-to-open only on devices that actually support hover, to avoid
+   sticky-hover panels getting stuck open on touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .menu-bar__item--has-link-list:hover > .link-list-panel {
+    display: block;
+  }
+}
+
 .link-list-panel__container {
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
-  border: 1px solid #e5e7eb;
+  background: var(--hdr-panel-bg, #ffffff);
+  border-radius: var(--hdr-panel-radius, 14px);
+  box-shadow: var(--hdr-panel-shadow, 0 16px 48px rgba(0, 0, 0, 0.10));
+  border: 1px solid var(--hdr-panel-border, #e5e7eb);
   padding: 6px 0;
   overflow: hidden;
 }
@@ -59,6 +65,8 @@
   margin: 0;
 }
 
+/* ── Top-level panel links ── */
+
 .link-list-panel__item {
   position: relative;
 }
@@ -66,38 +74,70 @@
 .link-list-panel__link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   padding: 9px 18px;
-  color: #374151;
+  color: var(--hdr-panel-text, #374151);
   text-decoration: none;
   font-size: 13.5px;
   transition: background-color 0.12s ease, color 0.12s ease;
-  cursor: pointer;
-  user-select: none;
   white-space: nowrap;
 }
 
-.link-list-panel__link:hover {
-  background-color: #f9fafb;
-  color: #c4301c;
+.link-list-panel__link:hover,
+.link-list-panel__link:focus-visible {
+  background-color: var(--hdr-panel-hover-bg, #f9fafb);
+  color: var(--hdr-accent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .link-list-trigger .icon-caret-down {
-    transition: none !important;
-  }
-}
-/* =============================================================================
-   FLYOUT SUBLINKS (cascading right panel on hover)
-   Replaces the simple indented list with a proper second-level dropdown
-   ============================================================================= */
-
-.link-list-panel__item {
-  position: relative;
+.link-list-panel__link:focus-visible {
+  outline: 2px solid var(--hdr-accent);
+  outline-offset: -2px;
 }
 
-/* Hide sub by default */
+/* ── Flyout toggle (items with children) ── */
+
+.link-list-panel__item--has-sub {
+  display: flex;
+  align-items: center;
+}
+
+.link-list-panel__item--has-sub .link-list-panel__link {
+  flex: 1;
+}
+
+.link-list-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.link-list-panel__toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.link-list-panel__toggle:hover,
+.link-list-panel__toggle[aria-expanded="true"] {
+  color: var(--hdr-accent);
+}
+
+.link-list-panel__toggle:focus-visible {
+  outline: 2px solid var(--hdr-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Flyout sub-panel (second level) ── */
+
 .link-list-panel__sub {
   display: none;
   position: absolute;
@@ -106,15 +146,27 @@
   margin-left: 4px;
   z-index: 500;
   min-width: 200px;
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
-  border: 1px solid #e5e7eb;
+  background: var(--hdr-panel-bg, #ffffff);
+  border-radius: var(--hdr-panel-radius, 14px);
+  box-shadow: var(--hdr-panel-shadow, 0 16px 48px rgba(0, 0, 0, 0.10));
+  border: 1px solid var(--hdr-panel-border, #e5e7eb);
   padding: 6px 0;
+  list-style: none;
+  margin-block: 0;
 }
 
-/* Show on hover or keyboard focus */
-.link-list-panel__item:hover > .link-list-panel__sub,
+/* JS-driven open state — works for click, touch, and keyboard */
+.link-list-panel__item.is-open > .link-list-panel__sub {
+  display: block;
+}
+
+/* Hover/focus-within fallback, hover-capable devices only */
+@media (hover: hover) and (pointer: fine) {
+  .link-list-panel__item:hover > .link-list-panel__sub {
+    display: block;
+  }
+}
+
 .link-list-panel__item:focus-within > .link-list-panel__sub {
   display: block;
 }
@@ -122,7 +174,7 @@
 .link-list-panel__sublink {
   display: block;
   padding: 9px 18px;
-  color: #374151;
+  color: var(--hdr-panel-text, #374151);
   text-decoration: none;
   font-size: 13.5px;
   transition: background-color 0.12s ease, color 0.12s ease;
@@ -131,15 +183,18 @@
 
 .link-list-panel__sublink:hover,
 .link-list-panel__sublink:focus-visible {
-  background-color: #f9fafb;
-  color: var(--hdr-accent, #e11d27);
+  background-color: var(--hdr-panel-hover-bg, #f9fafb);
+  color: var(--hdr-accent);
 }
 
-/* Optional: show a small arrow on parents that have children */
-.link-list-panel__item:has(.link-list-panel__sub) > .link-list-panel__link::after {
-  content: "›";
-  margin-left: auto;
-  color: #9ca3af;
-  font-size: 16px;
-  line-height: 1;
+.link-list-panel__sublink:focus-visible {
+  outline: 2px solid var(--hdr-accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-list-trigger .icon-caret-down,
+  .link-list-panel__toggle svg {
+    transition: none !important;
+  }
 }
