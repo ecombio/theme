@@ -1442,3 +1442,121 @@ body.nav-is-open { overflow: hidden; }
   .main-header__icon-btn,
   .main-header__cart-badge { transition: none; }
 }
+/**
+ * header-cart.css
+ * Cart icon + badge styles for sections/main-header.liquid.
+ * Scoped to .main-header__cart-* — zero global side-effects.
+ *
+ * Depends on:
+ *   main-header.css  — defines .main-header__icon-btn, .main-header__icon,
+ *                      .main-header__icon-label, and layout tokens.
+ *
+ * Load order in main-header.liquid (or theme.liquid):
+ *   1. main-header.css
+ *   2. header-cart.css   ← this file
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. CART BUTTON WRAPPER
+   Inherits base reset + cursor from .main-header__icon-btn in main-header.css.
+───────────────────────────────────────────────────────────────────────────── */
+
+.main-header__cart-btn {
+  position: relative; /* stacking context for the badge */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. ICON + WRAP
+───────────────────────────────────────────────────────────────────────────── */
+
+.main-header__cart-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-header__cart-icon {
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.main-header__cart-btn:hover .main-header__cart-icon,
+.main-header__cart-btn:focus-visible .main-header__cart-icon {
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. COUNT BADGE
+───────────────────────────────────────────────────────────────────────────── */
+
+.main-header__cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+
+  background: currentColor;         /* inherits the header's text colour */
+  color: var(--color-background, #fff);
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  letter-spacing: 0;
+
+  /* Smooth in/out when count changes */
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity    0.2s ease,
+    transform  0.2s ease;
+}
+
+/* Hidden state — count is 0 */
+.main-header__cart-badge--hidden {
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+}
+
+/* Pop animation on badge update */
+@keyframes cart-badge-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.main-header__cart-badge--pop {
+  animation: cart-badge-pop 0.3s ease forwards;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. FOCUS VISIBLE
+   Inherits outline from .main-header__icon-btn; supplement if needed.
+───────────────────────────────────────────────────────────────────────────── */
+
+.main-header__cart-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. REDUCED MOTION
+───────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .main-header__cart-icon,
+  .main-header__cart-badge {
+    transition: none;
+  }
+
+  .main-header__cart-badge--pop {
+    animation: none;
+  }
+}
