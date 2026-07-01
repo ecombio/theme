@@ -1,42 +1,41 @@
 {% comment %}
-  SNIPPET: link-list.liquid
-  Renders a link list with support for one level of nested children.
-  Use this for dropdowns and flyouts.
+  Link List - Header Menu
+  Renders a dropdown link list block in the menu bar.
 {% endcomment %}
 
-{%- assign menu = menu | default: blank -%}
+{%- liquid
+  assign ll_menu = linklists[block.settings.menu]
+-%}
 
-{%- if menu != blank and menu.links.size > 0 -%}
+<li class="menu-bar__item menu-bar__item--has-link-list" {{ block.shopify_attributes }}>
+  <a href="{{ block.settings.link | default: ll_menu.links.first.url | default: '#' }}"
+     class="menu-bar__link menu-bar__link--caret link-list-trigger"
+     aria-haspopup="true"
+     aria-expanded="false">
+    {%- if block.settings.icon != blank -%}
+      <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+    {%- endif -%}
+    {{ block.settings.label | default: ll_menu.title | default: 'Menu' }}
+    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
 
-  <ul class="{{ ul_class | default: 'link-list' }}">
-    {%- for link in menu.links -%}
-
-      <li class="link-list__item{% if link.links.size > 0 %} link-list__item--has-children{% endif %}">
-
-        {%- if link.links.size > 0 -%}
-          {# Has children #}
-          <span class="link-list__parent">{{ link.title }}</span>
-
-          <ul class="link-list__children">
-            {%- for child in link.links -%}
-              <li>
-                <a href="{{ child.url }}" class="link-list__link">
-                  {{ child.title }}
-                </a>
-              </li>
-            {%- endfor -%}
-          </ul>
-
-        {%- else -%}
-          {# No children #}
-          <a href="{{ link.url }}" class="link-list__link">
-            {{ link.title }}
-          </a>
-        {%- endif -%}
-
-      </li>
-
-    {%- endfor -%}
-  </ul>
-
-{%- endif -%}
+  {%- if ll_menu != blank and ll_menu.links.size > 0 -%}
+    <div class="link-list-panel" role="region">
+      <div class="link-list-panel__container">
+        <ul class="link-list-panel__nav" role="list">
+          {%- for link in ll_menu.links -%}
+            <li class="link-list-panel__item">
+              <a href="{{ link.url }}"
+                 class="link-list-panel__link"
+                 {% if link.current %}aria-current="page"{% endif %}>
+                {{ link.title }}
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    </div>
+  {%- endif -%}
+</li>
