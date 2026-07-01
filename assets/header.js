@@ -1,8 +1,27 @@
 /**
- * Utility Bar
- * File: assets/utility-bar.js
- * Loaded by: sections/utility-bar.liquid
+ * header.js
+ * File: assets/header.js
+ * Loaded by: sections/header.liquid
  *
+ * Consolidates four previously separate script tags into one file:
+ *   - assets/utility-bar.js
+ *   - assets/main-header.js
+ *   - assets/header-cart.js
+ *   - assets/header-account.js
+ *
+ * Each module below is still wrapped in its own IIFE, so they remain
+ * self-contained (no shared globals, no naming collisions) and run in
+ * the same order they did as separate <script defer> tags.
+ *
+ * NOTE: link-list.js, mega-menu.js, and flyout-menu.js are intentionally
+ * NOT included here — they remain separate <script> tags in header.liquid.
+ */
+
+/* ============================================================
+   MODULE: Utility Bar
+   Original file: assets/utility-bar.js
+   Loaded by: sections/utility-bar.liquid
+   ============================================================
  * Responsibilities:
  *  1. Teleport the region dropdown to <body> (escapes header stacking contexts)
  *  2. Position the dropdown anchored below the trigger button (position: fixed)
@@ -248,11 +267,13 @@
   }
 
 })();
-/**
- * Main Header Controller
- * File: assets/main-header.js
- * Loaded by: sections/main-header.liquid  (defer)
- *
+
+
+/* ============================================================
+   MODULE: Main Header Controller
+   Original file: assets/main-header.js
+   Loaded by: sections/main-header.liquid (defer)
+   ============================================================
  * Responsibilities:
  *   1. Sticky scroll shadow  (.is-scrolled on scroll)
  *   2. Hamburger → mobile nav drawer (open / close / Escape / outside-click)
@@ -409,10 +430,13 @@
   }
 
 })();
-/**
- * header-cart.js
- * Cart icon behaviour for sections/main-header.liquid.
- *
+
+
+/* ============================================================
+   MODULE: Header Cart
+   Original file: assets/header-cart.js
+   Loaded by: sections/main-header.liquid
+   ============================================================
  * Responsibilities:
  *   1. Click → dispatch 'cart:open' (cart-drawer.js opens the drawer)
  *   2. 'cart:updated' → update badge count + aria-label
@@ -526,17 +550,31 @@
         cartBtn.setAttribute('aria-expanded', 'false');
       }
     });
-  }/**
- * header-account.js
- * Account icon behaviour for sections/main-header.liquid.
- *
+  }
+
+  /* Run after DOM is ready. Previously loaded via a `defer` script tag, so
+     DOMContentLoaded may have already fired in most browsers — guard either way. */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+}());
+
+
+/* ============================================================
+   MODULE: Header Account
+   Original file: assets/header-account.js
+   Loaded by: sections/main-header.liquid
+   ============================================================
  * The account icon is a plain anchor — no drawer, no AJAX.
- * This file's job is light: keep the aria-label in sync if the
+ * This module's job is light: keep the aria-label in sync if the
  * customer session changes client-side (e.g. after a headless login),
  * and expose a small hook for themes that want to intercept the click
  * (e.g. to open an account flyout instead of navigating).
  *
- * If neither of those is needed for your theme, this file is optional —
+ * If neither of those is needed for your theme, this module is optional —
  * header-account.liquid works standalone without it.
  *
  * Events dispatched:
@@ -584,17 +622,6 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-}());
-
-
-  /* Run after DOM is ready. The script tag in main-header.liquid uses `defer`,
-     so DOMContentLoaded has already fired in most browsers — guard either way. */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
