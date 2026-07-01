@@ -1,21 +1,26 @@
 <!doctype html>
 <html lang="{{ request.locale.iso_code }}">
   <head>
-    {{ 'base.css' | asset_url | stylesheet_tag }}
-    {{ 'theme.css' | asset_url | stylesheet_tag }}
+    {{ 'base.css'                  | asset_url | stylesheet_tag }}
+    {{ 'theme.css'                 | asset_url | stylesheet_tag }}
 
-    {{ 'main-header.css' | asset_url | stylesheet_tag }}
-    {{ 'header-menu.css' | asset_url | stylesheet_tag }}
-    {{ 'flyout-menu.css' | asset_url | stylesheet_tag }}
-    {{ 'mega-menu.css' | asset_url | stylesheet_tag }}
 
-    {{ 'header-search.css' | asset_url | stylesheet_tag }}
-    {{ 'header-cart.css' | asset_url | stylesheet_tag }}
-    {{ 'header-account.css' | asset_url | stylesheet_tag }}
-    {{ 'quick-view.css' | asset_url | stylesheet_tag }}
-    {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
-    {{ 'product-card.css' | asset_url | stylesheet_tag }}
-    {{ 'collection-layout.css' | asset_url | stylesheet_tag }}
+    {{ 'quick-view.css'            | asset_url | stylesheet_tag }}
+    {{ 'cart-drawer.css'           | asset_url | stylesheet_tag }}
+    {{ 'cart-recommendations.css'  | asset_url | stylesheet_tag }}
+    {{ 'article-card.css'          | asset_url | stylesheet_tag }}
+    {{ 'product-card.css'          | asset_url | stylesheet_tag }}
+    {{ 'collection-layout.css'     | asset_url | stylesheet_tag }}
+    {{ 'header.css'                | asset_url | stylesheet_tag }}
+    {{ 'compare-bar.css'           | asset_url | stylesheet_tag }}
+    {{ 'section-accordion.css'     | asset_url | stylesheet_tag }}
+    {{ 'related-products.css'      | asset_url | stylesheet_tag }}
+
+    {%- comment -%}
+      header-search.css and header-search.js are intentionally NOT loaded here.
+      They are loaded by sections/main-header.liquid so they are scoped to the
+      header section and only included when the section is present on the page.
+    {%- endcomment -%}
 
     {% render 'css-variables' %}
 
@@ -29,20 +34,18 @@
     {% render 'meta-tags' %}
 
     {% if settings.favicon != blank %}
-      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+      <link rel="icon" type="image/png"
+            href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
     {% endif %}
 
     {{ content_for_header }}
   </head>
 
-  <body class="{{ settings.theme_preset }}">
+  <body class="{{ settings.theme_preset }}" data-header-layout="{{ settings.header_layout }}">
 
-    {%- comment -%} HEADER GROUP (with shadow) {%- endcomment -%}
-    <div class="header-group" style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);">
-      {% sections 'header-group' %}
-    </div>
+    {% sections 'header-group' %}
 
-    <main role="main" id="MainContent">
+    <main role="main">
       <div class="page-width">
         {{ content_for_layout }}
       </div>
@@ -53,17 +56,42 @@
         {% sections 'footer-group' %}
       </div>
     </footer>
+    {{- 'base.js'               | asset_url | script_tag }}
+    {{- 'theme.js'              | asset_url | script_tag }}
 
-    {{- 'base.js' | asset_url | script_tag }}
-    {{- 'theme.js' | asset_url | script_tag }}
 
-    <script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
-    <script src="{{ 'quick-view.js' | asset_url }}" defer></script>
-    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
+
+
+
+
+
+    {{- 'countdown-timer.js'    | asset_url | script_tag }}
+    {{- 'copy-to-clipboard.js'  | asset_url | script_tag }}
+    {{- 'collection-filters.js' | asset_url | script_tag }}
+    {{- 'product-card.js'       | asset_url | script_tag }}
+
+
+
+
+
+
+
+
 
     {% render 'compare-bar' %}
     {% section 'cart-drawer' %}
     {% section 'quick-view' %}
+
+    {%- comment -%}
+      Load order: cart-drawer.js MUST precede cart-recommendations.js and
+      quick-view.js because both dispatch events that cart-drawer.js listens for.
+      header-cart.js is loaded by sections/main-header.liquid with defer and is
+      NOT duplicated here — Shopify CDN would deduplicate same-URL scripts anyway,
+      but keeping it out of theme.liquid keeps this file clean.
+    {%- endcomment -%}
+    <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
+    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
+    <script src="{{ 'quick-view.js'           | asset_url }}" defer></script>
 
   </body>
 </html>
