@@ -1,0 +1,132 @@
+{% comment %}
+  Main Header Section
+  File: sections/main-header.liquid
+
+  Logo, search, and account/cart icons only. The utility bar (top strip:
+  links, currency/locale switchers, region picker) now lives entirely in
+  its own standalone section — see sections/utility-bar.liquid.
+
+  Add sections/utility-bar.liquid to layout/theme.liquid above
+  {%- section 'main-header' -%} if you want the bar to render:
+    {%- section 'utility-bar' -%}
+    {%- section 'main-header' -%}
+{% endcomment %}
+
+
+
+{%- liquid
+  assign logo       = settings.logo
+  assign logo_width = settings.logo_width | default: 140
+  assign show_acct  = section.settings.show_icon_account
+  assign show_cart  = section.settings.show_icon_cart
+-%}
+
+<header class="main-header" id="main-header" role="banner">
+
+  <div class="main-header__bar">
+    <div class="main-header__inner">
+
+      <button class="main-header__hamburger"
+              id="main-header-nav-toggle"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded="false"
+              aria-controls="main-header-mobile-nav">
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+        <span class="main-header__hamburger-line"></span>
+      </button>
+
+      {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
+
+      {%- comment -%}Desktop search — flex-grows to fill the bar, hidden below 1024px via CSS{%- endcomment -%}
+      <div class="main-header__search--inline">
+        {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
+      </div>
+
+      <ul class="main-header__icons" role="list" aria-label="Header actions">
+        {%- if show_acct != false -%}
+          <li>{%- render 'header-account' -%}</li>
+        {%- endif -%}
+        {%- if show_cart != false -%}
+          <li>{%- render 'header-cart' -%}</li>
+        {%- endif -%}
+      </ul>
+
+    </div>
+  </div>
+
+  {%- comment -%}Mobile/tablet search row — sits below the bar, hidden at 1024px+ via CSS{%- endcomment -%}
+  <div class="main-header__search-row">
+    <div class="main-header__search-row-inner">
+      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
+    </div>
+  </div>
+
+  <nav class="main-header__mobile-nav"
+       id="main-header-mobile-nav"
+       aria-label="Mobile navigation"
+       aria-hidden="true"
+       hidden>
+    <ul class="main-header__mobile-nav-list">
+      {%- for link in section.settings.mobile_menu.links -%}
+        <li>
+          <a class="main-header__mobile-nav-link" href="{{ link.url }}">
+            {{ link.title }}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+
+</header>
+
+
+{% schema %}
+{
+  "name": "Main Header",
+  "tag": "div",
+  "class": "main-header-section",
+  "settings": [
+    { "type": "header", "content": "Navigation" },
+    {
+      "type": "link_list",
+      "id": "mobile_menu",
+      "label": "Mobile menu",
+      "default": "main-menu"
+    },
+    { "type": "header", "content": "Search" },
+    {
+      "type": "checkbox",
+      "id": "enable_predictive_search",
+      "label": "Enable predictive search",
+      "info": "Shows product, collection and query suggestions as the customer types.",
+      "default": true
+    },
+    { "type": "header", "content": "Icons" },
+    {
+      "type": "checkbox",
+      "id": "show_icon_store",
+      "label": "Show store locator icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_account",
+      "label": "Show account icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon_cart",
+      "label": "Show cart icon",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Main Header"
+    }
+  ]
+}
+{% endschema %}
