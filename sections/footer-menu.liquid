@@ -1,29 +1,80 @@
-{% comment %}
-  Barebone Footer Menu Section
-{% endcomment %}
+{{ 'footer-menu.css' | asset_url | stylesheet_tag }}
+{{ 'footer-menu.js' | asset_url | script_tag }}
 
-<footer class="footer-menu">
-  <div class="footer-menu__content">
+<section class="footer-menu-section" {{ section.shopify_attributes }}>
+  <div class="footer-menu">
+
+    {%- if section.settings.heading != blank -%}
+      <h3 class="footer-menu__heading">
+        {{ section.settings.heading }}
+      </h3>
+    {%- endif %}
+
     {% if section.settings.menu != blank %}
-      <nav>
-        {% for link in section.settings.menu.links %}
-          <a href="{{ link.url }}">{{ link.title }}</a>
-        {% endfor %}
-      </nav>
+      {% assign footer_menu = section.settings.menu %}
+
+      {% if footer_menu.links.size > 0 %}
+        <div class="footer-menu__inner">
+          <div class="footer-menu__columns">
+
+            {% for column in footer_menu.links %}
+              {% if column.links.size > 0 %}
+                <div class="footer-menu__column">
+                  <!-- Level 1: Column Title -->
+                  <h3 class="footer-menu__heading">{{ column.title }}</h3>
+
+                  {% for section_item in column.links %}
+                    {% if section_item.links.size > 0 %}
+                      <!-- Level 2: Section Title + Level 3 Links -->
+                      <div class="footer-menu__section-title">{{ section_item.title }}</div>
+
+                      {% for link in section_item.links %}
+                        <a href="{{ link.url }}" class="footer-menu__link">{{ link.title }}</a>
+                      {% endfor %}
+
+                    {% else %}
+                      <!-- Fallback for 2-level menus -->
+                      <a href="{{ section_item.url }}" class="footer-menu__link">{{ section_item.title }}</a>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endfor %}
+
+          </div>
+        </div>
+      {% endif %}
     {% endif %}
+
   </div>
-</footer>
+</section>
 
 {% schema %}
 {
   "name": "Footer Menu",
+  "class": "shopify-section--footer-menu",
   "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section Heading",
+      "default": "Explore"
+    },
     {
       "type": "link_list",
       "id": "menu",
-      "label": "Menu"
+      "label": "Menu",
+      "info": "Select a nested menu for the footer"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_titles",
+      "label": "Show section titles",
+      "default": true,
+      "info": "Display Level 2 titles inside the menu"
     }
   ],
+  "blocks": [],
   "presets": [
     {
       "name": "Footer Menu"
