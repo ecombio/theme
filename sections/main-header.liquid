@@ -5,6 +5,13 @@
   Logo, search, account/cart icons, and the desktop nav bar (built from
   blocks) — consolidated from the standalone sections/header-menu.liquid.
 
+  Sticky behavior lives in its own asset pair:
+    assets/main-header-sticky.css
+    assets/main-header-sticky.js
+  Toggle it on/off via the "Enable sticky header" setting below. When
+  sticky and scrolled, a hamburger/X button appears to the left of the
+  logo and toggles the desktop nav bar open/closed.
+
   The utility bar (top strip: links, currency/locale switchers, region
   picker) still lives entirely in its own standalone section — see
   sections/utility-bar.liquid.
@@ -30,12 +37,13 @@
     snippets/flyout-menu.liquid
 {% endcomment %}
 
-{{ 'main-header.css'    | asset_url | stylesheet_tag }}
-{{ 'header-cart.css'    | asset_url | stylesheet_tag }}
-{{ 'header-account.css' | asset_url | stylesheet_tag }}
-{{ 'link-list.css'      | asset_url | stylesheet_tag }}
-{{ 'mega-menu.css'      | asset_url | stylesheet_tag }}
-{{ 'flyout-menu.css'    | asset_url | stylesheet_tag }}
+{{ 'main-header.css'        | asset_url | stylesheet_tag }}
+{{ 'header-cart.css'        | asset_url | stylesheet_tag }}
+{{ 'header-account.css'     | asset_url | stylesheet_tag }}
+{{ 'link-list.css'          | asset_url | stylesheet_tag }}
+{{ 'mega-menu.css'          | asset_url | stylesheet_tag }}
+{{ 'flyout-menu.css'        | asset_url | stylesheet_tag }}
+{{ 'main-header-sticky.css' | asset_url | stylesheet_tag }}
 
 {% comment %}
   Mobile Menu (commented out for future use)
@@ -49,12 +57,28 @@
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
   assign mobile_menu = section.settings.mobile_menu
+  assign enable_sticky = section.settings.enable_sticky_header
 -%}
 
-<header class="main-header" id="main-header" role="banner">
+<header class="main-header{% if enable_sticky %} main-header--sticky-enabled{% endif %}"
+        id="main-header"
+        role="banner">
 
   <div class="main-header__bar">
     <div class="main-header__inner">
+
+      {%- if enable_sticky -%}
+        <!-- Sticky Header Hamburger — hidden until header goes sticky; hamburger <-> X on click -->
+        <button class="main-header-sticky__hamburger"
+                type="button"
+                aria-label="Toggle menu"
+                aria-expanded="false"
+                aria-controls="main-header-menu-bar">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      {%- endif -%}
 
       <button class="main-header__hamburger"
               id="main-header-nav-toggle"
@@ -93,9 +117,10 @@
     </div>
   </div>
 
-  {%- comment -%}Desktop nav bar — built from blocks, hidden below 1024px via CSS in favor of the hamburger drawer{%- endcomment -%}
+  {%- comment -%}Desktop nav bar — built from blocks. Hidden below 1024px via CSS (mobile drawer takes over);
+  when sticky is enabled, also collapses on scroll and is toggled back open via the sticky hamburger above.{%- endcomment -%}
   {%- if section.blocks.size > 0 -%}
-    <nav class="menu-bar" aria-label="Primary navigation">
+    <nav class="menu-bar" id="main-header-menu-bar" aria-label="Primary navigation">
       <div class="menu-bar__container page-width--header">
         <ul class="menu-bar__list">
           {%- for block in section.blocks -%}
@@ -140,9 +165,10 @@
 
 </header>
 
-<script src="{{ 'main-header.js'    | asset_url }}" defer></script>
-<script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
-<script src="{{ 'header-account.js' | asset_url }}" defer></script>
+<script src="{{ 'main-header.js'        | asset_url }}" defer></script>
+<script src="{{ 'header-cart.js'        | asset_url }}" defer></script>
+<script src="{{ 'header-account.js'     | asset_url }}" defer></script>
+<script src="{{ 'main-header-sticky.js' | asset_url }}" defer></script>
 
 {{- 'link-list.js'   | asset_url | script_tag }}
 {{- 'mega-menu.js'   | asset_url | script_tag }}
@@ -169,6 +195,14 @@
       "label": "Enable predictive search",
       "info": "Shows product, collection and query suggestions as the customer types.",
       "default": true
+    },
+    { "type": "header", "content": "Sticky Header" },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky_header",
+      "label": "Enable sticky header",
+      "default": true,
+      "info": "Header stays visible while scrolling. A hamburger/X button appears next to the logo to toggle the nav bar."
     },
     { "type": "header", "content": "Icons" },
     {
