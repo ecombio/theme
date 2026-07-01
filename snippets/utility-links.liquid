@@ -1,14 +1,27 @@
 {% comment %}
-  Renders the utility bar's left-hand link list.
+  Renders the utility bar's left-hand link list from fixed setting slots
+  (no blocks — merchants edit labels/URLs directly in section settings).
+
   Accepts:
-    blocks — section.blocks array (only 'link' type blocks are rendered)
+    settings — a settings hash containing link_{n}_label / link_{n}_url pairs
+    count    — how many link slots to check (default 3)
+
+  A slot only renders if both its label and URL are filled in, so merchants
+  can leave slots blank to show fewer links.
 {% endcomment %}
+{%- liquid
+  assign count = count | default: 3
+-%}
 <ul class="utility-bar__links" role="list">
-  {%- for block in blocks -%}
-    {%- if block.type == 'link' -%}
-      <li {{ block.shopify_attributes }}>
-        <a href="{{ block.settings.url }}" class="utility-bar__link">
-          {{- block.settings.label | escape -}}
+  {%- for i in (1..count) -%}
+    {%- assign label_key = 'link_' | append: i | append: '_label' -%}
+    {%- assign url_key   = 'link_' | append: i | append: '_url' -%}
+    {%- assign label = settings[label_key] -%}
+    {%- assign url   = settings[url_key] -%}
+    {%- if label != blank and url != blank -%}
+      <li>
+        <a href="{{ url }}" class="utility-bar__link">
+          {{- label | escape -}}
         </a>
       </li>
     {%- endif -%}

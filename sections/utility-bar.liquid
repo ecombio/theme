@@ -1,0 +1,139 @@
+{% comment %}
+  Utility Bar
+  File: sections/utility-bar.liquid
+
+  A slim 32px bar rendered above the main header via the theme layout.
+  Componentized into snippets:
+    snippets/utility-links.liquid   — left-hand utility links (fixed settings slots, not blocks)
+    snippets/currency-selector.liquid — currency form
+    snippets/locale-selector.liquid   — language form
+    snippets/region-picker.liquid     — region trigger + dropdown (teleported to body by JS)
+
+  Assets:
+    assets/utility-bar.css  — all styles
+    assets/utility-bar.js   — behaviour (teleport, focus trap, search, fallbacks)
+
+  Add to layout/theme.liquid above {%- section 'header' -%}:
+    {%- section 'utility-bar' -%}
+{% endcomment %}
+
+{{ 'utility-bar.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign bar_style = section.settings.bar_style | default: 'hyper'
+  assign show_curr  = section.settings.show_currency
+  assign show_loc   = section.settings.show_locale
+-%}
+
+<div class="utility-bar utility-bar--{{ bar_style }}"
+     role="navigation"
+     aria-label="Utility bar"
+     id="utility-bar">
+
+  <div class="utility-bar__inner">
+
+    <div class="utility-bar__col utility-bar__col--left">
+      {%- render 'utility-links', settings: section.settings, count: 3 -%}
+    </div>
+
+    <div class="utility-bar__col utility-bar__col--right">
+      <div class="utility-bar__switchers">
+        {%- if show_curr -%}
+          {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
+        {%- endif -%}
+
+        {%- if show_loc -%}
+          {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
+        {%- endif -%}
+
+        {%- render 'region-picker' -%}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Utility Bar",
+  "tag": "div",
+  "class": "utility-bar-section",
+  "limit": 1,
+  "settings": [
+    {
+      "type": "select",
+      "id": "bar_style",
+      "label": "Bar style",
+      "default": "hyper",
+      "options": [
+        { "value": "hyper", "label": "Hyper (white)" },
+        { "value": "focus", "label": "Focus (warm grey)" }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency",
+      "label": "Show currency selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale",
+      "label": "Show language selector",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Utility links"
+    },
+    {
+      "type": "text",
+      "id": "link_1_label",
+      "label": "Link 1 label",
+      "default": "Track Order"
+    },
+    {
+      "type": "url",
+      "id": "link_1_url",
+      "label": "Link 1 URL"
+    },
+    {
+      "type": "text",
+      "id": "link_2_label",
+      "label": "Link 2 label",
+      "default": "Store Locator"
+    },
+    {
+      "type": "url",
+      "id": "link_2_url",
+      "label": "Link 2 URL"
+    },
+    {
+      "type": "text",
+      "id": "link_3_label",
+      "label": "Link 3 label",
+      "default": "Track Order"
+    },
+    {
+      "type": "url",
+      "id": "link_3_url",
+      "label": "Link 3 URL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Utility Bar",
+      "settings": {
+        "link_1_label": "Track Order",
+        "link_1_url": "/apps/track",
+        "link_2_label": "Store Locator",
+        "link_2_url": "/pages/stores",
+        "link_3_label": "Track Order",
+        "link_3_url": "/apps/track"
+      }
+    }
+  ]
+}
+{% endschema %}
