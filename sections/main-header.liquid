@@ -2,20 +2,16 @@
   Main Header Section
   File: sections/main-header.liquid
 
-  Includes the utility bar (top strip: links, currency/locale switchers,
-  region picker) as well as the main header bar. Consolidated from the
-  standalone sections/utility-bar.liquid section — see snippets:
-    snippets/utility-links.liquid
-    snippets/currency-selector.liquid
-    snippets/locale-selector.liquid
-    snippets/region-picker.liquid
+  Logo, search, and account/cart icons only. The utility bar (top strip:
+  links, currency/locale switchers, region picker) now lives entirely in
+  its own standalone section — see sections/utility-bar.liquid.
 
-  If sections/utility-bar.liquid is still referenced anywhere (a layout
-  {%- section 'utility-bar' -%} call, or a header-group entry), remove it
-  to avoid rendering the bar twice.
+  Add sections/utility-bar.liquid to layout/theme.liquid above
+  {%- section 'main-header' -%} if you want the bar to render:
+    {%- section 'utility-bar' -%}
+    {%- section 'main-header' -%}
 {% endcomment %}
 
-{{ 'utility-bar.css'    | asset_url | stylesheet_tag }}
 {{ 'main-header.css'    | asset_url | stylesheet_tag }}
 {{ 'header-cart.css'    | asset_url | stylesheet_tag }}
 {{ 'header-account.css' | asset_url | stylesheet_tag }}
@@ -25,42 +21,7 @@
   assign logo_width = settings.logo_width | default: 140
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
-
-  assign enable_bar = section.settings.enable_bar
-  assign bar_style  = section.settings.bar_style | default: 'hyper'
-  assign show_curr  = section.settings.show_currency
-  assign show_loc   = section.settings.show_locale
 -%}
-
-{%- if enable_bar -%}
-  <div class="utility-bar utility-bar--{{ bar_style }}"
-       role="navigation"
-       aria-label="Utility bar"
-       id="utility-bar">
-
-    <div class="utility-bar__inner">
-
-      <div class="utility-bar__col utility-bar__col--left">
-        {%- render 'utility-links', settings: section.settings, count: 3 -%}
-      </div>
-
-      <div class="utility-bar__col utility-bar__col--right">
-        <div class="utility-bar__switchers">
-          {%- if show_curr -%}
-            {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
-          {%- endif -%}
-
-          {%- if show_loc -%}
-            {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
-          {%- endif -%}
-
-          {%- render 'region-picker' -%}
-        </div>
-      </div>
-
-    </div>
-  </div>
-{%- endif -%}
 
 <header class="main-header" id="main-header" role="banner">
 
@@ -122,7 +83,6 @@
 
 </header>
 
-<script src="{{ 'utility-bar.js'    | asset_url }}" defer></script>
 <script src="{{ 'main-header.js'    | asset_url }}" defer></script>
 <script src="{{ 'header-cart.js'    | asset_url }}" defer></script>
 <script src="{{ 'header-account.js' | asset_url }}" defer></script>
@@ -133,68 +93,6 @@
   "tag": "div",
   "class": "main-header-section",
   "settings": [
-    { "type": "header", "content": "Utility bar" },
-    {
-      "type": "checkbox",
-      "id": "enable_bar",
-      "label": "Enable utility bar",
-      "default": true
-    },
-    {
-      "type": "select",
-      "id": "bar_style",
-      "label": "Bar style",
-      "default": "hyper",
-      "options": [
-        { "value": "hyper", "label": "Hyper (white)" },
-        { "value": "focus", "label": "Focus (warm grey)" }
-      ]
-    },
-    {
-      "type": "checkbox",
-      "id": "show_currency",
-      "label": "Show currency selector",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_locale",
-      "label": "Show language selector",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "link_1_label",
-      "label": "Utility link 1 label",
-      "default": "Track Order"
-    },
-    {
-      "type": "url",
-      "id": "link_1_url",
-      "label": "Utility link 1 URL"
-    },
-    {
-      "type": "text",
-      "id": "link_2_label",
-      "label": "Utility link 2 label",
-      "default": "Store Locator"
-    },
-    {
-      "type": "url",
-      "id": "link_2_url",
-      "label": "Utility link 2 URL"
-    },
-    {
-      "type": "text",
-      "id": "link_3_label",
-      "label": "Utility link 3 label",
-      "default": "Track Order"
-    },
-    {
-      "type": "url",
-      "id": "link_3_url",
-      "label": "Utility link 3 URL"
-    },
     { "type": "header", "content": "Navigation" },
     {
       "type": "link_list",
@@ -232,15 +130,7 @@
   ],
   "presets": [
     {
-      "name": "Main Header",
-      "settings": {
-        "link_1_label": "Track Order",
-        "link_1_url": "/apps/track",
-        "link_2_label": "Store Locator",
-        "link_2_url": "/pages/stores",
-        "link_3_label": "Track Order",
-        "link_3_url": "/apps/track"
-      }
+      "name": "Main Header"
     }
   ]
 }
