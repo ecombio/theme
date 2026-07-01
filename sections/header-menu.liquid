@@ -1,76 +1,6 @@
 {% comment %}
-  Header Menu
+  Name: Header Menu
   File: sections/header-menu.liquid
-
-  Renders the desktop menu bar and the mobile nav drawer.
-
-  Add to layout/theme.liquid, directly after {%- section 'main-header' -%}:
-    {%- section 'header-menu' -%}
-
-  Block types: single-link | link-list | mega | highlight | flyout
-
-  `mega` is rendered fully INLINE in this file — it does not delegate to
-  a separate block/snippet file, and owns its own styling/behavior pair:
-    mega → assets/mega-menu.css + assets/mega-menu.js
-
-  `flyout` delegates entirely to snippets/flyout-menu.liquid, paired with:
-    assets/flyout-menu.css
-    assets/flyout-menu.js
-  Both `mega` and `flyout` remain real Shopify block types (see schema
-  below), so "Add block" continues to offer Mega menu / Flyout panel as
-  normal in the theme editor.
-
-  The `link-list` block type is also rendered inline (no block file). It
-  owns its own panel classes (.link-list-panel__*) in link-list.css.
-
-  Assets (loaded once, here):
-    assets/link-list.css
-    assets/link-list.js
-    assets/mega-menu.css
-    assets/mega-menu.js
-    assets/flyout-menu.css
-    assets/flyout-menu.js
-
-  No promo-image support on the flyout block — not currently implemented.
-
-  REMOVED — delete these from the theme, nothing references them anymore:
-    snippets/flyout.liquid
-    snippets/flyout-column.liquid
-    assets/flyout.css
-    assets/flyout.js
-    assets/flyout-panel.js
-    blocks/mega-menu.liquid
-    assets/header-mega-menu.css
-    assets/header-mega-menu.js
-
-  CHANGELOG (this revision):
-  - FIXED (containment): `.menu-bar__container`'s class changed from
-    the generic `page-width` to `page-width--header` (defined in
-    base.css, using `var(--header-width)` / `var(--header-margin)`).
-    Previously the menu bar used a *different* width container than the
-    rest of the header (logo / search / cart), so the nav row — and
-    anything positioned relative to it, including the flyout and mega
-    menu panels — could be wider than the header bar above it,
-    appearing to "break out" of the site's content width. Using
-    `page-width--header` here guarantees the menu bar always matches
-    the same width as the rest of the header, edge to edge. Pairs with
-    the matching `position: relative` added to `.menu-bar__container`
-    in assets/header-menu.css (needed so the full-width flyout panel
-    can anchor to this exact box — see assets/flyout-menu.css) and the
-    width-capping changes in assets/flyout-menu.css.
-  - No markup, block schema, or Liquid logic changed beyond that single
-    class swap — all block types (single-link, link-list, mega,
-    highlight, flyout) and the mobile drawer render exactly as before.
-
-  ── PRIOR CHANGELOG (earlier revision, unchanged here) ──────────────
-  - ADDED: "Flyout panel style" setting (`panel_style`) to the `flyout`
-    block schema, under a new "Style" header. Merchant-facing choice
-    between "Compact (left-aligned)" and "Full-width span". Defaults to
-    `compact`, so existing flyout blocks render exactly as before until
-    a merchant explicitly switches the option. The setting is consumed
-    in snippets/flyout-menu.liquid, which appends
-    `flyout-panel--full-width` to the panel's class when full-width is
-    selected — no other markup or section logic changed.
 {% endcomment %}
 
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
@@ -81,10 +11,6 @@
 {%- liquid
   assign nav_menu = linklists[section.settings.menu] | default: linklists['main-menu']
 -%}
-
-{%- comment -%} ═══════════════════════════════════════
-    DESKTOP MENU BAR
-═══════════════════════════════════════ {%- endcomment -%}
 
 {%- if section.blocks.size > 0 -%}
 
