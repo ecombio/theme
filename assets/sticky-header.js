@@ -1,5 +1,5 @@
 /**
- * Sticky Header
+ * Sticky Header Behavior
  * File: assets/sticky-header.js
  */
 
@@ -12,22 +12,25 @@
 
   if (!header) return;
 
-  /* Add sticky class on scroll */
+  /* Handle scroll - add sticky + shadow */
   function handleScroll() {
-    if (window.scrollY > 50) {
+    if (window.scrollY > 60) {
       header.classList.add('is-sticky');
+      header.classList.add('is-scrolled');
     } else {
       header.classList.remove('is-sticky');
-      // Also close menu-bar if it was opened while sticky
+      header.classList.remove('is-scrolled');
+
+      // Reset menu when scrolling back to top
       if (menuBar) menuBar.classList.remove('is-visible');
       if (stickyHamburger) stickyHamburger.classList.remove('is-active');
     }
   }
 
   window.addEventListener('scroll', handleScroll, { passive: true });
-  handleScroll(); // run once on load
+  handleScroll();
 
-  /* Toggle menu-bar when sticky hamburger is clicked */
+  /* Toggle menu bar + change icon when hamburger is clicked */
   if (stickyHamburger && menuBar) {
     stickyHamburger.addEventListener('click', function () {
       var isOpen = menuBar.classList.toggle('is-visible');
