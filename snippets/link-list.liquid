@@ -1,50 +1,79 @@
 {% comment %}
-  Link List - Header Menu (supports nested/child links)
-  Renders a dropdown panel. Now handles second-level items.
+  Link List - Header Menu Block
+  File: snippets/link-list.liquid (rendered from sections/header.liquid)
+
+  Renders a top-level nav item with an optional dropdown panel. Supports one
+  level of nested (flyout) links. Top-level open/close and flyout open/close
+  are both handled by CSS (:hover/:focus-within) with JS enhancement for
+  click, touch, and keyboard users — see assets/link-list.js.
 {% endcomment %}
 
 {%- liquid
   assign ll_menu = linklists[block.settings.menu]
+  assign ll_label = block.settings.label | default: ll_menu.title | default: 'Menu'
+  assign ll_href = block.settings.link | default: ll_menu.links.first.url | default: '#'
+  assign has_panel = false
+  if ll_menu != blank and ll_menu.links.size > 0
+    assign has_panel = true
+  endif
 -%}
 
 <li class="menu-bar__item menu-bar__item--has-link-list" {{ block.shopify_attributes }}>
-  <a href="{{ block.settings.link | default: ll_menu.links.first.url | default: '#' }}"
+  <a href="{{ ll_href }}"
      class="menu-bar__link menu-bar__link--caret link-list-trigger"
-     aria-haspopup="true"
-     aria-expanded="false">
+     {% if has_panel %}
+       aria-haspopup="true"
+       aria-expanded="false"
+       aria-controls="LinkListPanel-{{ block.id }}"
+     {% endif %}>
     {%- if block.settings.icon != blank -%}
       <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
     {%- endif -%}
-    {{ block.settings.label | default: ll_menu.title | default: 'Menu' }}
-    <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+    {{ ll_label }}
+    {%- if has_panel -%}
+      <svg class="icon-caret-down" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M16.25 7.5L10 13.75L3.75 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    {%- endif -%}
   </a>
 
-  {%- if ll_menu != blank and ll_menu.links.size > 0 -%}
-    <div class="link-list-panel" role="region">
+  {%- if has_panel -%}
+    <div class="link-list-panel"
+         id="LinkListPanel-{{ block.id }}"
+         role="region"
+         aria-label="{{ ll_label }}">
       <div class="link-list-panel__container">
         <ul class="link-list-panel__nav" role="list">
 
-          {%- comment %} 
-            MAIN LOOP: Goes through every top-level item in the link list.
-            Example: "Trending", "Shop by Category", "Shop by Price"
-          {% endcomment -%}
+          {%- comment -%} Top-level items, e.g. "Trending", "Shop by Category" {%- endcomment -%}
           {%- for link in ll_menu.links -%}
-            <li class="link-list-panel__item">
+            {%- liquid
+              assign has_children = false
+              if link.links.size > 0
+                assign has_children = true
+              endif
+              assign sub_id = 'LinkListSub-' | append: block.id | append: '-' | append: forloop.index
+            -%}
+            <li class="link-list-panel__item{% if has_children %} link-list-panel__item--has-sub{% endif %}">
               <a href="{{ link.url }}"
                  class="link-list-panel__link"
                  {% if link.current %}aria-current="page"{% endif %}>
                 {{ link.title }}
               </a>
 
-              {%- comment %} 
-                NESTING CHECK: If this top-level item has child links 
-                (e.g. Trending → Shop all, New arrivals, On sale),
-                render a sub-list below it.
-              {% endcomment -%}
-              {%- if link.links.size > 0 -%}
-                <ul class="link-list-panel__sub" role="list">
+              {%- if has_children -%}
+                {%- comment -%} Separate control so the parent link still navigates normally {%- endcomment -%}
+                <button type="button"
+                        class="link-list-panel__toggle"
+                        aria-expanded="false"
+                        aria-controls="{{ sub_id }}"
+                        aria-label="{{ 'general.accessibility.show_submenu' | t: title: link.title | default: 'Show submenu' }}">
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M7.5 3.75L13.75 10L7.5 16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <ul class="link-list-panel__sub" id="{{ sub_id }}" role="list">
                   {%- for child in link.links -%}
                     <li>
                       <a href="{{ child.url }}"
@@ -56,7 +85,6 @@
                   {%- endfor -%}
                 </ul>
               {%- endif -%}
-
             </li>
           {%- endfor -%}
 
