@@ -89,34 +89,57 @@
   }
 }
 /* =============================================================================
-   NESTED SUBLINKS (for link-list with children)
-   Traditional compact dropdown style — indented list inside the same panel
+   FLYOUT SUBLINKS (cascading right panel on hover)
+   Replaces the simple indented list with a proper second-level dropdown
    ============================================================================= */
 
+.link-list-panel__item {
+  position: relative;
+}
+
+/* Hide sub by default */
 .link-list-panel__sub {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 4px 18px;
-  border-left: 1px solid #e5e7eb;
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: 4px;
+  z-index: 500;
+  min-width: 200px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
+  border: 1px solid #e5e7eb;
+  padding: 6px 0;
+}
+
+/* Show on hover or keyboard focus */
+.link-list-panel__item:hover > .link-list-panel__sub,
+.link-list-panel__item:focus-within > .link-list-panel__sub {
+  display: block;
 }
 
 .link-list-panel__sublink {
   display: block;
-  padding: 6px 18px 6px 10px;
-  color: #4b5563;
+  padding: 9px 18px;
+  color: #374151;
   text-decoration: none;
-  font-size: 13px;
-  line-height: 1.35;
-  transition: color 0.12s ease;
+  font-size: 13.5px;
+  transition: background-color 0.12s ease, color 0.12s ease;
   white-space: nowrap;
 }
 
 .link-list-panel__sublink:hover,
 .link-list-panel__sublink:focus-visible {
+  background-color: #f9fafb;
   color: var(--hdr-accent, #e11d27);
 }
 
-/* Optional: tighter spacing when sublist exists */
-.link-list-panel__item:has(.link-list-panel__sub) > .link-list-panel__link {
-  padding-bottom: 4px;
+/* Optional: show a small arrow on parents that have children */
+.link-list-panel__item:has(.link-list-panel__sub) > .link-list-panel__link::after {
+  content: "›";
+  margin-left: auto;
+  color: #9ca3af;
+  font-size: 16px;
+  line-height: 1;
 }
