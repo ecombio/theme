@@ -1,18 +1,21 @@
 <!doctype html>
 <html lang="{{ request.locale.iso_code }}">
   <head>
-    {{ 'base.css'                  | asset_url | stylesheet_tag }}
-    {{ 'theme.css'                 | asset_url | stylesheet_tag }}
-    {{ 'quick-view.css'            | asset_url | stylesheet_tag }}
-    {{ 'cart-drawer.css'           | asset_url | stylesheet_tag }}
-    {{ 'cart-recommendations.css'  | asset_url | stylesheet_tag }}
-    {{ 'article-card.css'          | asset_url | stylesheet_tag }}
-    {{ 'product-card.css'          | asset_url | stylesheet_tag }}
-    {{ 'collection-layout.css'     | asset_url | stylesheet_tag }}
-    {{ 'header.css'                | asset_url | stylesheet_tag }}
-    {{ 'compare-bar.css'           | asset_url | stylesheet_tag }}
-    {{ 'section-accordion.css'     | asset_url | stylesheet_tag }}
-    {{ 'related-products.css'      | asset_url | stylesheet_tag }}
+    {{ 'base.css' | asset_url | stylesheet_tag }}
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+
+    {{ 'main-header.css' | asset_url | stylesheet_tag }}
+    {{ 'header-menu.css' | asset_url | stylesheet_tag }}
+    {{ 'flyout-menu.css' | asset_url | stylesheet_tag }}
+    {{ 'mega-menu.css' | asset_url | stylesheet_tag }}
+
+    {{ 'header-search.css' | asset_url | stylesheet_tag }}
+    {{ 'header-cart.css' | asset_url | stylesheet_tag }}
+    {{ 'header-account.css' | asset_url | stylesheet_tag }}
+    {{ 'quick-view.css' | asset_url | stylesheet_tag }}
+    {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
+    {{ 'product-card.css' | asset_url | stylesheet_tag }}
+    {{ 'collection-layout.css' | asset_url | stylesheet_tag }}
 
     {% render 'css-variables' %}
 
@@ -26,18 +29,20 @@
     {% render 'meta-tags' %}
 
     {% if settings.favicon != blank %}
-      <link rel="icon" type="image/png"
-            href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
     {% endif %}
 
     {{ content_for_header }}
   </head>
 
-  <body class="{{ settings.theme_preset }}" data-header-layout="{{ settings.header_layout }}">
+  <body class="{{ settings.theme_preset }}">
 
-    {% sections 'header-group' %}
+    {%- comment -%} HEADER GROUP (with shadow) {%- endcomment -%}
+    <div class="header-group">
+      {% sections 'header-group' %}
+    </div>
 
-    <main role="main">
+    <main role="main" id="MainContent">
       <div class="page-width">
         {{ content_for_layout }}
       </div>
@@ -48,20 +53,17 @@
         {% sections 'footer-group' %}
       </div>
     </footer>
-    {{- 'base.js'               | asset_url | script_tag }}
-    {{- 'theme.js'              | asset_url | script_tag }}
-    {{- 'countdown-timer.js'    | asset_url | script_tag }}
-    {{- 'copy-to-clipboard.js'  | asset_url | script_tag }}
-    {{- 'collection-filters.js' | asset_url | script_tag }}
-    {{- 'product-card.js'       | asset_url | script_tag }}
+
+    {{- 'base.js' | asset_url | script_tag }}
+    {{- 'theme.js' | asset_url | script_tag }}
+
+    <script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
+    <script src="{{ 'quick-view.js' | asset_url }}" defer></script>
+    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
 
     {% render 'compare-bar' %}
     {% section 'cart-drawer' %}
     {% section 'quick-view' %}
-
-    <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
-    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
-    <script src="{{ 'quick-view.js'           | asset_url }}" defer></script>
 
   </body>
 </html>
