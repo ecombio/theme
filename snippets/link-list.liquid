@@ -1,6 +1,6 @@
 {% comment %}
-  Link List - Header Menu
-  Renders a dropdown link list block in the menu bar.
+  Link List - Header Menu (supports nested/child links)
+  Renders a dropdown panel. Now handles second-level items.
 {% endcomment %}
 
 {%- liquid
@@ -25,6 +25,11 @@
     <div class="link-list-panel" role="region">
       <div class="link-list-panel__container">
         <ul class="link-list-panel__nav" role="list">
+
+          {%- comment %} 
+            MAIN LOOP: Goes through every top-level item in the link list.
+            Example: "Trending", "Shop by Category", "Shop by Price"
+          {% endcomment -%}
           {%- for link in ll_menu.links -%}
             <li class="link-list-panel__item">
               <a href="{{ link.url }}"
@@ -32,8 +37,29 @@
                  {% if link.current %}aria-current="page"{% endif %}>
                 {{ link.title }}
               </a>
+
+              {%- comment %} 
+                NESTING CHECK: If this top-level item has child links 
+                (e.g. Trending → Shop all, New arrivals, On sale),
+                render a sub-list below it.
+              {% endcomment -%}
+              {%- if link.links.size > 0 -%}
+                <ul class="link-list-panel__sub" role="list">
+                  {%- for child in link.links -%}
+                    <li>
+                      <a href="{{ child.url }}"
+                         class="link-list-panel__sublink"
+                         {% if child.current %}aria-current="page"{% endif %}>
+                        {{ child.title }}
+                      </a>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+
             </li>
           {%- endfor -%}
+
         </ul>
       </div>
     </div>
