@@ -1,0 +1,374 @@
+<footer class="site-footer" data-section-id="{{ section.id }}" data-section-type="main-footer">
+  <div class="site-footer__top page-width">
+
+    {%- comment -%} Payment + Social row {%- endcomment -%}
+    <div class="site-footer__row site-footer__icons-row">
+
+      {%- if section.settings.show_payment_icons -%}
+        <ul class="site-footer__payment-list" role="list" aria-label="Payment methods accepted">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'payment_icon' -%}
+              <li class="site-footer__payment-item" {{ block.shopify_attributes }}>
+                {%- if block.settings.icon_image != blank -%}
+                  <img
+                    src="{{ block.settings.icon_image | image_url: width: 80 }}"
+                    alt="{{ block.settings.label | default: 'Payment method' | escape }}"
+                    loading="lazy"
+                    width="40"
+                    height="26"
+                  >
+                {%- else -%}
+                  <span class="site-footer__payment-text">{{ block.settings.label }}</span>
+                {%- endif -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if section.settings.show_social_icons -%}
+        <ul class="site-footer__social-list" role="list" aria-label="Follow us on social media">
+          {%- if section.settings.social_x_link != blank -%}
+            <li>
+              <a href="{{ section.settings.social_x_link }}" class="site-footer__social-link" aria-label="X (Twitter)" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7.6 8.7L23.3 22h-7.1l-5.6-6.9L4.2 22H1l8.1-9.3L.9 2H8l5.1 6.3L18.9 2Zm-1.2 18h2L6.5 3.9H4.3L17.7 20Z"/></svg>
+              </a>
+            </li>
+          {%- endif -%}
+          {%- if section.settings.social_tiktok_link != blank -%}
+            <li>
+              <a href="{{ section.settings.social_tiktok_link }}" class="site-footer__social-link" aria-label="TikTok" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M16.6 5.8a4.4 4.4 0 0 1-3.1-1.3V15a5.2 5.2 0 1 1-4.5-5.2v2.7a2.5 2.5 0 1 0 1.8 2.4V2h2.6a4.4 4.4 0 0 0 3.2 3.8v2Z"/></svg>
+              </a>
+            </li>
+          {%- endif -%}
+          {%- if section.settings.social_youtube_link != blank -%}
+            <li>
+              <a href="{{ section.settings.social_youtube_link }}" class="site-footer__social-link" aria-label="YouTube" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M23 7.2s-.2-1.6-.9-2.3c-.9-.9-1.9-.9-2.3-1C16.9 3.6 12 3.6 12 3.6h0s-4.9 0-7.8.3c-.4.1-1.4.1-2.3 1-.7.7-.9 2.3-.9 2.3S.7 9.1.7 11v1.8c0 1.9.3 3.8.3 3.8s.2 1.6.9 2.3c.9.9 2 .9 2.5 1 1.8.2 7.6.3 7.6.3s4.9 0 7.8-.3c.4-.1 1.4-.1 2.3-1 .7-.7.9-2.3.9-2.3s.3-1.9.3-3.8V11c0-1.9-.3-3.8-.3-3.8ZM9.7 14.6V8.4l5.4 3.1-5.4 3.1Z"/></svg>
+              </a>
+            </li>
+          {%- endif -%}
+          {%- if section.settings.social_instagram_link != blank -%}
+            <li>
+              <a href="{{ section.settings.social_instagram_link }}" class="site-footer__social-link" aria-label="Instagram" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 2 .3 2.4.5.6.2 1 .5 1.5 1 .4.4.7.8 1 1.4.2.5.4 1.2.5 2.4.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 2-.5 2.4-.2.6-.5 1-1 1.5-.4.4-.8.7-1.4 1-.5.2-1.2.4-2.4.5-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-2-.3-2.4-.5-.6-.2-1-.5-1.5-1-.4-.4-.7-.8-1-1.4-.2-.5-.4-1.2-.5-2.4C2 15.6 2 15.2 2 12s0-3.6.1-4.9c.1-1.2.3-2 .5-2.4.2-.6.5-1 1-1.5.4-.4.8-.7 1.4-1 .5-.2 1.2-.4 2.4-.5 1.3-.1 1.7-.1 4.9-.1ZM12 0C8.7 0 8.3 0 7 .1 5.7.1 4.8.3 4 .6c-.8.3-1.5.7-2.2 1.4C1.1 2.7.7 3.4.4 4.2c-.3.8-.5 1.7-.5 3C0 8.7 0 9.1 0 12.4v-.8C0 15.3 0 15.7.1 17c.1 1.3.2 2.2.5 3 .3.8.7 1.5 1.4 2.2.7.7 1.4 1.1 2.2 1.4.8.3 1.7.5 3 .5 1.3.1 1.7.1 5 .1s3.7 0 5-.1c1.3-.1 2.2-.2 3-.5.8-.3 1.5-.7 2.2-1.4.7-.7 1.1-1.4 1.4-2.2.3-.8.5-1.7.5-3 .1-1.3.1-1.7.1-5s0-3.7-.1-5c-.1-1.3-.2-2.2-.5-3-.3-.8-.7-1.5-1.4-2.2C21.3 1.1 20.6.7 19.8.4c-.8-.3-1.7-.5-3-.5C15.7 0 15.3 0 12 0Zm0 5.8A6.2 6.2 0 1 0 18.2 12 6.2 6.2 0 0 0 12 5.8Zm0 10.2A4 4 0 1 1 16 12a4 4 0 0 1-4 4Zm6.4-10.5a1.4 1.4 0 1 1-1.4-1.4 1.4 1.4 0 0 1 1.4 1.4Z"/></svg>
+              </a>
+            </li>
+          {%- endif -%}
+          {%- if section.settings.social_facebook_link != blank -%}
+            <li>
+              <a href="{{ section.settings.social_facebook_link }}" class="site-footer__social-link" aria-label="Facebook" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg>
+              </a>
+            </li>
+          {%- endif -%}
+        </ul>
+      {%- endif -%}
+    </div>
+
+    <hr class="site-footer__divider">
+
+    {%- comment -%} Bottom bar {%- endcomment -%}
+    <div class="site-footer__row site-footer__bottom-row">
+      <p class="site-footer__copyright">
+        &copy; {{ 'now' | date: '%Y' }} {{ section.settings.copyright_text | default: shop.name }}. All Rights Reserved.
+      </p>
+
+      {%- if section.settings.footer_menu != blank -%}
+        <nav class="site-footer__nav" aria-label="Footer">
+          <ul class="site-footer__nav-list" role="list">
+            {%- for link in section.settings.footer_menu.links -%}
+              <li><a href="{{ link.url }}" class="site-footer__nav-link">{{ link.title }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </nav>
+      {%- endif -%}
+    </div>
+
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: {{ section.settings.background_color }};
+    color: {{ section.settings.text_color }};
+    border-top: 1px solid rgba(0,0,0,0.08);
+    font-family: inherit;
+  }
+
+  .page-width {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  .site-footer__top {
+    padding-top: 24px;
+    padding-bottom: 20px;
+  }
+
+  .site-footer__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* Payment icons */
+  .site-footer__payment-list {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    flex-wrap: wrap;
+  }
+
+  .site-footer__payment-item img {
+    display: block;
+    height: 26px;
+    width: auto;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+
+  .site-footer__payment-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 4px;
+    background: #eee;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  /* Social icons */
+  .site-footer__social-list {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: {{ section.settings.social_icon_bg | default: '#000000' }};
+    color: {{ section.settings.social_icon_color | default: '#ffffff' }};
+    text-decoration: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .site-footer__social-link:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+  }
+
+  .site-footer__divider {
+    border: none;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    margin: 4px 0 16px;
+  }
+
+  /* Bottom row */
+  .site-footer__bottom-row {
+    padding-bottom: 24px;
+    font-size: 13px;
+  }
+
+  .site-footer__copyright {
+    margin: 0;
+    opacity: 0.75;
+  }
+
+  .site-footer__nav-list {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    flex-wrap: wrap;
+  }
+
+  .site-footer__nav-link {
+    color: currentColor;
+    text-decoration: none;
+    opacity: 0.85;
+  }
+
+  .site-footer__nav-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+
+  @media screen and (max-width: 749px) {
+    .page-width { padding: 0 20px; }
+    .site-footer__row { justify-content: flex-start; }
+    .site-footer__bottom-row { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+<script>
+  (function () {
+    var footer = document.querySelector('[data-section-id="{{ section.id }}"]');
+    if (!footer) return;
+
+    // Smooth external-link handling: ensure target="_blank" links open safely
+    footer.querySelectorAll('a[target="_blank"]').forEach(function (link) {
+      var rel = (link.getAttribute('rel') || '').split(' ');
+      if (rel.indexOf('noopener') === -1) rel.push('noopener');
+      if (rel.indexOf('noreferrer') === -1) rel.push('noreferrer');
+      link.setAttribute('rel', rel.join(' ').trim());
+    });
+
+    // Update copyright year dynamically on the client as a fallback
+    var copyrightEl = footer.querySelector('.site-footer__copyright');
+    if (copyrightEl) {
+      var currentYear = new Date().getFullYear();
+      copyrightEl.innerHTML = copyrightEl.innerHTML.replace(/\b\d{4}\b/, currentYear);
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Footer",
+  "tag": "footer",
+  "class": "shopify-section--footer",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "text",
+      "id": "copyright_text",
+      "label": "Copyright owner name",
+      "default": "ECombio, Inc."
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu",
+      "label": "Footer menu",
+      "default": "footer"
+    },
+    {
+      "type": "header",
+      "content": "Payment icons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "Show payment icons",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Social media"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social_icons",
+      "label": "Show social icons",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "social_icon_bg",
+      "label": "Social icon background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "social_icon_color",
+      "label": "Social icon color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "url",
+      "id": "social_x_link",
+      "label": "X (Twitter) link"
+    },
+    {
+      "type": "url",
+      "id": "social_tiktok_link",
+      "label": "TikTok link"
+    },
+    {
+      "type": "url",
+      "id": "social_youtube_link",
+      "label": "YouTube link"
+    },
+    {
+      "type": "url",
+      "id": "social_instagram_link",
+      "label": "Instagram link"
+    },
+    {
+      "type": "url",
+      "id": "social_facebook_link",
+      "label": "Facebook link"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "payment_icon",
+      "name": "Payment icon",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "icon_image",
+          "label": "Icon image"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label (fallback text if no image)",
+          "default": "Payment"
+        }
+      ]
+    }
+  ],
+  "default": {
+    "settings": {
+      "copyright_text": "ECombio, Inc.",
+      "show_payment_icons": true,
+      "show_social_icons": true
+    },
+    "blocks": [
+      { "type": "payment_icon", "settings": { "label": "Visa" } },
+      { "type": "payment_icon", "settings": { "label": "Mastercard" } },
+      { "type": "payment_icon", "settings": { "label": "PayPal" } },
+      { "type": "payment_icon", "settings": { "label": "Apple Pay" } },
+      { "type": "payment_icon", "settings": { "label": "Klarna" } },
+      { "type": "payment_icon", "settings": { "label": "Amex" } },
+      { "type": "payment_icon", "settings": { "label": "Venmo" } }
+    ]
+  }
+}
+{% endschema %}
