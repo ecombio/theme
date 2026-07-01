@@ -3,7 +3,7 @@ sections/main-footer.liquid
 Main footer section for ScooterBio
 
 Structure:
-- Payment icons + Social icons (Simple Icons CDN)
+- Payment icons + Social icons
 - Copyright + Policies
 {% endcomment %}
 
@@ -21,28 +21,54 @@ Structure:
 
       <!-- Payment + Social Icons -->
       <div class="main-footer__icons">
+        <!-- Payment icons (static for trust) -->
         <div class="main-footer__payments">
-          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/visa.svg" alt="Visa" class="icon-visa">
-          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/mastercard.svg" alt="Mastercard" class="icon-mastercard">
-          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/paypal.svg" alt="PayPal" class="icon-paypal">
-          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/applepay.svg" alt="Apple Pay" class="icon-applepay">
-          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/afterpay.svg" alt="Afterpay" class="icon-afterpay">
-          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/klarna.svg" alt="Klarna" class="icon-klarna">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/visa.svg" alt="Visa">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/mastercard.svg" alt="Mastercard">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/paypal.svg" alt="PayPal">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/applepay.svg" alt="Apple Pay">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/afterpay.svg" alt="Afterpay">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/klarna.svg" alt="Klarna">
         </div>
 
+        <!-- Social icons (editable in theme editor) -->
         <div class="main-footer__socials">
-          <a href="https://x.com/scooterbio" target="_blank"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/x.svg" alt="X" class="icon-x"></a>
-          <a href="https://tiktok.com/@scooterbio" target="_blank"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/tiktok.svg" alt="TikTok" class="icon-tiktok"></a>
-          <a href="https://youtube.com/@scooterbio" target="_blank"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/youtube.svg" alt="YouTube" class="icon-youtube"></a>
-          <a href="https://instagram.com/scooterbio" target="_blank"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="Instagram" class="icon-instagram"></a>
-          <a href="https://facebook.com/scooterbio" target="_blank"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/facebook.svg" alt="Facebook" class="icon-facebook"></a>
+          {% if section.settings.social_x != blank %}
+            <a href="{{ section.settings.social_x }}" target="_blank">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/x.svg" alt="X">
+            </a>
+          {% endif %}
+
+          {% if section.settings.social_tiktok != blank %}
+            <a href="{{ section.settings.social_tiktok }}" target="_blank">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/tiktok.svg" alt="TikTok">
+            </a>
+          {% endif %}
+
+          {% if section.settings.social_youtube != blank %}
+            <a href="{{ section.settings.social_youtube }}" target="_blank">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/youtube.svg" alt="YouTube">
+            </a>
+          {% endif %}
+
+          {% if section.settings.social_instagram != blank %}
+            <a href="{{ section.settings.social_instagram }}" target="_blank">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="Instagram">
+            </a>
+          {% endif %}
+
+          {% if section.settings.social_facebook != blank %}
+            <a href="{{ section.settings.social_facebook }}" target="_blank">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/facebook.svg" alt="Facebook">
+            </a>
+          {% endif %}
         </div>
       </div>
 
       <!-- Copyright + Policies -->
       <div class="main-footer__bottom-inner">
         <div class="main-footer__copyright">
-          <p>&copy; {{ 'now' | date: '%Y' }} ScooterBio. All rights reserved.</p>
+          <p>{{ section.settings.copyright_text }}</p>
         </div>
 
         <ul class="main-footer__policies">
@@ -60,7 +86,43 @@ Structure:
 {% schema %}
 {
   "name": "Main footer",
-  "settings": [],
+  "settings": [
+    {
+      "type": "text",
+      "id": "copyright_text",
+      "label": "Copyright text",
+      "default": "© {{ 'now' | date: '%Y' }} ScooterBio. All rights reserved."
+    },
+    {
+      "type": "header",
+      "content": "Social Media Links"
+    },
+    {
+      "type": "url",
+      "id": "social_x",
+      "label": "X (Twitter)"
+    },
+    {
+      "type": "url",
+      "id": "social_tiktok",
+      "label": "TikTok"
+    },
+    {
+      "type": "url",
+      "id": "social_youtube",
+      "label": "YouTube"
+    },
+    {
+      "type": "url",
+      "id": "social_instagram",
+      "label": "Instagram"
+    },
+    {
+      "type": "url",
+      "id": "social_facebook",
+      "label": "Facebook"
+    }
+  ],
   "presets": [
     {
       "name": "Main footer"
