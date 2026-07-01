@@ -279,21 +279,18 @@
  *   2. Hamburger → mobile nav drawer (open / close / Escape / outside-click)
  *   3. Focus trap inside the open mobile nav
  *   4. Body scroll lock while nav is open
- *   5. Cart button  → dispatches  'cart:open'   custom event
- *   6. Cart badge   → listens for 'cart:updated' { detail: { count } }
+ *
+ * Cart button/badge behaviour is NOT handled here — that logic lives
+ * entirely in the Header Cart module below (originally header-cart.js),
+ * which is the more complete implementation ("(N)" badge formatting +
+ * pop animation + drawer-open/close aria sync). This module used to
+ * duplicate a lighter version of that logic; it has been removed to
+ * avoid two listeners fighting over the same #main-header-cart-toggle
+ * button and 'cart:updated' event.
  *
  * Search (predictive search, voice, category pill, recent searches) is
  * entirely handled by assets/header-search.js — this file does NOT touch
  * any .hs__* elements.
- *
- * Cart drawer integration example:
- *   // Open the drawer from any other script:
- *   document.dispatchEvent(new CustomEvent('cart:open'));
- *
- *   // Update the badge count after an add-to-cart:
- *   document.dispatchEvent(new CustomEvent('cart:updated', {
- *     detail: { count: 3 }
- *   }));
  */
 
 (function () {
@@ -303,7 +300,6 @@
   var header    = document.getElementById('main-header');
   var navToggle = document.getElementById('main-header-nav-toggle');
   var mobileNav = document.getElementById('main-header-mobile-nav');
-  var cartBtn   = document.getElementById('main-header-cart-toggle');
 
   /* ── Focusable selector for focus trap ───────────────────────────────── */
   var FOCUSABLE = [
@@ -331,7 +327,6 @@
      ───────────────────────────────────────────────────────────────────── */
   if (!navToggle || !mobileNav) {
     /* Mobile nav elements are optional — skip gracefully */
-    setupCart();
     return;
   }
 
@@ -397,37 +392,6 @@
     if (e.key === 'Escape' && navOpen) { closeNav(); return; }
     if (e.key === 'Tab'    && navOpen) { trapFocus(e); }
   });
-
-  /* ─────────────────────────────────────────────────────────────────────
-     5 – 6. CART
-     ───────────────────────────────────────────────────────────────────── */
-  setupCart();
-
-  function setupCart() {
-    /* 5. Cart button — open drawer */
-    if (cartBtn) {
-      cartBtn.addEventListener('click', function () {
-        document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
-        cartBtn.setAttribute('aria-expanded', 'true');
-      });
-    }
-
-    /* 6. Cart badge — sync on cart:updated */
-    document.addEventListener('cart:updated', function (e) {
-      var count = (e.detail && typeof e.detail.count === 'number') ? e.detail.count : 0;
-
-      var badge = document.querySelector('[data-cart-count]');
-      if (badge) {
-        badge.textContent = count;
-        badge.classList.toggle('main-header__cart-badge--hidden', count === 0);
-      }
-
-      if (cartBtn) {
-        var noun = count === 1 ? 'item' : 'items';
-        cartBtn.setAttribute('aria-label', 'Open cart, ' + count + ' ' + noun);
-      }
-    });
-  }
 
 })();
 
