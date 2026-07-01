@@ -17,43 +17,45 @@
     {%- section 'utility-bar' -%}
 {% endcomment %}
 
-{{ 'utility-bar.css' | asset_url | stylesheet_tag }}
+{%- if section.settings.enable_bar -%}
+  {{ 'utility-bar.css' | asset_url | stylesheet_tag }}
 
-{%- liquid
-  assign bar_style = section.settings.bar_style | default: 'hyper'
-  assign show_curr  = section.settings.show_currency
-  assign show_loc   = section.settings.show_locale
--%}
+  {%- liquid
+    assign bar_style = section.settings.bar_style | default: 'hyper'
+    assign show_curr  = section.settings.show_currency
+    assign show_loc   = section.settings.show_locale
+  -%}
 
-<div class="utility-bar utility-bar--{{ bar_style }}"
-     role="navigation"
-     aria-label="Utility bar"
-     id="utility-bar">
+  <div class="utility-bar utility-bar--{{ bar_style }}"
+       role="navigation"
+       aria-label="Utility bar"
+       id="utility-bar">
 
-  <div class="utility-bar__inner">
+    <div class="utility-bar__inner">
 
-    <div class="utility-bar__col utility-bar__col--left">
-      {%- render 'utility-links', settings: section.settings, count: 3 -%}
-    </div>
-
-    <div class="utility-bar__col utility-bar__col--right">
-      <div class="utility-bar__switchers">
-        {%- if show_curr -%}
-          {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
-        {%- endif -%}
-
-        {%- if show_loc -%}
-          {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
-        {%- endif -%}
-
-        {%- render 'region-picker' -%}
+      <div class="utility-bar__col utility-bar__col--left">
+        {%- render 'utility-links', settings: section.settings, count: 3 -%}
       </div>
+
+      <div class="utility-bar__col utility-bar__col--right">
+        <div class="utility-bar__switchers">
+          {%- if show_curr -%}
+            {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
+          {%- endif -%}
+
+          {%- if show_loc -%}
+            {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
+          {%- endif -%}
+
+          {%- render 'region-picker' -%}
+        </div>
+      </div>
+
     </div>
-
   </div>
-</div>
 
-<script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
+  <script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
+{%- endif -%}
 
 {% schema %}
 {
@@ -62,6 +64,12 @@
   "class": "utility-bar-section",
   "limit": 1,
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_bar",
+      "label": "Enable utility bar",
+      "default": true
+    },
     {
       "type": "select",
       "id": "bar_style",
