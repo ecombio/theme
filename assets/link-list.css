@@ -50,19 +50,33 @@
   }
 }
 
+/* NOTE: no overflow: hidden here. The flyout sub-panel (.link-list-panel__sub)
+   is positioned outside this box (left: 100%) so it can appear as a second
+   column — overflow: hidden on the container would clip it invisible.
+   Rounded corners on hover backgrounds are handled per-row below instead. */
 .link-list-panel__container {
   background: var(--hdr-panel-bg, #ffffff);
   border-radius: var(--hdr-panel-radius, 14px);
   box-shadow: var(--hdr-panel-shadow, 0 16px 48px rgba(0, 0, 0, 0.10));
   border: 1px solid var(--hdr-panel-border, #e5e7eb);
   padding: 6px 0;
-  overflow: hidden;
 }
 
 .link-list-panel__nav {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+/* Round the hover/focus background on the first and last row so the
+   panel still reads as a clean rounded card without relying on
+   overflow: hidden on the container */
+.link-list-panel__nav > li:first-child .link-list-panel__link {
+  border-radius: calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px) 0 0;
+}
+
+.link-list-panel__nav > li:last-child .link-list-panel__link {
+  border-radius: 0 0 calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px);
 }
 
 /* ── Top-level panel links ── */
@@ -190,6 +204,20 @@
 .link-list-panel__sublink:focus-visible {
   outline: 2px solid var(--hdr-accent);
   outline-offset: -2px;
+}
+
+.link-list-panel__sub > li:first-child .link-list-panel__sublink {
+  border-radius: calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px) 0 0;
+}
+
+.link-list-panel__sub > li:last-child .link-list-panel__sublink {
+  border-radius: 0 0 calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px);
+}
+
+/* ── Arrow indicator on items with children ── */
+
+.link-list-panel__toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
