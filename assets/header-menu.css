@@ -1,47 +1,7 @@
 /* =============================================================================
    Header Menu Styles  |  assets/header-menu.css
-   Covers: desktop menu bar + mobile/tablet drawer nav
-   Breakpoints:
-     Mobile  : < 640px
-     Tablet  : 640px – 1023px
-     Desktop : ≥ 1024px
-
-   NOTE: Mega-menu styling lives in its own file — assets/mega-menu.css —
-   loaded separately from sections/header-menu.liquid. Keep mega-specific
-   selectors out of this file; add them there instead.
-
-   CHANGELOG (this revision):
-   - FIXED (containment): `.menu-bar__container` now also gets
-     `position: relative`. This makes it the containing block for the
-     full-width flyout panel (assets/flyout-menu.css), so that panel can
-     be sized to exactly match this container's width — i.e. the same
-     `var(--header-width)` box the rest of the header uses — instead of
-     centering itself on whichever trigger opened it. Pairs with the
-     `:has()` rule in assets/flyout-menu.css that steps the trigger
-     `<li>` out of the positioning chain only when it contains a
-     full-width flyout panel; compact-mode flyouts, mega menus, and
-     link-list panels are unaffected and keep anchoring to their own
-     `<li>` exactly as before.
-   - REMOVED: the hardcoded `margin: 0 auto; padding: 0 10px;` on
-     `.menu-bar__container`. That sizing is now owned entirely by the
-     `.page-width--header` class added to this element in
-     sections/header-menu.liquid (uses `var(--header-width)` /
-     `var(--header-margin)` from base.css), so the menu bar's content
-     width always matches the header bar above it (logo ... cart)
-     instead of drifting out of sync with its own separate 10px
-     padding value.
-   - FIXED (earlier): [data-header-layout="1"] .menu-bar { display: flex; ... }
-     was declared with no media-query scope, so its specificity (0,2,0)
-     beat the @media (max-width: 1023px) .menu-bar { display: none; }
-     rule (0,1,0) at every viewport, including mobile/tablet. Net
-     effect: on stores using header_layout "1", the desktop menu bar
-     never actually hid on mobile and fought with .mobile-nav for
-     space. Scoped the layout-1 base rule to @media (min-width: 1024px)
-     so it can no longer out-rank the mobile hide rule. Did the same
-     for the existing @media (max-width: 639px) layout-1 override,
-     which had the same unscoped-specificity issue relative to the
-     hide rule.
-   ============================================================================= */
+   Covers: desktop menu bar only
+============================================================================= */
 
 /* ── Variables ── */
 :root {
@@ -54,253 +14,18 @@
   --hdr-radius-drop    : 12px;
   --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
   --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --hdr-drawer-z       : 400;
 }
 
 /* =============================================================================
-   MOBILE / TABLET DRAWER
-   ============================================================================= */
+   DESKTOP MENU BAR (≥ 1024px)
+============================================================================= */
 
-/* ── Overlay + visibility shell ── */
-.mobile-nav {
-  position: fixed;
-  inset: 0;
-  z-index: var(--hdr-drawer-z);
-  pointer-events: none;
-  visibility: hidden;
-  font-family: var(--hdr-font);
-}
-
-.mobile-nav.is-open {
-  pointer-events: auto;
-  visibility: visible;
-}
-
-.mobile-nav__overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.mobile-nav.is-open .mobile-nav__overlay {
-  opacity: 1;
-}
-
-/* ── Slide-in panel ── */
-.mobile-nav__panel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(320px, 88vw);
-  background: #fff;
-  overflow-y: auto;
-  overflow-x: hidden;
-  transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-}
-
-.mobile-nav.is-open .mobile-nav__panel {
-  transform: translateX(0);
-}
-
-/* ── Header row ── */
-.mobile-nav__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8px 0 20px;
-  height: 56px;
-  flex-shrink: 0;
-  border-bottom: 2px solid var(--hdr-border);
-}
-
-.mobile-nav__header-label {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--hdr-text);
-  letter-spacing: -0.01em;
-}
-
-.mobile-nav__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--hdr-text);
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-
-.mobile-nav__close:hover {
-  background: var(--hdr-search-bg);
-}
-
-/* ── List reset ── */
-.mobile-nav__list,
-.mobile-nav__sub {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.mobile-nav__list {
-  flex: 1;
-  padding: 6px 0 32px;
-}
-
-/* ── Row: link + toggle button side by side ── */
-.mobile-nav__row {
-  display: flex;
-  align-items: stretch;
-}
-
-/* ── Top-level item dividers ── */
-.mobile-nav__list > .mobile-nav__item {
-  border-bottom: 1px solid var(--hdr-border);
-}
-
-.mobile-nav__list > .mobile-nav__item:last-child {
-  border-bottom: none;
-}
-
-/* ── Links — Level 1 ── */
-.mobile-nav__link {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--hdr-text);
-  text-decoration: none;
-  line-height: 1.3;
-  transition: color 0.12s;
-}
-
-.mobile-nav__link:hover,
-.mobile-nav__link[aria-current="page"],
-.mobile-nav__item.is-active > .mobile-nav__link,
-.mobile-nav__item.is-active > .mobile-nav__row > .mobile-nav__link {
-  color: var(--hdr-accent);
-}
-
-/* ── Links — Level 2 ── */
-.mobile-nav__link--sub {
-  padding: 11px 20px 11px 28px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.mobile-nav__link--sub:hover {
-  color: var(--hdr-accent);
-}
-
-/* ── Links — Level 3 ── */
-.mobile-nav__link--deep {
-  padding: 9px 20px 9px 44px;
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: #6b7280;
-}
-
-.mobile-nav__link--deep:hover {
-  color: var(--hdr-accent);
-}
-
-/* ── Expand toggle button ── */
-.mobile-nav__toggle {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  background: transparent;
-  border: none;
-  border-left: 1px solid var(--hdr-border);
-  cursor: pointer;
-  color: #9ca3af;
-  transition: color 0.12s, background 0.12s;
-}
-
-.mobile-nav__toggle:hover {
-  background: var(--hdr-search-bg);
-  color: var(--hdr-accent);
-}
-
-/* ── Chevron rotation ── */
-.mobile-nav__chevron {
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-}
-
-.mobile-nav__toggle[aria-expanded="true"] .mobile-nav__chevron {
-  transform: rotate(180deg);
-}
-
-/* ── Accent left border when open ── */
-.mobile-nav__toggle[aria-expanded="true"] {
-  color: var(--hdr-accent);
-  border-left-color: var(--hdr-accent);
-}
-
-/* ── Sub-list containers ── */
-.mobile-nav__sub {
-  background: #f9fafb;
-  border-top: 1px solid var(--hdr-border);
-  overflow: hidden;
-}
-
-.mobile-nav__sub[hidden] {
-  display: none;
-}
-
-.mobile-nav__sub--l3 {
-  background: #f3f4f6;
-}
-
-/* ── L2 item dividers ── */
-.mobile-nav__sub > .mobile-nav__item {
-  border-bottom: 1px solid #ebebeb;
-}
-
-.mobile-nav__sub > .mobile-nav__item:last-child {
-  border-bottom: none;
-}
-
-/* ── L3 item dividers ── */
-.mobile-nav__item--l3 {
-  border-bottom: 1px solid #e4e4e4;
-}
-
-.mobile-nav__item--l3:last-child {
-  border-bottom: none;
-}
-
-/* =============================================================================
-   MENU BAR  (desktop only, ≥ 1024px)
-   ============================================================================= */
-
-/* Hidden on mobile/tablet by default */
 @media (max-width: 1023px) {
   .menu-bar {
     display: none;
   }
 }
 
-/* ── Layout variant 1: menu bar base (was in theme.css) ──
-   FIXED: now scoped to desktop so it can't out-rank the mobile hide rule
-   above on specificity. ── */
 @media (min-width: 1024px) {
   [data-header-layout="1"] .menu-bar {
     display: flex;
@@ -316,12 +41,6 @@
   }
 }
 
-/* ── Layout variant 1: mobile horizontal scroll (< 640px) ──
-   NOT changed. This rule is already correctly scoped to its own
-   @media block and intentionally wins over the global hide rule at
-   this width — layout 1 is designed to show a horizontally-scrolling
-   menu bar on mobile instead of relying solely on the drawer. Left
-   exactly as originally written. ── */
 @media (max-width: 639px) {
   [data-header-layout="1"] .menu-bar {
     overflow-x: auto;
@@ -331,19 +50,15 @@
     display: flex;
     padding: 0;
   }
-
   [data-header-layout="1"] .menu-bar::-webkit-scrollbar {
     display: none;
   }
-
-  /* Bust out of page-width constraints so content can overflow */
   [data-header-layout="1"] .menu-bar .menu-bar__container {
     width: max-content;
     max-width: unset;
     min-width: 100%;
     padding: 0 16px;
   }
-
   [data-header-layout="1"] .menu-bar__list {
     flex-wrap: nowrap;
     width: max-content;
@@ -357,13 +72,6 @@
   z-index: 100;
 }
 
-/* FIXED (containment): sizing (max-width / margin / padding) is now
-   owned by the `.page-width--header` class applied alongside this one
-   in sections/header-menu.liquid, so it tracks var(--header-width) /
-   var(--header-margin) from base.css instead of a separately
-   maintained 10px padding value. `position: relative` is kept/added
-   here so this element can serve as the containing block for the
-   full-width flyout panel — see assets/flyout-menu.css. */
 .menu-bar__container {
   position: relative;
 }
@@ -411,8 +119,7 @@
   height: 16px;
 }
 
-.icon-caret-down,
-.icon-caret-right {
+.icon-caret-down {
   display: inline-block;
   width: 13px;
   height: 13px;
@@ -424,8 +131,7 @@
   transform: rotate(180deg);
 }
 
-/* ── Highlighted link ── */
-
+/* Highlighted link with stars */
 .menu-bar__item--highlight {
   --hl-color: var(--hdr-accent);
 }
@@ -448,39 +154,29 @@
   pointer-events: none;
 }
 
-.star-1 { top: -4px;  right: -2px;  animation-delay: 0s;    }
-.star-2 { top:  6px;  right: -8px;  animation-delay: 0.35s; }
-.star-3 { top: 14px;  right: -1px;  animation-delay: 0.75s; }
+.star-1 { top: -4px; right: -2px; animation-delay: 0s; }
+.star-2 { top: 6px; right: -8px; animation-delay: 0.35s; }
+.star-3 { top: 14px; right: -1px; animation-delay: 0.75s; }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.2;  transform: scale(0.5) rotate(0deg);  }
-  50%       { opacity: 1;   transform: scale(1)   rotate(15deg); }
+  0%, 100% { opacity: 0.2; transform: scale(0.5) rotate(0deg); }
+  50%      { opacity: 1;   transform: scale(1)   rotate(15deg); }
 }
 
 .menu-bar__link--highlight:hover .star {
   animation-duration: 0.8s;
 }
 
-/* =============================================================================
-   REDUCED MOTION
-   (Mega-menu's own reduced-motion rules live in mega-menu.css)
-   ============================================================================= */
-
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .mobile-nav__overlay,
-  .mobile-nav__panel,
-  .mobile-nav__chevron,
   .icon-caret-down,
   .star {
     transition: none !important;
     animation: none !important;
   }
 }
-/* =============================================================================
-   MENU ITEM COMPONENT
-   Used by: single-link block (and future blocks)
-   ============================================================================= */
 
+/* Reusable menu item component */
 .menu-item {
   display: inline-flex;
   align-items: center;
@@ -509,11 +205,6 @@
   height: 16px;
 }
 
-.menu-item__text {
-  /* text styles inherit from parent */
-}
-
-/* Optional: Make it behave exactly like your old .menu-bar__link when needed */
 .menu-bar__link.menu-item {
   padding: 14px 16px;
 }
