@@ -1,0 +1,122 @@
+/* =============================================================================
+   Link List (dropdown-style block) Styles  |  assets/link-list.css
+   Pairs with the `link-list` case in sections/header-menu.liquid
+
+   NOTE: This file previously reused the shared .dropdown / .dropdown__*
+   classes from header-menu.css. Those classes (and the `dropdown` block
+   type) have been removed from the theme, so link-list now owns its own
+   panel visuals below — values carried over 1:1 from the old .dropdown
+   rules so branding is unchanged (same radius, shadow, border, colors).
+   ============================================================================= */
+
+.menu-bar__item--has-link-list {
+  position: relative;
+}
+
+/* ── Trigger ── */
+
+.link-list-trigger[aria-expanded="true"] .icon-caret-down {
+  transform: rotate(180deg);
+}
+
+.link-list-trigger:focus-visible {
+  outline: 2px solid var(--hdr-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Panel ── */
+
+.link-list-panel {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  min-width: 216px;
+  padding-top: 6px;
+}
+
+/* Desktop pointer: hover reveals the panel */
+.menu-bar__item--has-link-list:hover > .link-list-panel,
+.menu-bar__item--has-link-list.is-open > .link-list-panel {
+  display: block;
+}
+
+.link-list-panel__container {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.10);
+  border: 1px solid #e5e7eb;
+  padding: 6px 0;
+  overflow: hidden;
+}
+
+.link-list-panel__nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.link-list-panel__item {
+  position: relative;
+}
+
+.link-list-panel__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 18px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.link-list-panel__link:hover {
+  background-color: #f9fafb;
+  color: #c4301c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-list-trigger .icon-caret-down {
+    transition: none !important;
+  }
+}
+/* =============================================================================
+   NESTED SUBLINKS (for link-list with children)
+   Traditional compact dropdown style — indented list inside the same panel
+   ============================================================================= */
+
+.link-list-panel__sub {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 4px 18px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.link-list-panel__sublink {
+  display: block;
+  padding: 6px 18px 6px 10px;
+  color: #4b5563;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.35;
+  transition: color 0.12s ease;
+  white-space: nowrap;
+}
+
+.link-list-panel__sublink:hover,
+.link-list-panel__sublink:focus-visible {
+  color: var(--hdr-accent, #e11d27);
+}
+
+/* Optional: tighter spacing when sublist exists */
+.link-list-panel__item:has(.link-list-panel__sub) > .link-list-panel__link {
+  padding-bottom: 4px;
+}
