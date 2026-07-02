@@ -275,18 +275,27 @@
    Loaded by: sections/main-header.liquid (defer)
    ============================================================
  * Responsibilities:
- *   1. Sticky scroll shadow  (.is-scrolled on scroll)
- *   2. Hamburger → mobile nav drawer (open / close / Escape / outside-click)
- *   3. Focus trap inside the open mobile nav
- *   4. Body scroll lock while nav is open
+ *   1. Hamburger → mobile nav drawer (open / close / Escape / outside-click)
+ *   2. Focus trap inside the open mobile nav
+ *   3. Body scroll lock while nav is open
  *
- * Cart button/badge behaviour is NOT handled here — that logic lives
- * entirely in the Header Cart module below (originally header-cart.js),
- * which is the more complete implementation ("(N)" badge formatting +
- * pop animation + drawer-open/close aria sync). This module used to
- * duplicate a lighter version of that logic; it has been removed to
- * avoid two listeners fighting over the same #main-header-cart-toggle
- * button and 'cart:updated' event.
+ * Sticky scroll shadow (.is-scrolled) is NOT handled here. It used to be
+ * (a separate `window.scrollY > 4` listener toggling the same class this
+ * module previously owned), but assets/main-header-sticky.js also toggles
+ * .is-scrolled on the same #main-header element at a different threshold
+ * (60px), so the two were fighting over the same class on every scroll
+ * event. main-header-sticky.js is the more complete implementation (it
+ * also owns .is-sticky, the CSS var height sync, and the sticky hamburger)
+ * so this module's copy was removed — same fix pattern already applied
+ * to the cart-badge duplication noted below.
+ *
+ * Cart button/badge behaviour is NOT handled here either — that logic
+ * lives entirely in the Header Cart module below (originally
+ * header-cart.js), which is the more complete implementation ("(N)"
+ * badge formatting + pop animation + drawer-open/close aria sync). This
+ * module used to duplicate a lighter version of that logic; it has been
+ * removed to avoid two listeners fighting over the same
+ * #main-header-cart-toggle button and 'cart:updated' event.
  *
  * Search (predictive search, voice, category pill, recent searches) is
  * entirely handled by assets/header-search.js — this file does NOT touch
@@ -297,7 +306,6 @@
   'use strict';
 
   /* ── Element refs ─────────────────────────────────────────────────────── */
-  var header    = document.getElementById('main-header');
   var navToggle = document.getElementById('main-header-nav-toggle');
   var mobileNav = document.getElementById('main-header-mobile-nav');
 
@@ -312,18 +320,7 @@
   ].join(', ');
 
   /* ─────────────────────────────────────────────────────────────────────
-     1. STICKY SCROLL SHADOW
-     ───────────────────────────────────────────────────────────────────── */
-  if (header) {
-    var onScroll = function () {
-      header.classList.toggle('is-scrolled', window.scrollY > 4);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); /* set initial state */
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────
-     2 – 4. MOBILE NAV DRAWER
+     MOBILE NAV DRAWER
      ───────────────────────────────────────────────────────────────────── */
   if (!navToggle || !mobileNav) {
     /* Mobile nav elements are optional — skip gracefully */
