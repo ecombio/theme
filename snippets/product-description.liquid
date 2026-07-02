@@ -53,6 +53,10 @@
   endif
 -%}
 
+<link rel="stylesheet" href="{{ 'product-description.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ 'product-description.css' | asset_url }}"></noscript>
+<script src="{{ 'product-description.js' | asset_url }}" defer></script>
+
 <div class="pd-wrap">
 
   {%- if has_description -%}
@@ -168,64 +172,3 @@
 {%- endif -%}
 
 
-<script>
-  (function () {
-    var overlay = document.getElementById('PdOverlay');
-    if (!overlay) return;
-
-    var triggers = document.querySelectorAll('.pd-trigger');
-    var panels = document.querySelectorAll('.pd-panel');
-    var activePanel = null;
-
-    function openPanel(panel, trigger) {
-      if (activePanel) closePanel(activePanel.panel, activePanel.trigger);
-      panel.classList.add('is-active');
-      panel.setAttribute('aria-hidden', 'false');
-      overlay.classList.add('is-active');
-      overlay.setAttribute('aria-hidden', 'false');
-      trigger.setAttribute('aria-expanded', 'true');
-      document.body.style.overflow = 'hidden';
-      activePanel = { panel: panel, trigger: trigger };
-      var closeBtn = panel.querySelector('.pd-panel__close');
-      if (closeBtn) closeBtn.focus();
-    }
-
-    function closePanel(panel, trigger) {
-      panel.classList.remove('is-active');
-      panel.setAttribute('aria-hidden', 'true');
-      overlay.classList.remove('is-active');
-      overlay.setAttribute('aria-hidden', 'true');
-      if (trigger) trigger.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
-      activePanel = null;
-    }
-
-    triggers.forEach(function (trigger) {
-      trigger.addEventListener('click', function () {
-        var panelId = trigger.getAttribute('aria-controls');
-        var panel = document.getElementById(panelId);
-        if (!panel) return;
-        openPanel(panel, trigger);
-      });
-    });
-
-    panels.forEach(function (panel) {
-      var closeBtn = panel.querySelector('.pd-panel__close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function () {
-          closePanel(panel, activePanel ? activePanel.trigger : null);
-        });
-      }
-    });
-
-    overlay.addEventListener('click', function () {
-      if (activePanel) closePanel(activePanel.panel, activePanel.trigger);
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && activePanel) {
-        closePanel(activePanel.panel, activePanel.trigger);
-      }
-    });
-  })();
-</script>
