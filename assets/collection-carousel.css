@@ -12,6 +12,20 @@
   position: relative;
 }
 
+/* Zero-specificity safety net: only takes effect if the theme's own
+   .page-width rules aren't present/loaded, so it never fights them. */
+:where(.cc-section__inner) {
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+@media (max-width: 749px) {
+  :where(.cc-section__inner) {
+    padding-inline: 16px;
+  }
+}
+
 /* Header
    ------------------------------------------------------------------ */
 
@@ -54,7 +68,8 @@
   max-width: 46em;
 }
 
-.cc-section__view-all {
+.cc-section .cc-section__view-all,
+.cc-section .cc-section__view-all:visited {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -62,8 +77,8 @@
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-decoration: none;
-  color: currentColor;
+  text-decoration: none !important;
+  color: currentColor !important;
   padding-bottom: 2px;
   border-bottom: 1px solid currentColor;
   opacity: 0.85;
@@ -126,13 +141,14 @@
   scroll-snap-align: start;
 }
 
-.cc-carousel__link {
+.cc-section .cc-carousel__link,
+.cc-section .cc-carousel__link:visited {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  text-decoration: none;
-  color: currentColor;
+  text-decoration: none !important;
+  color: currentColor !important;
   outline-offset: 4px;
 }
 
