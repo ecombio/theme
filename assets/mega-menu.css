@@ -38,6 +38,14 @@
      compensating `left` offset (via inline style) so it always stays
      within the viewport, regardless of where the trigger sits in the
      bar. See mega-menu.js MegaMenu.prototype.position().
+   - FIXED: max-width was calc(100vw - 48px), sized purely against the
+     browser viewport. On large screens this let wide panels (the
+     5-column "with trending products" variant especially) stretch
+     almost edge-to-edge — well past the site's actual content
+     max-width of 1184px that every other header element respects.
+     Capped max-width at min(1184px, calc(100vw - 48px)) so the panel
+     never exceeds the header's own content column, even before
+     mega-menu.js's container-based positioning runs.
    ============================================================================= */
 
 .mega-menu {
@@ -49,7 +57,7 @@
   padding-top: 12px;
   margin-top: -1px;
   width: max-content;
-  max-width: calc(100vw - 48px);
+  max-width: min(1184px, calc(100vw - 48px));
 }
 
 .menu-bar__item--has-mega:hover > .mega-menu,
@@ -67,7 +75,7 @@
   padding: 28px 32px;
   box-sizing: border-box;
   width: fit-content;
-  max-width: calc(100vw - 48px);
+  max-width: min(1184px, calc(100vw - 48px));
   overflow-x: auto;
 }
 

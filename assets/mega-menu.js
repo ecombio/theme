@@ -18,6 +18,15 @@
  *   panel always stays fully on-screen, however many trigger items
  *   are in the bar or however wide any individual panel is. Position
  *   is recalculated on window resize for whichever panel is open.
+ * - FIXED: that first pass clamped against the raw browser viewport
+ *   (window.innerWidth), which let wide panels (e.g. the 5-column
+ *   "with trending products" variant) stretch almost edge-to-edge on
+ *   large screens — well past the site's actual content max-width
+ *   (the same 1184px container every other header element respects
+ *   via .page-width--header). Clamping now measures that container's
+ *   own bounding box instead of the viewport, so the panel can never
+ *   render wider than, or spill past the edges of, the header's own
+ *   content column — regardless of how wide the browser window is.
  *
  * Pure JS — no Liquid, no build step, no dependencies.
  *
@@ -43,17 +52,35 @@
   };
 
   /**
-   * Keeps the panel inside the viewport horizontally. Left-aligns to
-   * the trigger by default (matches the CSS default of `left: 0`),
-   * then shifts left only as far as needed to avoid overflowing the
-   * right edge — and never past the point where it would overflow the
-   * left edge instead.
+   * Keeps the panel inside the header's own content container —
+   * .page-width--header, the same 1184px-max, centered column every
+   * other header element (search bar, icon cluster, utility bar) is
+   * bound by. Left-aligns to the trigger by default (matches the CSS
+   * default of `left: 0`), then shifts left only as far as needed to
+   * avoid overflowing the container's right edge — and never past the
+   * point where it would overflow the container's left edge instead.
+   *
+   * Falls back to a 24px viewport margin if the container can't be
+   * found, so this degrades gracefully rather than breaking outright.
    */
   MegaMenu.prototype.position = function () {
     var panel = this.panel;
     if (!panel) return;
 
-    var margin = 24; // keep panel this far from either viewport edge
+    var fallbackMargin = 24;
+    var container =
+      this.item.closest(".page-width--header") ||
+      document.querySelector(".menu-bar__container");
+
+    var boundsLeft, boundsRight;
+    if (container) {
+      var containerRect = container.getBoundingClientRect();
+      boundsLeft = containerRect.left;
+      boundsRight = containerRect.right;
+    } else {
+      boundsLeft = fallbackMargin;
+      boundsRight = window.innerWidth - fallbackMargin;
+    }
 
     // Reset before measuring so a stale offset doesn't skew the calc.
     panel.style.left = "0px";
@@ -61,16 +88,16 @@
     var triggerRect = this.item.getBoundingClientRect();
     var panelWidth = panel.offsetWidth;
 
-    var overflowRight =
-      triggerRect.left + panelWidth - (window.innerWidth - margin);
+    var overflowRight = triggerRect.left + panelWidth - boundsRight;
 
     var offset = 0;
     if (overflowRight > 0) {
       offset = -overflowRight;
     }
 
-    // Don't let it shift so far left it overflows the left edge instead.
-    var minOffset = margin - triggerRect.left;
+    // Don't let it shift so far left it overflows the container's
+    // left edge instead.
+    var minOffset = boundsLeft - triggerRect.left;
     if (offset < minOffset) offset = minOffset;
 
     panel.style.left = offset + "px";
