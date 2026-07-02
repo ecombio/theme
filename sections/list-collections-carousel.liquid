@@ -1,153 +1,40 @@
 {{ 'list-collections-carousel.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'list-collections-carousel.js' | asset_url }}" defer="defer"></script>
 
-{%- liquid
-  assign sort_by = section.settings.sort_by
-  assign limit = section.settings.collections_limit
+{%- assign sorted_collections = collections | sort: 'title' -%}
 
-  case sort_by
-    when 'alphabetical'
-      assign sorted_collections = collections | sort: 'title'
-    when 'alphabetical_reversed'
-      assign sorted_collections = collections | sort: 'title' | reverse
-    when 'product_count_high'
-      assign sorted_collections = collections | sort: 'all_products_count' | reverse
-    when 'product_count_low'
-      assign sorted_collections = collections | sort: 'all_products_count'
-    else
-      assign sorted_collections = collections | sort: 'title'
-  endcase
-
-  assign carousel_collections = sorted_collections | slice: 0, limit
--%}
-
-<div
-  class="list-collections-carousel section-{{ section.id }}-padding"
-  style="--pad-top: {{ section.settings.padding_top }}px; --pad-bottom: {{ section.settings.padding_bottom }}px; --slides-desktop: {{ section.settings.slides_desktop }}; --slides-tablet: {{ section.settings.slides_tablet }}; --slides-mobile: {{ section.settings.slides_mobile }};"
-  data-carousel-section
-  {% if section.settings.enable_autoplay %}
-    data-autoplay
-    data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
-  {% endif %}
->
+<div class="collections-carousel">
   <div class="page-width">
 
-    <div class="list-collections-carousel__header">
-      {%- if section.settings.heading != blank -%}
-        <{{ section.settings.heading_size }} class="list-collections-carousel__heading">
-          {{ section.settings.heading | escape }}
-        </{{ section.settings.heading_size }}>
-      {%- endif -%}
-
-      {%- if section.settings.show_arrows and carousel_collections.size > 1 -%}
-        <div class="list-collections-carousel__nav">
-          <button
-            type="button"
-            class="list-collections-carousel__arrow list-collections-carousel__arrow--prev"
-            data-carousel-prev
-            aria-label="Previous collections"
-          >
-            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="list-collections-carousel__arrow list-collections-carousel__arrow--next"
-            data-carousel-next
-            aria-label="Next collections"
-          >
-            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      {%- endif -%}
-    </div>
-
-    {%- if carousel_collections.size > 0 -%}
-      <div class="list-collections-carousel__viewport" data-carousel-viewport tabindex="0" role="region" aria-label="{{ section.settings.heading | default: 'Collections' | escape }} carousel">
-        <ul class="list-collections-carousel__track" data-carousel-track role="list">
-          {%- for collection in carousel_collections -%}
-            <li class="list-collections-carousel__slide" data-carousel-slide role="listitem">
-              <a href="{{ collection.url }}" class="list-collections-carousel__link">
-                <div class="list-collections-carousel__media media media--{{ section.settings.image_ratio }}">
-                  {%- if collection.featured_image -%}
-                    <img
-                      srcset="
-                        {{ collection.featured_image | image_url: width: 300 }} 300w,
-                        {{ collection.featured_image | image_url: width: 500 }} 500w,
-                        {{ collection.featured_image | image_url: width: 800 }} 800w
-                      "
-                      src="{{ collection.featured_image | image_url: width: 500 }}"
-                      sizes="(min-width: 990px) calc(100vw / var(--slides-desktop)), (min-width: 750px) calc(100vw / var(--slides-tablet)), calc(100vw / var(--slides-mobile))"
-                      alt="{{ collection.featured_image.alt | default: collection.title | escape }}"
-                      loading="lazy"
-                      width="{{ collection.featured_image.width }}"
-                      height="{{ collection.featured_image.height }}"
-                    >
-                  {%- else -%}
-                    <div class="list-collections-carousel__placeholder placeholder">
-                      {{ 'collection-apparel-1' | placeholder_svg_tag: 'placeholder-svg' }}
-                    </div>
-                  {%- endif -%}
-                </div>
-
-                <div class="list-collections-carousel__info">
-                  <h3 class="list-collections-carousel__title">{{ collection.title | escape }}</h3>
-
-                  {%- if section.settings.show_collection_description and collection.description != blank -%}
-                    <div class="list-collections-carousel__description">
-                      {{ collection.description | strip_html | truncate: 100 }}
-                    </div>
-                  {%- endif -%}
-
-                  {%- if section.settings.show_product_count -%}
-                    <span class="list-collections-carousel__count">
-                      {{ collection.all_products_count }}
-                      {%- if collection.all_products_count == 1 %} product{% else %} products{% endif -%}
-                    </span>
-                  {%- endif -%}
-                </div>
-              </a>
-            </li>
-          {%- endfor -%}
-        </ul>
-      </div>
-
-      {%- if section.settings.show_dots and carousel_collections.size > 1 -%}
-        <div class="list-collections-carousel__dots" data-carousel-dots role="tablist" aria-label="Carousel pagination"></div>
-      {%- endif -%}
-
-      {%- if section.settings.show_view_all and section.settings.view_all_url != blank -%}
-        <div class="list-collections-carousel__view-all">
-          <a href="{{ section.settings.view_all_url }}" class="list-collections-carousel__view-all-link">
-            {{ section.settings.view_all_label | default: 'View all collections' | escape }}
-          </a>
-        </div>
-      {%- endif -%}
-    {%- else -%}
-      <p class="list-collections-carousel__empty">No collections yet.</p>
+    {%- if section.settings.heading != blank -%}
+      <h2 class="collections-carousel__heading">{{ section.settings.heading | escape }}</h2>
     {%- endif -%}
+
+    <div class="collections-carousel__wrap">
+      <button type="button" class="collections-carousel__arrow collections-carousel__arrow--prev" data-carousel-prev aria-label="Previous">‹</button>
+
+      <ul class="collections-carousel__track" data-carousel-track>
+        {%- for collection in sorted_collections -%}
+          <li class="collections-carousel__slide">
+            <a href="{{ collection.url }}">
+              <div class="collections-carousel__image">
+                {%- if collection.featured_image -%}
+                  <img src="{{ collection.featured_image | image_url: width: 500 }}" alt="{{ collection.title | escape }}" loading="lazy" width="500" height="500">
+                {%- else -%}
+                  {{ 'collection-apparel-1' | placeholder_svg_tag: 'placeholder-svg' }}
+                {%- endif -%}
+              </div>
+              <p class="collections-carousel__title">{{ collection.title }}</p>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      <button type="button" class="collections-carousel__arrow collections-carousel__arrow--next" data-carousel-next aria-label="Next">›</button>
+    </div>
 
   </div>
 </div>
-
-<style>
-  .section-{{ section.id }}-padding {
-    padding-top: var(--pad-top);
-    padding-bottom: var(--pad-bottom);
-    --lcc-bg: {{ settings.background_color | default: '#FFFFFF' }};
-    --lcc-fg: {{ settings.foreground_color | default: '#333333' }};
-    --lcc-muted: {{ settings.text_muted_color | default: '#6B7280' }};
-    --lcc-border: {{ settings.border_color | default: '#E5E7EB' }};
-    --lcc-accent: {{ settings.accent_color | default: '#4F46E5' }};
-    --lcc-accent-hover: {{ settings.accent_color_hover | default: '#4338CA' }};
-    --lcc-radius: {{ settings.input_corner_radius | default: 4 }}px;
-    background-color: var(--lcc-bg);
-    color: var(--lcc-fg);
-  }
-</style>
 
 {% schema %}
 {
@@ -158,171 +45,7 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Shop by collection"
-    },
-    {
-      "type": "select",
-      "id": "heading_size",
-      "label": "Heading size",
-      "options": [
-        { "value": "h1", "label": "Large" },
-        { "value": "h2", "label": "Medium" },
-        { "value": "h3", "label": "Small" }
-      ],
-      "default": "h2"
-    },
-    {
-      "type": "select",
-      "id": "sort_by",
-      "label": "Sort collections by",
-      "options": [
-        { "value": "alphabetical", "label": "Alphabetically, A-Z" },
-        { "value": "alphabetical_reversed", "label": "Alphabetically, Z-A" },
-        { "value": "product_count_high", "label": "Product count, high to low" },
-        { "value": "product_count_low", "label": "Product count, low to high" }
-      ],
-      "default": "alphabetical"
-    },
-    {
-      "type": "range",
-      "id": "collections_limit",
-      "min": 4,
-      "max": 24,
-      "step": 1,
-      "label": "Number of collections to show",
-      "default": 12
-    },
-    {
-      "type": "header",
-      "content": "Layout"
-    },
-    {
-      "type": "range",
-      "id": "slides_desktop",
-      "min": 2,
-      "max": 6,
-      "step": 1,
-      "label": "Slides visible on desktop",
-      "default": 4
-    },
-    {
-      "type": "range",
-      "id": "slides_tablet",
-      "min": 2,
-      "max": 4,
-      "step": 1,
-      "label": "Slides visible on tablet",
-      "default": 3
-    },
-    {
-      "type": "select",
-      "id": "slides_mobile",
-      "label": "Slides visible on mobile",
-      "options": [
-        { "value": "1", "label": "1" },
-        { "value": "2", "label": "2" }
-      ],
-      "default": "1"
-    },
-    {
-      "type": "select",
-      "id": "image_ratio",
-      "label": "Image ratio",
-      "options": [
-        { "value": "adapt", "label": "Adapt to image" },
-        { "value": "portrait", "label": "Portrait" },
-        { "value": "square", "label": "Square" }
-      ],
-      "default": "square"
-    },
-    {
-      "type": "header",
-      "content": "Navigation"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_arrows",
-      "label": "Show arrow navigation",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_dots",
-      "label": "Show dot pagination",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_autoplay",
-      "label": "Enable autoplay",
-      "default": false
-    },
-    {
-      "type": "range",
-      "id": "autoplay_speed",
-      "min": 3,
-      "max": 10,
-      "step": 1,
-      "unit": "s",
-      "label": "Autoplay speed",
-      "default": 5
-    },
-    {
-      "type": "header",
-      "content": "Content"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_collection_description",
-      "label": "Show collection description",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "show_product_count",
-      "label": "Show product count",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_view_all",
-      "label": "Show \"View all\" link",
-      "default": false
-    },
-    {
-      "type": "url",
-      "id": "view_all_url",
-      "label": "\"View all\" link"
-    },
-    {
-      "type": "text",
-      "id": "view_all_label",
-      "label": "\"View all\" label",
-      "default": "View all collections"
-    },
-    {
-      "type": "header",
-      "content": "Style"
-    },
-    {
-      "type": "range",
-      "id": "padding_top",
-      "min": 0,
-      "max": 100,
-      "step": 4,
-      "unit": "px",
-      "label": "Top padding",
-      "default": 36
-    },
-    {
-      "type": "range",
-      "id": "padding_bottom",
-      "min": 0,
-      "max": 100,
-      "step": 4,
-      "unit": "px",
-      "label": "Bottom padding",
-      "default": 36
+      "default": "Collections"
     }
   ]
 }
