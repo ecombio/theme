@@ -1,34 +1,51 @@
 /* =============================================================================
    Main Header — Sticky Behavior
    File: assets/main-header-sticky.css
+
+   Uses position:FIXED, not position:sticky. Shopify wraps every section
+   rendered via {% sections 'header-group' %} in its own auto-height
+   wrapper div (sometimes nested two levels deep). position:sticky's
+   containing block is whichever wrapper is its immediate parent — and
+   that wrapper is only ever as tall as its own content, so sticky runs
+   out of room and "lets go" as soon as you scroll past it, no matter how
+   far up the tree you apply it.
+
+   position:fixed sidesteps this completely: it pins relative to the
+   viewport itself, ignoring ancestor wrapper heights (as long as no
+   ancestor sets transform/filter/perspective/contain — confirmed clean
+   on this theme). The tradeoff is that a fixed element is pulled out of
+   normal document flow permanently once applied, so main-header-sticky.js
+   inserts a spacer element to hold its place and prevent the page
+   jumping when it switches over.
    ============================================================================= */
 
-/* -----------------------------------------------------------------------
-   IMPORTANT: position:sticky lives on the Shopify section WRAPPER, not on
-   <header> itself. Shopify auto-wraps every section rendered via
-   {% sections 'header-group' %} in its own <div class="shopify-section">,
-   sized only to its content. If sticky is applied directly to <header>,
-   its containing block is that wrapper — which is barely taller than the
-   header — so it releases (stops sticking) almost immediately, right as
-   the next section begins. Applying sticky to the wrapper instead gives
-   it BODY as its containing block, so it can stay pinned for the whole
-   page scroll.
-   ----------------------------------------------------------------------- */
-.shopify-section:has(.main-header--sticky-enabled) {
-  position: sticky;
-  top: 0;
-  z-index: 200;
-}
-
-/* Only applies once enabled via theme setting (enable_sticky_header) */
+/* Base header — normal, in-flow, until JS marks it .is-sticky */
 .main-header--sticky-enabled {
   background: #fff;
   transition: box-shadow 0.2s ease;
 }
 
+/* Pinned to the viewport once scrolled past the threshold */
+.main-header--sticky-enabled.is-sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+}
+
 /* Shadow once the page has scrolled past the trigger point */
 .main-header--sticky-enabled.is-scrolled {
   box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+}
+
+/* Spacer — height is set by JS to match the header's own height right
+   before it goes fixed, so the page content doesn't jump upward. */
+.main-header-sticky__spacer {
+  display: none;
+}
+.main-header-sticky__spacer.is-active {
+  display: block;
 }
 
 /* Desktop nav bar collapses by default while sticky ... */
