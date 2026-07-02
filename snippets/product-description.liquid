@@ -22,7 +22,7 @@
     assign has_warranty = true
   endif
 
-  assign policy = product.metafields.custom.policies.value
+  assign policy = product.metafields.custom.product_policy.value
 
   assign has_custom_shipping = false
   assign has_custom_refund   = false
@@ -101,10 +101,8 @@
 
 </div>
 
-<!-- Overlay (shared) -->
 <div class="pd-overlay" id="PdOverlay" aria-hidden="true"></div>
 
-<!-- Description panel -->
 {%- if has_description -%}
 <div class="pd-panel" id="PdPanelDescription" role="dialog" aria-modal="true" aria-labelledby="PdTitleDescription" aria-hidden="true" tabindex="-1">
   <div class="pd-panel__header">
@@ -115,7 +113,6 @@
 </div>
 {%- endif -%}
 
-<!-- Shipping panel -->
 {%- if show_shipping -%}
 <div class="pd-panel" id="PdPanelShipping" role="dialog" aria-modal="true" aria-labelledby="PdTitleShipping" aria-hidden="true" tabindex="-1">
   <div class="pd-panel__header">
@@ -124,7 +121,7 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_shipping -%}
-      {{ product.metafields.custom.policies | metafield_tag: field: 'shipping_policy' }}
+      {{ product.metafields.custom.product_policy | metafield_tag: field: 'shipping_policy' }}
     {%- elsif has_shipping -%}
       {{ shipping_page.content }}
     {%- else -%}
@@ -134,7 +131,6 @@
 </div>
 {%- endif -%}
 
-<!-- Refund panel -->
 {%- if show_refund -%}
 <div class="pd-panel" id="PdPanelRefund" role="dialog" aria-modal="true" aria-labelledby="PdTitleRefund" aria-hidden="true" tabindex="-1">
   <div class="pd-panel__header">
@@ -143,7 +139,7 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_refund -%}
-      {{ product.metafields.custom.policies | metafield_tag: field: 'returns_refunds' }}
+      {{ product.metafields.custom.product_policy | metafield_tag: field: 'returns_refunds' }}
     {%- elsif has_refund -%}
       {{ refund_page.content }}
     {%- else -%}
@@ -153,7 +149,6 @@
 </div>
 {%- endif -%}
 
-<!-- Warranty panel -->
 {%- if show_warranty -%}
 <div class="pd-panel" id="PdPanelWarranty" role="dialog" aria-modal="true" aria-labelledby="PdTitleWarranty" aria-hidden="true" tabindex="-1">
   <div class="pd-panel__header">
@@ -162,7 +157,7 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_warranty -%}
-      {{ product.metafields.custom.policies | metafield_tag: field: 'warranty_policy' }}
+      {{ product.metafields.custom.product_policy | metafield_tag: field: 'warranty_policy' }}
     {%- elsif has_warranty -%}
       {{ warranty_page.content }}
     {%- else -%}
@@ -171,3 +166,161 @@
   </div>
 </div>
 {%- endif -%}
+
+{% stylesheet %}
+  .pd-wrap {
+    border-top: 1px solid rgba(0,0,0,0.1);
+  }
+  .pd-row {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .pd-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem 0.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    color: inherit;
+    text-align: left;
+  }
+  .pd-trigger svg {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .pd-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease;
+    z-index: 90;
+  }
+  .pd-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+  .pd-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 100%;
+    max-width: 420px;
+    background: var(--color-background, #fff);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+  .pd-panel.is-active {
+    transform: translateX(0);
+  }
+  .pd-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+  .pd-panel__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .pd-panel__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: inherit;
+    line-height: 0;
+  }
+  .pd-panel__body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .pd-panel__body p {
+    margin: 0 0 0.9em;
+  }
+  .pd-panel__body p:last-child {
+    margin-bottom: 0;
+  }
+  @media (max-width: 480px) {
+    .pd-panel {
+      max-width: 100%;
+    }
+  }
+{% endstylesheet %}
+
+<script>
+  (function () {
+    var overlay = document.getElementById('PdOverlay');
+    if (!overlay) return;
+
+    var triggers = document.querySelectorAll('.pd-trigger');
+    var panels = document.querySelectorAll('.pd-panel');
+    var activePanel = null;
+
+    function openPanel(panel, trigger) {
+      if (activePanel) closePanel(activePanel.panel, activePanel.trigger);
+      panel.classList.add('is-active');
+      panel.setAttribute('aria-hidden', 'false');
+      overlay.classList.add('is-active');
+      overlay.setAttribute('aria-hidden', 'false');
+      trigger.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      activePanel = { panel: panel, trigger: trigger };
+      var closeBtn = panel.querySelector('.pd-panel__close');
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closePanel(panel, trigger) {
+      panel.classList.remove('is-active');
+      panel.setAttribute('aria-hidden', 'true');
+      overlay.classList.remove('is-active');
+      overlay.setAttribute('aria-hidden', 'true');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      activePanel = null;
+    }
+
+    triggers.forEach(function (trigger) {
+      trigger.addEventListener('click', function () {
+        var panelId = trigger.getAttribute('aria-controls');
+        var panel = document.getElementById(panelId);
+        if (!panel) return;
+        openPanel(panel, trigger);
+      });
+    });
+
+    panels.forEach(function (panel) {
+      var closeBtn = panel.querySelector('.pd-panel__close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          closePanel(panel, activePanel ? activePanel.trigger : null);
+        });
+      }
+    });
+
+    overlay.addEventListener('click', function () {
+      if (activePanel) closePanel(activePanel.panel, activePanel.trigger);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && activePanel) {
+        closePanel(activePanel.panel, activePanel.trigger);
+      }
+    });
+  })();
+</script>
