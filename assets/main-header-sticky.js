@@ -112,12 +112,15 @@
          ResizeObserver above — no manual recalculation needed here. */
     });
   }
-    /* Unstick when after-items is in view */
-  const afterItems = document.querySelector('.after-items');
-  if (afterItems) {
-    const rect = afterItems.getBoundingClientRect();
-    if (rect.top <= 100) {
-      header.classList.remove('is-sticky', 'is-scrolled');
-    }
-  }
+    // Make all #anchor links clear the sticky header
+  document.addEventListener('click', function(e) {
+    const link = e.target.closest('a[href^="#"]');
+    if (!link) return;
+    const target = document.querySelector(link.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    const offset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sticky-header-height')) || 64;
+    const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
+  });
 })();
