@@ -1,6 +1,14 @@
 {%- comment -%}
   Accepts:
   - article: {Object} Article Liquid object
+  - loading: {String} optional, 'eager' | 'lazy' (default: 'lazy')
+      Pass 'eager' for above-the-fold cards (e.g. the first row in a grid)
+      to avoid hurting LCP.
+
+  Accessibility note: the whole card is a single click/focus target via
+  .article-card__title-link (stretched-link pattern). The image link and
+  "Read article" text are decorative/visual only — screen reader and
+  keyboard users get exactly one stop per card, on the title.
 {%- endcomment -%}
 
 <article class="article-card">
@@ -11,9 +19,16 @@
     {%- if article.image -%}
       <img
         src="{{ article.image | image_url: width: 800 }}"
+        srcset="
+          {{- article.image | image_url: width: 400 }} 400w,
+          {{ article.image | image_url: width: 600 }} 600w,
+          {{ article.image | image_url: width: 800 }} 800w,
+          {{ article.image | image_url: width: 1000 }} 1000w
+        "
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
         alt="{{ article.image.alt | default: article.title | escape }}"
         class="article-card__image"
-        loading="lazy"
+        loading="{{ loading | default: 'lazy' }}"
         width="{{ article.image.width }}"
         height="{{ article.image.height }}"
       >
@@ -36,7 +51,7 @@
     </div>
 
     <h3 class="article-card__title">
-      <a href="{{ article.url }}">{{ article.title }}</a>
+      <a href="{{ article.url }}" class="article-card__title-link">{{ article.title }}</a>
     </h3>
 
     <p class="article-card__excerpt">
@@ -49,8 +64,8 @@
       {%- endif -%}
     </p>
 
-    <a href="{{ article.url }}" class="article-card__read-more" aria-label="Read more about {{ article.title | escape }}">
+    <span class="article-card__read-more" aria-hidden="true">
       Read article
-    </a>
+    </span>
   </div>
 </article>
