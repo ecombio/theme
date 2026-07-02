@@ -112,4 +112,14 @@
          ResizeObserver above — no manual recalculation needed here. */
     });
   }
+    /* Stop sticky when reaching after-items */
+  const afterItems = document.querySelector('.after-items');
+  if (afterItems) {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        header.classList.remove('is-sticky', 'is-scrolled');
+      }
+    }, { threshold: 0.1 });
+    observer.observe(afterItems);
+  }
 })();
