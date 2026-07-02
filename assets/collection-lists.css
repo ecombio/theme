@@ -1,0 +1,187 @@
+/* Collections List (SEO rich-text block)
+   ------------------------------------------------------------------ */
+
+.cl-section {
+  --cl-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Matches the site's header layout system (main-header.css / utility-bar.css)
+   rather than relying on .page-width, which currently has no rules. */
+.cl-section__inner {
+  max-width: 1184px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+@media (max-width: 639px) {
+  .cl-section__inner {
+    padding-inline: 12px;
+  }
+}
+
+.cl-section__heading {
+  font-size: clamp(1.4rem, 1.15rem + 1vw, 1.9rem);
+  line-height: 1.2;
+  margin: 0 0 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cl-section__heading--align-center {
+  text-align: center;
+}
+
+/* Content wrapper
+   ------------------------------------------------------------------ */
+
+.cl-content {
+  position: relative;
+}
+
+.cl-content--collapsible {
+  overflow: hidden;
+  max-height: none;
+  transition: max-height 0.4s var(--cl-ease);
+}
+
+.cl-content--collapsible[data-cl-collapsed] {
+  max-height: var(--cl-collapsed-height, 220px);
+}
+
+.cl-content__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70px;
+  background: linear-gradient(to bottom, transparent, var(--cl-fade-color, #fff));
+  opacity: 0;
+  transition: opacity 0.3s var(--cl-ease);
+  pointer-events: none;
+}
+
+.cl-content--collapsible[data-cl-collapsed] .cl-content__fade {
+  opacity: 1;
+}
+
+/* Rich text typography
+   ------------------------------------------------------------------ */
+
+.cl-content__inner {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  opacity: 0.85;
+}
+
+.cl-content__inner--align-center {
+  text-align: center;
+}
+
+.cl-content__inner > *:first-child {
+  margin-top: 0;
+}
+
+.cl-content__inner > *:last-child {
+  margin-bottom: 0;
+}
+
+.cl-content__inner p {
+  margin: 0 0 1em;
+}
+
+.cl-content__inner h1,
+.cl-content__inner h2,
+.cl-content__inner h3,
+.cl-content__inner h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.4em 0 0.6em;
+  opacity: 1;
+}
+
+.cl-content__inner h1 { font-size: 1.5rem; }
+.cl-content__inner h2 { font-size: 1.3rem; }
+.cl-content__inner h3 { font-size: 1.15rem; }
+.cl-content__inner h4 { font-size: 1rem; }
+
+.cl-content__inner ul,
+.cl-content__inner ol {
+  margin: 0 0 1em;
+  padding-left: 1.4em;
+}
+
+.cl-content__inner li {
+  margin-bottom: 0.4em;
+}
+
+.cl-content__inner li:last-child {
+  margin-bottom: 0;
+}
+
+.cl-content__inner strong {
+  font-weight: 700;
+  opacity: 1;
+}
+
+.cl-content__inner a {
+  color: var(--cl-link-color, currentColor);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cl-content__inner a:hover {
+  opacity: 0.75;
+}
+
+/* Toggle button
+   ------------------------------------------------------------------ */
+
+.cl-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 10px 20px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 999px;
+  background: transparent;
+  color: currentColor;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s var(--cl-ease), background 0.2s var(--cl-ease);
+}
+
+.cl-toggle:hover {
+  border-color: currentColor;
+}
+
+.cl-toggle[hidden] {
+  display: none;
+}
+
+.cl-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s var(--cl-ease);
+}
+
+.cl-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.cl-section__inner:has(.cl-section__heading--align-center) .cl-toggle,
+.cl-content__inner--align-center ~ .cl-toggle {
+  margin-inline: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-content--collapsible {
+    transition: none;
+  }
+
+  .cl-content__fade,
+  .cl-toggle svg {
+    transition: none;
+  }
+}
