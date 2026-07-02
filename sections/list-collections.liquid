@@ -52,15 +52,23 @@
         {%- endif -%}
       </div>
 
-      {%- paginate sorted_collections by per_page -%}
-        {%- if sorted_collections.size > 0 -%}
+      {%- paginate collections by per_page -%}
+        {%- comment -%}
+          `collections` (native, paginateable) drives the page math and links.
+          `sorted_collections` (a plain array once passed through `sort`) can't be
+          paginated directly, so we slice it ourselves using the same offset.
+        {%- endcomment -%}
+        {%- assign offset = paginate.current_page | minus: 1 | times: per_page -%}
+        {%- assign current_page_collections = sorted_collections | slice: offset, per_page -%}
+
+        {%- if current_page_collections.size > 0 -%}
           <ul
             class="list-collections__grid grid"
             style="--columns-desktop: {{ section.settings.columns_desktop }}; --columns-mobile: {{ section.settings.columns_mobile }};"
             data-collection-list
             role="list"
           >
-            {%- for collection in sorted_collections -%}
+            {%- for collection in current_page_collections -%}
               <li class="list-collections__list-item grid__item" data-collection-item data-collection-title="{{ collection.title | escape }}">
                 <a href="{{ collection.url }}" class="list-collections__link">
                   <div class="list-collections__media media media--{{ section.settings.image_ratio }}">
