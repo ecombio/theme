@@ -13,23 +13,38 @@
        click / keyboard users, since hover alone isn't keyboard-accessible
      - :focus-within → keyboard users tabbing into links inside the panel
        itself, in case mega-menu.js only toggles .is-open on click/Enter
-       rather than on every focus event (added this revision, see below)
+       rather than on every focus event
 
-   Pure CSS — no Liquid, no build step.
+   Pure CSS — no Liquid, no build step, no JS positioning math.
 
    CHANGELOG (this revision):
-   - FIXED: open selector relied on :hover, .is-open, and a dead
-     ".mega-menu:hover" (a panel that's display:none can't be hovered to
-     reveal itself — same class of bug already fixed once in
-     flyout-menu.css's changelog). Removed the dead rule and added
-     ":focus-within" so the panel reliably stays open via CSS alone when
-     keyboard focus is inside it, regardless of what mega-menu.js does.
-   - FIXED: accent color was hardcoded as #c4301c throughout (heading
-     hover, link underline, badge, sale price), which doesn't match the
-     site's actual design token, --hdr-accent (#e11d27), declared in
-     header.css / header-menu.css. Swapped all instances to
-     var(--hdr-accent, #e11d27).
+   - FIXED: panel used to anchor to its own trigger <li>
+     (.menu-bar__item), centered via `left: 50%; transform:
+     translateX(-50%)` relative to THAT element. Since triggers sit at
+     different horizontal positions across the bar, this made the
+     panel's position — and whether it overflowed the header's real
+     content width — different for every mega-menu, and previous
+     attempts to correct it with JS math added complexity for what is
+     fundamentally a CSS layout problem.
+   - FIX (this revision): anchor the panel to .menu-bar__container
+     instead of the trigger <li>. .menu-bar__item--has-mega is set to
+     position: static so it's skipped as a containing block, letting
+     the panel bubble up to .menu-bar__container (already position:
+     relative). That container sits in the exact same centered
+     1184px column as .main-header__inner (logo/search/icons), so
+     centering the panel inside it — width: min(1184px, 100vw - 48px);
+     left: 50%; transform: translateX(-50%) — makes the panel land in
+     precisely the same horizontal space as the rest of the header,
+     every time, regardless of which trigger opened it. No JS required.
    ============================================================================= */
+
+/* Removes the trigger <li> as a positioning anchor so .mega-menu
+   (its absolutely-positioned child) bubbles up to .menu-bar__container
+   instead — see changelog above. Other menu-bar item types (link-list,
+   flyout) keep their default position: relative from header-menu.css. */
+.menu-bar__item--has-mega {
+  position: static;
+}
 
 .mega-menu {
   display: none;
@@ -40,8 +55,7 @@
   z-index: 400;
   padding-top: 12px;
   margin-top: -1px;
-  width: max-content;
-  max-width: calc(100vw - 48px);
+  width: min(1184px, calc(100vw - 48px));
 }
 
 .menu-bar__item--has-mega:hover > .mega-menu,
@@ -58,16 +72,14 @@
   border: 1px solid #e5e7eb;
   padding: 28px 32px;
   box-sizing: border-box;
-  width: fit-content;
-  max-width: calc(100vw - 48px);
-  overflow-x: auto;
+  width: 100%;
 }
 
 .mega-menu__text-columns {
   display: grid;
   grid-template-columns: repeat(var(--mega-col-count, 4), max-content);
   gap: 28px 48px;
-  justify-content: start;
+  justify-content: space-between;
 }
 
 .mega-menu-items--with-products {
