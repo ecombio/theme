@@ -124,9 +124,16 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_shipping -%}
-      {{ policy.fields.shipping_policy | metafield_tag }}
-    {%- else -%}
+      {%- assign shipping_html = policy.fields.shipping_policy | metafield_tag -%}
+      {%- if shipping_html != blank -%}
+        {{ shipping_html }}
+      {%- else -%}
+        <p>Unavailable</p>
+      {%- endif -%}
+    {%- elsif has_shipping -%}
       {{ shipping_page.content }}
+    {%- else -%}
+      <p>Unavailable</p>
     {%- endif -%}
   </div>
 </div>
@@ -141,9 +148,16 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_refund -%}
-      {{ policy.fields.returns_refunds | metafield_tag }}
-    {%- else -%}
+      {%- assign refund_html = policy.fields.returns_refunds | metafield_tag -%}
+      {%- if refund_html != blank -%}
+        {{ refund_html }}
+      {%- else -%}
+        <p>Unavailable</p>
+      {%- endif -%}
+    {%- elsif has_refund -%}
       {{ refund_page.content }}
+    {%- else -%}
+      <p>Unavailable</p>
     {%- endif -%}
   </div>
 </div>
@@ -158,11 +172,16 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_warranty -%}
-      {{ policy.fields.warranty_policy | metafield_tag }}
+      {%- assign warranty_html = policy.fields.warranty_policy | metafield_tag -%}
+      {%- if warranty_html != blank -%}
+        {{ warranty_html }}
+      {%- else -%}
+        <p>Unavailable</p>
+      {%- endif -%}
     {%- elsif has_warranty -%}
       {{ warranty_page.content }}
     {%- else -%}
-      <p>Please contact us for warranty information.</p>
+      <p>Unavailable</p>
     {%- endif -%}
   </div>
 </div>
