@@ -10,12 +10,6 @@
  *   4. Body scroll lock while nav is open
  *   5. Cart button  → dispatches  'cart:open'   custom event
  *   6. Cart badge   → listens for 'cart:updated' { detail: { count } }
- *   7. Header height sync → writes the header's real rendered height to
- *      --sticky-header-height on :root, so any sticky element below the
- *      header (e.g. .collection-filter) can use
- *      `top: var(--sticky-header-height)` instead of a hardcoded value
- *      and stay correct as utility bar / search row / announcement bar
- *      change the header's actual height.
  *
  * Search (predictive search, voice, category pill, recent searches) is
  * entirely handled by assets/header-search.js — this file does NOT touch
@@ -59,33 +53,6 @@
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll(); /* set initial state */
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────
-     7. HEADER HEIGHT SYNC
-     Writes the header's real rendered height to --sticky-header-height.
-     Runs on load/resize plus a ResizeObserver, since content changes
-     (utility bar hiding under 768px, search row toggling, etc.) can
-     change header height without a window resize event firing.
-     ───────────────────────────────────────────────────────────────────── */
-  if (header) {
-    var syncHeaderHeightVar = function () {
-      var height = header.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--sticky-header-height', height + 'px');
-    };
-
-    window.addEventListener('load', syncHeaderHeightVar);
-    window.addEventListener('resize', syncHeaderHeightVar);
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(syncHeaderHeightVar);
-    }
-
-    if ('ResizeObserver' in window) {
-      new ResizeObserver(syncHeaderHeightVar).observe(header);
-    }
-
-    syncHeaderHeightVar(); /* run immediately — script is deferred, DOM is parsed */
   }
 
   /* ─────────────────────────────────────────────────────────────────────
