@@ -27,17 +27,6 @@
  *   own bounding box instead of the viewport, so the panel can never
  *   render wider than, or spill past the edges of, the header's own
  *   content column — regardless of how wide the browser window is.
- * - FIXED: the .page-width--header clamp above didn't actually work
- *   in practice — that class's width rules aren't defined in any
- *   stylesheet covered here, so its bounding box measured out to
- *   basically the full browser width and the panel kept overflowing
- *   past the right edge of the visible header content, while also
- *   sitting under its trigger with no compensating shift (the visible
- *   "big gap" on the left). Swapped the clamp target to
- *   .main-header__inner — confirmed defined in main-header.css as
- *   max-width: 1184px; padding: 0 24px — the same box the logo,
- *   search bar, and icon cluster are already aligned to, so the panel
- *   now matches that boundary exactly instead of guessing at one.
  *
  * Pure JS — no Liquid, no build step, no dependencies.
  *
@@ -64,16 +53,12 @@
 
   /**
    * Keeps the panel inside the header's own content container —
-   * .main-header__inner, the same 1184px-max, centered column the
-   * logo, search bar, and icon cluster are already bound by. Using
-   * this specific element (rather than .page-width--header, whose
-   * width rules live in a stylesheet not covered here and can't be
-   * verified) guarantees the clamp bounds are real and match what's
-   * visually already on screen. Left-aligns to the trigger by
-   * default (matches the CSS default of `left: 0`), then shifts left
-   * only as far as needed to avoid overflowing the container's right
-   * edge — and never past the point where it would overflow the
-   * container's left edge instead.
+   * .page-width--header, the same 1184px-max, centered column every
+   * other header element (search bar, icon cluster, utility bar) is
+   * bound by. Left-aligns to the trigger by default (matches the CSS
+   * default of `left: 0`), then shifts left only as far as needed to
+   * avoid overflowing the container's right edge — and never past the
+   * point where it would overflow the container's left edge instead.
    *
    * Falls back to a 24px viewport margin if the container can't be
    * found, so this degrades gracefully rather than breaking outright.
@@ -84,7 +69,6 @@
 
     var fallbackMargin = 24;
     var container =
-      document.querySelector(".main-header__inner") ||
       this.item.closest(".page-width--header") ||
       document.querySelector(".menu-bar__container");
 
