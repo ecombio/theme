@@ -22,19 +22,19 @@
     assign has_warranty = true
   endif
 
-  assign policies = product.metafields.custom.policies.value
+  assign policy = product.metafields.custom.policies.value
 
   assign has_custom_shipping = false
   assign has_custom_refund   = false
   assign has_custom_warranty = false
 
-  if policies.fields.shipping_policy != blank
+  if policy.fields.shipping_policy.value != blank
     assign has_custom_shipping = true
   endif
-  if policies.fields.returns_refunds != blank
+  if policy.fields.returns_refunds.value != blank
     assign has_custom_refund = true
   endif
-  if policies.fields.warranty_policy != blank
+  if policy.fields.warranty_policy.value != blank
     assign has_custom_warranty = true
   endif
 
@@ -42,10 +42,10 @@
   assign show_refund   = false
   assign show_warranty = false
 
-  if has_custom_shipping or has_shipping or shop.shipping_policy.body != blank
+  if has_custom_shipping or has_shipping
     assign show_shipping = true
   endif
-  if has_custom_refund or has_refund or shop.refund_policy.body != blank
+  if has_custom_refund or has_refund
     assign show_refund = true
   endif
   if has_custom_warranty or has_warranty
@@ -124,11 +124,9 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_shipping -%}
-      {{ policies.fields.shipping_policy | metafield_tag }}
-    {%- elsif has_shipping -%}
-      {{ shipping_page.content }}
+      {{ policy.fields.shipping_policy | metafield_tag }}
     {%- else -%}
-      {{ shop.shipping_policy.body }}
+      {{ shipping_page.content }}
     {%- endif -%}
   </div>
 </div>
@@ -143,11 +141,9 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_refund -%}
-      {{ policies.fields.returns_refunds | metafield_tag }}
-    {%- elsif has_refund -%}
-      {{ refund_page.content }}
+      {{ policy.fields.returns_refunds | metafield_tag }}
     {%- else -%}
-      {{ shop.refund_policy.body }}
+      {{ refund_page.content }}
     {%- endif -%}
   </div>
 </div>
@@ -162,7 +158,7 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_warranty -%}
-      {{ policies.fields.warranty_policy | metafield_tag }}
+      {{ policy.fields.warranty_policy | metafield_tag }}
     {%- elsif has_warranty -%}
       {{ warranty_page.content }}
     {%- else -%}
