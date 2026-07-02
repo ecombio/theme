@@ -1,6 +1,3 @@
-{{ 'list-collections-carousel.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'list-collections-carousel.js' | asset_url }}" defer="defer"></script>
-
 {%- assign sorted_collections = collections | sort: 'title' -%}
 
 <div class="collections-carousel">
@@ -11,9 +8,9 @@
     {%- endif -%}
 
     <div class="collections-carousel__wrap">
-      <button type="button" class="collections-carousel__arrow collections-carousel__arrow--prev" data-carousel-prev aria-label="Previous">‹</button>
+      <button type="button" class="collections-carousel__arrow" onclick="this.nextElementSibling.scrollBy({left:-220,behavior:'smooth'})" aria-label="Previous">‹</button>
 
-      <ul class="collections-carousel__track" data-carousel-track>
+      <ul class="collections-carousel__track">
         {%- for collection in sorted_collections -%}
           <li class="collections-carousel__slide">
             <a href="{{ collection.url }}">
@@ -30,15 +27,28 @@
         {%- endfor -%}
       </ul>
 
-      <button type="button" class="collections-carousel__arrow collections-carousel__arrow--next" data-carousel-next aria-label="Next">›</button>
+      <button type="button" class="collections-carousel__arrow" onclick="this.previousElementSibling.scrollBy({left:220,behavior:'smooth'})" aria-label="Next">›</button>
     </div>
 
   </div>
 </div>
 
+<style>
+  .collections-carousel { padding: 40px 0; }
+  .collections-carousel__heading { margin: 0 0 20px; }
+  .collections-carousel__wrap { display: flex; align-items: center; gap: 10px; }
+  .collections-carousel__track { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; list-style: none; margin: 0; padding: 0; }
+  .collections-carousel__slide { flex: 0 0 200px; scroll-snap-align: start; }
+  .collections-carousel__slide a { text-decoration: none; color: inherit; display: block; }
+  .collections-carousel__image { aspect-ratio: 1 / 1; overflow: hidden; border-radius: 6px; }
+  .collections-carousel__image img, .collections-carousel__image svg { width: 100%; height: 100%; object-fit: cover; }
+  .collections-carousel__title { margin: 8px 0 0; font-size: 16px; }
+  .collections-carousel__arrow { flex: 0 0 auto; width: 36px; height: 36px; border: 1px solid #ccc; background: #fff; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; }
+</style>
+
 {% schema %}
 {
-  "name": "Carousel List",
+  "name": "Collection List",
   "class": "section",
   "settings": [
     {
