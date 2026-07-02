@@ -1,0 +1,160 @@
+{{ 'collections-list.css' | asset_url | stylesheet_tag }}
+
+<div class="cl-section" style="background-color: {{ section.settings.bg_color }}; color: {{ section.settings.text_color }}; padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+  <div class="cl-section__inner page-width">
+
+    {%- if section.settings.heading != blank -%}
+      <h2 class="cl-section__heading cl-section__heading--align-{{ section.settings.text_align }}">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    <div
+      class="cl-content{% if section.settings.enable_collapse %} cl-content--collapsible{% endif %}"
+      data-cl-content
+      style="--cl-collapsed-height: {{ section.settings.collapsed_height }}px; --cl-link-color: {{ section.settings.link_color }}; --cl-fade-color: {{ section.settings.bg_color }};"
+    >
+      <div class="cl-content__inner cl-content__inner--align-{{ section.settings.text_align }}" data-cl-content-inner>
+        {{ section.settings.content }}
+      </div>
+
+      {%- if section.settings.enable_collapse -%}
+        <div class="cl-content__fade" data-cl-content-fade aria-hidden="true"></div>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.enable_collapse -%}
+      <button
+        type="button"
+        class="cl-toggle"
+        data-cl-toggle
+        data-more-label="{{ section.settings.toggle_label_more | default: 'Read more' }}"
+        data-less-label="{{ section.settings.toggle_label_less | default: 'Read less' }}"
+        aria-expanded="false"
+        hidden
+      >
+        <span data-cl-toggle-label>{{ section.settings.toggle_label_more | default: 'Read more' }}</span>
+        <svg data-cl-toggle-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    {%- endif -%}
+
+  </div>
+</div>
+
+<script src="{{ 'collections-list.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Collections list",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading"
+    },
+    {
+      "type": "richtext",
+      "id": "content",
+      "label": "Content",
+      "info": "SEO copy shown at the bottom of the page. Supports headings, links, bold, and lists.",
+      "default": "<p>Write your SEO content here.</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_align",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "header",
+      "content": "Read more"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_collapse",
+      "label": "Collapse long content",
+      "info": "Only applies if the content is taller than the height below. Short content is always shown in full.",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "collapsed_height",
+      "min": 80,
+      "max": 500,
+      "step": 10,
+      "unit": "px",
+      "label": "Collapsed height",
+      "default": 220
+    },
+    {
+      "type": "text",
+      "id": "toggle_label_more",
+      "label": "\"Show more\" label",
+      "default": "Read more"
+    },
+    {
+      "type": "text",
+      "id": "toggle_label_less",
+      "label": "\"Show less\" label",
+      "default": "Read less"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#121212"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Link color",
+      "default": "#121212"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 40
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collections list"
+    }
+  ]
+}
+{% endschema %}
