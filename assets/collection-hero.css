@@ -7,6 +7,14 @@
    .main-header__inner / .utility-bar__inner / .menu-bar / .footer-width
    all use max-width: 1184px + margin: 0 auto + padding: 0 24px,
    dropping to 0 12px under 639px. Keep in sync with those.
+
+   Colors are pulled from the global tokens defined once in
+   snippets/css-variables.liquid (:root, loaded sitewide in
+   theme.liquid <head>) — NOT from header-search.css's local
+   --hs-* scope, which only cascades inside .header-search.
+   Fallback values match css-variables.liquid's own defaults,
+   so this still renders correctly even if a variable is ever
+   removed upstream.
    ============================================================= */
 
 .collection-header {
@@ -22,8 +30,21 @@
   }
 }
 
-.collection-title { color: var(--hs-text); }
-.collection-description { color: var(--hs-text-muted); }
+.collection-title {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text, #111827);
+}
+
+.collection-description {
+  max-width: 640px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-text-muted, #6B7280);
+}
 
 .collection-description p {
   margin: 0 0 0.75rem;
@@ -31,6 +52,16 @@
 
 .collection-description p:last-child {
   margin-bottom: 0;
+}
+
+.collection-description a {
+  color: var(--color-accent, #4F46E5);
+  text-decoration: underline;
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.collection-description a:hover {
+  color: var(--color-accent-hover, #4338CA);
 }
 
 @media (max-width: 639px) {
