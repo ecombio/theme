@@ -1,8 +1,12 @@
-{%- liquid
-  if policy == blank and product != blank
-    assign policy = product.metafields.custom.product_policy.value
-  endif
--%}
+{%- comment -%}
+  Snippet: policy-accordion.liquid
+  Renders Shipping / Returns & Refunds / Warranty policies (rich text)
+  from a "Product Policy" metaobject as toggleable accordion dropdowns.
+
+  Usage: {% render 'policy-accordion', product: product %}
+{%- endcomment -%}
+
+{%- assign policy = product.metafields.custom.product_policy.value -%}
 
 {%- if policy != blank -%}
   <div class="policy-accordion">
@@ -14,7 +18,7 @@
           <span class="policy-accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="policy-accordion__content rte">
-          {{ policy.shipping_policy.value }}
+          {{ policy.shipping_policy | metafield_tag }}
         </div>
       </details>
     {%- endif -%}
@@ -26,7 +30,7 @@
           <span class="policy-accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="policy-accordion__content rte">
-          {{ policy.returns_refunds.value }}
+          {{ policy.returns_refunds | metafield_tag }}
         </div>
       </details>
     {%- endif -%}
@@ -38,7 +42,7 @@
           <span class="policy-accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="policy-accordion__content rte">
-          {{ policy.warranty_policy.value }}
+          {{ policy.warranty_policy | metafield_tag }}
         </div>
       </details>
     {%- endif -%}
