@@ -5,6 +5,19 @@
   footer-newsletter.css) instead of the theme's `.page-width`, so this
   section lines up with the header and the rest of the footer group.
   Keep the max-width/padding values here in sync with main-footer.css.
+
+  Accessibility: the message region uses aria-live so screen readers
+  announce success/error states without needing focus to move there.
+  The inline error is wired to the email input via aria-describedby.
+
+  Spam protection: a honeypot field (data-fn-honeypot) is hidden from
+  sighted users via CSS and skipped by keyboard tab order. Real visitors
+  never fill it in; bots often do. If it's filled, footer-newsletter.js
+  quietly blocks the submit instead of forwarding it to Shopify.
+
+  Double opt-in (if you need it) is a per-store Shopify setting under
+  Settings > Customer accounts / Marketing, not something this section
+  controls — nothing here needs to change for that.
 {% endcomment %}
 
 {{ 'footer-newsletter.css' | asset_url | stylesheet_tag }}
@@ -29,20 +42,37 @@
       </div>
 
       <div class="footer-newsletter__form-wrap">
-        {% form 'customer', id: 'FooterNewsletterForm', class: 'footer-newsletter-form' %}
-          <input type="hidden" name="contact[tags]" value="newsletter">
 
+        <div class="footer-newsletter__message-region" aria-live="polite" aria-atomic="true">
           {% if form.posted_successfully? %}
-            <div class="footer-newsletter__message footer-newsletter__message--success" role="status" tabindex="-1" data-fn-success>
+            <div class="footer-newsletter__message footer-newsletter__message--success" role="status" id="FooterNewsletterSuccess-{{ section.id }}" tabindex="-1" data-fn-success>
               {{ section.settings.success_message | default: 'Thanks for subscribing!' }}
             </div>
-          {% else %}
+          {% endif %}
 
-            {% if form.errors %}
-              <div class="footer-newsletter__message footer-newsletter__message--error" role="alert" data-fn-error>
-                {{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}
-              </div>
-            {% endif %}
+          {% if form.errors %}
+            <div class="footer-newsletter__message footer-newsletter__message--error" role="alert" id="FooterNewsletterError-{{ section.id }}" tabindex="-1" data-fn-error>
+              {{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}
+            </div>
+          {% endif %}
+        </div>
+
+        {% unless form.posted_successfully? %}
+          {% form 'customer', id: 'FooterNewsletterForm', class: 'footer-newsletter-form' %}
+            <input type="hidden" name="contact[tags]" value="newsletter">
+
+            {% comment %} Honeypot: real users never see or fill this in. {% endcomment %}
+            <div class="footer-newsletter__honeypot" aria-hidden="true">
+              <label for="FooterNewsletterCompany-{{ section.id }}">Company</label>
+              <input
+                type="text"
+                id="FooterNewsletterCompany-{{ section.id }}"
+                name="contact[company]"
+                tabindex="-1"
+                autocomplete="off"
+                data-fn-honeypot
+              >
+            </div>
 
             <div class="footer-newsletter__fields">
               <div class="footer-newsletter__field">
@@ -59,6 +89,7 @@
                   autocomplete="email"
                   autocorrect="off"
                   autocapitalize="off"
+                  aria-describedby="FooterNewsletterInlineError-{{ section.id }}"
                   required
                   data-fn-email-input
                 >
@@ -70,16 +101,32 @@
                 name="commit"
                 data-fn-submit
               >
+                <span class="footer-newsletter__spinner" data-fn-spinner aria-hidden="true"></span>
                 <span data-fn-submit-text>{{ section.settings.button_label | default: 'Subscribe' }}</span>
               </button>
             </div>
 
-            <div class="footer-newsletter__inline-error" data-fn-inline-error hidden>
+            {% if section.settings.enable_consent %}
+              <label class="footer-newsletter__consent">
+                <input
+                  type="checkbox"
+                  data-fn-consent
+                  {% if section.settings.consent_required %}required{% endif %}
+                >
+                <span>{{ section.settings.consent_label | default: 'I agree to receive marketing emails.' }}</span>
+              </label>
+            {% endif %}
+
+            <div
+              class="footer-newsletter__inline-error"
+              id="FooterNewsletterInlineError-{{ section.id }}"
+              data-fn-inline-error
+              hidden
+            >
               {{ section.settings.invalid_email_message | default: 'Please enter a valid email address.' }}
             </div>
-
-          {% endif %}
-        {% endform %}
+          {% endform %}
+        {% endunless %}
       </div>
 
     </div>
@@ -138,6 +185,33 @@
       "id": "invalid_email_message",
       "label": "Invalid email message",
       "default": "Please enter a valid email address."
+    },
+    {
+      "type": "header",
+      "content": "Consent checkbox"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_consent",
+      "label": "Show consent checkbox",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "consent_required",
+      "label": "Require consent before subscribing",
+      "default": true,
+      "info": "Only applies when the consent checkbox above is shown."
+    },
+    {
+      "type": "text",
+      "id": "consent_label",
+      "label": "Consent label",
+      "default": "I agree to receive marketing emails."
+    },
+    {
+      "type": "header",
+      "content": "Style"
     },
     {
       "type": "select",
