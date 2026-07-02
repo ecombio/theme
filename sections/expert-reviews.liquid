@@ -4,35 +4,23 @@
   the video-carousel snippet.
 {% endcomment %}
 
-<div class="expert-reviews-section page-width">
-  {%- if section.settings.heading != blank -%}
-    <h2 class="expert-reviews-section__heading">{{ section.settings.heading }}</h2>
-  {%- endif -%}
-
-  {%- assign reviews = product.metafields.custom.expert_reviews.value -%}
-  {%- if reviews != blank -%}
-    {% render 'video-carousel', reviews: reviews, carousel_id: 'expert-reviews-carousel' %}
-  {%- else -%}
-    {%- if request.design_mode -%}
-      <p class="expert-reviews-section__empty">
-        No expert reviews linked yet. Add entries in Metaobjects → Expert Review,
-        then link them on this product's metafield "custom.expert_reviews".
-      </p>
+{%- assign reviews = product.metafields.custom.expert_reviews.value -%}
+{%- if reviews != blank -%}
+  <div class="expert-reviews-section page-width">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="expert-reviews-section__heading">{{ section.settings.heading }}</h2>
     {%- endif -%}
-  {%- endif -%}
-</div>
+    {% render 'video-carousel', reviews: reviews, carousel_id: 'expert-reviews-carousel' %}
+  </div>
 
-<style>
-  .expert-reviews-section { padding: 3rem 1.5rem; }
-  .expert-reviews-section__heading {
-    font-size: 1.6rem;
-    margin-bottom: 1.5rem;
-  }
-  .expert-reviews-section__empty {
-    color: #999;
-    font-style: italic;
-  }
-</style>
+  <style>
+    .expert-reviews-section { padding: 3rem 1.5rem; }
+    .expert-reviews-section__heading {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+{%- endif -%}
 
 {% schema %}
 {
