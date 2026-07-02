@@ -15,9 +15,15 @@
  *                             via the sticky hamburger) while sticky.
  *
  *   --sticky-toolbar-height  Real, current rendered height of
- *                             .collection-toolbar, when present on the page.
- *                             Lets .collection-filter clear BOTH the header
+ *                             .collection-toolbar (including its bottom
+ *                             margin), when present on the page. Lets
+ *                             .collection-filter clear BOTH the header
  *                             and the toolbar without a hardcoded guess.
+ *                             NOTE: offsetHeight/getBoundingClientRect()
+ *                             do NOT include margin, so margin-bottom is
+ *                             measured separately and added on — otherwise
+ *                             the filter sticks ~32px too high and gets
+ *                             visually covered by the toolbar.
  *
  * Both are recalculated on load, on resize, and via ResizeObserver so they
  * stay correct through toggle interactions and responsive layout shifts,
@@ -47,7 +53,9 @@
 
   function setToolbarHeightVar() {
     if (!toolbar) return;
-    root.style.setProperty('--sticky-toolbar-height', toolbar.offsetHeight + 'px');
+    var rect = toolbar.getBoundingClientRect();
+    var marginBottom = parseFloat(getComputedStyle(toolbar).marginBottom) || 0;
+    root.style.setProperty('--sticky-toolbar-height', (rect.height + marginBottom) + 'px');
   }
 
   /* Debounce resize so we're not writing custom properties on every pixel
