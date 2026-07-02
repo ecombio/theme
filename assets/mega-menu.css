@@ -29,42 +29,19 @@
      site's actual design token, --hdr-accent (#e11d27), declared in
      header.css / header-menu.css. Swapped all instances to
      var(--hdr-accent, #e11d27).
-   - FIXED: panel was centered on its trigger via
-     `left: 50%; transform: translateX(-50%)`. For nav items positioned
-     near the left/right edge of a wide menu bar, this pushed the panel
-     partially or fully off-screen (reported: mega-menu items running
-     off the left edge). Replaced with `left: 0` as a neutral default;
-     mega-menu.js now measures the panel on open and applies a
-     compensating `left` offset (via inline style) so it always stays
-     within the viewport, regardless of where the trigger sits in the
-     bar. See mega-menu.js MegaMenu.prototype.position().
-   - CHANGED: panel previously auto-sized to its content (width:
-     max-content / fit-content), so its width varied per mega-menu
-     depending on column count and link lengths. Combined with
-     trigger-relative positioning, this meant the panel rarely lined
-     up cleanly with the rest of the header — sometimes leaving a
-     visible gap on the left, sometimes needing a large leftward shift
-     to avoid overflowing on the right. Pinned the panel to a fixed
-     width matching the site's content max-width (1184px, same as
-     .main-header__inner) instead. Every mega-menu now renders at the
-     same width and flush-aligns to the same left/right edges as the
-     rest of the header, regardless of which trigger opened it or how
-     much content is inside. Columns now spread evenly across that
-     fixed width (justify-content: space-between) rather than hugging
-     the left. mega-menu.js's existing position() logic needs no
-     changes — it already flush-aligns automatically whenever panel
-     width equals the clamp container's width.
    ============================================================================= */
 
 .mega-menu {
   display: none;
   position: absolute;
   top: 100%;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 400;
   padding-top: 12px;
   margin-top: -1px;
-  width: min(1184px, calc(100vw - 48px));
+  width: max-content;
+  max-width: calc(100vw - 48px);
 }
 
 .menu-bar__item--has-mega:hover > .mega-menu,
@@ -81,14 +58,16 @@
   border: 1px solid #e5e7eb;
   padding: 28px 32px;
   box-sizing: border-box;
-  width: 100%;
+  width: fit-content;
+  max-width: calc(100vw - 48px);
+  overflow-x: auto;
 }
 
 .mega-menu__text-columns {
   display: grid;
   grid-template-columns: repeat(var(--mega-col-count, 4), max-content);
   gap: 28px 48px;
-  justify-content: space-between;
+  justify-content: start;
 }
 
 .mega-menu-items--with-products {
