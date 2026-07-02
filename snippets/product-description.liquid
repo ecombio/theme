@@ -22,19 +22,19 @@
     assign has_warranty = true
   endif
 
-  assign policy = product.metafields.custom.policies.value
+  assign policies = product.metafields.custom.policies.value
 
   assign has_custom_shipping = false
   assign has_custom_refund   = false
   assign has_custom_warranty = false
 
-  if policy.fields.shipping_policy.value != blank
+  if policies.fields.shipping_policy != blank
     assign has_custom_shipping = true
   endif
-  if policy.fields.returns_refunds.value != blank
+  if policies.fields.returns_refunds != blank
     assign has_custom_refund = true
   endif
-  if policy.fields.warranty_policy.value != blank
+  if policies.fields.warranty_policy != blank
     assign has_custom_warranty = true
   endif
 
@@ -42,10 +42,10 @@
   assign show_refund   = false
   assign show_warranty = false
 
-  if has_custom_shipping or has_shipping
+  if has_custom_shipping or has_shipping or shop.shipping_policy.body != blank
     assign show_shipping = true
   endif
-  if has_custom_refund or has_refund
+  if has_custom_refund or has_refund or shop.refund_policy.body != blank
     assign show_refund = true
   endif
   if has_custom_warranty or has_warranty
@@ -124,16 +124,11 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_shipping -%}
-      {%- assign shipping_html = policy.fields.shipping_policy | metafield_tag -%}
-      {%- if shipping_html != blank -%}
-        {{ shipping_html }}
-      {%- else -%}
-        <p>Unavailable</p>
-      {%- endif -%}
+      {{ policies.fields.shipping_policy | metafield_tag }}
     {%- elsif has_shipping -%}
       {{ shipping_page.content }}
     {%- else -%}
-      <p>Unavailable</p>
+      {{ shop.shipping_policy.body }}
     {%- endif -%}
   </div>
 </div>
@@ -148,16 +143,11 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_refund -%}
-      {%- assign refund_html = policy.fields.returns_refunds | metafield_tag -%}
-      {%- if refund_html != blank -%}
-        {{ refund_html }}
-      {%- else -%}
-        <p>Unavailable</p>
-      {%- endif -%}
+      {{ policies.fields.returns_refunds | metafield_tag }}
     {%- elsif has_refund -%}
       {{ refund_page.content }}
     {%- else -%}
-      <p>Unavailable</p>
+      {{ shop.refund_policy.body }}
     {%- endif -%}
   </div>
 </div>
@@ -172,16 +162,11 @@
   </div>
   <div class="pd-panel__body">
     {%- if has_custom_warranty -%}
-      {%- assign warranty_html = policy.fields.warranty_policy | metafield_tag -%}
-      {%- if warranty_html != blank -%}
-        {{ warranty_html }}
-      {%- else -%}
-        <p>Unavailable</p>
-      {%- endif -%}
+      {{ policies.fields.warranty_policy | metafield_tag }}
     {%- elsif has_warranty -%}
       {{ warranty_page.content }}
     {%- else -%}
-      <p>Unavailable</p>
+      <p>Please contact us for warranty information.</p>
     {%- endif -%}
   </div>
 </div>
