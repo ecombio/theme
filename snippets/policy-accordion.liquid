@@ -1,24 +1,19 @@
 {% comment %}
   Snippet: policy-accordion.liquid
-  Renders Shipping / Refund / Warranty policies (rich text) from a
-  "policy_info" metaobject as toggleable accordion dropdowns.
+  Renders Shipping / Returns & Refunds / Warranty policies (rich text)
+  from a "Product Policy" metaobject as toggleable accordion dropdowns.
 
-  USAGE OPTIONS
-  -------------
-  1) Product-specific (metaobject referenced on the product):
-     {% render 'policy-accordion', policy: product.metafields.custom.policy_info.value %}
+  USAGE
+  -----
+  {% render 'policy-accordion', policy: product.metafields.custom.product_policy.value %}
 
-  2) Global / single shared entry (fetch directly by handle):
-     {% assign policy = shop.metaobjects.policy_info['default-policies'] %}
-     {% render 'policy-accordion', policy: policy %}
-
-  If no `policy` param is passed, this snippet falls back to trying
-  product.metafields.custom.policy_info automatically.
+  If no `policy` param is passed, this snippet falls back to
+  product.metafields.custom.product_policy automatically.
 {% endcomment %}
 
 {%- liquid
   if policy == blank and product != blank
-    assign policy = product.metafields.custom.policy_info.value
+    assign policy = product.metafields.custom.product_policy.value
   endif
 -%}
 
@@ -37,14 +32,14 @@
       </details>
     {%- endif -%}
 
-    {%- if policy.refund_policy != blank -%}
+    {%- if policy.returns_refunds != blank -%}
       <details class="policy-accordion__item">
         <summary class="policy-accordion__trigger">
           <span>Refund Policy</span>
           <span class="policy-accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="policy-accordion__content rte">
-          {{ policy.refund_policy.value }}
+          {{ policy.returns_refunds.value }}
         </div>
       </details>
     {%- endif -%}
