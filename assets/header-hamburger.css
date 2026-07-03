@@ -10,15 +10,15 @@
 
    This file is self-contained: everything it styles is rendered by
    header-hamburger.liquid. The one exception is .menu-bar itself
-   (defined in main-header.css) тАФ this file only toggles its
+   (defined in main-header.css) — this file only toggles its
    `.is-visible` class via header-hamburger.js, it doesn't define
    .menu-bar's own layout.
    ============================================================= */
 
-/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
-   MOBILE/TABLET HAMBURGER  (hidden on desktop тЙе 1024px)
+/* ─────────────────────────────────────────────
+   MOBILE/TABLET HAMBURGER  (hidden on desktop ≥ 1024px)
    Opens .main-header__mobile-nav below.
-   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+   ───────────────────────────────────────────── */
 .main-header__hamburger {
   display: flex;
   flex-direction: column;
@@ -46,7 +46,7 @@
   transform-origin: center;
 }
 
-/* Animates to тЬХ when open */
+/* Animates to ✕ when open */
 .main-header__hamburger.is-open .main-header__hamburger-line:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
@@ -62,9 +62,9 @@
   .main-header__hamburger { display: none; }
 }
 
-/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+/* ─────────────────────────────────────────────
    MOBILE NAV DRAWER
-   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+   ───────────────────────────────────────────── */
 
 /* Slides via `left`, NOT `transform`. A `transform` on this element
    would create a new containing block for its position:fixed ::before
@@ -91,12 +91,12 @@
   visibility: visible;
 }
 
-/* Dimmed backdrop overlay тАФ position:fixed here correctly resolves
+/* Dimmed backdrop overlay — position:fixed here correctly resolves
    against the viewport now that the parent above no longer uses
    `transform`. Covers everything to the right of the open drawer.
    NOTE: because this is a ::before (not a real element), clicks on it
    report e.target as .main-header__mobile-nav itself, NOT a distinct
-   node тАФ header-hamburger.js's outside-click check accounts for this
+   node — header-hamburger.js's outside-click check accounts for this
    by testing click coordinates rather than relying on .contains(). */
 .main-header__mobile-nav::before {
   content: '';
@@ -113,7 +113,7 @@
   pointer-events: auto;
 }
 
-/* тФАтФА Drawer header row тАФ holds the close (X) button тФАтФА */
+/* ── Drawer header row — holds the close (X) button ── */
 .main-header__mobile-nav-header {
   display: flex;
   justify-content: flex-end;
@@ -170,17 +170,17 @@
   .main-header__mobile-nav { display: none; }
 }
 
-/* Body scroll lock тАФ applied by header-hamburger.js */
+/* Body scroll lock — applied by header-hamburger.js */
 body.nav-is-open { overflow: hidden; }
 
-/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
-   STICKY HAMBURGER  (desktop only, тЙе 1024px)
+/* ─────────────────────────────────────────────
+   STICKY HAMBURGER  (desktop only, ≥ 1024px)
    Sits left of the logo. Re-expands .menu-bar (in main-header.css)
    after it auto-collapses on sticky scroll. Mobile/tablet use the
-   drawer hamburger above instead тАФ this must never show below 1024px,
+   drawer hamburger above instead — this must never show below 1024px,
    which is why both this rule and the .menu-bar.is-visible reveal rule
    in main-header.css are gated to min-width: 1024px.
-   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+   ───────────────────────────────────────────── */
 .main-header-sticky__hamburger {
   /* Hidden by default: not sticky yet, and hidden below 1024px, always */
   display: none;
@@ -199,7 +199,7 @@ body.nav-is-open { overflow: hidden; }
 }
 
 /* Reveal ONLY once the header has actually gone sticky, AND only on
-   desktop тАФ main-header.js adds/removes .is-sticky on #main-header
+   desktop — main-header.js adds/removes .is-sticky on #main-header
    purely based on scroll position, with no width check of its own, so
    the width gate has to live here in CSS. */
 @media (min-width: 1024px) {
@@ -228,9 +228,9 @@ body.nav-is-open { overflow: hidden; }
   transform: translateY(-6px) rotate(-45deg);
 }
 
-/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+/* ─────────────────────────────────────────────
    REDUCED MOTION
-   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+   ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .main-header__hamburger-line,
   .main-header__mobile-nav,
