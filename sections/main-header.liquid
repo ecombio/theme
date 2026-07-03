@@ -30,29 +30,14 @@
   <div class="main-header__bar">
     <div class="main-header__inner">
 
-      {%- if enable_sticky -%}
-        <!-- Sticky Header Hamburger — hidden until header goes sticky; hamburger <-> X on click -->
-        <button class="main-header-sticky__hamburger"
-                type="button"
-                aria-label="Toggle menu"
-                aria-expanded="false"
-                aria-controls="main-header-menu-bar">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      {%- endif -%}
-
-      <button class="main-header__hamburger"
-              id="main-header-nav-toggle"
-              type="button"
-              aria-label="Open navigation"
-              aria-expanded="false"
-              aria-controls="main-header-mobile-nav">
-        <span class="main-header__hamburger-line"></span>
-        <span class="main-header__hamburger-line"></span>
-        <span class="main-header__hamburger-line"></span>
-      </button>
+      {%- comment -%}
+        Both hamburger buttons (sticky + mobile drawer) and the mobile
+        nav drawer itself now live in snippets/header-hamburger.liquid,
+        which also loads header-hamburger.css/js on its own. See that
+        file for details. Rendered here so the two buttons land in the
+        correct spot in this flex row, before the logo.
+      {%- endcomment -%}
+      {%- render 'header-hamburger', mobile_menu: mobile_menu, enable_sticky: enable_sticky -%}
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
@@ -81,7 +66,8 @@
   </div>
 
   {%- comment -%}Desktop nav bar — built from blocks. Hidden below 1024px via CSS (mobile drawer takes over);
-  when sticky is enabled, also collapses on scroll and is toggled back open via the sticky hamburger above.{%- endcomment -%}
+  when sticky is enabled, also collapses on scroll and is toggled back open via the sticky hamburger
+  (in header-hamburger.liquid) above.{%- endcomment -%}
   {%- if section.blocks.size > 0 -%}
     <nav class="menu-bar" id="main-header-menu-bar" aria-label="Primary navigation">
       <div class="menu-bar__container page-width--header">
@@ -109,22 +95,6 @@
       </div>
     </nav>
   {%- endif -%}
-
-  <nav class="main-header__mobile-nav"
-       id="main-header-mobile-nav"
-       aria-label="Mobile navigation"
-       aria-hidden="true"
-       hidden>
-    <ul class="main-header__mobile-nav-list">
-      {%- for link in mobile_menu.links -%}
-        <li>
-          <a class="main-header__mobile-nav-link" href="{{ link.url }}">
-            {{ link.title }}
-          </a>
-        </li>
-      {%- endfor -%}
-    </ul>
-  </nav>
 
 </header>
 
