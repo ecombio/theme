@@ -301,17 +301,40 @@
     .then(function (item) {
       self._setAtcState('success');
 
-      // Notify cart drawer / header cart count
-      document.dispatchEvent(new CustomEvent('cart:updated', {
-        bubbles: true,
-        detail: { item: item }
-      }));
-
       // Also fire Shopify's native event some themes rely on
       document.dispatchEvent(new CustomEvent('cart:item-added', {
         bubbles: true,
         detail: { product: item }
       }));
+
+      // /cart/add.js only returns the added line item, not the cart's
+      // total count — header-cart.js's badge sync needs itemCount, so
+      // fetch the current cart before announcing cart:updated.
+      fetch('/cart.js', { headers: { 'Accept': 'application/json' } })
+        .then(function (res) { return res.json(); })
+        .then(function (cart) {
+          document.dispatchEvent(new CustomEvent('cart:updated', {
+            bubbles: true,
+            detail: { itemCount: cart.item_count, item: item, cart: cart }
+          }));
+
+          // Open the drawer with the fresh count already known, so
+          // cart-drawer.js doesn't need its own fallback fetch.
+          document.dispatchEvent(new CustomEvent('cart:open', {
+            bubbles: true,
+            detail: { itemCount: cart.item_count }
+          }));
+        })
+        .catch(function () {
+          // Cart count fetch failed — still announce the add so the
+          // drawer can open, just without a reliable count. cart-drawer.js
+          // will fetch its own count in this case.
+          document.dispatchEvent(new CustomEvent('cart:updated', {
+            bubbles: true,
+            detail: { item: item }
+          }));
+          document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
+        });
 
       setTimeout(function () {
         self._setAtcState('available');

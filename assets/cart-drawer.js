@@ -230,7 +230,27 @@
   // ── External event bridge ──────────────────────────────────────────────────
 
   // Programmatic open from product cards, ATC buttons, etc.
-  document.addEventListener('cart:open', openDrawer);
+  // Unlike a manual click on the header trigger (which just toggles
+  // visibility — nothing in the cart changed), an external cart:open means
+  // an item was likely just added, so the drawer's cached HTML is stale.
+  // Refresh it before/while showing the drawer.
+  document.addEventListener('cart:open', async (e) => {
+    openDrawer();
+
+    await refreshDrawerHTML();
+
+    if (e.detail?.itemCount != null) {
+      updateCountBadges(e.detail.itemCount);
+    } else {
+      // Fallback: fetch count only if not provided in event detail
+      try {
+        const cart = await (await fetch('/cart.js')).json();
+        updateCountBadges(cart.item_count);
+      } catch (err) {
+        console.error('[EcombioCart] badge refresh failed', err);
+      }
+    }
+  });
 
   // Rec ATC succeeded — refresh HTML + badges, but do NOT re-trigger recs load.
   // (cart-recommendations.js dispatches this after its own ATC completes.)
