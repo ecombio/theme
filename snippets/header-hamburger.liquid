@@ -13,14 +13,17 @@
        loops rather than a recursive snippet.
 
   Params:
-    mobile_menu   — link_list object; powers the mobile drawer's links
-    enable_sticky — bool; whether to render the sticky hamburger at all
-    drawer_style  — 'compact' (280px, dimmed backdrop) or 'full-width'
-                    (fills the screen, no backdrop). Default: 'compact'.
+    mobile_menu             — link_list object; powers the mobile drawer's links
+    enable_sticky           — bool; whether to render the sticky hamburger at all
+    drawer_style             — 'compact' (280px, dimmed backdrop) or 'full-width'
+                                (fills the screen, no backdrop). Default: 'compact'.
+    enable_predictive_search — bool; passed through to the mobile search field
+                                rendered inside the drawer. Default: true.
 {% endcomment %}
 
 {%- liquid
   assign drawer_style = drawer_style | default: 'compact'
+  assign enable_predictive_search = enable_predictive_search | default: true
 -%}
 
 {{ 'header-hamburger.css' | asset_url | stylesheet_tag }}
@@ -66,8 +69,14 @@
     </button>
   </div>
 
-  {%- comment -%} LEVEL 1 (top-level menu items) {%- endcomment -%}
-  <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l0">
+  <div class="main-header__mobile-nav-content">
+
+    <div class="main-header__mobile-nav-search">
+      {%- render 'header-search', enable_predictive_search: enable_predictive_search, variant: 'mobile' -%}
+    </div>
+
+    {%- comment -%} LEVEL 1 (top-level menu items) {%- endcomment -%}
+    <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l0">
     {%- for link_l1 in mobile_menu.links -%}
       {%- assign id_l1 = 'mnav-' | append: forloop.index -%}
       <li class="main-header__mobile-nav-item">
@@ -131,7 +140,9 @@
         {%- endif -%}
       </li>
     {%- endfor -%}
-  </ul>
+    </ul>
+
+  </div>
 
 </nav>
 
