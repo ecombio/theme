@@ -8,7 +8,6 @@
 
 .header {
   box-shadow: 0 2px 6px rgba(0,0,0,.06);
-  /* or, if you want border + shadow together */
   border-bottom: 1px solid #e5e5e5;
 }
 
@@ -42,11 +41,6 @@
 .ecombio-header {
   position: relative;
   top: auto;
-  /* z-index intentionally removed — it was creating a stacking context
-     that trapped .mega-menu / .dropdown panels (z-index: 400) inside
-     the header's own stacking context (z-index: 200), making them
-     invisible below page content. The .menu-bar already has z-index: 100;
-     panels use z-index: 400 and now correctly stack above everything. */
   background: var(--hdr-bg);
   border-bottom: 1px solid var(--hdr-border);
   font-family: var(--hdr-font);
@@ -375,6 +369,11 @@
   border-radius: 9999px;
   text-align: center;
   pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.ecombio-header__cart-badge--hidden {
+  opacity: 0;
 }
 
 /* =============================================================================
@@ -675,12 +674,6 @@
   .ecombio-header__icon-link {
     padding: 6px;
   }
-
-  /* REMOVED: .ecombio-header__icon-link:first-child { display: none; }
-     Store icon visibility is now controlled by show_icon_store in theme
-     settings → ecombio-header-icons.liquid. CSS hiding caused account
-     icon to disappear when store was toggled off (next sibling became
-     :first-child and got hidden instead). */
 
   .ecombio-header__search-row-inner {
     padding: 6px 12px;
@@ -1110,21 +1103,13 @@
    HEADER SHELL
    ───────────────────────────────────────────── */
 .main-header {
-  /* position: sticky; */
-  /* top: 0; */
-  z-index: 200;              /* keep — dropdowns/mega-menu/flyout likely stack on this */
+  z-index: 200;
   width: 100%;
   background: #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   border-bottom: 1px solid #e5e5e5;
-  transition: box-shadow 0.2s ease;   /* dead now, safe to remove entirely since .is-scrolled won't apply */
 }
 
-/*
-.main-header.is-scrolled {
-  box-shadow: 0 2px 12px rgba(0,0,0,.08);
-}
-*/
 /* ─────────────────────────────────────────────
    TOP BAR
    ───────────────────────────────────────────── */
@@ -1276,6 +1261,20 @@
   position: relative;
 }
 
+.main-header__cart-btn {
+  position: relative;
+}
+
+.main-header__cart-icon {
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.main-header__cart-btn:hover .main-header__cart-icon,
+.main-header__cart-btn:focus-visible .main-header__cart-icon {
+  transform: translateY(-1px);
+}
+
 .main-header__cart-badge {
   position: absolute;
   top: -7px;
@@ -1283,17 +1282,41 @@
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  background: #c4301c;
-  color: #fff;
+  background: currentColor;
+  color: var(--color-background, #fff);
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 18px;
   text-align: center;
   border-radius: 9999px;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.main-header__cart-badge--hidden { opacity: 0; }
+
+.main-header__cart-badge--hidden {
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+}
+
+/* Pop animation on badge update */
+@keyframes cart-badge-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.main-header__cart-badge--pop {
+  animation: cart-badge-pop 0.3s ease forwards;
+}
+
+.main-header__cart-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
 
 /* ─────────────────────────────────────────────
    SEARCH ROW  (tablet + mobile, hidden ≥ 1024px)
@@ -1381,21 +1404,16 @@ body.nav-is-open { overflow: hidden; }
 
 /* ─────────────────────────────────────────────
    TABLET  (600px – 1023px)
-   Matches screenshot: top bar shows hamburger + logo + icon labels + cart
-   Search row sits below the bar.
    ───────────────────────────────────────────── */
 @media (min-width: 640px) and (max-width: 1023px) {
-  /* Show text labels next to icons ("Find a store", "Sign in/ Register") */
   .main-header__icon-label {
     display: inline;
   }
 
-  /* Give the top bar a bit more breathing room between icons */
   .main-header__icons {
     gap: 4px;
   }
 
-  /* Slightly reduce icon button padding so labels don't crowd the bar */
   .main-header__icon-btn {
     padding: 6px 10px;
   }
@@ -1403,8 +1421,6 @@ body.nav-is-open { overflow: hidden; }
 
 /* ─────────────────────────────────────────────
    MOBILE  (< 640px)
-   Matches screenshot: top bar shows hamburger + logo + icon-only buttons + cart
-   Icon labels are hidden; icons are compact. Search row below.
    ───────────────────────────────────────────── */
 @media (max-width: 639px) {
   .main-header__inner {
@@ -1412,12 +1428,10 @@ body.nav-is-open { overflow: hidden; }
     gap: 4px;
   }
 
-  /* Tighten icon cluster */
   .main-header__icons {
     gap: 0;
   }
 
-  /* Icon-only: no label, tighter padding */
   .main-header__icon-label {
     display: none;
   }
@@ -1426,7 +1440,6 @@ body.nav-is-open { overflow: hidden; }
     padding: 6px;
   }
 
-  /* Search row padding matches the tighter inner padding */
   .main-header__search-row-inner {
     padding: 6px 12px;
   }
@@ -1440,121 +1453,8 @@ body.nav-is-open { overflow: hidden; }
   .main-header__hamburger-line,
   .main-header__mobile-nav,
   .main-header__icon-btn,
-  .main-header__cart-badge { transition: none; }
-}
-/**
- * header-cart.css
- * Cart icon + badge styles for sections/main-header.liquid.
- * Scoped to .main-header__cart-* — zero global side-effects.
- *
- * Depends on:
- *   main-header.css  — defines .main-header__icon-btn, .main-header__icon,
- *                      .main-header__icon-label, and layout tokens.
- *
- * Load order in main-header.liquid (or theme.liquid):
- *   1. main-header.css
- *   2. header-cart.css   ← this file
- */
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   1. CART BUTTON WRAPPER
-   Inherits base reset + cursor from .main-header__icon-btn in main-header.css.
-───────────────────────────────────────────────────────────────────────────── */
-
-.main-header__cart-btn {
-  position: relative; /* stacking context for the badge */
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   2. ICON + WRAP
-───────────────────────────────────────────────────────────────────────────── */
-
-.main-header__cart-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.main-header__cart-icon {
-  display: block;
-  transition: transform 0.15s ease;
-}
-
-.main-header__cart-btn:hover .main-header__cart-icon,
-.main-header__cart-btn:focus-visible .main-header__cart-icon {
-  transform: translateY(-1px);
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   3. COUNT BADGE
-───────────────────────────────────────────────────────────────────────────── */
-
-.main-header__cart-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-
-  background: currentColor;         /* inherits the header's text colour */
-  color: var(--color-background, #fff);
-  border-radius: 999px;
-
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 18px;
-  text-align: center;
-  letter-spacing: 0;
-
-  /* Smooth in/out when count changes */
-  opacity: 1;
-  transform: scale(1);
-  transition:
-    opacity    0.2s ease,
-    transform  0.2s ease;
-}
-
-/* Hidden state — count is 0 */
-.main-header__cart-badge--hidden {
-  opacity: 0;
-  transform: scale(0.5);
-  pointer-events: none;
-}
-
-/* Pop animation on badge update */
-@keyframes cart-badge-pop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.35); }
-  100% { transform: scale(1); }
-}
-
-.main-header__cart-badge--pop {
-  animation: cart-badge-pop 0.3s ease forwards;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   4. FOCUS VISIBLE
-   Inherits outline from .main-header__icon-btn; supplement if needed.
-───────────────────────────────────────────────────────────────────────────── */
-
-.main-header__cart-btn:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   5. REDUCED MOTION
-───────────────────────────────────────────────────────────────────────────── */
-
-@media (prefers-reduced-motion: reduce) {
   .main-header__cart-icon,
-  .main-header__cart-badge {
-    transition: none;
-  }
+  .main-header__cart-badge { transition: none; }
 
   .main-header__cart-badge--pop {
     animation: none;
@@ -1564,19 +1464,6 @@ body.nav-is-open { overflow: hidden; }
    Header Menu Styles  |  assets/header-menu.css
    Covers: desktop menu bar only
 ============================================================================= */
-
-/* ── Variables ── */
-:root {
-  --hdr-bg             : #ffffff;
-  --hdr-border         : #e5e5e5;
-  --hdr-text           : #111111;
-  --hdr-muted          : #6b6b6b;
-  --hdr-accent         : #e11d27;
-  --hdr-search-bg      : #f2f2f2;
-  --hdr-radius-drop    : 12px;
-  --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
-  --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
 
 /* =============================================================================
    DESKTOP MENU BAR (≥ 1024px)
