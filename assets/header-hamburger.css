@@ -1,0 +1,240 @@
+/* =============================================================
+   Header Hamburger + Mobile Nav Drawer
+   File: assets/header-hamburger.css
+   Loaded by: snippets/header-hamburger.liquid
+
+   Scope: the tablet/mobile drawer hamburger, the mobile nav drawer +
+   backdrop + close button, and the desktop-only sticky hamburger that
+   re-expands .menu-bar (owned by main-header.css) while the header is
+   sticky.
+
+   This file is self-contained: everything it styles is rendered by
+   header-hamburger.liquid. The one exception is .menu-bar itself
+   (defined in main-header.css) тАФ this file only toggles its
+   `.is-visible` class via header-hamburger.js, it doesn't define
+   .menu-bar's own layout.
+   ============================================================= */
+
+/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+   MOBILE/TABLET HAMBURGER  (hidden on desktop тЙе 1024px)
+   Opens .main-header__mobile-nav below.
+   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+.main-header__hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+.main-header__hamburger:hover { background: #f5f5f5; }
+
+.main-header__hamburger-line {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  transform-origin: center;
+}
+
+/* Animates to тЬХ when open */
+.main-header__hamburger.is-open .main-header__hamburger-line:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.main-header__hamburger.is-open .main-header__hamburger-line:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.main-header__hamburger.is-open .main-header__hamburger-line:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (min-width: 1024px) {
+  .main-header__hamburger { display: none; }
+}
+
+/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+   MOBILE NAV DRAWER
+   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+
+/* Slides via `left`, NOT `transform`. A `transform` on this element
+   would create a new containing block for its position:fixed ::before
+   backdrop below, trapping that backdrop inside this drawer's own
+   280px-wide box (collapsing it to zero width) instead of letting it
+   cover the viewport. `left` avoids that entirely. */
+.main-header__mobile-nav {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100%;
+  background: #fff;
+  border-right: 1px solid #e5e5e5;
+  box-shadow: 4px 0 24px rgba(0,0,0,.1);
+  z-index: 300;
+  transition: left 0.28s cubic-bezier(.4,0,.2,1), visibility 0.28s;
+  visibility: hidden;
+  overflow-y: auto;
+  padding: 0 0 48px;
+}
+.main-header__mobile-nav.is-open {
+  left: 0;
+  visibility: visible;
+}
+
+/* Dimmed backdrop overlay тАФ position:fixed here correctly resolves
+   against the viewport now that the parent above no longer uses
+   `transform`. Covers everything to the right of the open drawer.
+   NOTE: because this is a ::before (not a real element), clicks on it
+   report e.target as .main-header__mobile-nav itself, NOT a distinct
+   node тАФ header-hamburger.js's outside-click check accounts for this
+   by testing click coordinates rather than relying on .contains(). */
+.main-header__mobile-nav::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  left: 280px;
+  background: rgba(0,0,0,.4);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+.main-header__mobile-nav.is-open::before {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* тФАтФА Drawer header row тАФ holds the close (X) button тФАтФА */
+.main-header__mobile-nav-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 56px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+
+.main-header__mobile-nav-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #1a1a1a;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.main-header__mobile-nav-close:hover { background: #f5f5f5; }
+.main-header__mobile-nav-close:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.main-header__mobile-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.main-header__mobile-nav-link {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.main-header__mobile-nav-link:hover {
+  background: #f5f5f5;
+  color: #c4301c;
+}
+
+@media (min-width: 1024px) {
+  .main-header__mobile-nav { display: none; }
+}
+
+/* Body scroll lock тАФ applied by header-hamburger.js */
+body.nav-is-open { overflow: hidden; }
+
+/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+   STICKY HAMBURGER  (desktop only, тЙе 1024px)
+   Sits left of the logo. Re-expands .menu-bar (in main-header.css)
+   after it auto-collapses on sticky scroll. Mobile/tablet use the
+   drawer hamburger above instead тАФ this must never show below 1024px,
+   which is why both this rule and the .menu-bar.is-visible reveal rule
+   in main-header.css are gated to min-width: 1024px.
+   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+.main-header-sticky__hamburger {
+  /* Hidden by default: not sticky yet, and hidden below 1024px, always */
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+/* Reveal ONLY once the header has actually gone sticky, AND only on
+   desktop тАФ main-header.js adds/removes .is-sticky on #main-header
+   purely based on scroll position, with no width check of its own, so
+   the width gate has to live here in CSS. */
+@media (min-width: 1024px) {
+  .main-header--sticky-enabled.is-sticky .main-header-sticky__hamburger {
+    display: flex;
+  }
+}
+
+.main-header-sticky__hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Hamburger -> X */
+.main-header-sticky__hamburger.is-active span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.main-header-sticky__hamburger.is-active span:nth-child(2) {
+  opacity: 0;
+}
+.main-header-sticky__hamburger.is-active span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+   REDUCED MOTION
+   тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА */
+@media (prefers-reduced-motion: reduce) {
+  .main-header__hamburger-line,
+  .main-header__mobile-nav,
+  .main-header-sticky__hamburger span {
+    transition: none;
+  }
+}
