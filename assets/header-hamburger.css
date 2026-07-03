@@ -4,15 +4,15 @@
    Loaded by: snippets/header-hamburger.liquid
 
    Scope: the tablet/mobile drawer hamburger, the mobile nav drawer +
-   backdrop + close button, and the desktop-only sticky hamburger that
-   re-expands .menu-bar (owned by main-header.css) while the header is
-   sticky.
+   backdrop + close button, the recursive/accordion nested menu inside
+   the drawer, and the desktop-only sticky hamburger that re-expands
+   .menu-bar (owned by main-header.css) while the header is sticky.
 
    This file is self-contained: everything it styles is rendered by
-   header-hamburger.liquid. The one exception is .menu-bar itself
-   (defined in main-header.css) — this file only toggles its
-   `.is-visible` class via header-hamburger.js, it doesn't define
-   .menu-bar's own layout.
+   header-hamburger.liquid and header-hamburger-menu-list.liquid. The
+   one exception is .menu-bar itself (defined in main-header.css) —
+   this file only toggles its `.is-visible` class via
+   header-hamburger.js, it doesn't define .menu-bar's own layout.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -66,20 +66,17 @@
    MOBILE NAV DRAWER
    ───────────────────────────────────────────── */
 
-/* Slides via `left`, NOT `transform`. A `transform` on this element
-   would create a new containing block for its position:fixed ::before
-   backdrop below, trapping that backdrop inside this drawer's own
-   280px-wide box (collapsing it to zero width) instead of letting it
-   cover the viewport. `left` avoids that entirely. */
+/* Full-width panel — covers the entire viewport, so there's no
+   dimmed backdrop to manage and nothing "outside" the drawer to
+   click while it's open. Still slides via `left` (not `transform`)
+   for consistency with the rest of this file's animation approach. */
 .main-header__mobile-nav {
   position: fixed;
   top: 0;
-  left: -280px;
-  width: 280px;
+  left: -100vw;
+  width: 100vw;
   height: 100%;
   background: #fff;
-  border-right: 1px solid #e5e5e5;
-  box-shadow: 4px 0 24px rgba(0,0,0,.1);
   z-index: 300;
   transition: left 0.28s cubic-bezier(.4,0,.2,1), visibility 0.28s;
   visibility: hidden;
@@ -91,32 +88,10 @@
   visibility: visible;
 }
 
-/* Dimmed backdrop overlay — position:fixed here correctly resolves
-   against the viewport now that the parent above no longer uses
-   `transform`. Covers everything to the right of the open drawer.
-   NOTE: because this is a ::before (not a real element), clicks on it
-   report e.target as .main-header__mobile-nav itself, NOT a distinct
-   node — header-hamburger.js's outside-click check accounts for this
-   by testing click coordinates rather than relying on .contains(). */
-.main-header__mobile-nav::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  left: 280px;
-  background: rgba(0,0,0,.4);
-  opacity: 0;
-  transition: opacity 0.28s ease;
-  pointer-events: none;
-}
-.main-header__mobile-nav.is-open::before {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* ── Drawer header row — holds the close (X) button ── */
+/* ── Drawer header row — holds the close (X) button, left-aligned ── */
 .main-header__mobile-nav-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   height: 56px;
   padding: 0 8px;
@@ -172,6 +147,72 @@
 
 /* Body scroll lock — applied by header-hamburger.js */
 body.nav-is-open { overflow: hidden; }
+
+/* ─────────────────────────────────────────────
+   NESTED SUBMENU ACCORDION
+   Rendered recursively by header-hamburger-menu-list.liquid. Parent
+   items (link.links.size > 0) render as a toggle <button> instead of
+   an <a> — tapping expands/collapses the child <ul> rather than
+   navigating. Only one submenu per level stays open at a time
+   (enforced in header-hamburger.js); this file only styles the
+   open/closed states.
+   ───────────────────────────────────────────── */
+.main-header__mobile-nav-row {
+  display: flex;
+}
+
+.main-header__mobile-nav-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+.main-header__mobile-nav-toggle:hover { background: #f5f5f5; }
+.main-header__mobile-nav-toggle:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: -2px;
+}
+
+.main-header__mobile-nav-chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.main-header__mobile-nav-toggle[aria-expanded="true"] .main-header__mobile-nav-chevron {
+  transform: rotate(90deg);
+}
+
+/* ── Nested sub-lists ── */
+.main-header__mobile-nav-sub {
+  background: #f9fafb;
+  border-top: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e5e5e5;
+}
+.main-header__mobile-nav-sub[hidden] { display: none; }
+
+/* ── Indentation per depth level ── */
+.main-header__mobile-nav-link--l1,
+.main-header__mobile-nav-list--l1 .main-header__mobile-nav-toggle {
+  padding-left: 36px;
+}
+.main-header__mobile-nav-link--l2,
+.main-header__mobile-nav-list--l2 .main-header__mobile-nav-toggle {
+  padding-left: 48px;
+  font-size: 14px;
+}
+.main-header__mobile-nav-link--l3,
+.main-header__mobile-nav-list--l3 .main-header__mobile-nav-toggle {
+  padding-left: 60px;
+  font-size: 13px;
+}
 
 /* ─────────────────────────────────────────────
    STICKY HAMBURGER  (desktop only, ≥ 1024px)
@@ -234,6 +275,7 @@ body.nav-is-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .main-header__hamburger-line,
   .main-header__mobile-nav,
+  .main-header__mobile-nav-chevron,
   .main-header-sticky__hamburger span {
     transition: none;
   }
