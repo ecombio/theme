@@ -186,16 +186,78 @@
     if (showRelated      && related.products.length)       rails.push(buildRail(related.label,       related.products,      'related'));
     if (showComplementary && complementary.products.length) rails.push(buildRail(complementary.label, complementary.products, 'complementary'));
     shell.innerHTML = `<span class="ecombio-cart-recs__status" role="status" aria-live="polite" aria-atomic="true"></span>${rails.join('')}`;
+    wireRailNav(shell);
   }
+
+  const NAV_ICON_PREV = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
+  const NAV_ICON_NEXT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
 
   function buildRail(label, products, intent) {
     const cards = products.map((p) => buildCard(p, intent)).filter(Boolean).join('');
     if (!cards) return '';
+    const safeLabel = escapeHTML(label);
     return `
       <div class="ecombio-cart-recs__rail" data-intent="${intent}">
-        <h3 class="ecombio-cart-recs__heading">${escapeHTML(label)}</h3>
-        <ul class="ecombio-cart-recs__list" role="list">${cards}</ul>
+        <h3 class="ecombio-cart-recs__heading">${safeLabel}</h3>
+        <div class="ecombio-cart-recs__scroller">
+          <button
+            type="button"
+            class="ecombio-cart-recs__nav ecombio-cart-recs__nav--prev"
+            data-rec-nav="prev"
+            aria-label="Scroll ${safeLabel} left"
+          >${NAV_ICON_PREV}</button>
+          <ul class="ecombio-cart-recs__list" role="list">${cards}</ul>
+          <button
+            type="button"
+            class="ecombio-cart-recs__nav ecombio-cart-recs__nav--next"
+            data-rec-nav="next"
+            aria-label="Scroll ${safeLabel} right"
+          >${NAV_ICON_NEXT}</button>
+        </div>
       </div>`;
+  }
+
+  /**
+   * Wires up prev/next scroll buttons for every rail in the shell.
+   * Buttons stay visible but are disabled + greyed out at the start/end of
+   * scroll, and hidden entirely when a rail's cards all fit without
+   * scrolling (nothing to navigate). Re-evaluated on scroll and on resize
+   * (ResizeObserver) so it stays correct if card images change the
+   * scrollable width after load.
+   */
+  function wireRailNav(shell) {
+    shell.querySelectorAll('.ecombio-cart-recs__rail').forEach((rail) => {
+      const list    = rail.querySelector('.ecombio-cart-recs__list');
+      const prevBtn = rail.querySelector('[data-rec-nav="prev"]');
+      const nextBtn = rail.querySelector('[data-rec-nav="next"]');
+      if (!list || !prevBtn || !nextBtn) return;
+
+      const update = () => {
+        const max        = Math.max(0, list.scrollWidth - list.clientWidth);
+        const scrollable = max > 4; // fudge factor for sub-pixel rounding
+
+        prevBtn.hidden = !scrollable;
+        nextBtn.hidden = !scrollable;
+        if (!scrollable) return;
+
+        prevBtn.disabled = list.scrollLeft <= 2;
+        nextBtn.disabled = list.scrollLeft >= max - 2;
+      };
+
+      const scrollByPage = (dir) => {
+        list.scrollBy({ left: list.clientWidth * 0.9 * dir, behavior: 'smooth' });
+      };
+
+      prevBtn.addEventListener('click', () => scrollByPage(-1));
+      nextBtn.addEventListener('click', () => scrollByPage(1));
+      list.addEventListener('scroll', update, { passive: true });
+
+      // scrollWidth can change once card images finish loading, so keep
+      // re-checking via ResizeObserver rather than a single call.
+      new ResizeObserver(update).observe(list);
+
+      update();
+    });
   }
 
   function buildCard(product, intent) {
