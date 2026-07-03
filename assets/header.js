@@ -404,13 +404,24 @@
  *   3. 'cart:drawer:open' / 'cart:drawer:close' → sync aria-expanded
  *
  * Dependencies:
- *   snippets/header-cart.liquid  — provides #main-header-cart-toggle
- *                                  and [data-cart-count]
+ *   snippets/header-cart.liquid  — provides the cart trigger button
+ *                                  ([data-ecombio-cart-trigger]) and
+ *                                  the count badge ([data-ecombio-cart-count])
  *   assets/cart-drawer.js        — listens for 'cart:open',
  *                                  dispatches 'cart:drawer:open'
  *
- * Badge format convention (SOURCE OF TRUTH — must match cart-drawer.js
- * updateCountBadges): badges always render as "(N)".
+ * FIXED (previously broken):
+ *   - This module used to look up the trigger via
+ *     document.getElementById('main-header-cart-toggle'). That ID does not
+ *     exist anywhere in header-cart.liquid — the real button only carries
+ *     data-ecombio-cart-trigger. init() was bailing out on line 2 every
+ *     single time, so NONE of this module's listeners were ever attached.
+ *   - COUNT_SEL was '[data-cart-count]'; the real badge markup uses
+ *     '[data-ecombio-cart-count]'. Even if init() hadn't bailed, the
+ *     badge would never have been found.
+ *   - Badge format was hardcoded to "(N)"; the real badge renders a plain
+ *     number ("9", not "(9)"). Changed to match cart-drawer.js's format
+ *     so the two don't fight over how the same element should look.
  *
  * No global variables. Wraps everything in an IIFE to stay side-effect-free.
  */
@@ -420,10 +431,10 @@
 
   /* ── Selectors ──────────────────────────────────────────────────────────── */
 
-  const TOGGLE_ID  = 'main-header-cart-toggle';
-  const COUNT_SEL  = '[data-cart-count]';
-  const HIDDEN_CLS = 'main-header__cart-badge--hidden';
-  const POP_CLS    = 'main-header__cart-badge--pop';
+  const TRIGGER_SEL = '[data-ecombio-cart-trigger]'; // SOURCE OF TRUTH — must match header-cart.liquid
+  const COUNT_SEL   = '[data-ecombio-cart-count]';   // SOURCE OF TRUTH — must match header-cart.liquid + cart-drawer.js
+  const HIDDEN_CLS  = 'main-header__cart-badge--hidden';
+  const POP_CLS     = 'main-header__cart-badge--pop';
 
   /* ── Element refs (resolved after DOMContentLoaded) ─────────────────────── */
 
@@ -432,15 +443,16 @@
   /* ── Helpers ────────────────────────────────────────────────────────────── */
 
   /**
-   * Update every [data-cart-count] badge in the document.
-   * Always renders as "(N)" — matches cart-drawer.js's updateCountBadges
-   * so badge text doesn't flip-flop depending on which module last updated it.
+   * Update every [data-ecombio-cart-count] badge in the document.
+   * Renders as a plain number, matching the real markup and
+   * cart-drawer.js's updateCountBadges — no parens, so the two
+   * implementations agree on format instead of flip-flopping it.
    *
    * @param {number} count
    */
   function updateBadges(count) {
     document.querySelectorAll(COUNT_SEL).forEach(function (el) {
-      el.textContent = '(' + count + ')';
+      el.textContent = String(count);
       el.classList.toggle(HIDDEN_CLS, count === 0);
 
       /* Pop micro-animation on increase */
@@ -472,10 +484,16 @@
   /* ── Init ───────────────────────────────────────────────────────────────── */
 
   function init() {
-    cartBtn = document.getElementById(TOGGLE_ID);
+    cartBtn = document.querySelector(TRIGGER_SEL);
     if (!cartBtn) return; /* not on a page that includes the cart icon */
 
-    /* 1. Click → open drawer via event (cart-drawer.js owns the open logic) */
+    /* 1. Click → open drawer via event (cart-drawer.js owns the open logic
+          AND the actual toggle behavior via its own delegated listener on
+          this same TRIGGER_SEL — this listener only needs to exist for
+          pages/contexts where cart-drawer.js's body-level delegation
+          hasn't been set up, so it's kept for redundancy/back-compat.
+          It does not double-fire cart-drawer's own toggle since that one
+          is a direct call, not an event listener on 'cart:open'.) */
     cartBtn.addEventListener('click', function () {
       document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
     });
