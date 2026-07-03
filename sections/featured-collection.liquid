@@ -1,0 +1,43 @@
+{{ 'featured-collection.css' | asset_url | stylesheet_tag }}
+
+{%- if section.settings.collection != blank -%}
+  <div class="featured-collection">
+    <h2 class="featured-collection__heading">{{ section.settings.heading | default: section.settings.collection.title }}</h2>
+
+    <div class="featured-collection__grid">
+      {%- for product in section.settings.collection.products limit: section.settings.limit -%}
+        {%- render 'product-card', product: product -%}
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Featured Collection",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading (optional)"
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Products to show",
+      "min": 4,
+      "max": 12,
+      "default": 8
+    }
+  ],
+  "presets": [
+    { "name": "Featured Collection" }
+  ]
+}
+{% endschema %}
