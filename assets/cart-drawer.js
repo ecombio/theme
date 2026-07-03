@@ -43,7 +43,7 @@
   const REMOVE_SEL  = '[data-ecombio-remove-item]';
   const BODY_SEL    = '[data-ecombio-cart-body]';
   const FOOTER_SEL  = '[data-ecombio-cart-footer]';
-  const COUNT_SEL   = '[data-ecombio-cart-count]';    // SOURCE OF TRUTH — must match header-cart.liquid
+  const COUNT_SEL   = '[data-cart-count]';            // SOURCE OF TRUTH — must match header-cart.liquid
   const LOADING_SEL = '[data-ecombio-cart-loading]';
 
   // ── State ──────────────────────────────────────────────────────────────────
