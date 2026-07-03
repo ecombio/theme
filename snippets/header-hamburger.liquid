@@ -7,19 +7,10 @@
        the header has scrolled into sticky mode and re-expands .menu-bar,
        which auto-collapses while sticky.
     2. The tablet/mobile hamburger — opens the mobile nav drawer below.
-    3. The mobile nav drawer itself, including its dimmed backdrop and
-       an explicit close (X) button in its header row.
-
-  This snippet loads its own CSS (header-hamburger.css) and JS
-  (header-hamburger.js), so sections/main-header.liquid doesn't need to
-  know these assets exist or manually wire up <script>/<link> tags for
-  them.
-
-  Rendered once from sections/main-header.liquid, in the spot where the
-  two hamburger buttons need to sit inside the header's flex layout
-  (before the logo). The drawer's own markup can live anywhere in the
-  DOM regardless, since it's position:fixed and therefore doesn't
-  participate in ancestor flex/grid layout.
+    3. The mobile nav drawer itself, including its dimmed backdrop, an
+       explicit close (X) button, and a 3-level nested accordion menu
+       (top level -> children -> grandchildren), unrolled as explicit
+       loops rather than a recursive snippet.
 
   Params:
     mobile_menu   — link_list object; powers the mobile drawer's links
@@ -29,8 +20,6 @@
 {{ 'header-hamburger.css' | asset_url | stylesheet_tag }}
 
 {%- if enable_sticky -%}
-  <!-- Sticky Header Hamburger — desktop only (≥1024px), hidden until the
-       header goes sticky; hamburger <-> X on click; re-expands .menu-bar -->
   <button class="main-header-sticky__hamburger"
           type="button"
           aria-label="Toggle menu"
@@ -71,15 +60,73 @@
     </button>
   </div>
 
-  <ul class="main-header__mobile-nav-list">
-    {%- for link in mobile_menu.links -%}
-      <li>
-        <a class="main-header__mobile-nav-link" href="{{ link.url }}">
-          {{ link.title }}
-        </a>
+  {%- comment -%} LEVEL 1 (top-level menu items) {%- endcomment -%}
+  <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l0">
+    {%- for link_l1 in mobile_menu.links -%}
+      {%- assign id_l1 = 'mnav-' | append: forloop.index -%}
+      <li class="main-header__mobile-nav-item">
+        {%- if link_l1.links.size > 0 -%}
+          <button type="button" class="main-header__mobile-nav-toggle"
+                  id="{{ id_l1 }}-toggle" aria-expanded="false"
+                  aria-controls="{{ id_l1 }}-sub">
+            <span class="main-header__mobile-nav-toggle-label">{{ link_l1.title }}</span>
+            <svg class="main-header__mobile-nav-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="9 6 15 12 9 18"></polyline>
+            </svg>
+          </button>
+
+          {%- comment -%} LEVEL 2 (children of link_l1) {%- endcomment -%}
+          <div class="main-header__mobile-nav-sub" id="{{ id_l1 }}-sub" hidden>
+            <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l1">
+              {%- for link_l2 in link_l1.links -%}
+                {%- assign id_l2 = id_l1 | append: '-' | append: forloop.index -%}
+                <li class="main-header__mobile-nav-item">
+                  {%- if link_l2.links.size > 0 -%}
+                    <button type="button" class="main-header__mobile-nav-toggle"
+                            id="{{ id_l2 }}-toggle" aria-expanded="false"
+                            aria-controls="{{ id_l2 }}-sub">
+                      <span class="main-header__mobile-nav-toggle-label">{{ link_l2.title }}</span>
+                      <svg class="main-header__mobile-nav-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="9 6 15 12 9 18"></polyline>
+                      </svg>
+                    </button>
+
+                    {%- comment -%} LEVEL 3 (children of link_l2 — leaf items) {%- endcomment -%}
+                    <div class="main-header__mobile-nav-sub" id="{{ id_l2 }}-sub" hidden>
+                      <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l2">
+                        {%- for link_l3 in link_l2.links -%}
+                          <li class="main-header__mobile-nav-item">
+                            <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l2"
+                               href="{{ link_l3.url }}"
+                               {%- if link_l3.active %} aria-current="page"{% endif %}>
+                              {{ link_l3.title }}
+                            </a>
+                          </li>
+                        {%- endfor -%}
+                      </ul>
+                    </div>
+                  {%- else -%}
+                    <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l1"
+                       href="{{ link_l2.url }}"
+                       {%- if link_l2.active %} aria-current="page"{% endif %}>
+                      {{ link_l2.title }}
+                    </a>
+                  {%- endif -%}
+                </li>
+              {%- endfor -%}
+            </ul>
+          </div>
+        {%- else -%}
+          <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0"
+             href="{{ link_l1.url }}"
+             {%- if link_l1.active %} aria-current="page"{% endif %}>
+            {{ link_l1.title }}
+          </a>
+        {%- endif -%}
       </li>
     {%- endfor -%}
   </ul>
+
 </nav>
 
 <script src="{{ 'header-hamburger.js' | asset_url }}" defer></script>
