@@ -235,9 +235,8 @@
   // an item was likely just added, so the drawer's cached HTML is stale.
   // Refresh it before/while showing the drawer.
   document.addEventListener('cart:open', async (e) => {
-    openDrawer();
-
     await refreshDrawerHTML();
+    openDrawer();
 
     if (e.detail?.itemCount != null) {
       updateCountBadges(e.detail.itemCount);
