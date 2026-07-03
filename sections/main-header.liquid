@@ -19,9 +19,10 @@
   assign mobile_menu = section.settings.mobile_menu
   assign enable_sticky = section.settings.enable_sticky_header
   assign mobile_drawer_style = section.settings.mobile_drawer_style | default: 'compact'
+  assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
 -%}
 
-<header class="main-header{% if enable_sticky %} main-header--sticky-enabled{% endif %}"
+<header class="main-header{% if enable_sticky %} main-header--sticky-enabled{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}"
         id="main-header"
         role="banner">
 
@@ -67,7 +68,7 @@
   when sticky is enabled, also collapses on scroll and is toggled back open via the sticky hamburger
   (in header-hamburger.liquid) above. Markup, styles, and its block-type CSS/JS all live in
   snippets/header-menu.liquid.{%- endcomment -%}
-  {%- render 'header-menu', blocks: section.blocks -%}
+  {%- render 'header-menu', blocks: section.blocks, show_on_mobile: show_menu_bar_mobile -%}
 
 </header>
 
@@ -79,7 +80,7 @@
   "tag": "div",
   "class": "main-header-section",
   "settings": [
-    { "type": "header", "content": "Navigation" },
+    { "type": "header", "content": "Mobile (< 640px)" },
     {
       "type": "link_list",
       "id": "mobile_menu",
@@ -98,7 +99,30 @@
       ],
       "default": "compact"
     },
-    { "type": "header", "content": "Search" },
+    {
+      "type": "checkbox",
+      "id": "show_menu_bar_mobile",
+      "label": "Mobile Mode: Show Menu Bar",
+      "info": "Shows the desktop navigation bar (blocks configured below) on mobile as well, in addition to the hamburger drawer. Off by default.",
+      "default": false
+    },
+
+    { "type": "header", "content": "Tablet (640px – 1023px)" },
+    {
+      "type": "paragraph",
+      "content": "Tablet currently inherits Mobile's drawer and menu-bar settings above — there's no separate tablet override in the code yet. Icon labels are shown automatically at this width via CSS, with no toggle."
+    },
+
+    { "type": "header", "content": "Desktop (≥ 1024px)" },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky_header",
+      "label": "Enable sticky header",
+      "default": true,
+      "info": "Header stays visible while scrolling. Desktop-only — the sticky hamburger/X toggle only appears at 1024px and up."
+    },
+
+    { "type": "header", "content": "Search (all breakpoints)" },
     {
       "type": "checkbox",
       "id": "enable_predictive_search",
@@ -106,15 +130,8 @@
       "info": "Shows product, collection and query suggestions as the customer types.",
       "default": true
     },
-    { "type": "header", "content": "Sticky Header" },
-    {
-      "type": "checkbox",
-      "id": "enable_sticky_header",
-      "label": "Enable sticky header",
-      "default": true,
-      "info": "Header stays visible while scrolling. A hamburger/X button appears next to the logo to toggle the nav bar."
-    },
-    { "type": "header", "content": "Icons" },
+
+    { "type": "header", "content": "Icons (all breakpoints)" },
     {
       "type": "checkbox",
       "id": "show_icon_store",
