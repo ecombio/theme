@@ -26,9 +26,20 @@
  * resets its own state. Neither file needs to import or know the
  * other's internals beyond that one event name.
  *
- * The drawer is full-width/full-screen with no dimmed backdrop, so
- * there's nothing "outside" it to click while open — closing happens
- * only via the X button or Escape (no outside-click listener needed).
+ * BACKDROP-CLICK NOTE (compact variant only): the dimmed overlay behind
+ * the drawer is a ::before pseudo-element of .main-header__mobile-nav
+ * (see header-hamburger.css), not a separate DOM node. Pseudo-elements
+ * can't be targeted independently, so a click on the backdrop reports
+ * e.target as .main-header__mobile-nav itself — the exact same node a
+ * click on the drawer's real content also reports. A `.contains()`
+ * check can't tell these apart (mobileNav.contains(mobileNav) is
+ * always true), so "clicking outside" would silently never close the
+ * drawer. Instead, isBackdropClick() compares the click's coordinates
+ * against the drawer's own rendered width — anything past the panel is
+ * backdrop, regardless of which node reported it. The full-width
+ * variant has no backdrop and covers the whole screen, so this check
+ * (and the outside-click listener that uses it) only runs when
+ * .main-header__mobile-nav--compact is the active modifier class.
  */
 
 (function () {
@@ -169,12 +180,40 @@
     }
   }
 
+  var isCompact = mobileNav.classList.contains('main-header__mobile-nav--compact');
+
+  /* A click "on the backdrop" always lands on .main-header__mobile-nav
+     itself (see file header comment) — so instead of asking which node
+     was clicked, ask WHERE it was clicked. Anything past the drawer's
+     own rendered width is backdrop, not content. Only meaningful for
+     the compact variant, which is the only one with a backdrop. */
+  function isBackdropClick(e) {
+    var rect = mobileNav.getBoundingClientRect();
+    return e.clientX > rect.right || e.clientX < rect.left || e.clientY > rect.bottom || e.clientY < rect.top;
+  }
+
   navToggle.addEventListener('click', function () {
     navOpen ? closeNav() : openNav();
   });
 
   if (navClose) {
     navClose.addEventListener('click', closeNav);
+  }
+
+  /* Outside-click-to-close only applies to the compact variant — the
+     full-width variant covers the entire screen, so there's nothing
+     "outside" it to click. */
+  if (isCompact) {
+    document.addEventListener('click', function (e) {
+      if (!navOpen) return;
+
+      /* Clicks inside the drawer's real content, or on the toggle button
+         that opened it, are never "outside" clicks. */
+      if (navToggle.contains(e.target)) return;
+      if (mobileNav.contains(e.target) && !isBackdropClick(e)) return;
+
+      closeNav();
+    });
   }
 
   document.addEventListener('keydown', function (e) {

@@ -64,17 +64,17 @@
 
 /* ─────────────────────────────────────────────
    MOBILE NAV DRAWER
+   Two style variants, chosen via the mobile_drawer_style theme
+   setting and applied as a modifier class from header-hamburger.liquid:
+     --compact    280px panel, dimmed backdrop over the rest of the page
+     --full-width fills the screen, no backdrop
+   Shared rules (both variants) live first; variant-specific rules
+   follow below.
    ───────────────────────────────────────────── */
 
-/* Full-width panel — covers the entire viewport, so there's no
-   dimmed backdrop to manage and nothing "outside" the drawer to
-   click while it's open. Still slides via `left` (not `transform`)
-   for consistency with the rest of this file's animation approach. */
 .main-header__mobile-nav {
   position: fixed;
   top: 0;
-  left: -100vw;
-  width: 100vw;
   height: 100%;
   background: #fff;
   z-index: 300;
@@ -86,6 +86,48 @@
 .main-header__mobile-nav.is-open {
   left: 0;
   visibility: visible;
+}
+
+/* ── Compact variant: 280px panel, dimmed backdrop ──
+   Slides via `left`, NOT `transform`. A `transform` on this element
+   would create a new containing block for its position:fixed ::before
+   backdrop below, trapping that backdrop inside this drawer's own
+   280px-wide box (collapsing it to zero width) instead of letting it
+   cover the viewport. `left` avoids that entirely. */
+.main-header__mobile-nav--compact {
+  left: -280px;
+  width: 280px;
+  border-right: 1px solid #e5e5e5;
+  box-shadow: 4px 0 24px rgba(0,0,0,.1);
+}
+
+/* Dimmed backdrop overlay — position:fixed here correctly resolves
+   against the viewport since the parent above doesn't use `transform`.
+   Covers everything to the right of the open drawer.
+   NOTE: because this is a ::before (not a real element), clicks on it
+   report e.target as .main-header__mobile-nav itself, NOT a distinct
+   node — header-hamburger.js's outside-click check accounts for this
+   by testing click coordinates rather than relying on .contains(), and
+   only runs at all when the compact variant is active. */
+.main-header__mobile-nav--compact::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  left: 280px;
+  background: rgba(0,0,0,.4);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+.main-header__mobile-nav--compact.is-open::before {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Full-width variant: fills the screen, no backdrop ── */
+.main-header__mobile-nav--full-width {
+  left: -100vw;
+  width: 100vw;
 }
 
 /* ── Drawer header row — holds the close (X) button, left-aligned ── */
