@@ -15,7 +15,13 @@
   Params:
     mobile_menu   — link_list object; powers the mobile drawer's links
     enable_sticky — bool; whether to render the sticky hamburger at all
+    drawer_style  — 'compact' (280px, dimmed backdrop) or 'full-width'
+                    (fills the screen, no backdrop). Default: 'compact'.
 {% endcomment %}
+
+{%- liquid
+  assign drawer_style = drawer_style | default: 'compact'
+-%}
 
 {{ 'header-hamburger.css' | asset_url | stylesheet_tag }}
 
@@ -42,7 +48,7 @@
   <span class="main-header__hamburger-line"></span>
 </button>
 
-<nav class="main-header__mobile-nav"
+<nav class="main-header__mobile-nav main-header__mobile-nav--{{ drawer_style }}"
      id="main-header-mobile-nav"
      aria-label="Mobile navigation"
      aria-hidden="true"
