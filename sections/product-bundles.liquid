@@ -11,19 +11,32 @@
   Metafield contract (per bundle product):
     product.metafields.custom.product_bundles
     Type: "List of Product" (list.product_reference)
-    -> resolves in Liquid to an array of full Product objects.
+    -> resolves via `.value` to an array of full Product objects.
     Each product in the list contributes 1x its
     `selected_or_first_available_variant` to the bundle.
-    (No native per-item quantity on this metafield type -- if you
-    need quantity > 1 per item, that has to be modeled as duplicate
-    entries in the list or a separate quantity metafield; see note
-    near the item loop below.)
+    (No native per-item quantity on this metafield type -- the
+    admin UI for this field only supports add / remove / reorder,
+    not quantity. If a merchant needs qty > 1 of one item, that
+    has to be modeled as a duplicate entry in the list, or a
+    parallel quantity metafield mapped by product id. There's no
+    UI support for that today, so this section always emits
+    quantity: 1 per list entry.)
 
   Markup is intentionally rendered as a skeleton on first paint.
   product-bundles.js re-fetches live variant data (price/availability)
   for each item via /products/{handle}.js right before add-to-cart,
   so stock/price can't go stale between page load and click --
   matching the async-populate pattern used by ecombio-cart-recs.
+
+  IMPORTANT: the per-item JSON blob is embedded as an HTML attribute
+  (data-bundle-items). Liquid's `json` filter only guarantees valid
+  JSON -- it does NOT escape characters like `"` for safe embedding
+  inside an HTML attribute. Any apostrophe/quote in a product title
+  ("Men's Shirt") will otherwise break the attribute and truncate the
+  JSON. We wrap the whole capture with Liquid's `escape` filter and
+  use a double-quoted attribute; the browser un-escapes HTML entities
+  automatically when JS reads element.dataset, so no extra JS-side
+  decoding is needed.
 {%- endcomment -%}
 
 {%- liquid
@@ -71,6 +84,7 @@
             assign bundle_item_products = blank
             assign items_json = ''
             assign item_count = 0
+            assign emitted_any = false
 
             if bundle_product != blank
               assign bundle_item_products = bundle_product.metafields.custom.product_bundles.value
@@ -88,7 +102,7 @@
                     endunless
                     assign item_count = item_count | plus: 1
                   -%}
-                  {%- unless forloop.first -%},{%- endunless -%}
+                  {%- if emitted_any -%},{%- endif -%}
                   {
                     "product_id": {{ item_product.id | json }},
                     "handle": {{ item_product.handle | json }},
@@ -101,6 +115,7 @@
                     "available": {{ item_variant.available | json }},
                     "image": {{ item_product.featured_image | image_url: width: 200 | json }}
                   }
+                  {%- assign emitted_any = true -%}
                 {%- endfor -%}
               {%- endif -%}
             ]
@@ -115,7 +130,7 @@
             data-bundle-handle="{{ bundle_product.handle | default: '' }}"
             data-bundle-title="{{ block.settings.title_override | default: bundle_product.title | escape }}"
             data-bundle-item-count="{{ item_count }}"
-            data-bundle-items='{{ items_json | strip_newlines | strip }}'
+            data-bundle-items="{{ items_json | strip_newlines | strip | escape }}"
           >
 
             {%- comment -%} ---- Skeleton state (visible until JS hydrates) ---- {%- endcomment -%}
