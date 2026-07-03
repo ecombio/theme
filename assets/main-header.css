@@ -366,6 +366,15 @@ body.nav-is-open { overflow: hidden; }
    normal document flow permanently once applied, so main-header-sticky.js
    inserts a spacer element to hold its place and prevent the page
    jumping when it switches over.
+
+   DESKTOP-ONLY NOTE (fix applied): the sticky hamburger and its menu-bar
+   reveal are intentionally desktop-only (min-width: 1024px). Mobile and
+   tablet already have their own drawer hamburger
+   (.main-header__hamburger, above) which opens .main-header__mobile-nav.
+   Without this gate, both hamburgers rendered simultaneously on
+   mobile/tablet once the page scrolled past the sticky threshold, and a
+   higher-specificity selector on the desktop .menu-bar could force it to
+   display even under the mobile "display: none" media query.
    ============================================================================= */
 
 /* Base header — normal, in-flow, until JS marks it .is-sticky */
@@ -402,17 +411,26 @@ body.nav-is-open { overflow: hidden; }
   display: none;
 }
 
-/* ... and reappears when the sticky hamburger toggles it open */
-.main-header--sticky-enabled.is-sticky .menu-bar.is-visible {
-  display: flex;
+/* ... and reappears when the sticky hamburger toggles it open —
+   DESKTOP ONLY. Gated so this can never override the mobile/tablet
+   "display: none" rule for .menu-bar defined under
+   @media (max-width: 1023px) further down this file. */
+@media (min-width: 1024px) {
+  .main-header--sticky-enabled.is-sticky .menu-bar.is-visible {
+    display: flex;
+  }
 }
 
 /* -----------------------------------------------------------------------
-   Sticky hamburger — sits left of the logo, hamburger <-> X on toggle
+   Sticky hamburger — sits left of the logo, hamburger <-> X on toggle.
+   DESKTOP ONLY: this button re-expands the desktop .menu-bar after it
+   auto-collapses on sticky scroll. Mobile/tablet use the separate
+   .main-header__hamburger drawer toggle instead, so this element must
+   never be visible below 1024px.
    ----------------------------------------------------------------------- */
 
 .main-header-sticky__hamburger {
-  /* Hidden by default: NOT sticky yet */
+  /* Hidden by default: NOT sticky yet (and hidden below 1024px, always) */
   display: none;
   flex-direction: column;
   justify-content: center;
@@ -428,9 +446,14 @@ body.nav-is-open { overflow: hidden; }
   margin-right: 8px;
 }
 
-/* Reveal ONLY once the header has actually gone sticky */
-.main-header--sticky-enabled.is-sticky .main-header-sticky__hamburger {
-  display: flex;
+/* Reveal ONLY once the header has actually gone sticky, AND only on
+   desktop (≥1024px) — this is the fix. Previously this rule had no
+   width gate, so it displayed on any screen size once .is-sticky was
+   added, duplicating the mobile drawer hamburger. */
+@media (min-width: 1024px) {
+  .main-header--sticky-enabled.is-sticky .main-header-sticky__hamburger {
+    display: flex;
+  }
 }
 
 .main-header-sticky__hamburger span {
