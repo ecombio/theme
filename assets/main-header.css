@@ -347,6 +347,113 @@ body.nav-is-open { overflow: hidden; }
 }
 
 /* =============================================================================
+   Main Header — Sticky Behavior
+   File: assets/main-header-sticky.css
+   Merged in here from its own file.
+
+   Uses position:FIXED, not position:sticky. Shopify wraps every section
+   rendered via {% sections 'header-group' %} in its own auto-height
+   wrapper div (sometimes nested two levels deep). position:sticky's
+   containing block is whichever wrapper is its immediate parent — and
+   that wrapper is only ever as tall as its own content, so sticky runs
+   out of room and "lets go" as soon as you scroll past it, no matter how
+   far up the tree you apply it.
+
+   position:fixed sidesteps this completely: it pins relative to the
+   viewport itself, ignoring ancestor wrapper heights (as long as no
+   ancestor sets transform/filter/perspective/contain — confirmed clean
+   on this theme). The tradeoff is that a fixed element is pulled out of
+   normal document flow permanently once applied, so main-header-sticky.js
+   inserts a spacer element to hold its place and prevent the page
+   jumping when it switches over.
+   ============================================================================= */
+
+/* Base header — normal, in-flow, until JS marks it .is-sticky */
+.main-header--sticky-enabled {
+  background: #fff;
+  transition: box-shadow 0.2s ease;
+}
+
+/* Pinned to the viewport once scrolled past the threshold */
+.main-header--sticky-enabled.is-sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+}
+
+/* Shadow once the page has scrolled past the trigger point */
+.main-header--sticky-enabled.is-scrolled {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+}
+
+/* Spacer — height is set by JS to match the header's own height right
+   before it goes fixed, so the page content doesn't jump upward. */
+.main-header-sticky__spacer {
+  display: none;
+}
+.main-header-sticky__spacer.is-active {
+  display: block;
+}
+
+/* Desktop nav bar collapses by default while sticky ... */
+.main-header--sticky-enabled.is-sticky .menu-bar {
+  display: none;
+}
+
+/* ... and reappears when the sticky hamburger toggles it open */
+.main-header--sticky-enabled.is-sticky .menu-bar.is-visible {
+  display: flex;
+}
+
+/* -----------------------------------------------------------------------
+   Sticky hamburger — sits left of the logo, hamburger <-> X on toggle
+   ----------------------------------------------------------------------- */
+
+.main-header-sticky__hamburger {
+  /* Hidden by default: NOT sticky yet */
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+/* Reveal ONLY once the header has actually gone sticky */
+.main-header--sticky-enabled.is-sticky .main-header-sticky__hamburger {
+  display: flex;
+}
+
+.main-header-sticky__hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Hamburger -> X */
+.main-header-sticky__hamburger.is-active span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.main-header-sticky__hamburger.is-active span:nth-child(2) {
+  opacity: 0;
+}
+.main-header-sticky__hamburger.is-active span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* =============================================================================
    Header Menu Styles  |  assets/header-menu.css
    Covers: desktop menu bar only
 ============================================================================= */
@@ -1147,6 +1254,11 @@ body.nav-is-open { overflow: hidden; }
   .ecombio-mobile-nav__panel,
   .ecombio-mobile-nav__chevron,
   .ecombio-header__hamburger span {
+    transition: none !important;
+  }
+
+  .main-header--sticky-enabled,
+  .main-header-sticky__hamburger span {
     transition: none !important;
   }
 }
