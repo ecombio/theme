@@ -1,0 +1,71 @@
+{% comment %}
+  Header Hamburger + Mobile Nav Drawer
+  File: snippets/header-hamburger.liquid
+
+  Encapsulates every hamburger-related piece of the header in one place:
+    1. The sticky-header hamburger (desktop only, ≥1024px) — appears once
+       the header has scrolled into sticky mode and re-expands .menu-bar,
+       which auto-collapses while sticky.
+    2. The tablet/mobile hamburger — opens the mobile nav drawer below.
+    3. The mobile nav drawer itself, including its dimmed backdrop.
+
+  This snippet loads its own CSS (header-hamburger.css) and JS
+  (header-hamburger.js), so sections/main-header.liquid doesn't need to
+  know these assets exist or manually wire up <script>/<link> tags for
+  them.
+
+  Rendered once from sections/main-header.liquid, in the spot where the
+  two hamburger buttons need to sit inside the header's flex layout
+  (before the logo). The drawer's own markup can live anywhere in the
+  DOM regardless, since it's position:fixed and therefore doesn't
+  participate in ancestor flex/grid layout.
+
+  Params:
+    mobile_menu   — link_list object; powers the mobile drawer's links
+    enable_sticky — bool; whether to render the sticky hamburger at all
+{% endcomment %}
+
+{{ 'header-hamburger.css' | asset_url | stylesheet_tag }}
+
+{%- if enable_sticky -%}
+  <!-- Sticky Header Hamburger — desktop only (≥1024px), hidden until the
+       header goes sticky; hamburger <-> X on click; re-expands .menu-bar -->
+  <button class="main-header-sticky__hamburger"
+          type="button"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+          aria-controls="main-header-menu-bar">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+{%- endif -%}
+
+<button class="main-header__hamburger"
+        id="main-header-nav-toggle"
+        type="button"
+        aria-label="Open navigation"
+        aria-expanded="false"
+        aria-controls="main-header-mobile-nav">
+  <span class="main-header__hamburger-line"></span>
+  <span class="main-header__hamburger-line"></span>
+  <span class="main-header__hamburger-line"></span>
+</button>
+
+<nav class="main-header__mobile-nav"
+     id="main-header-mobile-nav"
+     aria-label="Mobile navigation"
+     aria-hidden="true"
+     hidden>
+  <ul class="main-header__mobile-nav-list">
+    {%- for link in mobile_menu.links -%}
+      <li>
+        <a class="main-header__mobile-nav-link" href="{{ link.url }}">
+          {{ link.title }}
+        </a>
+      </li>
+    {%- endfor -%}
+  </ul>
+</nav>
+
+<script src="{{ 'header-hamburger.js' | asset_url }}" defer></script>
