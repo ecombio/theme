@@ -1,7 +1,6 @@
 /**
- * Header Cart
- * File: assets/header-cart.js
- * Loaded by: sections/main-header.liquid
+ * header-cart.js
+ * Cart icon behaviour for sections/main-header.liquid.
  *
  * Responsibilities:
  *   1. Click → dispatch 'cart:open' (cart-drawer.js opens the drawer)
@@ -24,9 +23,12 @@
  *   - COUNT_SEL was '[data-cart-count]'; the real badge markup uses
  *     '[data-ecombio-cart-count]'. Even if init() hadn't bailed, the
  *     badge would never have been found.
- *   - Badge format was hardcoded to "(N)"; the real badge renders a plain
- *     number ("9", not "(9)"). Changed to match cart-drawer.js's format
- *     so the two don't fight over how the same element should look.
+ *   - Badge format was hardcoded to "(N)"; header-cart.liquid renders
+ *     {{ cart.item_count }} as a bare number, and header-cart.css's
+ *     --hidden modifier only controls opacity, not text. Changed to a
+ *     plain number so the JS doesn't fight the server-rendered format.
+ *   - HIDDEN_CLS was 'main-header__cart-badge--hidden'; the real class in
+ *     header-cart.liquid/.css is 'ecombio-header__cart-badge--hidden'.
  *
  * No global variables. Wraps everything in an IIFE to stay side-effect-free.
  */
@@ -37,8 +39,8 @@
   /* ── Selectors ──────────────────────────────────────────────────────────── */
 
   const TRIGGER_SEL = '[data-ecombio-cart-trigger]'; // SOURCE OF TRUTH — must match header-cart.liquid
-  const COUNT_SEL   = '[data-ecombio-cart-count]';   // SOURCE OF TRUTH — must match header-cart.liquid + cart-drawer.js
-  const HIDDEN_CLS  = 'main-header__cart-badge--hidden';
+  const COUNT_SEL   = '[data-ecombio-cart-count]';   // SOURCE OF TRUTH — must match header-cart.liquid
+  const HIDDEN_CLS  = 'ecombio-header__cart-badge--hidden'; // SOURCE OF TRUTH — must match header-cart.css
   const POP_CLS     = 'main-header__cart-badge--pop';
 
   /* ── Element refs (resolved after DOMContentLoaded) ─────────────────────── */
@@ -49,9 +51,8 @@
 
   /**
    * Update every [data-ecombio-cart-count] badge in the document.
-   * Renders as a plain number, matching the real markup and
-   * cart-drawer.js's updateCountBadges — no parens, so the two
-   * implementations agree on format instead of flip-flopping it.
+   * Renders as a plain number, matching header-cart.liquid's
+   * {{ cart.item_count }} output — no parens.
    *
    * @param {number} count
    */
@@ -92,13 +93,7 @@
     cartBtn = document.querySelector(TRIGGER_SEL);
     if (!cartBtn) return; /* not on a page that includes the cart icon */
 
-    /* 1. Click → open drawer via event (cart-drawer.js owns the open logic
-          AND the actual toggle behavior via its own delegated listener on
-          this same TRIGGER_SEL — this listener only needs to exist for
-          pages/contexts where cart-drawer.js's body-level delegation
-          hasn't been set up, so it's kept for redundancy/back-compat.
-          It does not double-fire cart-drawer's own toggle since that one
-          is a direct call, not an event listener on 'cart:open'.) */
+    /* 1. Click → open drawer via event (cart-drawer.js owns the open logic) */
     cartBtn.addEventListener('click', function () {
       document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
     });
@@ -136,8 +131,8 @@
     });
   }
 
-  /* Run after DOM is ready. Previously loaded via a `defer` script tag, so
-     DOMContentLoaded may have already fired in most browsers — guard either way. */
+  /* Run after DOM is ready. The script tag in main-header.liquid uses `defer`,
+     so DOMContentLoaded has already fired in most browsers — guard either way. */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
