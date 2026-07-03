@@ -1,9 +1,27 @@
-{%- comment -%} Usage: {% render 'product-bundle', bundle_product: product %} {%- endcomment -%}
-
 {{ 'product-bundle.css' | asset_url | stylesheet_tag }}
 
 <div class="product-bundle__grid">
-  {%- for item in bundle_product.metafields.custom.product_bundles.value -%}
+  {%- for item in section.settings.product.metafields.custom.product_bundles.value -%}
     {%- render 'product-card', product: item -%}
   {%- endfor -%}
 </div>
+
+{% schema %}
+{
+  "name": "Product bundle",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Bundle product",
+      "info": "Its custom.product_bundles (List of Product) metafield defines the contents."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product bundle"
+    }
+  ]
+}
+{% endschema %}
