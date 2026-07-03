@@ -196,7 +196,16 @@
   });
 
   document.addEventListener('click', function (e) {
-    if (navOpen && !mobileNav.contains(e.target) && e.target !== navToggle) {
+    /* Use navToggle.contains(e.target) rather than a strict equality
+       check — the hamburger button has three <span> children
+       (.main-header__hamburger-line) that are frequently the actual
+       click target. A strict !== check treated a click on those spans
+       as an "outside" click, so openNav() (from the toggle handler
+       above) and closeNav() (from this handler) fired in the same
+       tick: the drawer opened and immediately closed again. .contains()
+       correctly matches clicks anywhere inside the button, including
+       its child spans. */
+    if (navOpen && !mobileNav.contains(e.target) && !navToggle.contains(e.target)) {
       closeNav();
     }
   });
