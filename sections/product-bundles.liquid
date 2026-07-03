@@ -1,212 +1,73 @@
 {{ 'product-bundles.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'product-bundles.js' | asset_url }}" defer="defer"></script>
 
 {%- comment -%}
   sections/product-bundles.liquid
   ------------------------------------------------------------
-  Renders one or more "bundles" (a parent product whose
-  metafield `custom.product_bundles` lists the products that
-  make up the bundle) as a card grid or horizontal list.
-
-  Metafield contract (per bundle product):
-    product.metafields.custom.product_bundles
-    Type: "List of Product" (list.product_reference)
-    -> resolves via `.value` to an array of full Product objects.
-    Each product in the list contributes 1x its
-    `selected_or_first_available_variant` to the bundle.
-    (No native per-item quantity on this metafield type -- the
-    admin UI for this field only supports add / remove / reorder,
-    not quantity. If a merchant needs qty > 1 of one item, that
-    has to be modeled as a duplicate entry in the list, or a
-    parallel quantity metafield mapped by product id. There's no
-    UI support for that today, so this section always emits
-    quantity: 1 per list entry.)
-
-  Markup is intentionally rendered as a skeleton on first paint.
-  product-bundles.js re-fetches live variant data (price/availability)
-  for each item via /products/{handle}.js right before add-to-cart,
-  so stock/price can't go stale between page load and click --
-  matching the async-populate pattern used by ecombio-cart-recs.
-
-  IMPORTANT: the per-item JSON blob is embedded as an HTML attribute
-  (data-bundle-items). Liquid's `json` filter only guarantees valid
-  JSON -- it does NOT escape characters like `"` for safe embedding
-  inside an HTML attribute. Any apostrophe/quote in a product title
-  ("Men's Shirt") will otherwise break the attribute and truncate the
-  JSON. We wrap the whole capture with Liquid's `escape` filter and
-  use a double-quoted attribute; the browser un-escapes HTML entities
-  automatically when JS reads element.dataset, so no extra JS-side
-  decoding is needed.
+  DISPLAY ONLY. Renders bundle cards from a product's
+  `custom.product_bundles` metafield (List of Product).
+  No JS, no cart/add-to-cart, no live re-fetching -- everything
+  is computed once, server-side, at render time. Each card links
+  to the bundle product's own page, where the merchant's normal
+  product form / add-to-cart handles the purchase.
 {%- endcomment -%}
 
-{%- liquid
-  assign layout = section.settings.layout
-  assign columns_desktop = section.settings.columns_desktop
-  assign button_label = section.settings.button_label | default: 'Add bundle to cart'
-  assign show_savings = section.settings.show_savings_badge
--%}
-
-<section
-  id="ProductBundles-{{ section.id }}"
-  class="ecombio-bundles ecombio-bundles--{{ layout }} color-{{ section.settings.color_scheme }}"
-  data-section-id="{{ section.id }}"
-  data-section-type="product-bundles"
-  style="--ecombio-bundles-columns-desktop: {{ columns_desktop }};"
->
+<section class="ecombio-bundles color-{{ section.settings.color_scheme }}">
   <div class="ecombio-bundles__container page-width">
 
     {%- if section.settings.heading != blank -%}
-      <div class="ecombio-bundles__header">
-        <h2 class="ecombio-bundles__heading {{ section.settings.heading_size }}">
-          {{ section.settings.heading }}
-        </h2>
-        {%- if section.settings.subheading != blank -%}
-          <p class="ecombio-bundles__subheading">{{ section.settings.subheading }}</p>
-        {%- endif -%}
-      </div>
+      <h2 class="ecombio-bundles__heading">{{ section.settings.heading }}</h2>
     {%- endif -%}
 
     {%- if section.blocks.size == 0 -%}
-      <div class="ecombio-bundles__empty-state">
-        {%- if section.settings.heading == blank -%}
-          <p>Add bundle blocks to this section, each pointing at a bundle product.</p>
-        {%- endif -%}
-      </div>
+      <p class="ecombio-bundles__empty-state">Add bundle blocks, each pointing at a bundle product.</p>
     {%- else -%}
-      <div
-        class="ecombio-bundles__track"
-        role="list"
-        data-ecombio-bundles-track
-      >
+      <div class="ecombio-bundles__grid" style="--ecombio-bundles-columns: {{ section.settings.columns_desktop }};">
         {%- for block in section.blocks -%}
           {%- liquid
             assign bundle_product = block.settings.product
-            assign bundle_item_products = blank
-            assign items_json = ''
-            assign item_count = 0
-            assign emitted_any = false
-
-            if bundle_product != blank
-              assign bundle_item_products = bundle_product.metafields.custom.product_bundles.value
+            if bundle_product == blank
+              continue
             endif
+            assign bundle_items = bundle_product.metafields.custom.product_bundles.value
+            assign total = 0
           -%}
 
-          {%- capture items_json -%}
-            [
-              {%- if bundle_item_products != blank -%}
-                {%- for item_product in bundle_item_products -%}
-                  {%- liquid
-                    assign item_variant = item_product.selected_or_first_available_variant
-                    unless item_variant
-                      continue
-                    endunless
-                    assign item_count = item_count | plus: 1
-                  -%}
-                  {%- if emitted_any -%},{%- endif -%}
-                  {
-                    "product_id": {{ item_product.id | json }},
-                    "handle": {{ item_product.handle | json }},
-                    "title": {{ item_product.title | json }},
-                    "variant_id": {{ item_variant.id | json }},
-                    "variant_title": {{ item_variant.title | json }},
-                    "quantity": 1,
-                    "price": {{ item_variant.price | json }},
-                    "compare_at_price": {{ item_variant.compare_at_price | json }},
-                    "available": {{ item_variant.available | json }},
-                    "image": {{ item_product.featured_image | image_url: width: 200 | json }}
-                  }
-                  {%- assign emitted_any = true -%}
-                {%- endfor -%}
-              {%- endif -%}
-            ]
-          {%- endcapture -%}
-
-          <div
-            class="ecombio-bundle-card is-loading"
-            role="listitem"
-            {{ block.shopify_attributes }}
-            data-ecombio-bundle-card
-            data-bundle-id="{{ bundle_product.id | default: 'none' }}"
-            data-bundle-handle="{{ bundle_product.handle | default: '' }}"
-            data-bundle-title="{{ block.settings.title_override | default: bundle_product.title | escape }}"
-            data-bundle-item-count="{{ item_count }}"
-            data-bundle-items="{{ items_json | strip_newlines | strip | escape }}"
-          >
-
-            {%- comment -%} ---- Skeleton state (visible until JS hydrates) ---- {%- endcomment -%}
-            <div class="ecombio-bundle-card__skeleton" data-ecombio-skeleton aria-hidden="true">
-              <div class="ecombio-skeleton ecombio-skeleton--media"></div>
-              <div class="ecombio-bundle-card__skeleton-body">
-                <div class="ecombio-skeleton ecombio-skeleton--line ecombio-skeleton--title"></div>
-                <div class="ecombio-skeleton ecombio-skeleton--line ecombio-skeleton--sub"></div>
-                <div class="ecombio-skeleton ecombio-skeleton--line ecombio-skeleton--price"></div>
-                <div class="ecombio-skeleton ecombio-skeleton--button"></div>
-              </div>
-            </div>
-
-            {%- comment -%} ---- Real content (hidden until hydrated, JS toggles) ---- {%- endcomment -%}
-            <div class="ecombio-bundle-card__content" data-ecombio-content hidden>
-
-              <div class="ecombio-bundle-card__media">
-                {%- if block.settings.image != blank -%}
-                  <img
-                    class="ecombio-bundle-card__image"
-                    src="{{ block.settings.image | image_url: width: 600 }}"
-                    alt="{{ block.settings.image.alt | default: bundle_product.title | escape }}"
-                    loading="lazy"
-                    width="{{ block.settings.image.width }}"
-                    height="{{ block.settings.image.height }}"
-                  >
-                {%- elsif bundle_product.featured_image != blank -%}
-                  <img
-                    class="ecombio-bundle-card__image"
-                    src="{{ bundle_product.featured_image | image_url: width: 600 }}"
-                    alt="{{ bundle_product.featured_image.alt | default: bundle_product.title | escape }}"
-                    loading="lazy"
-                    width="{{ bundle_product.featured_image.width }}"
-                    height="{{ bundle_product.featured_image.height }}"
-                  >
-                {%- else -%}
-                  <div class="ecombio-bundle-card__image ecombio-bundle-card__image--placeholder">
-                    {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
-                  </div>
-                {%- endif -%}
-
-                {%- if show_savings -%}
-                  <span class="ecombio-bundle-card__badge" data-ecombio-savings-badge hidden></span>
-                {%- endif -%}
-              </div>
-
-              <div class="ecombio-bundle-card__body">
-                <h3 class="ecombio-bundle-card__title">
-                  {{ block.settings.title_override | default: bundle_product.title }}
-                </h3>
-
-                {%- if block.settings.description != blank -%}
-                  <div class="ecombio-bundle-card__description">{{ block.settings.description }}</div>
-                {%- endif -%}
-
-                <ul class="ecombio-bundle-card__items-list" data-ecombio-items-list></ul>
-
-                <div class="ecombio-bundle-card__price-row">
-                  <span class="ecombio-bundle-card__price" data-ecombio-bundle-price></span>
-                  <span class="ecombio-bundle-card__compare-price" data-ecombio-bundle-compare-price hidden></span>
-                </div>
-
-                <button
-                  type="button"
-                  class="ecombio-bundle-card__add-btn button"
-                  data-ecombio-add-bundle-btn
-                  aria-live="polite"
+          <a href="{{ bundle_product.url }}" class="ecombio-bundle-card" {{ block.shopify_attributes }}>
+            <div class="ecombio-bundle-card__media">
+              {%- if bundle_product.featured_image != blank -%}
+                <img
+                  src="{{ bundle_product.featured_image | image_url: width: 600 }}"
+                  alt="{{ bundle_product.featured_image.alt | default: bundle_product.title | escape }}"
+                  loading="lazy"
+                  width="600"
+                  height="{{ 600 | divided_by: bundle_product.featured_image.aspect_ratio }}"
                 >
-                  <span data-ecombio-btn-label>{{ button_label }}</span>
-                  <span class="ecombio-bundle-card__spinner" data-ecombio-btn-spinner hidden></span>
-                </button>
-
-                <p class="ecombio-bundle-card__error" data-ecombio-bundle-error role="alert" hidden></p>
-              </div>
+              {%- else -%}
+                {{ 'product-1' | placeholder_svg_tag: 'ecombio-bundle-card__placeholder' }}
+              {%- endif -%}
             </div>
-          </div>
+
+            <div class="ecombio-bundle-card__body">
+              <h3 class="ecombio-bundle-card__title">{{ bundle_product.title }}</h3>
+
+              {%- if bundle_items != blank -%}
+                <ul class="ecombio-bundle-card__items">
+                  {%- for item in bundle_items -%}
+                    {%- liquid
+                      assign item_variant = item.selected_or_first_available_variant
+                      unless item_variant
+                        continue
+                      endunless
+                      assign total = total | plus: item_variant.price
+                    -%}
+                    <li>{{ item.title }}</li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+
+              <span class="ecombio-bundle-card__price">{{ total | money }}</span>
+            </div>
+          </a>
         {%- endfor -%}
       </div>
     {%- endif -%}
@@ -226,32 +87,6 @@
       "default": "Bundle & save"
     },
     {
-      "type": "select",
-      "id": "heading_size",
-      "label": "Heading size",
-      "options": [
-        { "value": "h3", "label": "Small" },
-        { "value": "h2", "label": "Medium" },
-        { "value": "h1", "label": "Large" }
-      ],
-      "default": "h2"
-    },
-    {
-      "type": "text",
-      "id": "subheading",
-      "label": "Subheading"
-    },
-    {
-      "type": "select",
-      "id": "layout",
-      "label": "Layout",
-      "options": [
-        { "value": "grid", "label": "Card grid" },
-        { "value": "list", "label": "Horizontal list" }
-      ],
-      "default": "grid"
-    },
-    {
       "type": "range",
       "id": "columns_desktop",
       "label": "Columns on desktop",
@@ -259,18 +94,6 @@
       "max": 5,
       "step": 1,
       "default": 3
-    },
-    {
-      "type": "checkbox",
-      "id": "show_savings_badge",
-      "label": "Show savings badge",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "button_label",
-      "label": "Button label",
-      "default": "Add bundle to cart"
     },
     {
       "type": "color_scheme",
@@ -289,21 +112,6 @@
           "id": "product",
           "label": "Bundle product",
           "info": "Its custom.product_bundles (List of Product) metafield defines the contents."
-        },
-        {
-          "type": "text",
-          "id": "title_override",
-          "label": "Title override"
-        },
-        {
-          "type": "richtext",
-          "id": "description",
-          "label": "Description"
-        },
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image override"
         }
       ]
     }
