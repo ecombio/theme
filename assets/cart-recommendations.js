@@ -211,11 +211,24 @@
     const rawUrl = product.url ?? '';
     const safeUrl = rawUrl.startsWith('/') || rawUrl.startsWith('https://') ? rawUrl : '#';
 
-    const img    = product.featured_image;
-    const imgSrc = img?.url
-      ? img.url.replace(/(\.[a-z]+)(\?|$)/, '_160x160$1$2')
+    // Shopify's product JSON (including the recommendations endpoint) returns
+    // product-level featured_image as a plain URL STRING, not an object —
+    // { url, alt } only applies at the variant level, and even there the
+    // field is `.src`, not `.url`. Handle all three shapes defensively:
+    //   1. product.featured_image as a string  (the common case)
+    //   2. product.featured_image as an object with .src
+    //   3. fallback to the first entry in product.images[]
+    const rawFeaturedImage =
+      (typeof product.featured_image === 'string' && product.featured_image) ||
+      product.featured_image?.src ||
+      product.images?.[0]?.src ||
+      product.images?.[0] || // some endpoints return images[] as plain strings too
+      null;
+
+    const imgSrc = rawFeaturedImage
+      ? rawFeaturedImage.replace(/(\.[a-z]+)(\?|$)/i, '_160x160$1$2')
       : '';
-    const imgAlt = escapeHTML(img?.alt || product.title);
+    const imgAlt = escapeHTML(product.images?.[0]?.alt || product.title);
 
     const price     = formatMoney(variant.price);
     const compPrice = variant.compare_at_price > variant.price
