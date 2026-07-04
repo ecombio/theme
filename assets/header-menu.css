@@ -20,9 +20,13 @@
        assets/main-header.js's scroll handler.
      .menu-bar.is-visible — added/removed by assets/header-hamburger.js
        when the sticky hamburger is clicked.
-     .main-header--menu-bar-mobile-visible — added/removed by
-       sections/main-header.liquid based on the "Show Menu Bar"
-       checkbox (section.settings.show_menu_bar_mobile).
+     .main-header--menu-bar-mobile-visible / --menu-bar-tablet-visible —
+       added/removed by sections/main-header.liquid based on the
+       "Show Menu Bar" checkboxes in the Mobile and Tablet Division
+       settings respectively (section.settings.show_menu_bar_mobile /
+       show_menu_bar_tablet). These are two SEPARATE settings/classes —
+       each only takes effect within its own breakpoint, so mobile and
+       tablet can show or hide the bar independently of each other.
    All three are kept here (rather than in main-header.css) since
    they're fundamentally about what .menu-bar looks like — the trigger
    classes just happen to come from elsewhere.
@@ -38,6 +42,13 @@
    .menu-bar__link--highlight, .star / .star-1..3, @keyframes twinkle)
    have been extracted out to assets/highlight.css, which is loaded by
    snippets/highlight.liquid. This file no longer contains them.
+
+   UPDATED: "Show Menu Bar" used to be one setting/class combo
+   (--menu-bar-mobile-visible) covering both mobile AND tablet via a
+   single max-width: 1023px query. Tablet now has its own independent
+   setting/class (--menu-bar-tablet-visible, min-width:640/max-width:1023),
+   separate from mobile's (--menu-bar-mobile-visible, max-width:639 only)
+   — see the "MOBILE / TABLET" block below.
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
@@ -80,25 +91,24 @@
    MOBILE / TABLET (< 1024px)
 
    Hidden by default — mobile/tablet rely on the drawer in
-   header-hamburger.liquid for primary nav. Reappears ONLY when the
-   "Show Menu Bar" setting is on, via .main-header--menu-bar-mobile-visible
-   on the ancestor <header>. FIX: this override rule was missing before;
-   .menu-bar was hidden unconditionally regardless of the setting.
+   header-hamburger.liquid for primary nav. Reappears independently per
+   division: mobile via .main-header--menu-bar-mobile-visible (<640px
+   only), tablet via .main-header--menu-bar-tablet-visible (640–1023px
+   only). Each is driven by its own section setting, so one division's
+   "Show Menu Bar" toggle has no effect on the other.
 ============================================================================= */
 
 @media (max-width: 1023px) {
   .menu-bar {
     display: none;
   }
-
-  .main-header--menu-bar-mobile-visible .menu-bar {
-    display: flex;
-    flex-wrap: wrap;
-  }
 }
 
+/* ── Mobile only (<640px) — horizontally scrollable single row,
+   since there usually isn't room to wrap nav items at this width. ── */
 @media (max-width: 639px) {
   .main-header--menu-bar-mobile-visible .menu-bar {
+    display: flex;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
@@ -118,6 +128,16 @@
   .main-header--menu-bar-mobile-visible .menu-bar__list {
     flex-wrap: nowrap;
     width: max-content;
+  }
+}
+
+/* ── Tablet only (640–1023px) — wraps instead of scrolling, since
+   there's usually enough width for nav items to flow onto a second
+   line rather than needing horizontal scroll. ── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .main-header--menu-bar-tablet-visible .menu-bar {
+    display: flex;
+    flex-wrap: wrap;
   }
 }
 
