@@ -1,0 +1,85 @@
+{%- doc -%}
+  Renders a single clickable video thumbnail card.
+  Accepts:
+    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle
+    - index: 1-based position in the carousel (used for aria labelling / autoplay-first logic)
+{%- enddoc -%}
+
+{%- liquid
+  assign video_url = block.settings.video_url
+  assign video_file = block.settings.video_file
+  assign thumbnail = block.settings.thumbnail
+  assign title = block.settings.title
+  assign subtitle = block.settings.subtitle
+
+  if video_file
+    assign video_type = 'file'
+  elsif video_url != blank
+    assign video_type = video_url.type
+  else
+    assign video_type = 'none'
+  endif
+-%}
+
+<div
+  class="video-card"
+  {{ block.shopify_attributes }}
+  data-video-card
+  data-video-type="{{ video_type }}"
+  {% if video_url != blank %}data-video-id="{{ video_url.id }}"{% endif %}
+  {% if video_file %}data-video-file-url="{{ video_file.sources.last.url }}"{% endif %}
+>
+  <button
+    type="button"
+    class="video-card__trigger"
+    data-video-trigger
+    aria-label="Play video{% if title != blank %}: {{ title }}{% endif %}"
+    {% if video_type == 'none' %}disabled{% endif %}
+  >
+    <span class="video-card__thumbnail">
+      {%- if thumbnail -%}
+        <img
+          class="video-card__image"
+          src="{{ thumbnail | image_url: width: 600 }}"
+          srcset="
+            {{ thumbnail | image_url: width: 300 }} 300w,
+            {{ thumbnail | image_url: width: 600 }} 600w,
+            {{ thumbnail | image_url: width: 900 }} 900w
+          "
+          sizes="(min-width: 990px) 33vw, (min-width: 750px) 50vw, 90vw"
+          alt="{{ thumbnail.alt | default: title | default: 'Video thumbnail' }}"
+          loading="lazy"
+          width="{{ thumbnail.width }}"
+          height="{{ thumbnail.height }}"
+        >
+      {%- elsif video_file and video_file.preview_image -%}
+        <img
+          class="video-card__image"
+          src="{{ video_file.preview_image | image_url: width: 600 }}"
+          alt="{{ title | default: 'Video thumbnail' }}"
+          loading="lazy"
+        >
+      {%- else -%}
+        <span class="video-card__placeholder" aria-hidden="true"></span>
+      {%- endif -%}
+
+      <span class="video-card__play-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" focusable="false">
+          <circle cx="12" cy="12" r="12" class="video-card__play-bg"/>
+          <polygon points="10 8 17 12 10 16" fill="currentColor"/>
+        </svg>
+      </span>
+    </span>
+
+    {%- if title != blank or subtitle != blank -%}
+      <span class="video-card__caption">
+        {%- if title != blank -%}
+          <span class="video-card__title">{{ title }}</span>
+        {%- endif -%}
+        {%- if subtitle != blank -%}
+          <span class="video-card__subtitle">{{ subtitle }}</span>
+        {%- endif -%}
+      </span>
+    {%- endif -%}
+  </button>
+</div>
