@@ -1,8 +1,14 @@
 {%- doc -%}
   Renders a single clickable video thumbnail card.
   Accepts:
-    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle
+    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle, product
     - index: 1-based position in the carousel (used for aria labelling / autoplay-first logic)
+
+  If block.settings.product is set, the product-card snippet is pre-rendered
+  into a hidden <template>. video-card.js reads that template's innerHTML and
+  passes it through the video-card:play event; video-modal.js clones it into
+  the modal's product pane. This keeps product-card rendering server-side
+  (Liquid) while the open/close interaction stays client-side.
 {%- enddoc -%}
 
 {%- liquid
@@ -11,6 +17,7 @@
   assign thumbnail = block.settings.thumbnail
   assign title = block.settings.title
   assign subtitle = block.settings.subtitle
+  assign card_product = block.settings.product
 
   if video_file
     assign video_type = 'file'
@@ -82,4 +89,15 @@
       </span>
     {%- endif -%}
   </button>
+
+  {%- if card_product -%}
+    <template data-video-product-template>
+      {%- render 'product-card',
+        product: card_product,
+        show_quickview: false,
+        show_compare: false,
+        show_eta: false
+      -%}
+    </template>
+  {%- endif -%}
 </div>
