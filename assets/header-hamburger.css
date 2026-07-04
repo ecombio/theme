@@ -4,15 +4,38 @@
    Loaded by: snippets/header-hamburger.liquid
 
    Scope: the tablet/mobile drawer hamburger, the mobile nav drawer +
-   backdrop + close button, the recursive/accordion nested menu inside
-   the drawer, and the desktop-only sticky hamburger that re-expands
+   backdrop + close button, the accordion nested menu inside the
+   drawer, and the desktop-only sticky hamburger that re-expands
    .menu-bar (owned by main-header.css) while the header is sticky.
 
-   This file is self-contained: everything it styles is rendered by
-   header-hamburger.liquid and header-hamburger-menu-list.liquid. The
-   one exception is .menu-bar itself (defined in main-header.css) —
-   this file only toggles its `.is-visible` class via
-   header-hamburger.js, it doesn't define .menu-bar's own layout.
+   This file is self-contained: everything it styles is rendered
+   directly by header-hamburger.liquid as unrolled loops over the same
+   `blocks` header-menu.liquid uses on desktop — there is no separate
+   recursive menu-list snippet anymore. The one exception is
+   .menu-bar itself (defined in main-header.css) — this file only
+   toggles its `.is-visible` class via header-hamburger.js, it doesn't
+   define .menu-bar's own layout.
+
+   UPDATED to match the current drawer markup (blocks-as-single-source
+   rewrite):
+     - Level classes are now --l0 (top level, per block) / --l1
+       (children, from block.settings.menu) / --l2 (grandchildren,
+       leaf items). The previous --l1/--l2/--l3 scheme (and its
+       matching indentation rules) was one level off relative to the
+       current markup and has been renumbered accordingly. There is
+       no --l3: two levels of nesting below the top is the max depth
+       the drawer renders.
+     - .main-header__mobile-nav-row has been removed. It only existed
+       to support the old recursive renderer's toggle+link combo rows;
+       the current markup renders a toggle OR a link per item, never
+       both, so this wrapper is never output.
+     - Added .main-header__mobile-nav-item--highlight /
+       .main-header__mobile-nav-link--highlight to style the
+       "On Sale"-style highlight block, which previously had no rule
+       here at all.
+     - Link/toggle hover color now uses var(--hdr-accent) instead of a
+       hardcoded red, matching the accent variable header-menu.css and
+       highlight.css both use, so a theme accent change applies here too.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -168,6 +191,9 @@
   margin: 0;
   padding: 0;
 }
+
+/* Base (L0) link — top-level drawer item. No --l0 modifier class
+   needed since this is the unindented default every link inherits. */
 .main-header__mobile-nav-link {
   display: flex;
   align-items: center;
@@ -180,7 +206,31 @@
 }
 .main-header__mobile-nav-link:hover {
   background: #f5f5f5;
-  color: #c4301c;
+  color: var(--hdr-accent);
+}
+
+/* Highlight block (e.g. "On Sale") — same accent treatment as the
+   desktop menu bar's highlighted link, minus the star icons, which
+   the drawer markup doesn't render. */
+.main-header__mobile-nav-link--highlight {
+  color: var(--hdr-accent);
+  font-weight: 700;
+}
+.main-header__mobile-nav-link--highlight:hover {
+  color: var(--hdr-accent);
+  opacity: 0.82;
+}
+
+/* ── Content wrapper — groups search + the nav list below the fixed
+   header row, so both scroll together as one block ── */
+.main-header__mobile-nav-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.main-header__mobile-nav-search {
+  padding: 12px 24px;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 @media (min-width: 1024px) {
@@ -192,19 +242,15 @@ body.nav-is-open { overflow: hidden; }
 
 /* ─────────────────────────────────────────────
    NESTED SUBMENU ACCORDION
-   Rendered recursively by header-hamburger-menu-list.liquid. Parent
-   items (link.links.size > 0) render as a toggle <button> instead of
-   an <a> — tapping expands/collapses the child <ul> rather than
-   navigating. Only one submenu per level stays open at a time
-   (enforced in header-hamburger.js); this file only styles the
-   open/closed states.
+   Rendered as unrolled loops directly in header-hamburger.liquid.
+   Items with children (block.settings.menu.links, or a link's own
+   .links) render as a toggle <button> instead of an <a> — tapping
+   expands/collapses the child <ul> rather than navigating. Only one
+   submenu per level stays open at a time (enforced in
+   header-hamburger.js); this file only styles the open/closed states.
    ───────────────────────────────────────────── */
-.main-header__mobile-nav-row {
-  display: flex;
-}
-
 .main-header__mobile-nav-toggle {
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -216,12 +262,22 @@ body.nav-is-open { overflow: hidden; }
   font-weight: 500;
   color: #1a1a1a;
   text-align: left;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.main-header__mobile-nav-toggle:hover { background: #f5f5f5; }
+.main-header__mobile-nav-toggle:hover {
+  background: #f5f5f5;
+  color: var(--hdr-accent);
+}
 .main-header__mobile-nav-toggle:focus-visible {
   outline: 2px solid #1a1a1a;
   outline-offset: -2px;
+}
+
+.main-header__mobile-nav-toggle-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .main-header__mobile-nav-chevron {
@@ -240,7 +296,11 @@ body.nav-is-open { overflow: hidden; }
 }
 .main-header__mobile-nav-sub[hidden] { display: none; }
 
-/* ── Indentation per depth level ── */
+/* ── Indentation per depth level ──
+   L0 (top level) needs no extra indent — it's covered by the base
+   .main-header__mobile-nav-link / .main-header__mobile-nav-toggle
+   rules above. L1 = children, L2 = grandchildren (leaf items); the
+   drawer never nests deeper than that. */
 .main-header__mobile-nav-link--l1,
 .main-header__mobile-nav-list--l1 .main-header__mobile-nav-toggle {
   padding-left: 36px;
@@ -249,11 +309,6 @@ body.nav-is-open { overflow: hidden; }
 .main-header__mobile-nav-list--l2 .main-header__mobile-nav-toggle {
   padding-left: 48px;
   font-size: 14px;
-}
-.main-header__mobile-nav-link--l3,
-.main-header__mobile-nav-list--l3 .main-header__mobile-nav-toggle {
-  padding-left: 60px;
-  font-size: 13px;
 }
 
 /* ─────────────────────────────────────────────
