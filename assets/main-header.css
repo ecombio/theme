@@ -17,6 +17,19 @@
    theme (Shopify's per-section wrapper divs break sticky's containing
    block; see main-header-sticky.css for the full explanation) and
    duplicated logic that already lives, correctly, in that file.
+
+   FIXED (bottom-only shadow bug): both .main-header and
+   .main-header--sticky-enabled used to fake a "shadow on the bottom
+   edge only" using `clip-path: inset(0 -30px -30px -30px)`. clip-path
+   clips the ENTIRE rendered subtree of the element it's applied to —
+   not just its own box-shadow — and forces that element into its own
+   stacking context, so the clip applied even to position:fixed
+   descendants (the mega-menu, the flyout panel, and the mobile nav
+   drawer are all rendered inside <header class="main-header">). That
+   clipped all three of them down to roughly header-height + 30px,
+   which is why they all appeared to get cut off at the same point.
+   Replaced with a ::after pseudo-element that carries the shadow
+   instead, so nothing inside .main-header gets clipped anymore.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -24,12 +37,24 @@
    ───────────────────────────────────────────── */
 
 .main-header {
-  z-index: 200;              /* keep — dropdowns/mega-menu/flyout likely stack on this */
+  position: relative;        /* anchors the ::after shadow below */
+  z-index: 200;               /* keep — dropdowns/mega-menu/flyout likely stack on this */
   width: 100%;
   background: #fff;
+}
+
+/* Bottom-only shadow, without clipping the header's contents.
+   Sits just below the header, extended slightly past its left/right
+   edges to match the old clip-path's -30px inset. */
+.main-header::after {
+  content: "";
+  position: absolute;
+  left: -30px;
+  right: -30px;
+  bottom: -12px;
+  height: 12px;
   box-shadow: 0 2px 12px #00000014;
-/* This makes the shadow appear ONLY at the bottom */
-  clip-path: inset(0 -30px -30px -30px);
+  pointer-events: none;
 }
 
 /* ─────────────────────────────────────────────
@@ -302,15 +327,17 @@
    That gate matters because this file's scroll handler (main-header.js)
    adds .is-sticky purely based on scroll position, with no width check
    of its own — the width gate has to live in CSS, not here.
+
+   FIXED: removed the clip-path bottom-shadow trick from here too (see
+   note at the top of this file) — .main-header's own ::after now
+   handles the shadow in both the normal and sticky states, so this
+   class no longer needs its own box-shadow/clip-path pair.
    ============================================================================= */
 
 /* Base header — normal, in-flow, until JS marks it .is-sticky */
 .main-header--sticky-enabled {
   background: #fff;
   transition: box-shadow 0.2s ease;
-  box-shadow: 0 2px 12px #00000014;
-/* This makes the shadow appear ONLY at the bottom */
-  clip-path: inset(0 -30px -30px -30px);
 }
 
 /* Pinned to the viewport once scrolled past the threshold.
