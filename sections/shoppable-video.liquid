@@ -26,7 +26,7 @@
         {%- for block in section.blocks -%}
           {%- if block.type == 'video' -%}
             <li class="shoppable-video__tile js-sv-tile" {{ block.shopify_attributes }}>
-              <div class="shoppable-video__media">
+              <div class="shoppable-video__media js-video-modal-trigger" data-video-modal-trigger="{{ block.id }}" role="button" tabindex="0" aria-haspopup="dialog">
 
                 {%- if block.settings.video != blank -%}
                   {{
@@ -59,37 +59,15 @@
                   {%- if block.settings.caption != blank -%}
                     <p class="shoppable-video__caption">{{ block.settings.caption }}</p>
                   {%- endif -%}
-
-                  {%- assign has_products = false -%}
-                  {%- if block.settings.product_1 != blank or block.settings.product_2 != blank or block.settings.product_3 != blank -%}
-                    {%- assign has_products = true -%}
-                  {%- endif -%}
-
-                  {%- if has_products -%}
-                    <button type="button" class="shoppable-video__shop-btn js-sv-shop-toggle" aria-expanded="false" aria-controls="ShoppableVideoPanel-{{ block.id }}">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
-                      {{ block.settings.cta_text | default: 'Shop now' }}
-                    </button>
-                  {%- endif -%}
                 </div>
 
-                {%- if has_products -%}
-                  <div class="shoppable-video__panel js-sv-panel" id="ShoppableVideoPanel-{{ block.id }}" hidden>
-                    <div class="shoppable-video__panel-head">
-                      <span>Shop this video</span>
-                      <button type="button" class="shoppable-video__panel-close js-sv-panel-close" aria-label="Close">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                      </button>
-                    </div>
-                    <div class="shoppable-video__products">
-                      {%- render 'shoppable-video-product', product: block.settings.product_1, uid: block.id | append: '-1' -%}
-                      {%- render 'shoppable-video-product', product: block.settings.product_2, uid: block.id | append: '-2' -%}
-                      {%- render 'shoppable-video-product', product: block.settings.product_3, uid: block.id | append: '-3' -%}
-                    </div>
-                  </div>
-                {%- endif -%}
-
               </div>
+
+              {%- if block.settings.product_1 != blank -%}
+                {%- render 'modal-product', product: block.settings.product_1, uid: block.id -%}
+              {%- endif -%}
+
+              {%- render 'video-modal', block: block -%}
             </li>
           {%- endif -%}
         {%- endfor -%}
@@ -135,7 +113,7 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Shop the look"
+      "default": "Shop the Look"
     },
     {
       "type": "text",
@@ -262,29 +240,29 @@
           "default": "Our new arrivals are here 🎉"
         },
         {
+          "type": "header",
+          "content": "Modal content"
+        },
+        {
           "type": "text",
-          "id": "cta_text",
-          "label": "Shop button text",
-          "default": "Shop now"
+          "id": "modal_heading",
+          "label": "Modal heading",
+          "default": "Modal Heading"
+        },
+        {
+          "type": "text",
+          "id": "modal_text",
+          "label": "Modal text",
+          "default": "Modal Text"
         },
         {
           "type": "header",
-          "content": "Tagged products"
+          "content": "Tagged product"
         },
         {
           "type": "product",
           "id": "product_1",
-          "label": "Product 1"
-        },
-        {
-          "type": "product",
-          "id": "product_2",
-          "label": "Product 2"
-        },
-        {
-          "type": "product",
-          "id": "product_3",
-          "label": "Product 3"
+          "label": "Product"
         }
       ]
     }
