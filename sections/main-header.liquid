@@ -1,27 +1,5 @@
-{% comment %} Snippets rendered below are self-contained — each owns its own CSS/JS and does not reach into another snippet's DOM. {% endcomment %}
-{% comment %}
-  Main Header Section
-  File: sections/main-header.liquid
-
-  UPDATED: "Show Menu Bar" and "Enable search drawer icon" used to be
-  Mobile-only settings that Tablet silently inherited (see the old
-  paragraph that used to sit under the Tablet Division header). Both
-  now have independent Tablet counterparts (show_menu_bar_tablet,
-  enable_search_drawer_tablet) — each division's checkbox only affects
-  its own breakpoint, so e.g. turning on the menu bar for mobile no
-  longer forces it on for tablet too, and vice versa.
-{% endcomment %}
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  Scoped overrides so "Enable search drawer icon" only takes effect at
-  the breakpoint its own checkbox belongs to:
-    - Mobile Division checkbox (enable_search_drawer)         → < 640px only
-    - Tablet Division checkbox (enable_search_drawer_tablet)  → 640–1023px only
-  Desktop (≥1024px) always keeps its normal inline search bar
-  regardless of either setting. The two are independent: enabling one
-  division's drawer icon has no effect on the other's search row.
-{%- endcomment -%}
 <style>
   .main-header__search-drawer-mobile-only {
     display: block;
@@ -62,12 +40,6 @@
   }
 </style>
 
-{% comment %}
-  Mobile Menu (commented out for future use)
-  {{ 'mobile-menu.css' | asset_url | stylesheet_tag }}
-  {%- render 'mobile-menu', nav_menu: mobile_menu -%}
-{% endcomment %}
-
 {%- liquid
   assign logo       = settings.logo
   assign logo_width = settings.logo_width | default: 140
@@ -87,29 +59,8 @@
   <div class="main-header__bar">
     <div class="main-header__inner">
 
-      {%- comment -%}
-        Both hamburger buttons (sticky + mobile drawer) and the mobile
-        nav drawer itself now live in snippets/header-hamburger.liquid,
-        which also loads header-hamburger.css/js on its own. The mobile
-        drawer renders from `section.blocks` — the SAME blocks the
-        desktop .menu-bar (snippets/header-menu.liquid) uses — so there
-        is one nav data source for the whole header, not two to keep in
-        sync. Rendered here so the two buttons land in the correct spot
-        in this flex row, before the logo.
-      {%- endcomment -%}
       {%- render 'header-hamburger', blocks: section.blocks, enable_sticky: enable_sticky, drawer_style: mobile_drawer_style, enable_predictive_search: section.settings.enable_predictive_search -%}
 
-      {%- comment -%}
-        Search drawer trigger + full-screen slide-down drawer, both
-        self-contained in snippets/header-search-drawer.liquid (own
-        CSS/JS). Two independent opt-ins, one per division:
-          - Mobile (enable_search_drawer)        → < 640px only
-          - Tablet (enable_search_drawer_tablet) → 640–1023px only
-        Each wrapping div is hidden outside its own breakpoint via the
-        <style> block above, so enabling one has no effect on the
-        other's search row. Rendered here so the icon lands between
-        the hamburger and the logo.
-      {%- endcomment -%}
       {%- if section.settings.enable_search_drawer -%}
         <div class="main-header__search-drawer-mobile-only">
           {%- render 'header-search-drawer', enable_predictive_search: section.settings.enable_predictive_search -%}
@@ -123,11 +74,6 @@
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
-      {%- comment -%}
-        Desktop search — flex-grows to fill the bar, hidden below
-        1024px via CSS. Always rendered; both search drawer settings
-        are mobile/tablet-only, so desktop keeps this regardless.
-      {%- endcomment -%}
       <div class="main-header__search--inline">
         {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
       </div>
@@ -144,24 +90,12 @@
     </div>
   </div>
 
-  {%- comment -%}
-    Mobile/tablet search row — sits below the bar, hidden at 1024px+
-    via CSS. When a division's search drawer icon is enabled, this row
-    is hidden only within that division's own breakpoint (via the
-    --drawer-mobile / --drawer-tablet classes above), since the drawer
-    icon replaces it there. The other division keeps its row regardless
-    of whether the drawer setting is on for it.
-  {%- endcomment -%}
   <div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
     <div class="main-header__search-row-inner">
       {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
     </div>
   </div>
 
-  {%- comment -%}Desktop nav bar — built from blocks. Hidden below 1024px via CSS (mobile drawer takes over);
-  when sticky is enabled, also collapses on scroll and is toggled back open via the sticky hamburger
-  (in header-hamburger.liquid) above. Markup, styles, and its block-type CSS/JS all live in
-  snippets/header-menu.liquid.{%- endcomment -%}
   {%- render 'header-menu', blocks: section.blocks, show_on_mobile: show_menu_bar_mobile, show_on_tablet: show_menu_bar_tablet -%}
 
 </header>
