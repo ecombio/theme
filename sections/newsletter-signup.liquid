@@ -14,13 +14,18 @@
     style="--nl-max-width: {{ section.settings.max_width }}px; --nl-gap: {{ section.settings.block_gap }}px;"
   >
     {%- for block in section.blocks -%}
+      {%- liquid
+        assign border_start = block.settings.border_color_start | default: section.settings.border_color_start
+        assign border_end = block.settings.border_color_end | default: section.settings.border_color_end
+      -%}
       <div class="newsletter-box" {{ block.shopify_attributes }}>
-        <div class="newsletter-box__frame">
-          <div class="newsletter-box__inner">
 
-            {%- if section.settings.eyebrow_text != blank -%}
-              <p class="newsletter-box__eyebrow">{{ section.settings.eyebrow_text }}</p>
-            {%- endif -%}
+        {%- if section.settings.eyebrow_text != blank -%}
+          <p class="newsletter-box__eyebrow">{{ section.settings.eyebrow_text }}</p>
+        {%- endif -%}
+
+        <div class="newsletter-box__frame" style="background: linear-gradient(135deg, {{ border_start }}, {{ border_end }});">
+          <div class="newsletter-box__inner">
 
             {%- case block.type -%}
 
@@ -242,7 +247,7 @@
       "unit": "px",
       "label": "Cut corner size",
       "info": "Set to 0 for a plain rectangle.",
-      "default": 28
+      "default": 42
     },
     {
       "type": "range",
@@ -252,18 +257,19 @@
       "step": 1,
       "unit": "px",
       "label": "Border thickness",
-      "default": 2
+      "default": 1
     },
     {
       "type": "color",
       "id": "border_color_start",
-      "label": "Border gradient — start",
-      "default": "#A855F7"
+      "label": "Default border gradient — start",
+      "info": "Used by any block that doesn't set its own border colors below.",
+      "default": "#D946EF"
     },
     {
       "type": "color",
       "id": "border_color_end",
-      "label": "Border gradient — end",
+      "label": "Default border gradient — end",
       "default": "#6366F1"
     },
     {
@@ -298,7 +304,7 @@
       "type": "color",
       "id": "accent_color",
       "label": "Button background",
-      "default": "#4F46E5"
+      "default": "#5B4FE0"
     },
     {
       "type": "color",
@@ -352,6 +358,21 @@
           "id": "disclaimer",
           "label": "Disclaimer text",
           "default": "<p>By clicking Sign Me Up, you confirm you are 16+ and agree to our Terms of Use &amp; Privacy Policy.</p>"
+        },
+        {
+          "type": "header",
+          "content": "Border color (optional)"
+        },
+        {
+          "type": "color",
+          "id": "border_color_start",
+          "label": "Gradient start",
+          "info": "Leave blank to use the section's default border colors."
+        },
+        {
+          "type": "color",
+          "id": "border_color_end",
+          "label": "Gradient end"
         }
       ]
     },
@@ -400,6 +421,23 @@
           "id": "sms_endpoint",
           "label": "SMS provider endpoint URL",
           "info": "Shopify has no built-in SMS signup form. Paste the API/webhook URL your SMS app (e.g. Postscript, Attentive, Klaviyo) gives you — this section will POST the phone number there. Leave blank to disable submission."
+        },
+        {
+          "type": "header",
+          "content": "Border color (optional)"
+        },
+        {
+          "type": "color",
+          "id": "border_color_start",
+          "label": "Gradient start",
+          "info": "Leave blank to use the section's default border colors. Set both to the same color for a solid border.",
+          "default": "#5B4FE0"
+        },
+        {
+          "type": "color",
+          "id": "border_color_end",
+          "label": "Gradient end",
+          "default": "#5B4FE0"
         }
       ]
     }
