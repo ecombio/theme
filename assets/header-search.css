@@ -528,3 +528,123 @@
     font-size: 12px;
   }
 }
+
+
+/* ============================================================
+   DRAWER VARIANT — UNIQUE STYLE
+   Scoped entirely to .header-search--drawer. Nothing below this
+   line touches .header-search--desktop or .header-search--mobile —
+   those keep the dropdown look exactly as-is.
+
+   Rationale: the desktop/mobile variants live inside a small
+   floating dropdown anchored under a compact input, so a bordered,
+   shadowed "card" panel makes sense there. The drawer variant is
+   already a full-screen white surface, so a second bordered/shadowed
+   card floating inside it just looks like a box inside a box. This
+   flattens the drawer's panel to sit inline, and restyles the pill/
+   input chrome to match a simpler, more minimal reference design.
+
+   No JS changes were needed for any of this — buildEmptyState() in
+   header-search.js emits the same markup for every variant; this
+   only changes how that markup is painted when it's inside
+   .header-search--drawer. The typewriter placeholder (also in
+   header-search.js) is untouched.
+   ============================================================ */
+
+/* ── Search bar: full pill, leading search icon ──────────────── */
+.header-search--drawer .header-search__form {
+  border-radius: 9999px;
+}
+
+/* Move the (functional) submit button to the leading edge and
+   restyle it as a plain icon instead of the filled black square —
+   it still submits the form on click, and Enter still submits via
+   the browser's default/implicit-submit behavior, so nothing about
+   how search actually fires has changed. */
+.header-search--drawer .header-search__submit {
+  order: -1;
+  width: 40px;
+  height: 40px;
+  margin: 0 0 0 4px;
+  background: none;
+  color: var(--hs-text-muted);
+  border-radius: 50%;
+}
+.header-search--drawer .header-search__submit:hover {
+  opacity: 1;
+  background: var(--hs-accent-soft);
+  color: var(--hs-text);
+}
+
+.header-search--drawer .header-search__input { padding-left: 4px; }
+.header-search--drawer .header-search__voice { margin-right: 6px; }
+
+/* ── Suggestions panel: flat, sits inline under the bar ──────── */
+.header-search--drawer .header-search__panel {
+  position: static;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  max-height: none;
+  overflow: visible;
+  margin-top: 4px;
+  animation: none;
+}
+
+/* ── Section labels: sentence case, no small-caps treatment ──── */
+.header-search--drawer .hs-empty__group {
+  border-bottom: none;
+  padding: 0 0 10px;
+}
+
+.header-search--drawer .hs-empty__label,
+.header-search--drawer .predictive-search__group-label {
+  padding: 14px 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--hs-text-muted);
+}
+
+.header-search--drawer .hs-empty__group-header { padding-right: 4px; }
+
+/* ── Trending pills: outlined, not filled ────────────────────── */
+.header-search--drawer .hs-empty__pill-list { padding: 0 4px 4px; }
+
+.header-search--drawer .hs-empty__pill {
+  background: transparent;
+  border: 1.5px solid #2f6fed;
+  color: #2f6fed;
+  font-weight: 600;
+}
+.header-search--drawer .hs-empty__pill:hover,
+.header-search--drawer .hs-empty__pill:focus-visible {
+  background: rgba(47, 111, 237, .08);
+  color: #2f6fed;
+  border-color: #2f6fed;
+}
+
+/* ── Recent list: plain rows, no icon chip, no hover fill ────── */
+.header-search--drawer .predictive-search__list { padding: 0 4px; }
+
+.header-search--drawer .predictive-search__item.hs-empty__recent-item {
+  padding: 7px 0;
+  background: none;
+}
+.header-search--drawer .predictive-search__item.hs-empty__recent-item:hover,
+.header-search--drawer .predictive-search__item.hs-empty__recent-item:focus-visible {
+  background: none;
+}
+
+.header-search--drawer .predictive-search__item-icon {
+  width: 16px;
+  height: 16px;
+  background: none;
+  color: var(--hs-text-muted);
+}
+
+.header-search--drawer .hs-empty__recent-text {
+  font-weight: 700;
+  color: var(--hs-text);
+}
