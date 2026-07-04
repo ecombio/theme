@@ -1,44 +1,200 @@
-<!-- Payment + Social Icons -->
-<div class="main-footer__icons">
-  
-  <!-- Dynamic Payment Icons -->
-  <div class="main-footer__payments">
-    {%- unless shop.enabled_payment_types == empty -%}
-      <span class="visually-hidden">Accepted payment methods</span>
-      
-      {%- for type in shop.enabled_payment_types -%}
-        {{ type | payment_type_svg_tag: class: 'payment-icon' }}
-      {%- endfor -%}
-    {%- endunless -%}
-  </div>
+{% comment %}
+sections/main-footer.liquid
+Merged footer section for ScooterBio
 
-  <!-- Social Icons (keep as-is or improve later) -->
-  <div class="main-footer__socials">
-    {% if section.settings.social_x != blank %}
-      <a href="{{ section.settings.social_x }}" target="_blank" aria-label="X">
-        <img src="{{ 'icon-x.svg' | asset_url }}" alt="">
-      </a>
-    {% endif %}
-    {% if section.settings.social_tiktok != blank %}
-      <a href="{{ section.settings.social_tiktok }}" target="_blank" aria-label="TikTok">
-        <img src="{{ 'icon-tiktok.svg' | asset_url }}" alt="">
-      </a>
-    {% endif %}
-    {% if section.settings.social_youtube != blank %}
-      <a href="{{ section.settings.social_youtube }}" target="_blank" aria-label="YouTube">
-        <img src="{{ 'icon-youtube.svg' | asset_url }}" alt="">
-      </a>
-    {% endif %}
-    {% if section.settings.social_instagram != blank %}
-      <a href="{{ section.settings.social_instagram }}" target="_blank" aria-label="Instagram">
-        <img src="{{ 'icon-instagram.svg' | asset_url }}" alt="">
-      </a>
-    {% endif %}
-    {% if section.settings.social_facebook != blank %}
-      <a href="{{ section.settings.social_facebook }}" target="_blank" aria-label="Facebook">
-        <img src="{{ 'icon-facebook.svg' | asset_url }}" alt="">
-      </a>
-    {% endif %}
-  </div>
+Structure:
+- Footer navigation menu (nested link list)
+- Payment icons + Social icons
+- Copyright + Policies
 
-</div>
+Note: this section uses its own `.footer-width` container (defined in
+main-footer.css) which intentionally mirrors the header's container
+values (max-width: 1184px; margin: 0 auto; padding: 0 24px, dropping
+to 0 12px under 640px) so footer content lines up edge-to-edge with
+the header above it. Do not swap this for `.page-width--footer` or
+any other container class without checking its values match.
+{% endcomment %}
+
+{{ 'main-footer.css' | asset_url | stylesheet_tag }}
+
+<footer class="main-footer" data-section-id="{{ section.id }}" data-section-type="main-footer">
+  <div class="footer-width">
+
+    <!-- Footer Navigation Menu -->
+    {% if section.settings.menu != blank %}
+      {% assign footer_menu = section.settings.menu %}
+
+      {% if footer_menu.links.size > 0 %}
+        <div class="main-footer__menu">
+          {%- if section.settings.menu_heading != blank -%}
+            <h3 class="footer-menu__heading footer-menu__heading--top">
+              {{ section.settings.menu_heading }}
+            </h3>
+          {%- endif %}
+
+          <div class="footer-menu__columns">
+            {% for column in footer_menu.links %}
+              {% if column.links.size > 0 %}
+                <div class="footer-menu__column">
+                  <h3 class="footer-menu__heading">{{ column.title }}</h3>
+
+                  {% for section_item in column.links %}
+                    {% if section_item.links.size > 0 %}
+                      {% if section.settings.show_section_titles %}
+                        <div class="footer-menu__section-title">{{ section_item.title }}</div>
+                      {% endif %}
+
+                      {% for link in section_item.links %}
+                        <a href="{{ link.url }}" class="footer-menu__link">{{ link.title }}</a>
+                      {% endfor %}
+
+                    {% else %}
+                      <a href="{{ section_item.url }}" class="footer-menu__link">{{ section_item.title }}</a>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- Main footer content slot -->
+    <div class="main-footer__content">
+      <!-- Reserved for future content -->
+    </div>
+
+    <div class="main-footer__bottom">
+
+      <!-- Payment + Social Icons -->
+      <div class="main-footer__icons">
+        <div class="main-footer__payments">
+          <img src="{{ 'icon-visa.svg' | asset_url }}" alt="Visa">
+          <img src="{{ 'icon-mastercard.svg' | asset_url }}" alt="Mastercard">
+          <img src="{{ 'icon-paypal.svg' | asset_url }}" alt="PayPal">
+          <img src="{{ 'icon-applepay.svg' | asset_url }}" alt="Apple Pay">
+          <img src="{{ 'icon-afterpay.svg' | asset_url }}" alt="Afterpay">
+          <img src="{{ 'icon-klarna.svg' | asset_url }}" alt="Klarna">
+        </div>
+
+        <div class="main-footer__socials">
+          {% if section.settings.social_x != blank %}
+            <a href="{{ section.settings.social_x }}" target="_blank">
+              <img src="{{ 'icon-x.svg' | asset_url }}" alt="X">
+            </a>
+          {% endif %}
+          {% if section.settings.social_tiktok != blank %}
+            <a href="{{ section.settings.social_tiktok }}" target="_blank">
+              <img src="{{ 'icon-tiktok.svg' | asset_url }}" alt="TikTok">
+            </a>
+          {% endif %}
+          {% if section.settings.social_youtube != blank %}
+            <a href="{{ section.settings.social_youtube }}" target="_blank">
+              <img src="{{ 'icon-youtube.svg' | asset_url }}" alt="YouTube">
+            </a>
+          {% endif %}
+          {% if section.settings.social_instagram != blank %}
+            <a href="{{ section.settings.social_instagram }}" target="_blank">
+              <img src="{{ 'icon-instagram.svg' | asset_url }}" alt="Instagram">
+            </a>
+          {% endif %}
+          {% if section.settings.social_facebook != blank %}
+            <a href="{{ section.settings.social_facebook }}" target="_blank">
+              <img src="{{ 'icon-facebook.svg' | asset_url }}" alt="Facebook">
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Copyright + Policies -->
+      <div class="main-footer__bottom-inner">
+        <div class="main-footer__copyright">
+          <p>{{ section.settings.copyright_text }}</p>
+        </div>
+
+        <ul class="main-footer__policies">
+          <li><a href="/policies/privacy-policy">Privacy Policy</a></li>
+          <li><a href="/policies/terms-of-service">Terms of Service</a></li>
+          <li><a href="/policies/refund-policy">Refund Policy</a></li>
+          <li><a href="/policies/shipping-policy">Shipping Policy</a></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Main footer",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Footer Menu"
+    },
+    {
+      "type": "text",
+      "id": "menu_heading",
+      "label": "Menu heading (optional)"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "info": "Select a nested menu for the footer"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_titles",
+      "label": "Show section titles",
+      "default": true,
+      "info": "Display Level 2 titles inside the menu"
+    },
+    {
+      "type": "header",
+      "content": "Copyright"
+    },
+    {
+      "type": "text",
+      "id": "copyright_text",
+      "label": "Copyright text",
+      "default": "© 2026 ScooterBio. All rights reserved."
+    },
+    {
+      "type": "header",
+      "content": "Social Media Links"
+    },
+    {
+      "type": "url",
+      "id": "social_x",
+      "label": "X (Twitter)"
+    },
+    {
+      "type": "url",
+      "id": "social_tiktok",
+      "label": "TikTok"
+    },
+    {
+      "type": "url",
+      "id": "social_youtube",
+      "label": "YouTube"
+    },
+    {
+      "type": "url",
+      "id": "social_instagram",
+      "label": "Instagram"
+    },
+    {
+      "type": "url",
+      "id": "social_facebook",
+      "label": "Facebook"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Main footer"
+    }
+  ]
+}
+{% endschema %}
