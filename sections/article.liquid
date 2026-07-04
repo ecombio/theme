@@ -5,7 +5,20 @@
 
 {{ 'article.css' | asset_url | stylesheet_tag }}
 
-  <div class="article-banner" {% if article.image %}style="background-image: url('{{ article.image | image_url: width: 1600 }}')"{% endif %}>
+{% comment %} ── Header / Banner ──
+ <header class="article-header">
+  <nav class="article-nav">
+    <a href="{{ shop.url }}" class="article-nav__logo">{{ shop.name }}</a>
+    <ul class="article-nav__links">
+      {% for link in linklists.main-menu.links %}
+        <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+{% endcomment %}
+
+
+<div class="article-banner" {% if article.image %}style="background-image: url('{{ article.image | image_url: width: 1600 }}')"{% endif %}>
     <div class="article-banner__inner">
       {% if blog.title %}
         <span class="article-banner__eyebrow">{{ blog.title }}</span>
@@ -14,8 +27,7 @@
       {% assign date = article.published_at | time_tag: format: 'date' %}
       <p class="article-banner__meta">{{ 'blog.article_metadata_html' | t: date: date, author: article.author }}</p>
     </div>
-  </div>
-</header>
+</div>
 
 {% comment %} ── Main Article Layout ── {% endcomment %}
 <div class="main-article">
