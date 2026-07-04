@@ -1,0 +1,50 @@
+{%- comment -%}
+  Renders one product row inside a shoppable video panel, including a
+  variant picker if the product has more than one variant.
+
+  Usage: {% render 'shoppable-video-product', product: block.settings.product_1, uid: block.id | append: '-1' %}
+  `uid` just needs to be unique per product row on the page — it's how the
+  JS knows which dropdowns belong to which price/button.
+{%- endcomment -%}
+
+{%- if product != blank -%}
+  {%- assign variant = product.selected_or_first_available_variant -%}
+  <div class="shoppable-video__product" data-sv-product="{{ uid }}">
+    <a href="{{ product.url }}" class="shoppable-video__product-image">
+      {%- if product.featured_image -%}
+        {{ product.featured_image | image_url: width: 120 | image_tag: loading: 'lazy', alt: product.title }}
+      {%- endif -%}
+    </a>
+
+    <div class="shoppable-video__product-info">
+      <a href="{{ product.url }}" class="shoppable-video__product-title">{{ product.title }}</a>
+      <span class="shoppable-video__product-price" data-sv-price="{{ uid }}">{{ variant.price | money }}</span>
+
+      {%- unless product.has_only_default_variant -%}
+        <div class="shoppable-video__variants">
+          {%- for option in product.options_with_values -%}
+            <select class="shoppable-video__select" data-sv-option="{{ uid }}" data-option-index="{{ forloop.index0 }}" aria-label="{{ option.name }}">
+              {%- for value in option.values -%}
+                <option value="{{ value }}">{{ value }}</option>
+              {%- endfor -%}
+            </select>
+          {%- endfor -%}
+        </div>
+      {%- endunless -%}
+    </div>
+
+    <button
+      type="button"
+      class="shoppable-video__add js-sv-add"
+      data-sv-add="{{ uid }}"
+      data-variant-id="{{ variant.id }}"
+      {%- unless variant.available %} disabled{% endunless %}
+    >
+      {%- if variant.available -%}Add{%- else -%}Sold out{%- endif -%}
+    </button>
+  </div>
+
+  {%- unless product.has_only_default_variant -%}
+    <script type="application/json" class="js-sv-variant-data" data-sv-json="{{ uid }}">{{ product | json }}</script>
+  {%- endunless -%}
+{%- endif -%}
