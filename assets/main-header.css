@@ -307,13 +307,24 @@
   transition: box-shadow 0.2s ease;
 }
 
-/* Pinned to the viewport once scrolled past the threshold */
+/* Pinned to the viewport once scrolled past the threshold.
+   Uses a keyframe animation (not `transition`) because `position` itself
+   isn't animatable — the moment .is-sticky lands, position:fixed applies
+   instantly no matter what. The animation instead slides the now-fixed
+   header down from just above the viewport, so the *visual* transition
+   reads as smooth even though the underlying position change is a snap. */
 .main-header--sticky-enabled.is-sticky {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 200;
+  animation: main-header-slide-in 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes main-header-slide-in {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
 }
 
 /* Shadow once the page has scrolled past the trigger point */
@@ -936,6 +947,7 @@
 
   .main-header--sticky-enabled {
     transition: none !important;
+    animation: none !important;
   }
   /* .main-header-sticky__hamburger's reduced-motion rule now lives in
      header-hamburger.css alongside the element itself. */
