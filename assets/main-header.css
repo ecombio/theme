@@ -46,6 +46,54 @@
 }
 
 /* ─────────────────────────────────────────────
+   LOGO-CENTERED MODE
+   Applied only when .main-header--logo-centered is present on the
+   <header> (i.e. the "Enable search drawer icon" setting is on).
+   Default layout (hamburger/search icon → logo → spacer → icons) is
+   completely untouched otherwise.
+
+   Uses absolute centering rather than equal flex-basis on both sides,
+   because the left cluster (hamburger + search-drawer trigger) and
+   the right cluster (account + cart, with its badge) are rarely the
+   same width — flex-based centering would only look centered by
+   coincidence. Absolute positioning centers the logo in the bar
+   regardless of how wide either side ends up being.
+   ───────────────────────────────────────────── */
+
+.main-header--logo-centered .main-header__inner {
+  position: relative;
+  justify-content: space-between;
+}
+
+.main-header--logo-centered .main-header__logo-link {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+/* Left cluster (hamburger + search-drawer trigger) and the right icon
+   list both need to sit above the absolutely-positioned logo so their
+   click targets are never covered if the logo's width and the header's
+   padding ever get tight enough to overlap. */
+.main-header--logo-centered .main-header__hamburger,
+.main-header--logo-centered .header-search-drawer__trigger,
+.main-header--logo-centered .main-header__icons {
+  position: relative;
+  z-index: 2;
+}
+
+/* On very narrow viewports the logo can start to crowd the hamburger
+   and search icon on its left — cap its width a bit tighter than the
+   theme editor's own --logo-width setting so it never overlaps. */
+@media (max-width: 380px) {
+  .main-header--logo-centered .main-header__logo-link {
+    max-width: 120px;
+  }
+}
+
+/* ─────────────────────────────────────────────
    HAMBURGER (mobile/tablet + sticky) and MOBILE NAV DRAWER
    Moved to assets/header-hamburger.css, rendered via
    snippets/header-hamburger.liquid. Nothing header-hamburger-related
