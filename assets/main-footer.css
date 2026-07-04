@@ -1,22 +1,54 @@
-/* ============================================
-   MAIN FOOTER (merged: menu + payments/social + copyright)
-   Container width/padding comes from the local `.footer-width` class
-   below, which mirrors the header's container exactly. Do not swap
-   this for `.page-width--footer` or reintroduce a separate wrapper —
-   that mismatch was the cause of the earlier misalignment.
-   ============================================ */
+/* =============================================================
+   Main Footer
+   File: assets/main-footer.css
+   Loaded by: sections/main-footer.liquid
+
+   Scope: footer shell, nav menu columns, payment/social icons,
+   copyright + policy links row.
+
+   DESIGN TOKENS: reuses the header's --hdr-* custom properties
+   directly (defined in assets/main-header.css) rather than
+   introducing a parallel --ftr-* set, per the consistency decision
+   in theme.md. If the header's tokens change, the footer updates
+   with it automatically.
+
+   ASSUMPTION: footer uses the same light color scheme as the header
+   (--hdr-bg background, --hdr-text copy) rather than a dark/inverted
+   footer. If a dark footer is wanted instead, this file's color
+   values need revisiting — flag it and this can be redone.
+
+   BREAKPOINTS: matches the header's exactly, so footer and header
+   change layout at the same viewport widths:
+     Mobile  : < 640px
+     Tablet  : 640px – 1023px
+     Desktop : ≥ 1024px
+
+   CONTAINER: .footer-width intentionally mirrors the header's
+   .main-header__inner container values (max-width: 1184px;
+   margin: 0 auto; padding: 0 24px, dropping to 0 12px under 640px)
+   so footer content lines up edge-to-edge with the header above it.
+   Do not change these values without checking main-header.css's
+   .main-header__inner rule still matches.
+
+   MOBILE ACCORDION: below 1024px, main-footer.js progressively
+   converts each .footer-menu__column's heading into a toggle button
+   and adds a .is-open state class to the column. This file styles
+   both the enhanced (JS-present) and unenhanced (no-JS) states — with
+   JS disabled, all columns simply stay open/static, which is a safe
+   fallback rather than a broken one.
+   ============================================================= */
+
+/* ─────────────────────────────────────────────
+   SHELL
+   ───────────────────────────────────────────── */
 
 .main-footer {
-  background-color: #ffffff;
-  color: #111111;
-  padding-top: 40px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--hdr-bg);
+  border-top: 1px solid var(--hdr-border);
+  color: var(--hdr-text);
+  font-family: var(--hdr-font);
 }
 
-/* Mirrors header's container exactly:
-   .main-header__inner / .utility-bar__inner / .menu-bar (desktop)
-   all use max-width: 1184px + margin: 0 auto + padding: 0 24px,
-   dropping to 0 12px under 639px. Keep these two in sync. */
 .footer-width {
   width: 100%;
   max-width: 1184px;
@@ -30,188 +62,282 @@
   }
 }
 
-/* ---------- Footer menu ---------- */
-.main-footer__menu {
-  margin-bottom: 32px;
-}
+/* ─────────────────────────────────────────────
+   FOOTER MENU
+   ───────────────────────────────────────────── */
 
-.footer-menu__heading {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: #111827;
-  margin: 0 0 12px;
-  padding-bottom: 10px;
+.main-footer__menu {
+  padding: 48px 0 32px;
+  border-bottom: 1px solid var(--hdr-border);
 }
 
 .footer-menu__heading--top {
-  padding-bottom: 0;
-  margin-bottom: 20px;
-  font-size: 13px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--hdr-text);
+  margin: 0 0 24px;
 }
 
 .footer-menu__columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem 2.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.footer-menu__column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Column heading — becomes a toggle button on mobile/tablet via JS.
+   Base styles apply whether or not JS has enhanced it. */
+.footer-menu__heading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--hdr-text);
+  margin: 0 0 14px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .footer-menu__section-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6b7280;
-  margin: 16px 0 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--hdr-muted);
+  margin: 14px 0 6px;
+}
+
+.footer-menu__section-title:first-child {
+  margin-top: 0;
 }
 
 .footer-menu__link {
   display: block;
-  width: 100%;
-  padding: 5px 0;
-  color: #374151;
-  font-size: 13.5px;
-  line-height: 1.45;
+  padding: 6px 0;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--hdr-muted);
   text-decoration: none;
-  position: relative;
-  transition: color 0.12s ease;
-}
-
-.footer-menu__link::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  left: 0;
-  width: 0;
-  height: 1.5px;
-  background: #c4301c;
-  transition: width 0.18s ease;
+  transition: color 0.15s ease;
 }
 
 .footer-menu__link:hover {
-  color: #c4301c;
+  color: var(--hdr-accent);
 }
 
-.footer-menu__link:hover::after {
-  width: 100%;
+/* ─────────────────────────────────────────────
+   RESERVED CONTENT SLOT
+   Empty today (see sections/main-footer.liquid) — this rule just
+   keeps consistent vertical rhythm if/when it's populated, and does
+   nothing if it stays empty.
+   ───────────────────────────────────────────── */
+
+.main-footer__content:not(:empty) {
+  padding: 32px 0;
+  border-bottom: 1px solid var(--hdr-border);
 }
 
-/* ---------- Content slot ---------- */
-.main-footer__content {
-  padding-bottom: 8px;
-}
+/* ─────────────────────────────────────────────
+   BOTTOM ROW — payments, socials, copyright, policies
+   ───────────────────────────────────────────── */
 
-/* ---------- Footer bottom ---------- */
 .main-footer__bottom {
-  background-color: #f8f8f8;
-  padding: 20px 0;
-  font-size: 14px;
-  margin-top: 24px;
+  padding: 24px 0 32px;
+}
+
+.main-footer__icons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.main-footer__payments {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.main-footer__payments img {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
+.main-footer__socials {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-footer__socials a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.main-footer__socials a:hover {
+  background: var(--hdr-search-bg);
+}
+
+.main-footer__socials img {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .main-footer__bottom-inner {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hdr-border);
 }
 
 .main-footer__copyright p {
   margin: 0;
+  font-size: 0.8125rem;
+  color: var(--hdr-muted);
 }
 
 .main-footer__policies {
   display: flex;
-  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 20px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .main-footer__policies a {
-  color: #111111;
+  font-size: 0.8125rem;
+  color: var(--hdr-muted);
   text-decoration: none;
-  transition: opacity 0.2s ease;
+  transition: color 0.15s ease;
 }
 
 .main-footer__policies a:hover {
-  opacity: 0.6;
+  color: var(--hdr-accent);
 }
 
-.main-footer__icons {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  margin-bottom: 12px;
-}
+/* ─────────────────────────────────────────────
+   TABLET  (640px – 1023px)
+   ───────────────────────────────────────────── */
 
-.main-footer__payments,
-.main-footer__socials {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.main-footer__payments img,
-.main-footer__socials img {
-  height: 28px;
-  width: auto;
-  opacity: 0.9;
-  transition: opacity 0.2s ease;
-}
-
-.main-footer__payments img:hover,
-.main-footer__socials img:hover {
-  opacity: 1;
-}
-
-/* ---------- Responsive ---------- */
-@media screen and (max-width: 768px) {
+@media (min-width: 640px) and (max-width: 1023px) {
   .footer-menu__columns {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1.5rem 2rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px 32px;
+  }
+
+  .main-footer__menu {
+    padding: 36px 0 24px;
   }
 }
 
-@media screen and (max-width: 767px) {
-  .main-footer__icons {
-    flex-direction: column;
-    gap: 16px;
-    align-items: center;
+/* ─────────────────────────────────────────────
+   MOBILE  (< 640px)
+   ───────────────────────────────────────────── */
+
+@media (max-width: 639px) {
+  .main-footer__menu {
+    padding: 24px 0 8px;
   }
 
-  .main-footer__bottom-inner {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
-  }
-
-  .main-footer__policies {
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-}
-
-@media screen and (max-width: 640px) {
   .footer-menu__columns {
     grid-template-columns: 1fr;
-    gap: 1.25rem 0;
+    gap: 0;
+  }
+
+  .main-footer__icons {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .main-footer__bottom-inner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
-@media screen and (min-width: 768px) and (max-width: 1023px) {
-  .main-footer__bottom-inner {
-    gap: 20px;
+/* ─────────────────────────────────────────────
+   MOBILE/TABLET ACCORDION (JS-enhanced state)
+   Applied only once main-footer.js has run — see
+   .js-footer-accordion below, added to <footer> by the JS on init.
+   Without JS, columns simply stay static/open (see fallback note in
+   the file header comment above).
+   ───────────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+  .js-footer-accordion .footer-menu__column {
+    border-bottom: 1px solid var(--hdr-border);
+  }
+
+  .js-footer-accordion .footer-menu__column:last-child {
+    border-bottom: none;
+  }
+
+  .js-footer-accordion .footer-menu__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 0;
+    margin: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    color: var(--hdr-text);
+  }
+
+  .js-footer-accordion .footer-menu__heading:hover {
+    color: var(--hdr-accent);
+  }
+
+  .footer-menu__heading-chevron {
+    flex-shrink: 0;
+    margin-left: 12px;
+    transition: transform 0.2s ease;
+  }
+
+  .js-footer-accordion .footer-menu__heading[aria-expanded="true"] .footer-menu__heading-chevron {
+    transform: rotate(180deg);
+  }
+
+  .js-footer-accordion .footer-menu__column-body {
+    overflow: hidden;
+  }
+
+  .js-footer-accordion .footer-menu__column-body[hidden] {
+    display: none;
+  }
+
+  .js-footer-accordion .footer-menu__column-body {
+    padding-bottom: 12px;
   }
 }
+
+/* ─────────────────────────────────────────────
+   REDUCED MOTION
+   ───────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .footer-menu__link,
-  .footer-menu__link::after {
-    transition: none !important;
+  .main-footer__socials a,
+  .main-footer__policies a,
+  .footer-menu__heading-chevron {
+    transition: none;
   }
 }
