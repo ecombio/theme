@@ -37,6 +37,25 @@
   header-hamburger.css and header-hamburger.js need no edits for this
   change — only the highlight branch's own markup grew a few tags.
 
+  This file loads assets/highlight.css directly (in addition to its own
+  header-hamburger.css) because the highlight branch above inlines the
+  star SVG markup itself rather than {% render 'highlight' %}-ing the
+  desktop snippet, so it can't rely on that snippet having loaded the
+  stylesheet already. If this drawer and the desktop menu bar both
+  render on the same page, highlight.css ends up requested via two
+  <link> tags — harmless, since the browser caches the same asset URL,
+  just slightly redundant markup.
+
+  The highlight branch also wraps its label + stars in an inner
+  .main-header__mobile-nav-highlight-content span. The outer <a> stays
+  full-row-width like every other drawer link (for a full-width tap
+  target and hover background), but the stars are position:absolute
+  against their nearest positioned ancestor — anchoring them to a
+  full-width link would push them out to the far edge of the drawer
+  instead of sitting next to the text. The inner span is sized to its
+  own content (like the desktop .menu-bar__link--highlight already is),
+  so the stars stay right next to "On Sale" regardless of drawer width.
+
   Params:
     blocks                   — section.blocks from sections/main-header.liquid
     enable_sticky             — bool; whether to render the sticky hamburger at all
@@ -131,13 +150,15 @@
           <li class="{{ li_class }}">
             <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0 main-header__mobile-nav-link--highlight"
                href="{{ block_link | default: '#' }}">
-              {%- if block.settings.icon != blank -%}
-                <span class="main-header__mobile-nav-icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
-              {%- endif -%}
-              <span class="reversed-link">{{ block_label }}</span>
-              <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
-              <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
-              <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+              <span class="main-header__mobile-nav-highlight-content">
+                {%- if block.settings.icon != blank -%}
+                  <span class="main-header__mobile-nav-icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+                {%- endif -%}
+                <span class="reversed-link">{{ block_label }}</span>
+                <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+                <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+                <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+              </span>
             </a>
           </li>
 
