@@ -1,35 +1,18 @@
-/* This file owns header shell/layout only — snippet-specific styles live in each snippet's own CSS file. */
 /* =============================================================
-   Main Header Layout
+   Main Header Layout + Sticky Behavior (Consolidated)
    File: assets/main-header.css
-   Loaded by: sections/main-header.liquid
 
    Scope: header shell, top bar, hamburger, logo, icon cluster,
           search row, mobile nav drawer, scroll shadow.
+
+   Sticky positioning, scroll behavior, and spacer logic live here.
    Search component styles live in assets/header-search.css.
+   Hamburger + mobile drawer styles are included below (merged).
 
-   Sticky positioning (.is-sticky), scroll shadow (.is-scrolled), and the
-   dynamic --sticky-header-height / --sticky-toolbar-height CSS vars are
-   all owned by main-header-sticky.css / main-header-sticky.js, applied
-   only when the header has .main-header--sticky-enabled. A naive
-   `position: sticky` attempt used to live directly on the base
-   .main-header rule below — removed, since it doesn't work in this
-   theme (Shopify's per-section wrapper divs break sticky's containing
-   block; see main-header-sticky.css for the full explanation) and
-   duplicated logic that already lives, correctly, in that file.
-
-   FIXED (bottom-only shadow bug): both .main-header and
-   .main-header--sticky-enabled used to fake a "shadow on the bottom
-   edge only" using `clip-path: inset(0 -30px -30px -30px)`. clip-path
-   clips the ENTIRE rendered subtree of the element it's applied to —
-   not just its own box-shadow — and forces that element into its own
-   stacking context, so the clip applied even to position:fixed
-   descendants (the mega-menu, the flyout panel, and the mobile nav
-   drawer are all rendered inside <header class="main-header">). That
-   clipped all three of them down to roughly header-height + 30px,
-   which is why they all appeared to get cut off at the same point.
-   Replaced with a ::after pseudo-element that carries the shadow
-   instead, so nothing inside .main-header gets clipped anymore.
+   SHADOW FIX: Uses .main-header::after for bottom shadow instead of
+   clip-path or direct box-shadow. This prevents clipping of child
+   elements (mega-menu, flyouts, mobile drawer). The ::after handles
+   the shadow in BOTH normal and sticky states.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -37,15 +20,13 @@
    ───────────────────────────────────────────── */
 
 .main-header {
-  position: relative;        /* anchors the ::after shadow below */
-  z-index: 200;               /* keep — dropdowns/mega-menu/flyout likely stack on this */
+  position: relative;        /* anchors the ::after shadow */
+  z-index: 200;
   width: 100%;
   background: #fff;
 }
 
-/* Bottom-only shadow, without clipping the header's contents.
-   Sits just below the header, extended slightly past its left/right
-   edges to match the old clip-path's -30px inset. */
+/* Bottom-only shadow via pseudo-element (no clipping of children) */
 .main-header::after {
   content: "";
   position: absolute;
@@ -75,17 +56,6 @@
 
 /* ─────────────────────────────────────────────
    LOGO-CENTERED MODE
-   Applied only when .main-header--logo-centered is present on the
-   <header> (i.e. the "Enable search drawer icon" setting is on).
-   Default layout (hamburger/search icon → logo → spacer → icons) is
-   completely untouched otherwise.
-
-   Uses absolute centering rather than equal flex-basis on both sides,
-   because the left cluster (hamburger + search-drawer trigger) and
-   the right cluster (account + cart, with its badge) are rarely the
-   same width — flex-based centering would only look centered by
-   coincidence. Absolute positioning centers the logo in the bar
-   regardless of how wide either side ends up being.
    ───────────────────────────────────────────── */
 
 .main-header--logo-centered .main-header__inner {
@@ -101,10 +71,6 @@
   z-index: 1;
 }
 
-/* Left cluster (hamburger + search-drawer trigger) and the right icon
-   list both need to sit above the absolutely-positioned logo so their
-   click targets are never covered if the logo's width and the header's
-   padding ever get tight enough to overlap. */
 .main-header--logo-centered .main-header__hamburger,
 .main-header--logo-centered .header-search-drawer__trigger,
 .main-header--logo-centered .main-header__icons {
@@ -112,9 +78,6 @@
   z-index: 2;
 }
 
-/* On very narrow viewports the logo can start to crowd the hamburger
-   and search icon on its left — cap its width a bit tighter than the
-   theme editor's own --logo-width setting so it never overlaps. */
 @media (max-width: 380px) {
   .main-header--logo-centered .main-header__logo-link {
     max-width: 120px;
@@ -122,21 +85,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   HAMBURGER (mobile/tablet + sticky) and MOBILE NAV DRAWER
-   Moved to assets/header-hamburger.css, rendered via
-   snippets/header-hamburger.liquid. Nothing header-hamburger-related
-   lives in this file anymore — see that file instead.
-   ───────────────────────────────────────────── */
-
-/* ─────────────────────────────────────────────
-   LOGO
-   Moved to assets/header-logo.css, rendered via
-   snippets/header-logo.liquid. Nothing logo-related lives in
-   this file anymore — see that file instead.
-   ───────────────────────────────────────────── */
-
-/* ─────────────────────────────────────────────
-   INLINE SEARCH  (desktop only, ≥ 1024px)
+   INLINE SEARCH (desktop only, ≥ 1024px)
    ───────────────────────────────────────────── */
 .main-header__search--inline {
   flex: 1;
@@ -187,8 +136,6 @@
 .main-header__icon-btn:focus-visible  { outline: 2px solid #1a1a1a; outline-offset: 2px; }
 
 .main-header__icon { display: block; flex-shrink: 0; }
-
-/* Icon label — hidden by default, shown on tablet+ */
 .main-header__icon-label { display: none; }
 
 /* ─────────────────────────────────────────────
@@ -220,11 +167,10 @@
 .main-header__cart-badge--hidden { opacity: 0; }
 
 /* ─────────────────────────────────────────────
-   SEARCH ROW  (tablet + mobile, hidden ≥ 1024px)
+   SEARCH ROW (tablet + mobile)
    ───────────────────────────────────────────── */
 .main-header__search-row {
   display: flex;
-/*border-top: 1px solid #f0f0f0;*/
 }
 .main-header__search-row-inner {
   width: 100%;
@@ -237,53 +183,37 @@
 }
 
 /* ─────────────────────────────────────────────
-   TABLET  (600px – 1023px)
-   Matches screenshot: top bar shows hamburger + logo + icon labels + cart
-   Search row sits below the bar.
+   TABLET (600px – 1023px)
    ───────────────────────────────────────────── */
 @media (min-width: 640px) and (max-width: 1023px) {
-  /* Show text labels next to icons ("Find a store", "Sign in/ Register") */
   .main-header__icon-label {
     display: inline;
   }
-
-  /* Give the top bar a bit more breathing room between icons */
   .main-header__icons {
     gap: 4px;
   }
-
-  /* Slightly reduce icon button padding so labels don't crowd the bar */
   .main-header__icon-btn {
     padding: 6px 10px;
   }
 }
 
 /* ─────────────────────────────────────────────
-   MOBILE  (< 640px)
-   Matches screenshot: top bar shows hamburger + logo + icon-only buttons + cart
-   Icon labels are hidden; icons are compact. Search row below.
+   MOBILE (< 640px)
    ───────────────────────────────────────────── */
 @media (max-width: 639px) {
   .main-header__inner {
     padding: 0 12px;
     gap: 4px;
   }
-
-  /* Tighten icon cluster */
   .main-header__icons {
     gap: 0;
   }
-
-  /* Icon-only: no label, tighter padding */
   .main-header__icon-label {
     display: none;
   }
-
   .main-header__icon-btn {
     padding: 6px;
   }
-
-  /* Search row padding matches the tighter inner padding */
   .main-header__search-row-inner {
     padding: 6px 12px;
   }
@@ -297,55 +227,18 @@
   .main-header__icon-btn,
   .main-header__cart-badge { transition: none; }
 }
-/* Hamburger/drawer reduced-motion rules now live in header-hamburger.css */
 
 /* =============================================================================
-   Main Header — Sticky Behavior
-   File: assets/main-header-sticky.css
-   Merged in here from its own file.
-
-   Uses position:FIXED, not position:sticky. Shopify wraps every section
-   rendered via {% sections 'header-group' %} in its own auto-height
-   wrapper div (sometimes nested two levels deep). position:sticky's
-   containing block is whichever wrapper is its immediate parent — and
-   that wrapper is only ever as tall as its own content, so sticky runs
-   out of room and "lets go" as soon as you scroll past it, no matter how
-   far up the tree you apply it.
-
-   position:fixed sidesteps this completely: it pins relative to the
-   viewport itself, ignoring ancestor wrapper heights (as long as no
-   ancestor sets transform/filter/perspective/contain — confirmed clean
-   on this theme). The tradeoff is that a fixed element is pulled out of
-   normal document flow permanently once applied, so main-header-sticky.js
-   inserts a spacer element to hold its place and prevent the page
-   jumping when it switches over.
-
-   DESKTOP-ONLY NOTE (historical fix): the sticky hamburger and its
-   .menu-bar reveal are desktop-only (min-width: 1024px), gated in
-   assets/header-menu.css/header-hamburger.css. Mobile and tablet use
-   their own drawer hamburger instead, defined in header-hamburger.css.
-   That gate matters because this file's scroll handler (main-header.js)
-   adds .is-sticky purely based on scroll position, with no width check
-   of its own — the width gate has to live in CSS, not here.
-
-   FIXED: removed the clip-path bottom-shadow trick from here too (see
-   note at the top of this file) — .main-header's own ::after now
-   handles the shadow in both the normal and sticky states, so this
-   class no longer needs its own box-shadow/clip-path pair.
+   STICKY BEHAVIOR
    ============================================================================= */
 
-/* Base header — normal, in-flow, until JS marks it .is-sticky */
+/* Base sticky-enabled header */
 .main-header--sticky-enabled {
   background: #fff;
   transition: box-shadow 0.2s ease;
 }
 
-/* Pinned to the viewport once scrolled past the threshold.
-   Uses a keyframe animation (not `transition`) because `position` itself
-   isn't animatable — the moment .is-sticky lands, position:fixed applies
-   instantly no matter what. The animation instead slides the now-fixed
-   header down from just above the viewport, so the *visual* transition
-   reads as smooth even though the underlying position change is a snap. */
+/* Pinned to viewport when scrolled past threshold */
 .main-header--sticky-enabled.is-sticky {
   position: fixed;
   top: 0;
@@ -360,13 +253,7 @@
   to   { transform: translateY(0); }
 }
 
-/* Shadow once the page has scrolled past the trigger point */
-.main-header--sticky-enabled.is-scrolled {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
-}
-
-/* Spacer — height is set by JS to match the header's own height right
-   before it goes fixed, so the page content doesn't jump upward. */
+/* Spacer to prevent content jump when header goes fixed */
 .main-header-sticky__spacer {
   display: none;
 }
@@ -375,23 +262,15 @@
 }
 
 /* =============================================================================
-   Merged from header.css — shell, hamburger, logo, search, mobile nav drawer
-   ============================================================================= */
-
-/* =============================================================================
-   ECOMBIO Header Styles  |  assets/header.css
-   Breakpoints:
-     Mobile  : < 600px
-     Tablet  : 600px – 1023px
-     Desktop : ≥ 1024px
+   ECOMBIO / MOBILE NAV DRAWER (Merged)
    ============================================================================= */
 
 .header {
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  /* Kept for backward compatibility if any old markup still references .header */
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* ── Variables ── */
+/* Variables */
 :root {
   --hdr-height-desktop : 68px;
   --hdr-height-tablet  : 64px;
@@ -414,10 +293,7 @@
   --hdr-drawer-z       : 400;
 }
 
-/* =============================================================================
-   SHELL
-   ============================================================================= */
-
+/* Ecombio Header Shell */
 .ecombio-header {
   position: relative;
   top: auto;
@@ -440,10 +316,7 @@
   height: var(--hdr-height-desktop);
 }
 
-/* =============================================================================
-   HAMBURGER  (hidden on desktop)
-   ============================================================================= */
-
+/* Hamburger */
 .ecombio-header__hamburger {
   display: none;
   flex-direction: column;
@@ -484,10 +357,7 @@
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* =============================================================================
-   LOGO
-   ============================================================================= */
-
+/* Logo */
 .ecombio-header__logo {
   flex-shrink: 0;
 }
@@ -514,10 +384,7 @@
   white-space: nowrap;
 }
 
-/* =============================================================================
-   SEARCH — shared form styles
-   ============================================================================= */
-
+/* Search Form (shared) */
 .ecombio-search__form {
   display: flex;
   align-items: center;
@@ -647,20 +514,14 @@
   color: var(--hdr-text);
 }
 
-/* =============================================================================
-   SEARCH — inline (desktop only)
-   ============================================================================= */
-
+/* Search Inline (desktop) */
 .ecombio-header__search--inline {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 640px;
 }
 
-/* =============================================================================
-   SEARCH ROW  (tablet + mobile)
-   ============================================================================= */
-
+/* Search Row (tablet + mobile) */
 .ecombio-header__search-row {
   display: none;
   border-top: 1px solid var(--hdr-border);
@@ -677,7 +538,6 @@
    MOBILE / TABLET DRAWER
    ============================================================================= */
 
-/* ── Overlay + visibility shell ── */
 .ecombio-mobile-nav {
   position: fixed;
   inset: 0;
@@ -703,7 +563,6 @@
   opacity: 1;
 }
 
-/* ── Slide-in panel ── */
 .ecombio-mobile-nav__panel {
   position: absolute;
   top: 0;
@@ -724,7 +583,6 @@
   transform: translateX(0);
 }
 
-/* ── Header row ── */
 .ecombio-mobile-nav__header {
   display: flex;
   align-items: center;
@@ -760,7 +618,7 @@
   background: var(--hdr-search-bg);
 }
 
-/* ── List reset ── */
+/* List reset */
 .ecombio-mobile-nav__list,
 .ecombio-mobile-nav__sub {
   list-style: none;
@@ -773,13 +631,11 @@
   padding: 6px 0 32px;
 }
 
-/* ── Row: link + toggle button side by side ── */
 .ecombio-mobile-nav__row {
   display: flex;
   align-items: stretch;
 }
 
-/* ── Top-level item dividers ── */
 .ecombio-mobile-nav__list > .ecombio-mobile-nav__item {
   border-bottom: 1px solid var(--hdr-border);
 }
@@ -788,7 +644,7 @@
   border-bottom: none;
 }
 
-/* ── Links — Level 1 ── */
+/* Level 1 Links */
 .ecombio-mobile-nav__link {
   flex: 1;
   display: flex;
@@ -809,7 +665,7 @@
   color: var(--hdr-accent);
 }
 
-/* ── Links — Level 2 ── */
+/* Level 2 Links */
 .ecombio-mobile-nav__link--sub {
   padding: 11px 20px 11px 28px;
   font-size: 0.875rem;
@@ -821,7 +677,7 @@
   color: var(--hdr-accent);
 }
 
-/* ── Links — Level 3 ── */
+/* Level 3 Links */
 .ecombio-mobile-nav__link--deep {
   padding: 9px 20px 9px 44px;
   font-size: 0.8125rem;
@@ -833,7 +689,7 @@
   color: var(--hdr-accent);
 }
 
-/* ── Expand toggle button ── */
+/* Expand Toggle */
 .ecombio-mobile-nav__toggle {
   flex-shrink: 0;
   display: flex;
@@ -853,7 +709,6 @@
   color: var(--hdr-accent);
 }
 
-/* ── Chevron rotation ── */
 .ecombio-mobile-nav__chevron {
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
@@ -863,13 +718,12 @@
   transform: rotate(180deg);
 }
 
-/* ── Accent left border when open ── */
 .ecombio-mobile-nav__toggle[aria-expanded="true"] {
   color: var(--hdr-accent);
   border-left-color: var(--hdr-accent);
 }
 
-/* ── Sub-list containers ── */
+/* Sub-lists */
 .ecombio-mobile-nav__sub {
   background: #f9fafb;
   border-top: 1px solid var(--hdr-border);
@@ -884,7 +738,6 @@
   background: #f3f4f6;
 }
 
-/* ── L2 item dividers ── */
 .ecombio-mobile-nav__sub > .ecombio-mobile-nav__item {
   border-bottom: 1px solid #ebebeb;
 }
@@ -893,7 +746,6 @@
   border-bottom: none;
 }
 
-/* ── L3 item dividers ── */
 .ecombio-mobile-nav__item--l3 {
   border-bottom: 1px solid #e4e4e4;
 }
@@ -919,11 +771,10 @@
 }
 
 /* =============================================================================
-   RESPONSIVE — TABLET  (600px – 1023px)
+   RESPONSIVE — TABLET (600px – 1023px)
    ============================================================================= */
 
 @media (max-width: 1023px) {
-
   .ecombio-header__inner {
     height: var(--hdr-height-tablet);
     padding: 0 20px;
@@ -941,15 +792,13 @@
   .ecombio-header__search-row {
     display: block;
   }
-
 }
 
 /* =============================================================================
-   RESPONSIVE — MOBILE  (< 600px)
+   RESPONSIVE — MOBILE (< 600px)
    ============================================================================= */
 
 @media (max-width: 599px) {
-
   .ecombio-header__inner {
     height: var(--hdr-height-mobile);
     padding: 0 16px;
@@ -963,7 +812,6 @@
   .ecombio-search__form {
     height: 42px;
   }
-
 }
 
 /* =============================================================================
@@ -982,6 +830,4 @@
     transition: none !important;
     animation: none !important;
   }
-  /* .main-header-sticky__hamburger's reduced-motion rule now lives in
-     header-hamburger.css alongside the element itself. */
 }
