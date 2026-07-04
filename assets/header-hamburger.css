@@ -38,6 +38,15 @@
        two places). This file only keeps the optional icon's spacing
        rule (.main-header__mobile-nav-icon), mirroring .menu-bar__icon
        in header-menu.css.
+
+   UPDATED: when a division's "Show Menu Bar" setting is on, that
+   division's drawer hamburger is now hidden — see the
+   "HIDE HAMBURGER WHEN SHOW MENU BAR IS ON" block near the bottom of
+   the hamburger section below. Previously both the hamburger/drawer
+   and the menu bar always showed together at that breakpoint; now the
+   menu bar takes over as that division's primary nav instead of
+   supplementing the drawer trigger. Mobile and tablet remain
+   independent, same as everywhere else in this header.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -85,6 +94,30 @@
 
 @media (min-width: 1024px) {
   .main-header__hamburger { display: none; }
+}
+
+/* ─────────────────────────────────────────────
+   HIDE HAMBURGER WHEN "SHOW MENU BAR" IS ON
+   Each division's hamburger only hides for ITS OWN breakpoint, driven
+   by that division's own setting/class — same independence pattern as
+   everywhere else in this header:
+     Mobile (<640px)         → .main-header--menu-bar-mobile-visible
+     Tablet (640px–1023px)   → .main-header--menu-bar-tablet-visible
+   When a division's menu bar is showing, it IS that division's
+   primary nav, so the drawer hamburger is redundant there. The other
+   division's hamburger is unaffected either way. Note: this makes the
+   mobile nav drawer itself unreachable at that breakpoint too, since
+   there's no longer a trigger to open it there.
+   ───────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .main-header--menu-bar-mobile-visible .main-header__hamburger {
+    display: none;
+  }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .main-header--menu-bar-tablet-visible .main-header__hamburger {
+    display: none;
+  }
 }
 
 /* ─────────────────────────────────────────────
