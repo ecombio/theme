@@ -29,13 +29,15 @@
        to support the old recursive renderer's toggle+link combo rows;
        the current markup renders a toggle OR a link per item, never
        both, so this wrapper is never output.
-     - Added .main-header__mobile-nav-item--highlight /
-       .main-header__mobile-nav-link--highlight to style the
-       "On Sale"-style highlight block, which previously had no rule
-       here at all.
      - Link/toggle hover color now uses var(--hdr-accent) instead of a
        hardcoded red, matching the accent variable header-menu.css and
        highlight.css both use, so a theme accent change applies here too.
+     - The highlight item's color/weight/star treatment now lives
+       entirely in assets/highlight.css (shared with the desktop menu
+       bar's highlight link, since it's the same nav item rendered in
+       two places). This file only keeps the optional icon's spacing
+       rule (.main-header__mobile-nav-icon), mirroring .menu-bar__icon
+       in header-menu.css.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -209,16 +211,20 @@
   color: var(--hdr-accent);
 }
 
-/* Highlight block (e.g. "On Sale") — same accent treatment as the
-   desktop menu bar's highlighted link, minus the star icons, which
-   the drawer markup doesn't render. */
-.main-header__mobile-nav-link--highlight {
-  color: var(--hdr-accent);
-  font-weight: 700;
+/* Highlight block (e.g. "On Sale") — full color/weight/star treatment
+   now lives in assets/highlight.css (shared with the desktop menu
+   bar's highlighted link), since it's the same nav item rendered
+   twice. This file only supplies the optional icon's spacing, mirroring
+   .menu-bar__icon in header-menu.css. */
+.main-header__mobile-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
-.main-header__mobile-nav-link--highlight:hover {
-  color: var(--hdr-accent);
-  opacity: 0.82;
+.main-header__mobile-nav-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── Content wrapper — groups search + the nav list below the fixed
