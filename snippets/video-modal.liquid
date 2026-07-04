@@ -1,0 +1,55 @@
+{%- comment -%}
+  Renders the expanded modal view for a shoppable video tile: the video
+  on the left, a heading/text block and the tagged product card on the
+  right. Reuses 'modal-product' so cart/variant logic stays in one place.
+
+  Usage:
+    {% render 'video-modal', block: block %}
+{%- endcomment -%}
+
+<div class="video-modal js-video-modal" id="VideoModal-{{ block.id }}" data-video-modal hidden>
+  <div class="video-modal__backdrop js-video-modal-close"></div>
+
+  <div class="video-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="VideoModalHeading-{{ block.id }}">
+    <button type="button" class="video-modal__close js-video-modal-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="video-modal__media">
+      {%- if block.settings.video != blank -%}
+        {{
+          block.settings.video
+          | video_tag:
+            image_size: '900x',
+            loop: true,
+            muted: false,
+            playsinline: true,
+            controls: false,
+            class: 'video-modal__el js-video-modal-el'
+        }}
+      {%- elsif block.settings.cover_image != blank -%}
+        {{ block.settings.cover_image | image_url: width: 900 | image_tag: loading: 'lazy', class: 'video-modal__cover', alt: block.settings.caption }}
+      {%- endif -%}
+
+      <button type="button" class="video-modal__mute js-video-modal-mute" aria-label="Toggle sound" aria-pressed="true">
+        <svg class="icon-muted" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" hidden><path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/></svg>
+        <svg class="icon-unmuted" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="video-modal__panel">
+      {%- if block.settings.modal_heading != blank -%}
+        <h3 class="video-modal__heading" id="VideoModalHeading-{{ block.id }}">{{ block.settings.modal_heading }}</h3>
+      {%- endif -%}
+      {%- if block.settings.modal_text != blank -%}
+        <p class="video-modal__text">{{ block.settings.modal_text }}</p>
+      {%- endif -%}
+
+      {%- if block.settings.product_1 != blank -%}
+        <div class="video-modal__product">
+          {%- render 'modal-product', product: block.settings.product_1, uid: block.id | append: '-modal' -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
