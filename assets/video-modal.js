@@ -38,10 +38,11 @@
 
       // We don't know the real ratio until the browser reads the file, so
       // size the modal box once metadata is available instead of assuming 16:9.
-      // Only meaningful in single (non-split) layout — split layout keeps a
-      // fixed box regardless of source orientation.
+      // Runs in both single and split layout — split layout now sizes its
+      // media pane off the real ratio too, so portrait uploads (9:16 reels)
+      // don't get pillarboxed inside a landscape-shaped box.
       video.addEventListener('loadedmetadata', function () {
-        if (video.videoWidth && video.videoHeight && modal.getAttribute('data-layout') !== 'split') {
+        if (video.videoWidth && video.videoHeight) {
           applyRatio(video.videoWidth, video.videoHeight);
         }
       });

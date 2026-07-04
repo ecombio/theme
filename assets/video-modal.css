@@ -40,8 +40,8 @@
   aspect-ratio: var(--vm-ratio, 9 / 16);
 }
 
-/* ── Split layout (video + product-card side by side) ── */
-.video-modal[data-layout="split"] .video-modal__inner {
+/* ── Split layout: landscape / default (YouTube, Vimeo, or unknown ratio) ── */
+.video-modal[data-layout="split"][data-orientation="landscape"] .video-modal__inner {
   display: flex;
   flex-direction: row;
   width: min(1100px, 94vw);
@@ -49,14 +49,42 @@
   aspect-ratio: unset;
 }
 
-.video-modal[data-layout="split"] .video-modal__media {
+.video-modal[data-layout="split"][data-orientation="landscape"] .video-modal__media {
   flex: 1 1 60%;
   min-width: 0;
 }
 
-.video-modal[data-layout="split"] .video-modal__product {
+.video-modal[data-layout="split"][data-orientation="landscape"] .video-modal__product {
   flex: 0 0 380px;
   max-width: 380px;
+}
+
+/* ── Split layout: portrait (9:16 reels) — size the media pane to the
+   real ratio instead of stretching it into a landscape-shaped box, so
+   there's no pillarboxing. Product pane fills the leftover width.
+   Only kicks in for uploaded files, since video-modal.js can only read
+   the real ratio via loadedmetadata on a native <video> element —
+   YouTube/Vimeo iframes still fall back to the landscape rule above. ── */
+.video-modal[data-layout="split"][data-orientation="portrait"] .video-modal__inner {
+  display: flex;
+  flex-direction: row;
+  width: auto;
+  max-width: min(1100px, 94vw);
+  height: min(85vh, 720px);
+  aspect-ratio: unset;
+}
+
+.video-modal[data-layout="split"][data-orientation="portrait"] .video-modal__media {
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: var(--vm-ratio, 9 / 16);
+  min-width: 0;
+}
+
+.video-modal[data-layout="split"][data-orientation="portrait"] .video-modal__product {
+  flex: 1 1 380px;
+  min-width: 300px;
+  max-width: 420px;
 }
 
 @keyframes video-modal-in {
@@ -138,7 +166,9 @@
     height: 32px;
   }
 
-  /* Stack: video on top, product below */
+  /* Stack: video on top, product below — applies to both landscape and
+     portrait split layouts on mobile; the side-by-side portrait rule
+     above only matters at tablet/desktop widths. */
   .video-modal[data-layout="split"] .video-modal__inner {
     flex-direction: column;
     width: min(94vw, 480px);
@@ -147,6 +177,8 @@
 
   .video-modal[data-layout="split"] .video-modal__media {
     flex: 1 1 45%;
+    height: auto;
+    aspect-ratio: unset;
   }
 
   .video-modal[data-layout="split"] .video-modal__product {
