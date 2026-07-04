@@ -42,7 +42,6 @@
   assign logo_width = settings.logo_width | default: 140
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
-  assign mobile_menu = section.settings.mobile_menu
   assign enable_sticky = section.settings.enable_sticky_header
   assign mobile_drawer_style = section.settings.mobile_drawer_style | default: 'compact'
   assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
@@ -58,11 +57,14 @@
       {%- comment -%}
         Both hamburger buttons (sticky + mobile drawer) and the mobile
         nav drawer itself now live in snippets/header-hamburger.liquid,
-        which also loads header-hamburger.css/js on its own. See that
-        file for details. Rendered here so the two buttons land in the
-        correct spot in this flex row, before the logo.
+        which also loads header-hamburger.css/js on its own. The mobile
+        drawer renders from `section.blocks` — the SAME blocks the
+        desktop .menu-bar (snippets/header-menu.liquid) uses — so there
+        is one nav data source for the whole header, not two to keep in
+        sync. Rendered here so the two buttons land in the correct spot
+        in this flex row, before the logo.
       {%- endcomment -%}
-      {%- render 'header-hamburger', mobile_menu: mobile_menu, enable_sticky: enable_sticky, drawer_style: mobile_drawer_style, enable_predictive_search: section.settings.enable_predictive_search -%}
+      {%- render 'header-hamburger', blocks: section.blocks, enable_sticky: enable_sticky, drawer_style: mobile_drawer_style, enable_predictive_search: section.settings.enable_predictive_search -%}
 
       {%- comment -%}
         Search drawer trigger + full-screen slide-down drawer, both
@@ -133,13 +135,6 @@
   "class": "main-header-section",
   "settings": [
     { "type": "header", "content": "Mobile Division (< 640px)" },
-    {
-      "type": "link_list",
-      "id": "mobile_menu",
-      "label": "Mobile navigation menu",
-      "default": "main-menu",
-      "info": "Used for the mobile drawer. Desktop items are configured via blocks below."
-    },
     {
       "type": "select",
       "id": "mobile_drawer_style",
@@ -385,9 +380,7 @@
   "presets": [
     {
       "name": "Main Header",
-      "settings": {
-        "mobile_menu": "main-menu"
-      },
+      "settings": {},
       "blocks": [
         { "type": "single-link", "settings": { "label": "Single link", "link": "/collections/all" } },
         { "type": "link-list", "settings": { "label": "Link list" } },
