@@ -17,7 +17,7 @@
 
   cta_style controls how the selected product is surfaced on the card itself:
     - none:                no on-card CTA; product only reachable via the modal
-    - overlay:              gradient scrim + name/price baked over the footage
+    - overlay:              gradient scrim + product thumbnail + name/price baked over the footage
     - icon_button:          small floating cart icon, corner of the footage
     - text_button:          solid bar over the footage with name/price + Add button
     - card_outside_video:   footer strip below the footage with thumbnail, name/price, Add button
@@ -27,10 +27,10 @@
   be a <button> (buttons can't nest buttons). It's a role="button" div instead;
   video-card.js handles both click and keyboard activation for it.
 
-  video-card__cta-name / video-card__cta-price / video-card__cta-info are
-  shared across all three CTA styles that show product text — one set of
-  classes, styled contextually per parent in video-card.css, rather than a
-  differently-named pair of spans for each style.
+  video-card__cta-name / video-card__cta-price / video-card__cta-info and
+  video-card__cta-thumb are shared across the CTA styles that show product
+  text/art — one set of classes, styled contextually per parent in
+  video-card.css, rather than a differently-named twin for each style.
 {%- enddoc -%}
 
 {%- liquid
@@ -76,6 +76,20 @@
   <span class="video-card__cta-info">
     <span class="video-card__cta-name">{{ card_product.title }}</span>
     <span class="video-card__cta-price">{{ card_product.price | money }}</span>
+  </span>
+{%- endcapture -%}
+
+{%- capture product_thumb -%}
+  <span class="video-card__cta-thumb">
+    {%- if card_product.featured_image -%}
+      <img
+        src="{{ card_product.featured_image | image_url: width: 100 }}"
+        alt="{{ card_product.featured_image.alt | default: card_product.title }}"
+        loading="lazy"
+        width="38"
+        height="38"
+      >
+    {%- endif -%}
   </span>
 {%- endcapture -%}
 
@@ -133,7 +147,10 @@
       {%- if show_cta -%}
         {%- case cta_style -%}
           {%- when 'overlay' -%}
-            <span class="video-card__overlay-scrim">{{ product_text }}</span>
+            <span class="video-card__overlay-scrim">
+              {{ product_thumb }}
+              {{ product_text }}
+            </span>
 
           {%- when 'icon_button' -%}
             <button type="button" class="video-card__cta video-card__cta--icon" {{ add_to_cart_attrs }}>
@@ -163,17 +180,7 @@
 
   {%- if show_cta and cta_style == 'card_outside_video' -%}
     <div class="video-card__footer">
-      <span class="video-card__footer-thumb">
-        {%- if card_product.featured_image -%}
-          <img
-            src="{{ card_product.featured_image | image_url: width: 100 }}"
-            alt="{{ card_product.featured_image.alt | default: card_product.title }}"
-            loading="lazy"
-            width="38"
-            height="38"
-          >
-        {%- endif -%}
-      </span>
+      {{ product_thumb }}
       {{ product_text }}
       <button type="button" class="video-card__cta" {{ add_to_cart_attrs }}>
         {{ cart_icon }}
