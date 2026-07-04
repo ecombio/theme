@@ -1,7 +1,7 @@
 {%- doc -%}
   Renders a single clickable video thumbnail card.
   Accepts:
-    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle, product
+    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle, product, cta_style
     - index: 1-based position in the carousel (used for aria labelling / autoplay-first logic)
 
   If block.settings.product is set, the product-card snippet is pre-rendered
@@ -9,6 +9,18 @@
   passes it through the video-card:play event; video-modal.js clones it into
   the modal's product pane. This keeps product-card rendering server-side
   (Liquid) while the open/close interaction stays client-side.
+
+  cta_style controls how the selected product is surfaced on the card itself
+  (separate from the product-card modal above):
+    - overlay:            gradient scrim + name/price baked over the footage
+    - icon_button:         small floating cart icon, corner of the footage
+    - text_button:         solid bar over the footage with name/price + Add button
+    - card_outside_video:  footer strip below the footage with thumbnail, name/price, Add button
+
+  Because card_outside_video and icon_button/text_button need a real,
+  independently-clickable "Add to cart" button, the outer play trigger can't
+  be a <button> (buttons can't nest buttons). It's a role="button" div instead;
+  video-card.js handles both click and keyboard activation for it.
 {%- enddoc -%}
 
 {%- liquid
@@ -18,6 +30,7 @@
   assign title = block.settings.title
   assign subtitle = block.settings.subtitle
   assign card_product = block.settings.product
+  assign cta_style = block.settings.cta_style | default: 'card_outside_video'
 
   if video_file
     assign video_type = 'file'
@@ -26,6 +39,11 @@
   else
     assign video_type = 'none'
   endif
+
+  assign variant_id = blank
+  if card_product
+    assign variant_id = card_product.selected_or_first_available_variant.id
+  endif
 -%}
 
 <div
@@ -33,15 +51,17 @@
   {{ block.shopify_attributes }}
   data-video-card
   data-video-type="{{ video_type }}"
+  data-cta-style="{{ cta_style }}"
   {% if video_url != blank %}data-video-id="{{ video_url.id }}"{% endif %}
   {% if video_file %}data-video-file-url="{{ video_file.sources.last.url }}"{% endif %}
 >
-  <button
-    type="button"
+  <div
     class="video-card__trigger"
     data-video-trigger
+    role="button"
+    tabindex="0"
     aria-label="Play video{% if title != blank %}: {{ title }}{% endif %}"
-    {% if video_type == 'none' %}disabled{% endif %}
+    {% if video_type == 'none' %}aria-disabled="true"{% endif %}
   >
     <span class="video-card__thumbnail">
       {%- if thumbnail -%}
@@ -76,6 +96,45 @@
           <polygon points="10 8 17 12 10 16" fill="currentColor"/>
         </svg>
       </span>
+
+      {%- if card_product and cta_style == 'overlay' -%}
+        <span class="video-card__overlay-scrim">
+          <span class="video-card__overlay-name">{{ card_product.title }}</span>
+          <span class="video-card__overlay-price">{{ card_product.price | money }}</span>
+        </span>
+      {%- elsif card_product and cta_style == 'icon_button' -%}
+        <button
+          type="button"
+          class="video-card__icon-btn"
+          data-add-to-cart
+          data-variant-id="{{ variant_id }}"
+          aria-label="Add {{ card_product.title }} to cart"
+          {% unless variant_id %}disabled{% endunless %}
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/>
+            <circle cx="9" cy="21" r="1"/>
+            <circle cx="18" cy="21" r="1"/>
+          </svg>
+        </button>
+      {%- elsif card_product and cta_style == 'text_button' -%}
+        <span class="video-card__text-bar">
+          <span class="video-card__text-info">
+            <span class="video-card__text-name">{{ card_product.title }}</span>
+            <span class="video-card__text-price">{{ card_product.price | money }}</span>
+          </span>
+          <button
+            type="button"
+            class="video-card__cta"
+            data-add-to-cart
+            data-variant-id="{{ variant_id }}"
+            aria-label="Add {{ card_product.title }} to cart"
+            {% unless variant_id %}disabled{% endunless %}
+          >
+            Add
+          </button>
+        </span>
+      {%- endif -%}
     </span>
 
     {%- if title != blank or subtitle != blank -%}
@@ -88,7 +147,42 @@
         {%- endif -%}
       </span>
     {%- endif -%}
-  </button>
+  </div>
+
+  {%- if card_product and cta_style == 'card_outside_video' -%}
+    <div class="video-card__footer">
+      <span class="video-card__footer-thumb">
+        {%- if card_product.featured_image -%}
+          <img
+            src="{{ card_product.featured_image | image_url: width: 100 }}"
+            alt="{{ card_product.featured_image.alt | default: card_product.title }}"
+            loading="lazy"
+            width="38"
+            height="38"
+          >
+        {%- endif -%}
+      </span>
+      <span class="video-card__footer-info">
+        <span class="video-card__footer-name">{{ card_product.title }}</span>
+        <span class="video-card__footer-price">{{ card_product.price | money }}</span>
+      </span>
+      <button
+        type="button"
+        class="video-card__cta"
+        data-add-to-cart
+        data-variant-id="{{ variant_id }}"
+        aria-label="Add {{ card_product.title }} to cart"
+        {% unless variant_id %}disabled{% endunless %}
+      >
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/>
+          <circle cx="9" cy="21" r="1"/>
+          <circle cx="18" cy="21" r="1"/>
+        </svg>
+        Add
+      </button>
+    </div>
+  {%- endif -%}
 
   {%- if card_product -%}
     <template data-video-product-template>
