@@ -1,21 +1,28 @@
 {%- doc -%}
   Renders a single clickable video thumbnail card.
   Accepts:
-    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle, product, cta_style
+    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle, product
     - index: 1-based position in the carousel (used for aria labelling / autoplay-first logic)
+    - cta_style: section-level setting, one of 'none', 'overlay', 'icon_button',
+      'text_button', 'card_outside_video'. Applies to every video-card the host
+      section renders — this is intentionally not a per-block setting, so a
+      merchant can't end up with five differently-styled CTAs in one carousel.
 
   If block.settings.product is set, the product-card snippet is pre-rendered
   into a hidden <template>. video-card.js reads that template's innerHTML and
   passes it through the video-card:play event; video-modal.js clones it into
   the modal's product pane. This keeps product-card rendering server-side
-  (Liquid) while the open/close interaction stays client-side.
+  (Liquid) while the open/close interaction stays client-side. This happens
+  regardless of cta_style, including 'none' — the modal is the fallback way
+  to reach the product when there's no on-card CTA.
 
   cta_style controls how the selected product is surfaced on the card itself
   (separate from the product-card modal above):
-    - overlay:            gradient scrim + name/price baked over the footage
-    - icon_button:         small floating cart icon, corner of the footage
-    - text_button:         solid bar over the footage with name/price + Add button
-    - card_outside_video:  footer strip below the footage with thumbnail, name/price, Add button
+    - none:                no on-card CTA at all; product is only reachable via the modal
+    - overlay:              gradient scrim + name/price baked over the footage
+    - icon_button:          small floating cart icon, corner of the footage
+    - text_button:          solid bar over the footage with name/price + Add button
+    - card_outside_video:   footer strip below the footage with thumbnail, name/price, Add button
 
   Because card_outside_video and icon_button/text_button need a real,
   independently-clickable "Add to cart" button, the outer play trigger can't
@@ -30,7 +37,7 @@
   assign title = block.settings.title
   assign subtitle = block.settings.subtitle
   assign card_product = block.settings.product
-  assign cta_style = block.settings.cta_style | default: 'card_outside_video'
+  assign cta_style = cta_style | default: 'card_outside_video'
 
   if video_file
     assign video_type = 'file'

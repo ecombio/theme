@@ -70,7 +70,7 @@
         <div class="video-carousel__list" data-carousel-list>
           {%- for block in section.blocks -%}
             {%- if block.type == 'video' -%}
-              {%- render 'video-card', block: block, index: forloop.index -%}
+              {%- render 'video-card', block: block, index: forloop.index, cta_style: section.settings.cta_style -%}
             {%- endif -%}
           {%- else -%}
             <p class="video-carousel__empty">Add video blocks in the theme editor.</p>
@@ -144,6 +144,21 @@
       "label": "Autoplay first video's sound off preview",
       "default": false,
       "info": "Only applies to uploaded MP4 videos, muted."
+    },
+    { "type": "header", "content": "Shoppable videos" },
+    {
+      "type": "select",
+      "id": "cta_style",
+      "label": "Product CTA style",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "overlay", "label": "Overlay" },
+        { "value": "icon_button", "label": "Icon button" },
+        { "value": "text_button", "label": "Text button" },
+        { "value": "card_outside_video", "label": "Card outside video" }
+      ],
+      "default": "card_outside_video",
+      "info": "Applies to every video block in this carousel that has a product selected. Choose None to hide the on-card CTA (the video still opens the product modal on click)."
     }
   ],
   "blocks": [
@@ -170,19 +185,6 @@
           "id": "product",
           "label": "Product",
           "info": "Optional. If selected, the video opens in a split view with this product's card alongside the video."
-        },
-        {
-          "type": "select",
-          "id": "cta_style",
-          "label": "Product CTA style",
-          "options": [
-            { "value": "overlay", "label": "Overlay" },
-            { "value": "icon_button", "label": "Icon button" },
-            { "value": "text_button", "label": "Text button" },
-            { "value": "card_outside_video", "label": "Card outside video" }
-          ],
-          "default": "card_outside_video",
-          "info": "Only applies when a product is selected above."
         },
         { "type": "text", "id": "title", "label": "Title" },
         { "type": "text", "id": "subtitle", "label": "Subtitle" }
