@@ -12,12 +12,19 @@
        (top level -> children -> grandchildren), unrolled as explicit
        loops rather than a recursive snippet.
 
-  MOBILE NAV SOURCE (changed): the drawer now renders from the SAME
-  `blocks` the desktop .menu-bar uses (see snippets/header-menu.liquid),
-  not a separate `mobile_menu` link_list setting. There is exactly one
-  nav data source for the whole header now. Each block becomes one
-  top-level (L0) drawer item:
-    - single-link / highlight -> plain link, no accordion
+  MOBILE NAV SOURCE: the drawer renders from the SAME `blocks` the
+  desktop .menu-bar uses (see snippets/header-menu.liquid), not a
+  separate `mobile_menu` link_list setting. There is exactly one nav
+  data source for the whole header. Each block becomes one top-level
+  (L0) drawer item:
+    - single-link             -> plain link, no accordion
+    - highlight                -> plain link, no accordion, but WITH the
+                                  same icon + three-star treatment as the
+                                  desktop menu bar's highlighted link
+                                  (see snippets/highlight.liquid and
+                                  assets/highlight.css). Split out from
+                                  single-link into its own `when` branch
+                                  since it needs this extra markup.
     - link-list / mega-menu /
       flyout                  -> accordion trigger; block.settings.menu
                                   (a link_list) supplies L1 children and,
@@ -26,9 +33,9 @@
                                   per-app on desktop and can't be generically
                                   turned into an accordion, so it simply
                                   doesn't appear in the mobile drawer.
-  Class names/IDs below are unchanged from the previous version, so
-  header-hamburger.css and header-hamburger.js need no edits — only the
-  data being looped over changed.
+  Class names/IDs elsewhere in this file are unchanged, so
+  header-hamburger.css and header-hamburger.js need no edits for this
+  change — only the highlight branch's own markup grew a few tags.
 
   Params:
     blocks                   — section.blocks from sections/main-header.liquid
@@ -109,12 +116,27 @@
 
       {%- case block.type -%}
 
-        {%- comment -%} Plain links — no accordion needed {%- endcomment -%}
-        {%- when 'single-link', 'highlight' -%}
+        {%- comment -%} Plain link — no accordion, no highlight treatment {%- endcomment -%}
+        {%- when 'single-link' -%}
           <li class="{{ li_class }}">
-            <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0{% if block.type == 'highlight' %} main-header__mobile-nav-link--highlight{% endif %}"
+            <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0"
                href="{{ block_link | default: '#' }}">
               {{ block_label }}
+            </a>
+          </li>
+
+        {%- comment -%} Highlight link — same icon + three-star treatment as the desktop menu bar's highlighted link (snippets/highlight.liquid) {%- endcomment -%}
+        {%- when 'highlight' -%}
+          <li class="{{ li_class }}">
+            <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0 main-header__mobile-nav-link--highlight"
+               href="{{ block_link | default: '#' }}">
+              {%- if block.settings.icon != blank -%}
+                <span class="main-header__mobile-nav-icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+              {%- endif -%}
+              <span class="reversed-link">{{ block_label }}</span>
+              <svg class="star star-1" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+              <svg class="star star-2" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
+              <svg class="star star-3" width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0L7.854 4.146L12 6L7.854 7.854L6 12L4.146 7.854L0 6L4.146 4.146L6 0Z" fill="currentColor"/></svg>
             </a>
           </li>
 
