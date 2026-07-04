@@ -2,13 +2,15 @@
   Header Search
   File: snippets/header-search.liquid
 
-  Called twice from sections/main-header.liquid:
+  Called from sections/main-header.liquid:
     variant='desktop' — inside main-header__inner, flex-fills the bar
     variant='mobile'  — inside main-header__search-row, below the bar
+  Called from snippets/header-search-drawer.liquid:
+    variant='drawer'  — inside the full-screen search drawer
 
   Parameters:
     enable_predictive_search {boolean}
-    variant                  {string}  'desktop' or 'mobile'
+    variant                  {string}  'desktop', 'mobile', or 'drawer'
 {% endcomment %}
 
 {%- liquid
@@ -21,7 +23,28 @@
 
 {{- 'header-search.css' | asset_url | stylesheet_tag -}}
 
-{%- if predictive and sfx == 'desktop' -%}
+{%- comment -%}
+  Loads header-search.js (predictive fetch, voice, clear button,
+  typewriter placeholder) whenever predictive search is enabled —
+  NOT gated to a specific variant. header-search.js already scans the
+  whole page for every [data-search-root] element and attaches a
+  HeaderSearch instance to each one it finds
+  (document.querySelectorAll('[data-search-root]').forEach(...)), so it
+  is variant-agnostic by design. It previously only loaded when
+  sfx == 'desktop', which worked by accident as long as the desktop
+  variant always rendered somewhere on the page (even if hidden via
+  CSS) — but breaks entirely for setups where only a non-desktop
+  variant renders, e.g. the search-drawer-only mode, since the script
+  tag itself would never print and HeaderSearch would never be
+  defined. Checking `predictive` alone fixes that for every variant.
+
+  If more than one variant ever renders on the same page (e.g. drawer
+  + mobile row together), this block executing more than once is
+  harmless — HeaderSearch.init() guards against double-initialization
+  via el._hsInstance, and re-declaring window.HS_TRENDING with the
+  same values is a no-op.
+{%- endcomment -%}
+{%- if predictive -%}
   <script src="{{ 'header-search.js' | asset_url }}" defer="defer"></script>
   {%- assign trending_menu = linklists['predictive-search-trending'] -%}
   <script>
