@@ -1,963 +1,960 @@
-  /* This file owns header shell/layout only — snippet-specific styles live in each snippet's own CSS file. */
-  /* =============================================================
-    Main Header Layout
-    File: assets/main-header.css
-    Loaded by: sections/main-header.liquid
+/* This file owns header shell/layout only — snippet-specific styles live in each snippet's own CSS file. */
+/* =============================================================
+   Main Header Layout
+   File: assets/main-header.css
+   Loaded by: sections/main-header.liquid
 
-    Scope: header shell, top bar, hamburger, logo, icon cluster,
-            search row, mobile nav drawer, scroll shadow.
-    Search component styles live in assets/header-search.css.
+   Scope: header shell, top bar, hamburger, logo, icon cluster,
+          search row, mobile nav drawer, scroll shadow.
+   Search component styles live in assets/header-search.css.
 
-    Sticky positioning (.is-sticky), scroll shadow (.is-scrolled), and the
-    dynamic --sticky-header-height / --sticky-toolbar-height CSS vars are
-    all owned by main-header-sticky.css / main-header-sticky.js, applied
-    only when the header has .main-header--sticky-enabled. A naive
-    `position: sticky` attempt used to live directly on the base
-    .main-header rule below — removed, since it doesn't work in this
-    theme (Shopify's per-section wrapper divs break sticky's containing
-    block; see main-header-sticky.css for the full explanation) and
-    duplicated logic that already lives, correctly, in that file.
-    ============================================================= */
+   Sticky positioning (.is-sticky), scroll shadow (.is-scrolled), and the
+   dynamic --sticky-header-height / --sticky-toolbar-height CSS vars are
+   all owned by main-header-sticky.css / main-header-sticky.js, applied
+   only when the header has .main-header--sticky-enabled. A naive
+   `position: sticky` attempt used to live directly on the base
+   .main-header rule below — removed, since it doesn't work in this
+   theme (Shopify's per-section wrapper divs break sticky's containing
+   block; see main-header-sticky.css for the full explanation) and
+   duplicated logic that already lives, correctly, in that file.
+   ============================================================= */
 
-  /* ─────────────────────────────────────────────
-    HEADER SHELL
-    ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   HEADER SHELL
+   ───────────────────────────────────────────── */
 
-  .main-header {
-    z-index: 200;              /* keep — dropdowns/mega-menu/flyout likely stack on this */
-    width: 100%;
-    background: #fff;
-    box-shadow: 0 2px 12px #00000014;
-  /* This makes the shadow appear ONLY at the bottom */
-    clip-path: inset(0 -30px -30px -30px);
-  }
+.main-header {
+  z-index: 200;              /* keep — dropdowns/mega-menu/flyout likely stack on this */
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 2px 12px #00000014;
+/* This makes the shadow appear ONLY at the bottom */
+  clip-path: inset(0 -30px -30px -30px);
+}
 
-  /* ─────────────────────────────────────────────
-    TOP BAR
-    ───────────────────────────────────────────── */
-  .main-header__bar { width: 100%; }
+/* ─────────────────────────────────────────────
+   TOP BAR
+   ───────────────────────────────────────────── */
+.main-header__bar { width: 100%; }
 
-  .main-header__inner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
-    max-width: 1184px;
-    margin: 0 auto;
-    padding: 0 24px;
-    height: 64px;
-  }
+.main-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 1184px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+}
 
-  /* ─────────────────────────────────────────────
-    LOGO-CENTERED MODE
-    Applied only when .main-header--logo-centered is present on the
-    <header> (i.e. the "Enable search drawer icon" setting is on).
-    Default layout (hamburger/search icon → logo → spacer → icons) is
-    completely untouched otherwise.
+/* ─────────────────────────────────────────────
+   LOGO-CENTERED MODE
+   Applied only when .main-header--logo-centered is present on the
+   <header> (i.e. the "Enable search drawer icon" setting is on).
+   Default layout (hamburger/search icon → logo → spacer → icons) is
+   completely untouched otherwise.
 
-    Uses absolute centering rather than equal flex-basis on both sides,
-    because the left cluster (hamburger + search-drawer trigger) and
-    the right cluster (account + cart, with its badge) are rarely the
-    same width — flex-based centering would only look centered by
-    coincidence. Absolute positioning centers the logo in the bar
-    regardless of how wide either side ends up being.
-    ───────────────────────────────────────────── */
+   Uses absolute centering rather than equal flex-basis on both sides,
+   because the left cluster (hamburger + search-drawer trigger) and
+   the right cluster (account + cart, with its badge) are rarely the
+   same width — flex-based centering would only look centered by
+   coincidence. Absolute positioning centers the logo in the bar
+   regardless of how wide either side ends up being.
+   ───────────────────────────────────────────── */
 
-  .main-header--logo-centered .main-header__inner {
-    position: relative;
-    justify-content: space-between;
-  }
+.main-header--logo-centered .main-header__inner {
+  position: relative;
+  justify-content: space-between;
+}
 
+.main-header--logo-centered .main-header__logo-link {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+/* Left cluster (hamburger + search-drawer trigger) and the right icon
+   list both need to sit above the absolutely-positioned logo so their
+   click targets are never covered if the logo's width and the header's
+   padding ever get tight enough to overlap. */
+.main-header--logo-centered .main-header__hamburger,
+.main-header--logo-centered .header-search-drawer__trigger,
+.main-header--logo-centered .main-header__icons {
+  position: relative;
+  z-index: 2;
+}
+
+/* On very narrow viewports the logo can start to crowd the hamburger
+   and search icon on its left — cap its width a bit tighter than the
+   theme editor's own --logo-width setting so it never overlaps. */
+@media (max-width: 380px) {
   .main-header--logo-centered .main-header__logo-link {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
+    max-width: 120px;
   }
+}
 
-  /* Left cluster (hamburger + search-drawer trigger) and the right icon
-    list both need to sit above the absolutely-positioned logo so their
-    click targets are never covered if the logo's width and the header's
-    padding ever get tight enough to overlap. */
-  .main-header--logo-centered .main-header__hamburger,
-  .main-header--logo-centered .header-search-drawer__trigger,
-  .main-header--logo-centered .main-header__icons {
-    position: relative;
-    z-index: 2;
-  }
+/* ─────────────────────────────────────────────
+   HAMBURGER (mobile/tablet + sticky) and MOBILE NAV DRAWER
+   Moved to assets/header-hamburger.css, rendered via
+   snippets/header-hamburger.liquid. Nothing header-hamburger-related
+   lives in this file anymore — see that file instead.
+   ───────────────────────────────────────────── */
 
-  /* On very narrow viewports the logo can start to crowd the hamburger
-    and search icon on its left — cap its width a bit tighter than the
-    theme editor's own --logo-width setting so it never overlaps. */
-  @media (max-width: 380px) {
-    .main-header--logo-centered .main-header__logo-link {
-      max-width: 120px;
-    }
-  }
+/* ─────────────────────────────────────────────
+   LOGO
+   Moved to assets/header-logo.css, rendered via
+   snippets/header-logo.liquid. Nothing logo-related lives in
+   this file anymore — see that file instead.
+   ───────────────────────────────────────────── */
 
-  /* ─────────────────────────────────────────────
-    HAMBURGER (mobile/tablet + sticky) and MOBILE NAV DRAWER
-    Moved to assets/header-hamburger.css, rendered via
-    snippets/header-hamburger.liquid. Nothing header-hamburger-related
-    lives in this file anymore — see that file instead.
-    ───────────────────────────────────────────── */
-
-  /* ─────────────────────────────────────────────
-    LOGO
-    Moved to assets/header-logo.css, rendered via
-    snippets/header-logo.liquid. Nothing logo-related lives in
-    this file anymore — see that file instead.
-    ───────────────────────────────────────────── */
-
-  /* ─────────────────────────────────────────────
-    INLINE SEARCH  (desktop only, ≥ 1024px)
-    ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   INLINE SEARCH  (desktop only, ≥ 1024px)
+   ───────────────────────────────────────────── */
+.main-header__search--inline {
+  flex: 1;
+  min-width: 0;
+  display: none;
+}
+@media (min-width: 1024px) {
   .main-header__search--inline {
-    flex: 1;
-    min-width: 0;
-    display: none;
+    display: flex;
+    align-items: center;
   }
-  @media (min-width: 1024px) {
-    .main-header__search--inline {
-      display: flex;
-      align-items: center;
-    }
+}
+
+/* ─────────────────────────────────────────────
+   RIGHT ICON CLUSTER
+   ───────────────────────────────────────────── */
+.main-header__icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  list-style: none;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+/* Shared base — works for both <a> and <button> */
+.main-header__icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1a1a1a;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 400;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.main-header__icon-btn:hover          { background: #f5f5f5; color: #1a1a1a; }
+.main-header__icon-btn:focus-visible  { outline: 2px solid #1a1a1a; outline-offset: 2px; }
+
+.main-header__icon { display: block; flex-shrink: 0; }
+
+/* Icon label — hidden by default, shown on tablet+ */
+.main-header__icon-label { display: none; }
+
+/* ─────────────────────────────────────────────
+   CART ICON + BADGE
+   ───────────────────────────────────────────── */
+.main-header__cart-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.main-header__cart-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #c4301c;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 9999px;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.main-header__cart-badge--hidden { opacity: 0; }
+
+/* ─────────────────────────────────────────────
+   SEARCH ROW  (tablet + mobile, hidden ≥ 1024px)
+   ───────────────────────────────────────────── */
+.main-header__search-row {
+  display: flex;
+/*border-top: 1px solid #f0f0f0;*/
+}
+.main-header__search-row-inner {
+  width: 100%;
+  max-width: 1184px;
+  margin: 0 auto;
+  padding: 8px 24px;
+}
+@media (min-width: 1024px) {
+  .main-header__search-row { display: none; }
+}
+
+/* ─────────────────────────────────────────────
+   TABLET  (600px – 1023px)
+   Matches screenshot: top bar shows hamburger + logo + icon labels + cart
+   Search row sits below the bar.
+   ───────────────────────────────────────────── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Show text labels next to icons ("Find a store", "Sign in/ Register") */
+  .main-header__icon-label {
+    display: inline;
   }
 
-  /* ─────────────────────────────────────────────
-    RIGHT ICON CLUSTER
-    ───────────────────────────────────────────── */
+  /* Give the top bar a bit more breathing room between icons */
   .main-header__icons {
-    display: flex;
-    align-items: center;
     gap: 4px;
-    margin-left: auto;
-    flex-shrink: 0;
-    list-style: none;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding: 0;
   }
 
-  /* Shared base — works for both <a> and <button> */
+  /* Slightly reduce icon button padding so labels don't crowd the bar */
   .main-header__icon-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #1a1a1a;
-    border-radius: 8px;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 400;
-    white-space: nowrap;
-    transition: color 0.15s ease, background 0.15s ease;
+    padding: 6px 10px;
   }
-  .main-header__icon-btn:hover          { background: #f5f5f5; color: #1a1a1a; }
-  .main-header__icon-btn:focus-visible  { outline: 2px solid #1a1a1a; outline-offset: 2px; }
+}
 
-  .main-header__icon { display: block; flex-shrink: 0; }
-
-  /* Icon label — hidden by default, shown on tablet+ */
-  .main-header__icon-label { display: none; }
-
-  /* ─────────────────────────────────────────────
-    CART ICON + BADGE
-    ───────────────────────────────────────────── */
-  .main-header__cart-wrap {
-    display: flex;
-    align-items: center;
-    position: relative;
+/* ─────────────────────────────────────────────
+   MOBILE  (< 640px)
+   Matches screenshot: top bar shows hamburger + logo + icon-only buttons + cart
+   Icon labels are hidden; icons are compact. Search row below.
+   ───────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .main-header__inner {
+    padding: 0 12px;
+    gap: 4px;
   }
 
-  .main-header__cart-badge {
-    position: absolute;
-    top: -7px;
-    right: -9px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    background: #c4301c;
-    color: #fff;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    line-height: 18px;
-    text-align: center;
-    border-radius: 9999px;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-  }
-  .main-header__cart-badge--hidden { opacity: 0; }
-
-  /* ─────────────────────────────────────────────
-    SEARCH ROW  (tablet + mobile, hidden ≥ 1024px)
-    ───────────────────────────────────────────── */
-  .main-header__search-row {
-    display: flex;
-  /*border-top: 1px solid #f0f0f0;*/
-  }
-  .main-header__search-row-inner {
-    width: 100%;
-    max-width: 1184px;
-    margin: 0 auto;
-    padding: 8px 24px;
-  }
-  @media (min-width: 1024px) {
-    .main-header__search-row { display: none; }
+  /* Tighten icon cluster */
+  .main-header__icons {
+    gap: 0;
   }
 
-  /* ─────────────────────────────────────────────
-    TABLET  (600px – 1023px)
-    Matches screenshot: top bar shows hamburger + logo + icon labels + cart
-    Search row sits below the bar.
-    ───────────────────────────────────────────── */
-  @media (min-width: 640px) and (max-width: 1023px) {
-    /* Show text labels next to icons ("Find a store", "Sign in/ Register") */
-    .main-header__icon-label {
-      display: inline;
-    }
-
-    /* Give the top bar a bit more breathing room between icons */
-    .main-header__icons {
-      gap: 4px;
-    }
-
-    /* Slightly reduce icon button padding so labels don't crowd the bar */
-    .main-header__icon-btn {
-      padding: 6px 10px;
-    }
-  }
-
-  /* ─────────────────────────────────────────────
-    MOBILE  (< 640px)
-    Matches screenshot: top bar shows hamburger + logo + icon-only buttons + cart
-    Icon labels are hidden; icons are compact. Search row below.
-    ───────────────────────────────────────────── */
-  @media (max-width: 639px) {
-    .main-header__inner {
-      padding: 0 12px;
-      gap: 4px;
-    }
-
-    /* Tighten icon cluster */
-    .main-header__icons {
-      gap: 0;
-    }
-
-    /* Icon-only: no label, tighter padding */
-    .main-header__icon-label {
-      display: none;
-    }
-
-    .main-header__icon-btn {
-      padding: 6px;
-    }
-
-    /* Search row padding matches the tighter inner padding */
-    .main-header__search-row-inner {
-      padding: 6px 12px;
-    }
-  }
-
-  /* ─────────────────────────────────────────────
-    REDUCED MOTION
-    ───────────────────────────────────────────── */
-  @media (prefers-reduced-motion: reduce) {
-    .main-header,
-    .main-header__icon-btn,
-    .main-header__cart-badge { transition: none; }
-  }
-  /* Hamburger/drawer reduced-motion rules now live in header-hamburger.css */
-
-  /* =============================================================================
-    Main Header — Sticky Behavior
-    File: assets/main-header-sticky.css
-    Merged in here from its own file.
-
-    Uses position:FIXED, not position:sticky. Shopify wraps every section
-    rendered via {% sections 'header-group' %} in its own auto-height
-    wrapper div (sometimes nested two levels deep). position:sticky's
-    containing block is whichever wrapper is its immediate parent — and
-    that wrapper is only ever as tall as its own content, so sticky runs
-    out of room and "lets go" as soon as you scroll past it, no matter how
-    far up the tree you apply it.
-
-    position:fixed sidesteps this completely: it pins relative to the
-    viewport itself, ignoring ancestor wrapper heights (as long as no
-    ancestor sets transform/filter/perspective/contain — confirmed clean
-    on this theme). The tradeoff is that a fixed element is pulled out of
-    normal document flow permanently once applied, so main-header-sticky.js
-    inserts a spacer element to hold its place and prevent the page
-    jumping when it switches over.
-
-    DESKTOP-ONLY NOTE (historical fix): the sticky hamburger and its
-    .menu-bar reveal are desktop-only (min-width: 1024px), gated in
-    assets/header-menu.css/header-hamburger.css. Mobile and tablet use
-    their own drawer hamburger instead, defined in header-hamburger.css.
-    That gate matters because this file's scroll handler (main-header.js)
-    adds .is-sticky purely based on scroll position, with no width check
-    of its own — the width gate has to live in CSS, not here.
-    ============================================================================= */
-
-  /* Base header — normal, in-flow, until JS marks it .is-sticky */
-  .main-header--sticky-enabled {
-    background: #fff;
-    transition: box-shadow 0.2s ease;
-    box-shadow: 0 2px 12px #00000014;
-  /* This makes the shadow appear ONLY at the bottom */
-    clip-path: inset(0 -30px -30px -30px);
-  }
-
-  /* Pinned to the viewport once scrolled past the threshold.
-    Uses a keyframe animation (not `transition`) because `position` itself
-    isn't animatable — the moment .is-sticky lands, position:fixed applies
-    instantly no matter what. The animation instead slides the now-fixed
-    header down from just above the viewport, so the *visual* transition
-    reads as smooth even though the underlying position change is a snap. */
-  .main-header--sticky-enabled.is-sticky {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 200;
-    animation: main-header-slide-in 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes main-header-slide-in {
-    from { transform: translateY(-100%); }
-    to   { transform: translateY(0); }
-  }
-
-  /* Shadow once the page has scrolled past the trigger point */
-  .main-header--sticky-enabled.is-scrolled {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
-  }
-
-  /* Spacer — height is set by JS to match the header's own height right
-    before it goes fixed, so the page content doesn't jump upward. */
-  .main-header-sticky__spacer {
+  /* Icon-only: no label, tighter padding */
+  .main-header__icon-label {
     display: none;
   }
-  .main-header-sticky__spacer.is-active {
-    display: block;
+
+  .main-header__icon-btn {
+    padding: 6px;
   }
 
-  /* =============================================================================
-    Merged from header.css — shell, hamburger, logo, search, mobile nav drawer
-    ============================================================================= */
-
-  /* =============================================================================
-    ECOMBIO Header Styles  |  assets/header.css
-    Breakpoints:
-      Mobile  : < 600px
-      Tablet  : 600px – 1023px
-      Desktop : ≥ 1024px
-    ============================================================================= */
-
-  .header {
-    box-shadow: 0 2px 6px rgba(0,0,0,.06);
-    border-bottom: 1px solid #e5e5e5;
+  /* Search row padding matches the tighter inner padding */
+  .main-header__search-row-inner {
+    padding: 6px 12px;
   }
+}
 
-  /* ── Variables ── */
-  :root {
-    --hdr-height-desktop : 68px;
-    --hdr-height-tablet  : 64px;
-    --hdr-height-mobile  : 56px;
-    --hdr-search-row-h   : 56px;
+/* ─────────────────────────────────────────────
+   REDUCED MOTION
+   ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .main-header,
+  .main-header__icon-btn,
+  .main-header__cart-badge { transition: none; }
+}
+/* Hamburger/drawer reduced-motion rules now live in header-hamburger.css */
 
-    --hdr-bg             : #ffffff;
-    --hdr-border         : #e5e5e5;
-    --hdr-text           : #111111;
-    --hdr-muted          : #6b6b6b;
-    --hdr-accent         : #e11d27;
-    --hdr-search-bg      : #f2f2f2;
-    --hdr-pill-bg        : #e5e5e5;
-    --hdr-pill-bg-hover  : #d8d8d8;
-    --hdr-radius-pill    : 9999px;
-    --hdr-radius-drop    : 12px;
-    --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
-    --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --hdr-z              : 200;
-    --hdr-drawer-z       : 400;
-  }
+/* =============================================================================
+   Main Header — Sticky Behavior
+   File: assets/main-header-sticky.css
+   Merged in here from its own file.
 
-  /* =============================================================================
-    SHELL
-    ============================================================================= */
+   Uses position:FIXED, not position:sticky. Shopify wraps every section
+   rendered via {% sections 'header-group' %} in its own auto-height
+   wrapper div (sometimes nested two levels deep). position:sticky's
+   containing block is whichever wrapper is its immediate parent — and
+   that wrapper is only ever as tall as its own content, so sticky runs
+   out of room and "lets go" as soon as you scroll past it, no matter how
+   far up the tree you apply it.
 
-  .ecombio-header {
-    position: relative;
-    top: auto;
-    background: var(--hdr-bg);
-    border-bottom: 1px solid var(--hdr-border);
-    font-family: var(--hdr-font);
-  }
+   position:fixed sidesteps this completely: it pins relative to the
+   viewport itself, ignoring ancestor wrapper heights (as long as no
+   ancestor sets transform/filter/perspective/contain — confirmed clean
+   on this theme). The tradeoff is that a fixed element is pulled out of
+   normal document flow permanently once applied, so main-header-sticky.js
+   inserts a spacer element to hold its place and prevent the page
+   jumping when it switches over.
 
-  .ecombio-header__bar {
-    width: 100%;
-  }
+   DESKTOP-ONLY NOTE (historical fix): the sticky hamburger and its
+   .menu-bar reveal are desktop-only (min-width: 1024px), gated in
+   assets/header-menu.css/header-hamburger.css. Mobile and tablet use
+   their own drawer hamburger instead, defined in header-hamburger.css.
+   That gate matters because this file's scroll handler (main-header.js)
+   adds .is-sticky purely based on scroll position, with no width check
+   of its own — the width gate has to live in CSS, not here.
+   ============================================================================= */
+
+/* Base header — normal, in-flow, until JS marks it .is-sticky */
+.main-header--sticky-enabled {
+  background: #fff;
+  transition: box-shadow 0.2s ease;
+  box-shadow: 0 2px 12px #00000014;
+/* This makes the shadow appear ONLY at the bottom */
+  clip-path: inset(0 -30px -30px -30px);
+}
+
+/* Pinned to the viewport once scrolled past the threshold.
+   Uses a keyframe animation (not `transition`) because `position` itself
+   isn't animatable — the moment .is-sticky lands, position:fixed applies
+   instantly no matter what. The animation instead slides the now-fixed
+   header down from just above the viewport, so the *visual* transition
+   reads as smooth even though the underlying position change is a snap. */
+.main-header--sticky-enabled.is-sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  animation: main-header-slide-in 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes main-header-slide-in {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+
+/* Shadow once the page has scrolled past the trigger point */
+.main-header--sticky-enabled.is-scrolled {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+}
+
+/* Spacer — height is set by JS to match the header's own height right
+   before it goes fixed, so the page content doesn't jump upward. */
+.main-header-sticky__spacer {
+  display: none;
+}
+.main-header-sticky__spacer.is-active {
+  display: block;
+}
+
+/* =============================================================================
+   Merged from header.css — shell, hamburger, logo, search, mobile nav drawer
+   ============================================================================= */
+
+/* =============================================================================
+   ECOMBIO Header Styles  |  assets/header.css
+   Breakpoints:
+     Mobile  : < 600px
+     Tablet  : 600px – 1023px
+     Desktop : ≥ 1024px
+   ============================================================================= */
+
+.header {
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* ── Variables ── */
+:root {
+  --hdr-height-desktop : 68px;
+  --hdr-height-tablet  : 64px;
+  --hdr-height-mobile  : 56px;
+  --hdr-search-row-h   : 56px;
+
+  --hdr-bg             : #ffffff;
+  --hdr-border         : #e5e5e5;
+  --hdr-text           : #111111;
+  --hdr-muted          : #6b6b6b;
+  --hdr-accent         : #e11d27;
+  --hdr-search-bg      : #f2f2f2;
+  --hdr-pill-bg        : #e5e5e5;
+  --hdr-pill-bg-hover  : #d8d8d8;
+  --hdr-radius-pill    : 9999px;
+  --hdr-radius-drop    : 12px;
+  --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
+  --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --hdr-z              : 200;
+  --hdr-drawer-z       : 400;
+}
+
+/* =============================================================================
+   SHELL
+   ============================================================================= */
+
+.ecombio-header {
+  position: relative;
+  top: auto;
+  background: var(--hdr-bg);
+  border-bottom: 1px solid var(--hdr-border);
+  font-family: var(--hdr-font);
+}
+
+.ecombio-header__bar {
+  width: 100%;
+}
+
+.ecombio-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: var(--hdr-height-desktop);
+}
+
+/* =============================================================================
+   HAMBURGER  (hidden on desktop)
+   ============================================================================= */
+
+.ecombio-header__hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.ecombio-header__hamburger:hover {
+  background: var(--hdr-search-bg);
+}
+
+.ecombio-header__hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--hdr-text);
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.25s;
+}
+
+.ecombio-header__hamburger[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* =============================================================================
+   LOGO
+   ============================================================================= */
+
+.ecombio-header__logo {
+  flex-shrink: 0;
+}
+
+.ecombio-header__logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.ecombio-header__logo-img {
+  display: block;
+  height: auto;
+  max-height: 36px;
+  width: auto;
+}
+
+.ecombio-header__logo-text {
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--hdr-text);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* =============================================================================
+   SEARCH — shared form styles
+   ============================================================================= */
+
+.ecombio-search__form {
+  display: flex;
+  align-items: center;
+  background: var(--hdr-search-bg);
+  border-radius: var(--hdr-radius-pill);
+  height: 44px;
+  padding: 0;
+  gap: 0;
+  width: 100%;
+}
+
+.ecombio-search__category {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.ecombio-search__cat-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--hdr-pill-bg);
+  border: none;
+  border-radius: var(--hdr-radius-pill);
+  padding: 0 12px;
+  height: 34px;
+  margin: 5px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--hdr-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.ecombio-search__cat-btn:hover {
+  background: var(--hdr-pill-bg-hover);
+}
+
+.ecombio-search__chevron {
+  color: var(--hdr-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.ecombio-search__cat-btn[aria-expanded="true"] .ecombio-search__chevron {
+  transform: rotate(180deg);
+}
+
+.ecombio-search__cat-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  background: #fff;
+  border-radius: var(--hdr-radius-drop);
+  box-shadow: var(--hdr-shadow-drop);
+  border: 1px solid var(--hdr-border);
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  z-index: calc(var(--hdr-z) + 10);
+}
+
+.ecombio-search__cat-list[hidden] {
+  display: none;
+}
+
+.ecombio-search__cat-list li {
+  padding: 9px 16px;
+  font-size: 0.875rem;
+  color: var(--hdr-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ecombio-search__cat-list li:hover,
+.ecombio-search__cat-list li[aria-selected="true"] {
+  background: var(--hdr-search-bg);
+}
+
+.ecombio-search__divider {
+  display: block;
+  width: 1px;
+  height: 20px;
+  background: #cccccc;
+  flex-shrink: 0;
+  margin: 0 2px 0 0;
+}
+
+.ecombio-search__input {
+  flex: 1 1 auto;
+  border: none;
+  background: transparent;
+  font-size: 0.9375rem;
+  color: var(--hdr-text);
+  padding: 0 8px;
+  height: 100%;
+  outline: none;
+  min-width: 0;
+}
+
+.ecombio-search__input::placeholder {
+  color: #aaaaaa;
+}
+
+.ecombio-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.ecombio-search__submit {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--hdr-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+
+.ecombio-search__submit:hover {
+  color: var(--hdr-text);
+}
+
+/* =============================================================================
+   SEARCH — inline (desktop only)
+   ============================================================================= */
+
+.ecombio-header__search--inline {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 640px;
+}
+
+/* =============================================================================
+   SEARCH ROW  (tablet + mobile)
+   ============================================================================= */
+
+.ecombio-header__search-row {
+  display: none;
+  border-top: 1px solid var(--hdr-border);
+  background: var(--hdr-bg);
+}
+
+.ecombio-header__search-row-inner {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 8px 24px;
+}
+
+/* =============================================================================
+   MOBILE / TABLET DRAWER
+   ============================================================================= */
+
+/* ── Overlay + visibility shell ── */
+.ecombio-mobile-nav {
+  position: fixed;
+  inset: 0;
+  z-index: var(--hdr-drawer-z);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.ecombio-mobile-nav.is-open {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.ecombio-mobile-nav__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ecombio-mobile-nav.is-open .ecombio-mobile-nav__overlay {
+  opacity: 1;
+}
+
+/* ── Slide-in panel ── */
+.ecombio-mobile-nav__panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, 88vw);
+  background: #fff;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.ecombio-mobile-nav.is-open .ecombio-mobile-nav__panel {
+  transform: translateX(0);
+}
+
+/* ── Header row ── */
+.ecombio-mobile-nav__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 20px;
+  height: 56px;
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--hdr-border);
+}
+
+.ecombio-mobile-nav__header-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--hdr-text);
+  letter-spacing: -0.01em;
+}
+
+.ecombio-mobile-nav__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--hdr-text);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.ecombio-mobile-nav__close:hover {
+  background: var(--hdr-search-bg);
+}
+
+/* ── List reset ── */
+.ecombio-mobile-nav__list,
+.ecombio-mobile-nav__sub {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ecombio-mobile-nav__list {
+  flex: 1;
+  padding: 6px 0 32px;
+}
+
+/* ── Row: link + toggle button side by side ── */
+.ecombio-mobile-nav__row {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── Top-level item dividers ── */
+.ecombio-mobile-nav__list > .ecombio-mobile-nav__item {
+  border-bottom: 1px solid var(--hdr-border);
+}
+
+.ecombio-mobile-nav__list > .ecombio-mobile-nav__item:last-child {
+  border-bottom: none;
+}
+
+/* ── Links — Level 1 ── */
+.ecombio-mobile-nav__link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--hdr-text);
+  text-decoration: none;
+  line-height: 1.3;
+  transition: color 0.12s;
+}
+
+.ecombio-mobile-nav__link:hover,
+.ecombio-mobile-nav__link[aria-current="page"],
+.ecombio-mobile-nav__item.is-active > .ecombio-mobile-nav__link,
+.ecombio-mobile-nav__item.is-active > .ecombio-mobile-nav__row > .ecombio-mobile-nav__link {
+  color: var(--hdr-accent);
+}
+
+/* ── Links — Level 2 ── */
+.ecombio-mobile-nav__link--sub {
+  padding: 11px 20px 11px 28px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.ecombio-mobile-nav__link--sub:hover {
+  color: var(--hdr-accent);
+}
+
+/* ── Links — Level 3 ── */
+.ecombio-mobile-nav__link--deep {
+  padding: 9px 20px 9px 44px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.ecombio-mobile-nav__link--deep:hover {
+  color: var(--hdr-accent);
+}
+
+/* ── Expand toggle button ── */
+.ecombio-mobile-nav__toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--hdr-border);
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.12s, background 0.12s;
+}
+
+.ecombio-mobile-nav__toggle:hover {
+  background: var(--hdr-search-bg);
+  color: var(--hdr-accent);
+}
+
+/* ── Chevron rotation ── */
+.ecombio-mobile-nav__chevron {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.ecombio-mobile-nav__toggle[aria-expanded="true"] .ecombio-mobile-nav__chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Accent left border when open ── */
+.ecombio-mobile-nav__toggle[aria-expanded="true"] {
+  color: var(--hdr-accent);
+  border-left-color: var(--hdr-accent);
+}
+
+/* ── Sub-list containers ── */
+.ecombio-mobile-nav__sub {
+  background: #f9fafb;
+  border-top: 1px solid var(--hdr-border);
+  overflow: hidden;
+}
+
+.ecombio-mobile-nav__sub[hidden] {
+  display: none;
+}
+
+.ecombio-mobile-nav__sub--l3 {
+  background: #f3f4f6;
+}
+
+/* ── L2 item dividers ── */
+.ecombio-mobile-nav__sub > .ecombio-mobile-nav__item {
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ecombio-mobile-nav__sub > .ecombio-mobile-nav__item:last-child {
+  border-bottom: none;
+}
+
+/* ── L3 item dividers ── */
+.ecombio-mobile-nav__item--l3 {
+  border-bottom: 1px solid #e4e4e4;
+}
+
+.ecombio-mobile-nav__item--l3:last-child {
+  border-bottom: none;
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =============================================================================
+   RESPONSIVE — TABLET  (600px – 1023px)
+   ============================================================================= */
+
+@media (max-width: 1023px) {
 
   .ecombio-header__inner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 0 24px;
-    height: var(--hdr-height-desktop);
+    height: var(--hdr-height-tablet);
+    padding: 0 20px;
+    gap: 10px;
   }
-
-  /* =============================================================================
-    HAMBURGER  (hidden on desktop)
-    ============================================================================= */
 
   .ecombio-header__hamburger {
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    gap: 5px;
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    padding: 6px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.15s;
-  }
-
-  .ecombio-header__hamburger:hover {
-    background: var(--hdr-search-bg);
-  }
-
-  .ecombio-header__hamburger span {
-    display: block;
-    width: 100%;
-    height: 2px;
-    background: var(--hdr-text);
-    border-radius: 2px;
-    transition: transform 0.25s, opacity 0.25s;
-  }
-
-  .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
-  }
-  .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) {
-    opacity: 0;
-    transform: scaleX(0);
-  }
-  .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
-  }
-
-  /* =============================================================================
-    LOGO
-    ============================================================================= */
-
-  .ecombio-header__logo {
-    flex-shrink: 0;
-  }
-
-  .ecombio-header__logo-link {
     display: flex;
-    align-items: center;
-    text-decoration: none;
   }
-
-  .ecombio-header__logo-img {
-    display: block;
-    height: auto;
-    max-height: 36px;
-    width: auto;
-  }
-
-  .ecombio-header__logo-text {
-    font-size: 1.375rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    color: var(--hdr-text);
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  /* =============================================================================
-    SEARCH — shared form styles
-    ============================================================================= */
-
-  .ecombio-search__form {
-    display: flex;
-    align-items: center;
-    background: var(--hdr-search-bg);
-    border-radius: var(--hdr-radius-pill);
-    height: 44px;
-    padding: 0;
-    gap: 0;
-    width: 100%;
-  }
-
-  .ecombio-search__category {
-    position: relative;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-  }
-
-  .ecombio-search__cat-btn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--hdr-pill-bg);
-    border: none;
-    border-radius: var(--hdr-radius-pill);
-    padding: 0 12px;
-    height: 34px;
-    margin: 5px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--hdr-text);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s;
-  }
-
-  .ecombio-search__cat-btn:hover {
-    background: var(--hdr-pill-bg-hover);
-  }
-
-  .ecombio-search__chevron {
-    color: var(--hdr-muted);
-    transition: transform 0.2s;
-    flex-shrink: 0;
-  }
-
-  .ecombio-search__cat-btn[aria-expanded="true"] .ecombio-search__chevron {
-    transform: rotate(180deg);
-  }
-
-  .ecombio-search__cat-list {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 200px;
-    background: #fff;
-    border-radius: var(--hdr-radius-drop);
-    box-shadow: var(--hdr-shadow-drop);
-    border: 1px solid var(--hdr-border);
-    list-style: none;
-    margin: 0;
-    padding: 6px 0;
-    z-index: calc(var(--hdr-z) + 10);
-  }
-
-  .ecombio-search__cat-list[hidden] {
-    display: none;
-  }
-
-  .ecombio-search__cat-list li {
-    padding: 9px 16px;
-    font-size: 0.875rem;
-    color: var(--hdr-text);
-    cursor: pointer;
-    transition: background 0.12s;
-  }
-
-  .ecombio-search__cat-list li:hover,
-  .ecombio-search__cat-list li[aria-selected="true"] {
-    background: var(--hdr-search-bg);
-  }
-
-  .ecombio-search__divider {
-    display: block;
-    width: 1px;
-    height: 20px;
-    background: #cccccc;
-    flex-shrink: 0;
-    margin: 0 2px 0 0;
-  }
-
-  .ecombio-search__input {
-    flex: 1 1 auto;
-    border: none;
-    background: transparent;
-    font-size: 0.9375rem;
-    color: var(--hdr-text);
-    padding: 0 8px;
-    height: 100%;
-    outline: none;
-    min-width: 0;
-  }
-
-  .ecombio-search__input::placeholder {
-    color: #aaaaaa;
-  }
-
-  .ecombio-search__input::-webkit-search-cancel-button {
-    display: none;
-  }
-
-  .ecombio-search__submit {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--hdr-muted);
-    cursor: pointer;
-    padding: 6px;
-    border-radius: 50%;
-    transition: color 0.15s;
-  }
-
-  .ecombio-search__submit:hover {
-    color: var(--hdr-text);
-  }
-
-  /* =============================================================================
-    SEARCH — inline (desktop only)
-    ============================================================================= */
 
   .ecombio-header__search--inline {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: 640px;
+    display: none;
   }
 
-  /* =============================================================================
-    SEARCH ROW  (tablet + mobile)
-    ============================================================================= */
-
   .ecombio-header__search-row {
-    display: none;
-    border-top: 1px solid var(--hdr-border);
-    background: var(--hdr-bg);
+    display: block;
+  }
+
+}
+
+/* =============================================================================
+   RESPONSIVE — MOBILE  (< 600px)
+   ============================================================================= */
+
+@media (max-width: 599px) {
+
+  .ecombio-header__inner {
+    height: var(--hdr-height-mobile);
+    padding: 0 16px;
+    gap: 8px;
   }
 
   .ecombio-header__search-row-inner {
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 8px 24px;
+    padding: 6px 12px;
   }
 
-  /* =============================================================================
-    MOBILE / TABLET DRAWER
-    ============================================================================= */
-
-  /* ── Overlay + visibility shell ── */
-  .ecombio-mobile-nav {
-    position: fixed;
-    inset: 0;
-    z-index: var(--hdr-drawer-z);
-    pointer-events: none;
-    visibility: hidden;
+  .ecombio-search__form {
+    height: 42px;
   }
 
-  .ecombio-mobile-nav.is-open {
-    pointer-events: auto;
-    visibility: visible;
+}
+
+/* =============================================================================
+   REDUCED MOTION
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .ecombio-mobile-nav__overlay,
+  .ecombio-mobile-nav__panel,
+  .ecombio-mobile-nav__chevron,
+  .ecombio-header__hamburger span {
+    transition: none !important;
   }
 
-  .ecombio-mobile-nav__overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+  .main-header--sticky-enabled {
+    transition: none !important;
+    animation: none !important;
   }
-
-  .ecombio-mobile-nav.is-open .ecombio-mobile-nav__overlay {
-    opacity: 1;
-  }
-
-  /* ── Slide-in panel ── */
-  .ecombio-mobile-nav__panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: min(320px, 88vw);
-    background: #fff;
-    overflow-y: auto;
-    overflow-x: hidden;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ecombio-mobile-nav.is-open .ecombio-mobile-nav__panel {
-    transform: translateX(0);
-  }
-
-  /* ── Header row ── */
-  .ecombio-mobile-nav__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px 0 20px;
-    height: 56px;
-    flex-shrink: 0;
-    border-bottom: 2px solid var(--hdr-border);
-  }
-
-  .ecombio-mobile-nav__header-label {
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--hdr-text);
-    letter-spacing: -0.01em;
-  }
-
-  .ecombio-mobile-nav__close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: var(--hdr-text);
-    border-radius: 8px;
-    transition: background 0.15s;
-  }
-
-  .ecombio-mobile-nav__close:hover {
-    background: var(--hdr-search-bg);
-  }
-
-  /* ── List reset ── */
-  .ecombio-mobile-nav__list,
-  .ecombio-mobile-nav__sub {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .ecombio-mobile-nav__list {
-    flex: 1;
-    padding: 6px 0 32px;
-  }
-
-  /* ── Row: link + toggle button side by side ── */
-  .ecombio-mobile-nav__row {
-    display: flex;
-    align-items: stretch;
-  }
-
-  /* ── Top-level item dividers ── */
-  .ecombio-mobile-nav__list > .ecombio-mobile-nav__item {
-    border-bottom: 1px solid var(--hdr-border);
-  }
-
-  .ecombio-mobile-nav__list > .ecombio-mobile-nav__item:last-child {
-    border-bottom: none;
-  }
-
-  /* ── Links — Level 1 ── */
-  .ecombio-mobile-nav__link {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding: 14px 20px;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--hdr-text);
-    text-decoration: none;
-    line-height: 1.3;
-    transition: color 0.12s;
-  }
-
-  .ecombio-mobile-nav__link:hover,
-  .ecombio-mobile-nav__link[aria-current="page"],
-  .ecombio-mobile-nav__item.is-active > .ecombio-mobile-nav__link,
-  .ecombio-mobile-nav__item.is-active > .ecombio-mobile-nav__row > .ecombio-mobile-nav__link {
-    color: var(--hdr-accent);
-  }
-
-  /* ── Links — Level 2 ── */
-  .ecombio-mobile-nav__link--sub {
-    padding: 11px 20px 11px 28px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-  }
-
-  .ecombio-mobile-nav__link--sub:hover {
-    color: var(--hdr-accent);
-  }
-
-  /* ── Links — Level 3 ── */
-  .ecombio-mobile-nav__link--deep {
-    padding: 9px 20px 9px 44px;
-    font-size: 0.8125rem;
-    font-weight: 400;
-    color: #6b7280;
-  }
-
-  .ecombio-mobile-nav__link--deep:hover {
-    color: var(--hdr-accent);
-  }
-
-  /* ── Expand toggle button ── */
-  .ecombio-mobile-nav__toggle {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    background: transparent;
-    border: none;
-    border-left: 1px solid var(--hdr-border);
-    cursor: pointer;
-    color: #9ca3af;
-    transition: color 0.12s, background 0.12s;
-  }
-
-  .ecombio-mobile-nav__toggle:hover {
-    background: var(--hdr-search-bg);
-    color: var(--hdr-accent);
-  }
-
-  /* ── Chevron rotation ── */
-  .ecombio-mobile-nav__chevron {
-    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-  }
-
-  .ecombio-mobile-nav__toggle[aria-expanded="true"] .ecombio-mobile-nav__chevron {
-    transform: rotate(180deg);
-  }
-
-  /* ── Accent left border when open ── */
-  .ecombio-mobile-nav__toggle[aria-expanded="true"] {
-    color: var(--hdr-accent);
-    border-left-color: var(--hdr-accent);
-  }
-
-  /* ── Sub-list containers ── */
-  .ecombio-mobile-nav__sub {
-    background: #f9fafb;
-    border-top: 1px solid var(--hdr-border);
-    overflow: hidden;
-  }
-
-  .ecombio-mobile-nav__sub[hidden] {
-    display: none;
-  }
-
-  .ecombio-mobile-nav__sub--l3 {
-    background: #f3f4f6;
-  }
-
-  /* ── L2 item dividers ── */
-  .ecombio-mobile-nav__sub > .ecombio-mobile-nav__item {
-    border-bottom: 1px solid #ebebeb;
-  }
-
-  .ecombio-mobile-nav__sub > .ecombio-mobile-nav__item:last-child {
-    border-bottom: none;
-  }
-
-  /* ── L3 item dividers ── */
-  .ecombio-mobile-nav__item--l3 {
-    border-bottom: 1px solid #e4e4e4;
-  }
-
-  .ecombio-mobile-nav__item--l3:last-child {
-    border-bottom: none;
-  }
-
-  /* =============================================================================
-    ACCESSIBILITY
-    ============================================================================= */
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  /* =============================================================================
-    RESPONSIVE — TABLET  (600px – 1023px)
-    ============================================================================= */
-
-  @media (max-width: 1023px) {
-
-    .ecombio-header__inner {
-      height: var(--hdr-height-tablet);
-      padding: 0 20px;
-      gap: 10px;
-    }
-
-    .ecombio-header__hamburger {
-      display: flex;
-    }
-
-    .ecombio-header__search--inline {
-      display: none;
-    }
-
-    .ecombio-header__search-row {
-      display: block;
-    }
-
-  }
-
-  /* =============================================================================
-    RESPONSIVE — MOBILE  (< 600px)
-    ============================================================================= */
-
-  @media (max-width: 599px) {
-
-    .ecombio-header__inner {
-      height: var(--hdr-height-mobile);
-      padding: 0 16px;
-      gap: 8px;
-    }
-
-    .ecombio-header__search-row-inner {
-      padding: 6px 12px;
-    }
-
-    .ecombio-search__form {
-      height: 42px;
-    }
-
-  }
-
-  /* =============================================================================
-    REDUCED MOTION
-    ============================================================================= */
-
-  @media (prefers-reduced-motion: reduce) {
-    .ecombio-mobile-nav__overlay,
-    .ecombio-mobile-nav__panel,
-    .ecombio-mobile-nav__chevron,
-    .ecombio-header__hamburger span {
-      transition: none !important;
-    }
-
-    .main-header--sticky-enabled {
-      transition: none !important;
-      animation: none !important;
-    }
-    /* .main-header-sticky__hamburger's reduced-motion rule now lives in
-      header-hamburger.css alongside the element itself. */
-  }
-  .mega-menu-items {
-  min-height: 120px;
+  /* .main-header-sticky__hamburger's reduced-motion rule now lives in
+     header-hamburger.css alongside the element itself. */
 }
