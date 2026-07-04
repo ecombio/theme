@@ -1,22 +1,28 @@
 (function () {
   'use strict';
 
+  function getPlayTrigger(target) {
+    var trigger = target.closest('[data-video-trigger]');
+    if (!trigger || trigger.getAttribute('aria-disabled') === 'true') return null;
+    return trigger;
+  }
+
   function dispatchPlay(trigger) {
     var card = trigger.closest('[data-video-card]');
     if (!card) return;
 
     var productTemplate = card.querySelector('[data-video-product-template]');
 
-    var detail = {
-      type: card.getAttribute('data-video-type'),
-      id: card.getAttribute('data-video-id'),
-      fileUrl: card.getAttribute('data-video-file-url'),
-      triggerEl: trigger,
-      hasProduct: !!productTemplate,
-      productHTML: productTemplate ? productTemplate.innerHTML : null
-    };
-
-    document.dispatchEvent(new CustomEvent('video-card:play', { detail: detail }));
+    document.dispatchEvent(new CustomEvent('video-card:play', {
+      detail: {
+        type: card.getAttribute('data-video-type'),
+        id: card.getAttribute('data-video-id'),
+        fileUrl: card.getAttribute('data-video-file-url'),
+        triggerEl: trigger,
+        hasProduct: !!productTemplate,
+        productHTML: productTemplate ? productTemplate.innerHTML : null
+      }
+    }));
   }
 
   function addToCart(button) {
@@ -37,9 +43,7 @@
       })
       .then(function (item) {
         button.classList.add('is-added');
-        document.dispatchEvent(
-          new CustomEvent('video-card:added-to-cart', { detail: { variantId: variantId, item: item } })
-        );
+        document.dispatchEvent(new CustomEvent('video-card:added-to-cart', { detail: { variantId: variantId, item: item } }));
         setTimeout(function () {
           button.classList.remove('is-added');
           button.disabled = false;
@@ -52,7 +56,7 @@
       });
   }
 
-  function handleClick(event) {
+  document.addEventListener('click', function (event) {
     var addBtn = event.target.closest('[data-add-to-cart]');
     if (addBtn) {
       event.preventDefault();
@@ -61,24 +65,18 @@
       return;
     }
 
-    var trigger = event.target.closest('[data-video-trigger]');
-    if (!trigger || trigger.getAttribute('aria-disabled') === 'true') return;
-    dispatchPlay(trigger);
-  }
+    var trigger = getPlayTrigger(event.target);
+    if (trigger) dispatchPlay(trigger);
+  });
 
-  function handleKeydown(event) {
+  document.addEventListener('keydown', function (event) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
+    if (event.target.closest('[data-add-to-cart]')) return; // native <button> already handles this
 
-    var addBtn = event.target.closest('[data-add-to-cart]');
-    if (addBtn) return; // native <button> already handles this
-
-    var trigger = event.target.closest('[data-video-trigger]');
-    if (!trigger || trigger.getAttribute('aria-disabled') === 'true') return;
+    var trigger = getPlayTrigger(event.target);
+    if (!trigger) return;
 
     event.preventDefault();
     dispatchPlay(trigger);
-  }
-
-  document.addEventListener('click', handleClick);
-  document.addEventListener('keydown', handleKeydown);
+  });
 })();
