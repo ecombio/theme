@@ -24,6 +24,12 @@
    bare color/font-weight rule with no home for stars. That partial
    rule has been removed from header-hamburger.css; this file is now
    the single source of truth for what a highlight item looks like.
+   FIXED: the mobile link is a full-width flex row (so the whole row
+   stays tappable/hoverable), so anchoring the absolutely-positioned
+   stars directly to it pushed them out to the far edge of the drawer
+   instead of next to the text. header-hamburger.liquid now wraps the
+   label + stars in an inner .main-header__mobile-nav-highlight-content
+   span sized to its own content — the stars anchor to that instead.
 
    Depends on:
      --hdr-accent — custom property defined elsewhere (header
@@ -54,13 +60,24 @@
 .main-header__mobile-nav-link--highlight {
   color: var(--hl-color) !important;
   font-weight: 700;
-  position: relative;
-  padding-right: 28px;
 }
 
 .main-header__mobile-nav-link--highlight:hover {
   color: var(--hl-color) !important;
   opacity: 0.82;
+}
+
+/* The outer link stays full-row-width for a full tap target/hover
+   background, like every other drawer row. This inner wrapper is
+   sized to its own content instead (same idea as the desktop
+   .menu-bar__link--highlight, which is inline-flex for the same
+   reason) so the stars anchor next to the text, not the far edge
+   of the drawer. */
+.main-header__mobile-nav-highlight-content {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding-right: 28px;
 }
 
 /* ── Stars — shared by both contexts ── */
