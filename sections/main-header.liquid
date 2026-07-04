@@ -22,7 +22,7 @@
   assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
 -%}
 
-<header class="main-header{% if enable_sticky %} main-header--sticky-enabled{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--mobile-search-drawer{% endif %}"
+<header class="main-header{% if enable_sticky %} main-header--sticky-enabled{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--logo-centered{% endif %}"
         id="main-header"
         role="banner">
 
@@ -42,16 +42,11 @@
         Search drawer trigger + full-screen slide-down drawer, both
         self-contained in snippets/header-search-drawer.liquid (own
         CSS/JS). Opt-in via the "Enable search drawer icon" checkbox
-        below.
-
-        MOBILE-ONLY: this trigger is rendered here in markup for every
-        breakpoint (so it's always in the DOM once the setting is on),
-        but assets/header-search-drawer.css hides it entirely at
-        640px and up. Tablet and desktop keep the inline/row search
-        bar below rather than the drawer — only mobile (<640px) swaps
-        over to the drawer. See main-header.css's
-        .main-header--mobile-search-drawer block for the matching
-        mobile-only logo-centering + row-hiding rules.
+        below. When this is on, it becomes the ONLY search UI in the
+        header — the inline (desktop) and row (mobile/tablet) search
+        bars below are skipped entirely so the two don't both render
+        at once. Rendered here so the icon lands between the hamburger
+        and the logo.
       {%- endcomment -%}
       {%- if section.settings.enable_search_drawer -%}
         {%- render 'header-search-drawer', enable_predictive_search: section.settings.enable_predictive_search -%}
@@ -61,13 +56,14 @@
 
       {%- comment -%}
         Desktop search — flex-grows to fill the bar, hidden below
-        1024px via CSS. Always rendered regardless of the search-drawer
-        setting, since that setting is mobile-only and never affects
-        desktop.
+        1024px via CSS. Skipped when the search drawer is enabled,
+        since the drawer is the only search UI in that mode.
       {%- endcomment -%}
-      <div class="main-header__search--inline">
-        {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
-      </div>
+      {%- unless section.settings.enable_search_drawer -%}
+        <div class="main-header__search--inline">
+          {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
+        </div>
+      {%- endunless -%}
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
         {%- if show_acct != false -%}
@@ -83,16 +79,16 @@
 
   {%- comment -%}
     Mobile/tablet search row — sits below the bar, hidden at 1024px+
-    via CSS. Always rendered here; on mobile (<640px) with the search
-    drawer enabled, main-header.css hides this row in favor of the
-    drawer trigger. Tablet (640–1023px) keeps this row regardless of
-    the search-drawer setting — that setting is mobile-only.
+    via CSS. Skipped when the search drawer is enabled, for the same
+    reason as the inline search above.
   {%- endcomment -%}
-  <div class="main-header__search-row">
-    <div class="main-header__search-row-inner">
-      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
+  {%- unless section.settings.enable_search_drawer -%}
+    <div class="main-header__search-row">
+      <div class="main-header__search-row-inner">
+        {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
+      </div>
     </div>
-  </div>
+  {%- endunless -%}
 
   {%- comment -%}Desktop nav bar — built from blocks. Hidden below 1024px via CSS (mobile drawer takes over);
   when sticky is enabled, also collapses on scroll and is toggled back open via the sticky hamburger
@@ -140,7 +136,7 @@
     { "type": "header", "content": "Tablet Division (640px – 1023px)" },
     {
       "type": "paragraph",
-      "content": "Tablet currently inherits Mobile's drawer and menu-bar settings above — there's no separate tablet override in the code yet. Icon labels are shown automatically at this width via CSS, with no toggle. Tablet always uses the standard search row (below the header bar), regardless of the 'Enable search drawer icon' setting under Search — that setting only affects Mobile."
+      "content": "Tablet currently inherits Mobile's drawer and menu-bar settings above — there's no separate tablet override in the code yet. Icon labels are shown automatically at this width via CSS, with no toggle."
     },
 
     { "type": "header", "content": "Desktop Division (≥ 1024px)" },
@@ -164,7 +160,7 @@
       "type": "checkbox",
       "id": "enable_search_drawer",
       "label": "Enable search drawer icon",
-      "info": "Mobile only (< 640px). Adds a search icon to the header that opens a full-screen drawer sliding down from the top, replacing Mobile's search row. Tablet and Desktop are unaffected and keep their always-visible search bar (the tablet/desktop row and the desktop inline bar respectively). The mobile nav drawer (hamburger menu) is unaffected either way.",
+      "info": "Adds a search icon to the header that opens a full-screen drawer sliding down from the top. When enabled, this replaces the always-visible search bar (both the desktop inline bar and the mobile/tablet search row) — only the drawer's search bar will be shown, opened via the icon. The mobile nav drawer (hamburger menu) is unaffected either way.",
       "default": false
     },
 
