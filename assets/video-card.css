@@ -95,6 +95,52 @@
   margin-top: 2px;
 }
 
+/* --- shared product name/price, used by overlay, text_button and card_outside_video --- */
+.video-card__cta-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.video-card__cta-name {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-card__cta-price {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* overlay + text_button sit on top of footage: white text, price de-emphasized */
+.video-card__overlay-scrim .video-card__cta-name,
+.video-card__overlay-scrim .video-card__cta-price,
+.video-card__text-bar .video-card__cta-name,
+.video-card__text-bar .video-card__cta-price {
+  color: #fff;
+}
+
+.video-card__overlay-scrim .video-card__cta-price,
+.video-card__text-bar .video-card__cta-price {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* card_outside_video sits on a light footer: dark text, lighter name weight */
+.video-card__footer .video-card__cta-name,
+.video-card__footer .video-card__cta-price {
+  color: var(--vc-footer-text, #111);
+}
+
+.video-card__footer .video-card__cta-name {
+  font-weight: 500;
+}
+
 /* --- CTA style: overlay --- */
 .video-card__overlay-scrim {
   position: absolute;
@@ -103,55 +149,7 @@
   bottom: 0;
   padding: 28px 12px 12px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   pointer-events: none;
-}
-
-.video-card__overlay-name {
-  color: #fff;
-  font-size: 0.85em;
-  font-weight: 600;
-}
-
-.video-card__overlay-price {
-  color: #fff;
-  font-size: 0.85em;
-  opacity: 0.85;
-}
-
-/* --- CTA style: icon_button --- */
-.video-card__icon-btn {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #111;
-  cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
-}
-
-.video-card__icon-btn:hover {
-  background: #fff;
-  transform: scale(1.06);
-}
-
-.video-card__icon-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.video-card__icon-btn.is-added {
-  background: #1f6f3e;
-  color: #fff;
 }
 
 /* --- CTA style: text_button --- */
@@ -166,29 +164,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.video-card__text-info {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.video-card__text-name {
-  display: block;
-  color: #fff;
-  font-size: 0.8em;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.video-card__text-price {
-  display: block;
-  color: #fff;
-  font-size: 0.8em;
-  opacity: 0.8;
-  margin-top: 1px;
 }
 
 /* --- CTA style: card_outside_video --- */
@@ -218,34 +193,12 @@
   display: block;
 }
 
-.video-card__footer-info {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.video-card__footer-name {
-  display: block;
-  font-size: 0.8em;
-  font-weight: 500;
-  color: var(--vc-footer-text, #111);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.video-card__footer-price {
-  display: block;
-  font-size: 0.8em;
-  font-weight: 700;
-  color: var(--vc-footer-text, #111);
-  margin-top: 2px;
-}
-
-/* --- shared: Add to cart pill (text_button + card_outside_video) --- */
+/* --- shared Add to cart button, used by icon_button (with --icon modifier), text_button and card_outside_video --- */
 .video-card__cta {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   background: var(--vc-cta-bg, #111);
   color: var(--vc-cta-text, #fff);
@@ -256,7 +209,7 @@
   padding: 7px 11px;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .video-card__cta:hover {
@@ -271,4 +224,21 @@
 
 .video-card__cta.is-added {
   background: #1f6f3e;
+}
+
+/* icon_button variant: circular, icon-only, floats over the footage */
+.video-card__cta--icon {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+}
+
+.video-card__cta--icon:hover {
+  background: #fff;
 }

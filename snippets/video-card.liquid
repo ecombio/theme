@@ -11,14 +11,12 @@
   If block.settings.product is set, the product-card snippet is pre-rendered
   into a hidden <template>. video-card.js reads that template's innerHTML and
   passes it through the video-card:play event; video-modal.js clones it into
-  the modal's product pane. This keeps product-card rendering server-side
-  (Liquid) while the open/close interaction stays client-side. This happens
-  regardless of cta_style, including 'none' — the modal is the fallback way
-  to reach the product when there's no on-card CTA.
+  the modal's product pane. This happens regardless of cta_style, including
+  'none' — the modal is the fallback way to reach the product when there's
+  no on-card CTA.
 
-  cta_style controls how the selected product is surfaced on the card itself
-  (separate from the product-card modal above):
-    - none:                no on-card CTA at all; product is only reachable via the modal
+  cta_style controls how the selected product is surfaced on the card itself:
+    - none:                no on-card CTA; product only reachable via the modal
     - overlay:              gradient scrim + name/price baked over the footage
     - icon_button:          small floating cart icon, corner of the footage
     - text_button:          solid bar over the footage with name/price + Add button
@@ -28,6 +26,11 @@
   independently-clickable "Add to cart" button, the outer play trigger can't
   be a <button> (buttons can't nest buttons). It's a role="button" div instead;
   video-card.js handles both click and keyboard activation for it.
+
+  video-card__cta-name / video-card__cta-price / video-card__cta-info are
+  shared across all three CTA styles that show product text — one set of
+  classes, styled contextually per parent in video-card.css, rather than a
+  differently-named pair of spans for each style.
 {%- enddoc -%}
 
 {%- liquid
@@ -47,11 +50,34 @@
     assign video_type = 'none'
   endif
 
+  assign show_cta = false
   assign variant_id = blank
   if card_product
     assign variant_id = card_product.selected_or_first_available_variant.id
+    if cta_style != 'none'
+      assign show_cta = true
+    endif
   endif
 -%}
+
+{%- capture cart_icon -%}
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/>
+    <circle cx="9" cy="21" r="1"/>
+    <circle cx="18" cy="21" r="1"/>
+  </svg>
+{%- endcapture -%}
+
+{%- capture add_to_cart_attrs -%}
+  data-add-to-cart data-variant-id="{{ variant_id }}" aria-label="Add {{ card_product.title }} to cart"{% unless variant_id %} disabled{% endunless %}
+{%- endcapture -%}
+
+{%- capture product_text -%}
+  <span class="video-card__cta-info">
+    <span class="video-card__cta-name">{{ card_product.title }}</span>
+    <span class="video-card__cta-price">{{ card_product.price | money }}</span>
+  </span>
+{%- endcapture -%}
 
 <div
   class="video-card"
@@ -104,43 +130,22 @@
         </svg>
       </span>
 
-      {%- if card_product and cta_style == 'overlay' -%}
-        <span class="video-card__overlay-scrim">
-          <span class="video-card__overlay-name">{{ card_product.title }}</span>
-          <span class="video-card__overlay-price">{{ card_product.price | money }}</span>
-        </span>
-      {%- elsif card_product and cta_style == 'icon_button' -%}
-        <button
-          type="button"
-          class="video-card__icon-btn"
-          data-add-to-cart
-          data-variant-id="{{ variant_id }}"
-          aria-label="Add {{ card_product.title }} to cart"
-          {% unless variant_id %}disabled{% endunless %}
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/>
-            <circle cx="9" cy="21" r="1"/>
-            <circle cx="18" cy="21" r="1"/>
-          </svg>
-        </button>
-      {%- elsif card_product and cta_style == 'text_button' -%}
-        <span class="video-card__text-bar">
-          <span class="video-card__text-info">
-            <span class="video-card__text-name">{{ card_product.title }}</span>
-            <span class="video-card__text-price">{{ card_product.price | money }}</span>
-          </span>
-          <button
-            type="button"
-            class="video-card__cta"
-            data-add-to-cart
-            data-variant-id="{{ variant_id }}"
-            aria-label="Add {{ card_product.title }} to cart"
-            {% unless variant_id %}disabled{% endunless %}
-          >
-            Add
-          </button>
-        </span>
+      {%- if show_cta -%}
+        {%- case cta_style -%}
+          {%- when 'overlay' -%}
+            <span class="video-card__overlay-scrim">{{ product_text }}</span>
+
+          {%- when 'icon_button' -%}
+            <button type="button" class="video-card__cta video-card__cta--icon" {{ add_to_cart_attrs }}>
+              {{ cart_icon }}
+            </button>
+
+          {%- when 'text_button' -%}
+            <span class="video-card__text-bar">
+              {{ product_text }}
+              <button type="button" class="video-card__cta" {{ add_to_cart_attrs }}>Add</button>
+            </span>
+        {%- endcase -%}
       {%- endif -%}
     </span>
 
@@ -156,7 +161,7 @@
     {%- endif -%}
   </div>
 
-  {%- if card_product and cta_style == 'card_outside_video' -%}
+  {%- if show_cta and cta_style == 'card_outside_video' -%}
     <div class="video-card__footer">
       <span class="video-card__footer-thumb">
         {%- if card_product.featured_image -%}
@@ -169,23 +174,9 @@
           >
         {%- endif -%}
       </span>
-      <span class="video-card__footer-info">
-        <span class="video-card__footer-name">{{ card_product.title }}</span>
-        <span class="video-card__footer-price">{{ card_product.price | money }}</span>
-      </span>
-      <button
-        type="button"
-        class="video-card__cta"
-        data-add-to-cart
-        data-variant-id="{{ variant_id }}"
-        aria-label="Add {{ card_product.title }} to cart"
-        {% unless variant_id %}disabled{% endunless %}
-      >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/>
-          <circle cx="9" cy="21" r="1"/>
-          <circle cx="18" cy="21" r="1"/>
-        </svg>
+      {{ product_text }}
+      <button type="button" class="video-card__cta" {{ add_to_cart_attrs }}>
+        {{ cart_icon }}
         Add
       </button>
     </div>
