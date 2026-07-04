@@ -1,0 +1,82 @@
+{%- comment -%}
+  snippets/product-row.liquid
+  Reusable horizontal product carousel. Renders snippets/product-card.liquid
+  per item inside a swipeable, scroll-snapped track with a heading + "View all" link.
+
+  Asset ownership: this snippet does NOT load its own CSS/JS — the section
+  or template that renders it must load assets/product-row.css (and rely on
+  product-card.css/.js, already loaded globally via theme.liquid).
+
+  Parameters:
+    products       {Array}   required  — array of Shopify product objects
+    heading        {String}  optional  — e.g. "Electric Bikes"
+    view_all_url   {String}  optional  — link for the "View all" text; omitted if blank
+    show_quickview {Boolean} optional  — default true, passed through to product-card
+    show_compare   {Boolean} optional  — default true, passed through to product-card
+    show_eta       {Boolean} optional  — default true, passed through to product-card
+
+  Usage:
+    {%- render 'product-row',
+      products: collections.electric-bikes.products,
+      heading: 'Electric Bikes',
+      view_all_url: collections.electric-bikes.url
+    -%}
+{%- endcomment -%}
+
+{%- liquid
+  assign show_quickview = show_quickview | default: true
+  assign show_compare   = show_compare   | default: true
+  assign show_eta       = show_eta       | default: true
+-%}
+
+<div class="product-row">
+
+  {%- if heading != blank or view_all_url != blank -%}
+    <div class="product-row__header">
+      {%- if heading != blank -%}
+        <h2 class="product-row__heading">{{ heading }}</h2>
+      {%- endif -%}
+      {%- if view_all_url != blank -%}
+        <a href="{{ view_all_url }}" class="product-row__view-all">View all</a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- if products.size > 0 -%}
+    <div class="product-row__viewport">
+      <button
+        class="product-row__arrow product-row__arrow--prev"
+        type="button"
+        aria-label="Scroll left"
+        onclick="this.closest('.product-row__viewport').querySelector('.product-row__track').scrollBy({left: -280, behavior: 'smooth'})"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+
+      <ul class="product-row__track" role="list">
+        {%- for product in products -%}
+          <li class="product-row__item">
+            {%- render 'product-card',
+              product: product,
+              show_quickview: show_quickview,
+              show_compare: show_compare,
+              show_eta: show_eta
+            -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      <button
+        class="product-row__arrow product-row__arrow--next"
+        type="button"
+        aria-label="Scroll right"
+        onclick="this.closest('.product-row__viewport').querySelector('.product-row__track').scrollBy({left: 280, behavior: 'smooth'})"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  {%- else -%}
+    <p class="product-row__empty">No products to display.</p>
+  {%- endif -%}
+
+</div>
