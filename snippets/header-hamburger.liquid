@@ -12,13 +12,31 @@
        (top level -> children -> grandchildren), unrolled as explicit
        loops rather than a recursive snippet.
 
+  MOBILE NAV SOURCE (changed): the drawer now renders from the SAME
+  `blocks` the desktop .menu-bar uses (see snippets/header-menu.liquid),
+  not a separate `mobile_menu` link_list setting. There is exactly one
+  nav data source for the whole header now. Each block becomes one
+  top-level (L0) drawer item:
+    - single-link / highlight -> plain link, no accordion
+    - link-list / mega-menu /
+      flyout                  -> accordion trigger; block.settings.menu
+                                  (a link_list) supplies L1 children and,
+                                  where present, L2 grandchildren
+    - @app                    -> skipped here. App block markup is custom
+                                  per-app on desktop and can't be generically
+                                  turned into an accordion, so it simply
+                                  doesn't appear in the mobile drawer.
+  Class names/IDs below are unchanged from the previous version, so
+  header-hamburger.css and header-hamburger.js need no edits — only the
+  data being looped over changed.
+
   Params:
-    mobile_menu             — link_list object; powers the mobile drawer's links
-    enable_sticky           — bool; whether to render the sticky hamburger at all
-    drawer_style             — 'compact' (280px, dimmed backdrop) or 'full-width'
-                                (fills the screen, no backdrop). Default: 'compact'.
-    enable_predictive_search — bool; passed through to the mobile search field
-                                rendered inside the drawer. Default: true.
+    blocks                   — section.blocks from sections/main-header.liquid
+    enable_sticky             — bool; whether to render the sticky hamburger at all
+    drawer_style               — 'compact' (280px, dimmed backdrop) or 'full-width'
+                                  (fills the screen, no backdrop). Default: 'compact'.
+    enable_predictive_search   — bool; passed through to the mobile search field
+                                  rendered inside the drawer. Default: true.
 {% endcomment %}
 
 {%- liquid
@@ -75,70 +93,98 @@
       {%- render 'header-search', enable_predictive_search: enable_predictive_search, variant: 'mobile' -%}
     </div>
 
-    {%- comment -%} LEVEL 1 (top-level menu items) {%- endcomment -%}
+    {%- comment -%} LEVEL 0 (one item per section block — same blocks header-menu.liquid renders on desktop) {%- endcomment -%}
     <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l0">
-    {%- for link_l1 in mobile_menu.links -%}
-      {%- assign id_l1 = 'mnav-' | append: forloop.index -%}
-      <li class="main-header__mobile-nav-item">
-        {%- if link_l1.links.size > 0 -%}
-          <button type="button" class="main-header__mobile-nav-toggle"
-                  id="{{ id_l1 }}-toggle" aria-expanded="false"
-                  aria-controls="{{ id_l1 }}-sub">
-            <span class="main-header__mobile-nav-toggle-label">{{ link_l1.title }}</span>
-            <svg class="main-header__mobile-nav-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="9 6 15 12 9 18"></polyline>
-            </svg>
-          </button>
+    {%- for block in blocks -%}
+      {%- liquid
+        assign id_l1 = 'mnav-' | append: forloop.index
+        assign block_label = block.settings.label
+        assign block_link = block.settings.link
+        assign block_menu = block.settings.menu
+        assign li_class = 'main-header__mobile-nav-item'
+        if block.type == 'highlight'
+          assign li_class = li_class | append: ' main-header__mobile-nav-item--highlight'
+        endif
+      -%}
 
-          {%- comment -%} LEVEL 2 (children of link_l1) {%- endcomment -%}
-          <div class="main-header__mobile-nav-sub" id="{{ id_l1 }}-sub" hidden>
-            <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l1">
-              {%- for link_l2 in link_l1.links -%}
-                {%- assign id_l2 = id_l1 | append: '-' | append: forloop.index -%}
-                <li class="main-header__mobile-nav-item">
-                  {%- if link_l2.links.size > 0 -%}
-                    <button type="button" class="main-header__mobile-nav-toggle"
-                            id="{{ id_l2 }}-toggle" aria-expanded="false"
-                            aria-controls="{{ id_l2 }}-sub">
-                      <span class="main-header__mobile-nav-toggle-label">{{ link_l2.title }}</span>
-                      <svg class="main-header__mobile-nav-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="9 6 15 12 9 18"></polyline>
-                      </svg>
-                    </button>
+      {%- case block.type -%}
 
-                    {%- comment -%} LEVEL 3 (children of link_l2 — leaf items) {%- endcomment -%}
-                    <div class="main-header__mobile-nav-sub" id="{{ id_l2 }}-sub" hidden>
-                      <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l2">
-                        {%- for link_l3 in link_l2.links -%}
-                          <li class="main-header__mobile-nav-item">
-                            <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l2"
-                               href="{{ link_l3.url }}"
-                               {%- if link_l3.active %} aria-current="page"{% endif %}>
-                              {{ link_l3.title }}
-                            </a>
-                          </li>
-                        {%- endfor -%}
-                      </ul>
-                    </div>
-                  {%- else -%}
-                    <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l1"
-                       href="{{ link_l2.url }}"
-                       {%- if link_l2.active %} aria-current="page"{% endif %}>
-                      {{ link_l2.title }}
-                    </a>
-                  {%- endif -%}
-                </li>
-              {%- endfor -%}
-            </ul>
-          </div>
-        {%- else -%}
-          <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0"
-             href="{{ link_l1.url }}"
-             {%- if link_l1.active %} aria-current="page"{% endif %}>
-            {{ link_l1.title }}
-          </a>
-        {%- endif -%}
-      </li>
+        {%- comment -%} Plain links — no accordion needed {%- endcomment -%}
+        {%- when 'single-link', 'highlight' -%}
+          <li class="{{ li_class }}">
+            <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0{% if block.type == 'highlight' %} main-header__mobile-nav-link--highlight{% endif %}"
+               href="{{ block_link | default: '#' }}">
+              {{ block_label }}
+            </a>
+          </li>
+
+        {%- comment -%} Blocks with a nested menu — accordion trigger + L1/L2 {%- endcomment -%}
+        {%- when 'link-list', 'mega-menu', 'flyout' -%}
+          <li class="{{ li_class }}">
+            {%- if block_menu.links.size > 0 -%}
+              <button type="button" class="main-header__mobile-nav-toggle"
+                      id="{{ id_l1 }}-toggle" aria-expanded="false"
+                      aria-controls="{{ id_l1 }}-sub">
+                <span class="main-header__mobile-nav-toggle-label">{{ block_label }}</span>
+                <svg class="main-header__mobile-nav-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="9 6 15 12 9 18"></polyline>
+                </svg>
+              </button>
+
+              {%- comment -%} LEVEL 1 (children of this block's menu) {%- endcomment -%}
+              <div class="main-header__mobile-nav-sub" id="{{ id_l1 }}-sub" hidden>
+                <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l1">
+                  {%- for link_l2 in block_menu.links -%}
+                    {%- assign id_l2 = id_l1 | append: '-' | append: forloop.index -%}
+                    <li class="main-header__mobile-nav-item">
+                      {%- if link_l2.links.size > 0 -%}
+                        <button type="button" class="main-header__mobile-nav-toggle"
+                                id="{{ id_l2 }}-toggle" aria-expanded="false"
+                                aria-controls="{{ id_l2 }}-sub">
+                          <span class="main-header__mobile-nav-toggle-label">{{ link_l2.title }}</span>
+                          <svg class="main-header__mobile-nav-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="9 6 15 12 9 18"></polyline>
+                          </svg>
+                        </button>
+
+                        {%- comment -%} LEVEL 2 (grandchildren — leaf items) {%- endcomment -%}
+                        <div class="main-header__mobile-nav-sub" id="{{ id_l2 }}-sub" hidden>
+                          <ul class="main-header__mobile-nav-list main-header__mobile-nav-list--l2">
+                            {%- for link_l3 in link_l2.links -%}
+                              <li class="main-header__mobile-nav-item">
+                                <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l2"
+                                   href="{{ link_l3.url }}"
+                                   {%- if link_l3.active %} aria-current="page"{% endif %}>
+                                  {{ link_l3.title }}
+                                </a>
+                              </li>
+                            {%- endfor -%}
+                          </ul>
+                        </div>
+                      {%- else -%}
+                        <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l1"
+                           href="{{ link_l2.url }}"
+                           {%- if link_l2.active %} aria-current="page"{% endif %}>
+                          {{ link_l2.title }}
+                        </a>
+                      {%- endif -%}
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              </div>
+            {%- else -%}
+              {%- comment -%} No menu configured for this block yet — fall back to a plain link so it's never a dead accordion trigger {%- endcomment -%}
+              <a class="main-header__mobile-nav-link main-header__mobile-nav-link--l0"
+                 href="{{ block_link | default: '#' }}">
+                {{ block_label }}
+              </a>
+            {%- endif -%}
+          </li>
+
+        {%- comment -%} @app blocks render custom desktop-only markup per app; skipped in the mobile drawer {%- endcomment -%}
+        {%- when '@app' -%}
+
+      {%- endcase -%}
     {%- endfor -%}
     </ul>
 
