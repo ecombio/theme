@@ -8,12 +8,20 @@
       section renders — this is intentionally not a per-block setting, so a
       merchant can't end up with five differently-styled CTAs in one carousel.
 
-  If block.settings.product is set, the product-card snippet is pre-rendered
-  into a hidden <template>. video-card.js reads that template's innerHTML and
-  passes it through the video-card:play event; video-modal.js clones it into
-  the modal's product pane. This happens regardless of cta_style, including
-  'none' — the modal is the fallback way to reach the product when there's
-  no on-card CTA.
+  If block.settings.product is set, a lightweight product panel is written
+  inline (below) into a hidden <template> — a gallery (main image +
+  thumbnails), title/price, and an add-to-cart button. video-card.js reads
+  that template's innerHTML and passes it through the video-card:play
+  event; video-modal.js clones it into the modal's product pane and wires
+  up thumbnail-click-to-swap. This happens regardless of cta_style,
+  including 'none' — the modal is the fallback way to reach the product
+  when there's no on-card CTA.
+
+  This panel is intentionally NOT a product-card render — no
+  quickview/compare/wishlist wiring or product-card.css dependency, just
+  markup built for this modal context. Its styles live in video-card.css
+  (under the "modal product panel" section) since that's where this
+  markup is authored, even though it only ever displays inside video-modal.
 
   cta_style controls how the selected product is surfaced on the card itself:
     - none:                no on-card CTA; product only reachable via the modal
@@ -92,6 +100,73 @@
     {%- endif -%}
   </span>
 {%- endcapture -%}
+
+{%- if card_product -%}
+  {%- assign show_compare = false -%}
+  {%- if card_product.compare_at_price > card_product.price -%}
+    {%- assign show_compare = true -%}
+  {%- endif -%}
+  {%- capture product_panel -%}
+    <div class="video-modal-product">
+      <div class="video-modal-product__gallery">
+        <div class="video-modal-product__main">
+          {%- if card_product.featured_image -%}
+            <img
+              data-modal-product-main-image
+              src="{{ card_product.featured_image | image_url: width: 800 }}"
+              alt="{{ card_product.featured_image.alt | default: card_product.title }}"
+              width="800"
+              height="800"
+              loading="lazy"
+            >
+          {%- else -%}
+            <span class="video-modal-product__main-placeholder" aria-hidden="true"></span>
+          {%- endif -%}
+        </div>
+
+        {%- if card_product.images.size > 1 -%}
+          <div class="video-modal-product__thumbs" role="tablist" aria-label="Product images">
+            {%- for image in card_product.images -%}
+              <button
+                type="button"
+                class="video-modal-product__thumb{% if forloop.first %} is-active{% endif %}"
+                data-modal-product-thumb
+                data-full-src="{{ image | image_url: width: 800 }}"
+                role="tab"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-label="Show image {{ forloop.index }} of {{ forloop.length }}"
+              >
+                <img src="{{ image | image_url: width: 120 }}" alt="" width="60" height="60" loading="lazy">
+              </button>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      </div>
+
+      <div class="video-modal-product__info">
+        {%- if card_product.vendor != blank -%}
+          <p class="video-modal-product__vendor">{{ card_product.vendor }}</p>
+        {%- endif -%}
+
+        <h3 class="video-modal-product__title">{{ card_product.title }}</h3>
+
+        <div class="video-modal-product__price-row">
+          <span class="video-modal-product__price">{{ card_product.price | money }}</span>
+          {%- if show_compare -%}
+            <span class="video-modal-product__save">
+              Save {{ card_product.compare_at_price | minus: card_product.price | money }}
+            </span>
+            <span class="video-modal-product__compare-at">{{ card_product.compare_at_price | money }}</span>
+          {%- endif -%}
+        </div>
+
+        <button type="button" class="video-modal-product__add-to-cart" {{ add_to_cart_attrs }}>
+          Add to cart
+        </button>
+      </div>
+    </div>
+  {%- endcapture -%}
+{%- endif -%}
 
 <div
   class="video-card"
@@ -191,12 +266,7 @@
 
   {%- if card_product -%}
     <template data-video-product-template>
-      {%- render 'product-card',
-        product: card_product,
-        show_quickview: false,
-        show_compare: false,
-        show_eta: false
-      -%}
+      {{ product_panel }}
     </template>
   {%- endif -%}
 </div>
