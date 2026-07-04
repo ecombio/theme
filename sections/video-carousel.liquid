@@ -5,6 +5,10 @@
 {%- liquid
   assign show_arrows = section.settings.show_arrows
   assign show_dots = section.settings.show_dots
+  assign container_class = 'page-width'
+  if section.settings.full_width
+    assign container_class = 'video-carousel__full-bleed'
+  endif
 -%}
 
 <div
@@ -23,7 +27,7 @@
     --vc-card-ratio: {% if section.settings.card_style == 'reel' %}9 / 16{% else %}16 / 9{% endif %};
   "
 >
-  <div class="page-width">
+  <div class="{{ container_class }}">
     {%- if section.settings.heading != blank or section.settings.subheading != blank -%}
       <div class="video-carousel__header">
         {%- if section.settings.heading != blank -%}
@@ -123,6 +127,13 @@
     {
       "type": "header",
       "content": "Layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "Full width",
+      "info": "Removes the max-width constraint so the carousel spans the browser edge-to-edge, instead of matching your header's content width.",
+      "default": false
     },
     {
       "type": "select",
