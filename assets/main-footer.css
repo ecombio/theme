@@ -36,6 +36,13 @@
    both the enhanced (JS-present) and unenhanced (no-JS) states — with
    JS disabled, all columns simply stay open/static, which is a safe
    fallback rather than a broken one.
+
+   COLUMN COUNT: the number of desktop columns is a merchant-facing
+   style option (section.settings.column_layout), not something
+   inferred from the menu automatically. Liquid renders
+   .footer-menu__columns--4 or .footer-menu__columns--5 based on that
+   setting — see the modifiers below. Add further modifiers here
+   (and a matching schema option) if more counts are ever needed.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -78,10 +85,24 @@
   margin: 0 0 24px;
 }
 
+/* Base layout shared by every column-count modifier. Modifiers below
+   only need to set grid-template-columns (and, where useful, gap). */
 .footer-menu__columns {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
   gap: 32px;
+}
+
+/* Default / 4-column style option (also the fallback if no modifier
+   class resolves, e.g. an unrecognized setting value). */
+.footer-menu__columns,
+.footer-menu__columns--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* 5-column style option */
+.footer-menu__columns--5 {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 32px 24px;
 }
 
 .footer-menu__column {
@@ -235,7 +256,12 @@
    ───────────────────────────────────────────── */
 
 @media (min-width: 640px) and (max-width: 1023px) {
-  .footer-menu__columns {
+  /* Both style options collapse to the same 2-up tablet grid — at
+     this width, 4 vs 5 desktop columns isn't a meaningful
+     distinction, so there's no --4/--5 split here. */
+  .footer-menu__columns,
+  .footer-menu__columns--4,
+  .footer-menu__columns--5 {
     grid-template-columns: repeat(2, 1fr);
     gap: 24px 32px;
   }
@@ -254,7 +280,9 @@
     padding: 24px 0 8px;
   }
 
-  .footer-menu__columns {
+  .footer-menu__columns,
+  .footer-menu__columns--4,
+  .footer-menu__columns--5 {
     grid-template-columns: 1fr;
     gap: 0;
   }
