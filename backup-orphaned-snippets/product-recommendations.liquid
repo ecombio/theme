@@ -1,0 +1,173 @@
+{%- comment -%}
+  snippets/product-recommendations.liquid
+  ══════════════════════════════════════════════════════════════════════════════
+  PURPOSE
+    Lightweight recommendation cards for the cart drawer.
+    Pure presentation layer — no <script>, no <style>.
+
+  PARAMETERS (pass via `with` or set before render)
+    products          {Array}   Required. Array of product objects to display.
+    cart_item_ids     {Array}   Required. Array of variant IDs already in cart
+                                (used to suppress "Add" on already-carted items).
+    recs_limit        {Number}  Optional. Max cards to render. Default: 4.
+    recs_title        {String}  Optional. Section heading. Default: "You might also like".
+
+  CALLED BY
+    sections/cart-recommendations.liquid  (via Section Rendering API)
+
+  BEM NAMESPACE
+    .ecd-recs__*  ("ecombio cart drawer recommendations")
+    Tokens: inherits --ecd-* from cart-drawer.css (already on :root).
+
+  ARCHITECTURE NOTE
+    This snippet is intentionally dumb — it just loops and renders.
+    All API orchestration, fallback logic, and ATC calls live in
+    assets/cart-recommendations.js. The JS fetches this section and
+    swaps the innerHTML of [data-ecd-recs-container] in the drawer.
+  ══════════════════════════════════════════════════════════════════════════════
+{%- endcomment -%}
+
+{%- liquid
+  assign recs_limit = recs_limit | default: 4
+  assign recs_title = recs_title | default: 'You might also like'
+
+  comment
+    Build a quick-lookup array of variant IDs already in cart so we
+    can mark cards that are already added. We receive this as a flat
+    array of integers (built by the parent section from cart.items).
+  endcomment
+  assign cart_ids_str = cart_item_ids | join: ','
+-%}
+
+{%- if products != blank and products.size > 0 -%}
+
+  <div class="ecd-recs" data-ecd-recs aria-label="{{ recs_title | escape }}">
+
+    <p class="ecd-recs__title" aria-hidden="true">{{ recs_title | escape }}</p>
+
+    <ul class="ecd-recs__list" role="list">
+      {%- for product in products limit: recs_limit -%}
+
+        {%- comment -%}
+          Use the first available variant for the ATC payload.
+          If a product has only one variant (default), its first_available_variant
+          gives us a clean variant_id. Complex variant selection is intentionally
+          out of scope for recommendation cards — clicking the title navigates
+          to the full PDP where the customer selects options.
+        {%- endcomment -%}
+        {%- assign rec_variant = product.first_available_variant -%}
+
+        {%- comment -%} Is this product's default variant already in cart? {%- endcomment -%}
+        {%- assign already_in_cart = false -%}
+        {%- if rec_variant -%}
+          {%- assign variant_id_str = rec_variant.id | append: '' -%}
+          {%- if cart_ids_str contains variant_id_str -%}
+            {%- assign already_in_cart = true -%}
+          {%- endif -%}
+        {%- endif -%}
+
+        {%- comment -%} Pricing helpers {%- endcomment -%}
+        {%- assign rec_price = product.price_min -%}
+        {%- assign rec_compare = product.compare_at_price_min -%}
+        {%- assign rec_on_sale = false -%}
+        {%- if rec_compare > rec_price -%}
+          {%- assign rec_on_sale = true -%}
+        {%- endif -%}
+
+        <li
+          class="ecd-recs__item"
+          data-ecd-recs-item
+          data-product-id="{{ product.id }}"
+        >
+
+          {%- comment -%} ── Image ── {%- endcomment -%}
+          <a
+            href="{{ product.url }}"
+            class="ecd-recs__img-link"
+            tabindex="-1"
+            aria-hidden="true"
+          >
+            {%- if product.featured_image -%}
+              <img
+                src="{{ product.featured_image | image_url: width: 160 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                width="80"
+                height="80"
+                loading="lazy"
+                class="ecd-recs__img"
+              >
+            {%- else -%}
+              <div class="ecd-recs__img-placeholder" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="28" height="28">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+            {%- endif -%}
+          </a>
+
+          {%- comment -%} ── Info ── {%- endcomment -%}
+          <div class="ecd-recs__info">
+
+            {%- if product.vendor != blank -%}
+              <span class="ecd-recs__vendor">{{ product.vendor | escape }}</span>
+            {%- endif -%}
+
+            <a
+              href="{{ product.url }}"
+              class="ecd-recs__name"
+              aria-label="{{ product.title | escape }}"
+            >
+              {{- product.title | escape -}}
+            </a>
+
+            <div class="ecd-recs__pricing">
+              {%- if rec_on_sale -%}
+                <span class="ecd-recs__price ecd-recs__price--sale">{{ rec_price | money }}</span>
+                <s class="ecd-recs__price--was">{{ rec_compare | money }}</s>
+              {%- else -%}
+                <span class="ecd-recs__price">{{ rec_price | money }}</span>
+              {%- endif -%}
+            </div>
+
+          </div>
+
+          {%- comment -%} ── Quick-add button ── {%- endcomment -%}
+          {%- if rec_variant and product.available -%}
+            <button
+              type="button"
+              class="ecd-recs__atc{% if already_in_cart %} is-added{% endif %}"
+              data-ecd-recs-atc
+              data-variant-id="{{ rec_variant.id }}"
+              data-product-title="{{ product.title | escape }}"
+              aria-label="{% if already_in_cart %}{{ product.title | escape }} already in cart{% else %}Add {{ product.title | escape }} to cart{% endif %}"
+              {% if already_in_cart %}aria-pressed="true"{% endif %}
+            >
+              {%- if already_in_cart -%}
+                {%- comment -%} Checkmark icon — shown when already added {%- endcomment -%}
+                <svg class="ecd-recs__atc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span data-atc-label>In cart</span>
+              {%- else -%}
+                {%- comment -%} Plus icon — default state {%- endcomment -%}
+                <svg class="ecd-recs__atc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span data-atc-label>Add</span>
+              {%- endif -%}
+            </button>
+          {%- elsif product.available == false -%}
+            <span class="ecd-recs__sold-out">Sold out</span>
+          {%- endif -%}
+
+        </li>
+
+      {%- endfor -%}
+    </ul>
+
+  </div>
+
+{%- endif -%}

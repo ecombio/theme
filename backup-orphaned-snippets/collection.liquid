@@ -1,0 +1,38 @@
+{% comment %}
+  templates/collection.liquid
+
+  Composes the collection page from two independent sections:
+    sections/product-filter.liquid  - filter sidebar + sort
+    sections/product-feed.liquid    - product grid + in-feed promo blocks
+
+  Both sections already read the page's `collection` object directly
+  (with a `section.settings.collection` fallback for use outside this
+  template), so no data needs to be passed between them here — Liquid
+  just renders each section in turn.
+
+  Note: product-feed.liquid and product-filter.liquid each define their
+  own {% schema %}. A single file can only have one schema block, so
+  they're included here as sections (which keeps each schema intact),
+  not inlined/merged into this file.
+{% endcomment %}
+
+<div class="collection-page" data-collection-page>
+  <div class="collection-page__header">
+    <h1 class="collection-page__title">{{ collection.title }}</h1>
+    {%- if collection.description != blank -%}
+      <div class="collection-page__description rte">
+        {{ collection.description }}
+      </div>
+    {%- endif -%}
+  </div>
+
+  <div class="collection-page__layout">
+    <aside class="collection-page__sidebar">
+      {%- section 'product-filter' -%}
+    </aside>
+
+    <div class="collection-page__main">
+      {%- section 'product-feed' -%}
+    </div>
+  </div>
+</div>

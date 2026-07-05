@@ -1,0 +1,187 @@
+{%- liquid
+  assign show_browse_all    = section.settings.show_browse_all
+  assign browse_all_label   = section.settings.browse_all_label
+  assign dropdown_trigger   = section.settings.dropdown_trigger
+-%}
+
+<div
+  class="header-menu-bar"
+  style="
+    background-color: {{ section.settings.color_menu_bg }};
+    color: {{ section.settings.color_menu_text }};
+    border-color: {{ section.settings.color_menu_border }};
+  "
+  data-dropdown-trigger="{{ dropdown_trigger }}"
+>
+  <div class="header-menu-bar__inner page-width">
+
+    {%- comment -%} Browse all categories toggle {%- endcomment -%}
+    {%- if show_browse_all -%}
+      <button
+        class="header-menu-bar__browse-all"
+        type="button"
+        aria-expanded="false"
+        aria-controls="BrowseAllDrawer"
+      >
+        {%- render 'icon-menu-2' -%}
+        <span>{{ browse_all_label }}</span>
+        {%- render 'icon-chevron-down' -%}
+      </button>
+    {%- endif -%}
+
+    {%- comment -%} Block-driven menu items {%- endcomment -%}
+    <nav class="header-menu-bar__nav" aria-label="Main navigation">
+      <ul class="header-menu-bar__list" role="list">
+
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign block_type = block.type
+          -%}
+
+          {%- case block_type -%}
+
+            {%- when 'menu-item--link' -%}
+              <li
+                class="header-menu-bar__item header-menu-bar__item--link"
+                {{ block.shopify_attributes }}
+              >
+                <a
+                  class="header-menu-bar__link"
+                  href="{{ block.settings.url }}"
+                  {% if block.settings.url == request.path %}aria-current="page"{% endif %}
+                >
+                  {{- block.settings.label -}}
+                </a>
+              </li>
+
+            {%- when 'menu-item--dropdown' -%}
+              {%- liquid
+                assign nav_menu = linklists[block.settings.menu]
+                assign item_label = block.settings.label
+                if item_label == blank
+                  assign item_label = nav_menu.title
+                endif
+                assign is_mega = false
+                if block.settings.style == 'mega'
+                  assign is_mega = true
+                endif
+              -%}
+              <li
+                class="header-menu-bar__item header-menu-bar__item--dropdown{% if is_mega %} header-menu-bar__item--mega{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                <button
+                  class="header-menu-bar__link header-menu-bar__dropdown-toggle"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="MenuDropdown-{{ block.id }}"
+                >
+                  {{- item_label -}}
+                  {%- render 'icon-chevron-down' -%}
+                </button>
+
+                {%- if is_mega -%}
+                  <div
+                    id="MenuDropdown-{{ block.id }}"
+                    class="header-menu-bar__mega"
+                    hidden
+                  >
+                    <div class="header-menu-bar__mega-inner page-width">
+                      <ul class="header-menu-bar__mega-links" role="list">
+                        {%- for child_link in nav_menu.links -%}
+                          <li>
+                            <a href="{{ child_link.url }}" class="header-menu-bar__mega-link">
+                              {{- child_link.title -}}
+                            </a>
+                            {%- if child_link.links.size > 0 -%}
+                              <ul class="header-menu-bar__mega-sublinks" role="list">
+                                {%- for grandchild_link in child_link.links -%}
+                                  <li>
+                                    <a href="{{ grandchild_link.url }}" class="header-menu-bar__mega-sublink">
+                                      {{- grandchild_link.title -}}
+                                    </a>
+                                  </li>
+                                {%- endfor -%}
+                              </ul>
+                            {%- endif -%}
+                          </li>
+                        {%- endfor -%}
+                      </ul>
+                      {%- if block.settings.promo_image != blank -%}
+                        <div class="header-menu-bar__mega-promo">
+                          <a href="{{ block.settings.promo_url }}" class="header-menu-bar__mega-promo-link">
+                            {{
+                              block.settings.promo_image
+                              | image_url: width: 400
+                              | image_tag:
+                                loading: 'lazy',
+                                class: 'header-menu-bar__mega-promo-image',
+                                alt: block.settings.promo_heading
+                            }}
+                            {%- if block.settings.promo_heading != blank -%}
+                              <span class="header-menu-bar__mega-promo-heading">
+                                {{ block.settings.promo_heading }}
+                              </span>
+                            {%- endif -%}
+                          </a>
+                        </div>
+                      {%- endif -%}
+                    </div>
+                  </div>
+
+                {%- else -%}
+                  <ul
+                    id="MenuDropdown-{{ block.id }}"
+                    class="header-menu-bar__dropdown"
+                    role="list"
+                    hidden
+                  >
+                    {%- for child_link in nav_menu.links -%}
+                      <li class="header-menu-bar__dropdown-item">
+                        <a href="{{ child_link.url }}" class="header-menu-bar__dropdown-link">
+                          {{- child_link.title -}}
+                        </a>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </li>
+
+            {%- when 'menu-item--promo' -%}
+              <li
+                class="header-menu-bar__item header-menu-bar__item--promo"
+                {{ block.shopify_attributes }}
+              >
+                <a
+                  class="header-menu-bar__promo-link"
+                  href="{{ block.settings.url }}"
+                  style="color: {{ block.settings.color }};"
+                >
+                  {%- if block.settings.icon != blank -%}
+                    <span class="header-menu-bar__promo-icon" aria-hidden="true">
+                      {{- block.settings.icon -}}
+                    </span>
+                  {%- endif -%}
+                  {{- block.settings.label -}}
+                  {%- if block.settings.badge != blank -%}
+                    <sup class="header-menu-bar__promo-badge">{{ block.settings.badge }}</sup>
+                  {%- endif -%}
+                </a>
+              </li>
+
+            {%- when 'menu-item--divider' -%}
+              <li
+                class="header-menu-bar__item header-menu-bar__item--divider header-menu-bar__item--divider-{{ block.settings.style }}"
+                style="--divider-size: {{ block.settings.size }}px;"
+                aria-hidden="true"
+                {{ block.shopify_attributes }}
+              ></li>
+
+          {%- endcase -%}
+        {%- endfor -%}
+
+      </ul>
+    </nav>
+
+  </div>
+</div>
