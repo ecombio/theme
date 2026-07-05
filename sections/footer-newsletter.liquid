@@ -1,25 +1,3 @@
-{% comment %}
-  sections/footer-newsletter.liquid
-
-  Note: .footer-newsletter__inner uses `.footer-width` (defined in
-  footer-newsletter.css) instead of the theme's `.page-width`, so this
-  section lines up with the header and the rest of the footer group.
-  Keep the max-width/padding values here in sync with main-footer.css.
-
-  Accessibility: the message region uses aria-live so screen readers
-  announce success/error states without needing focus to move there.
-  The inline error is wired to the email input via aria-describedby.
-
-  Spam protection: a honeypot field (data-fn-honeypot) is hidden from
-  sighted users via CSS and skipped by keyboard tab order. Real visitors
-  never fill it in; bots often do. If it's filled, footer-newsletter.js
-  quietly blocks the submit instead of forwarding it to Shopify.
-
-  Double opt-in (if you need it) is a per-store Shopify setting under
-  Settings > Customer accounts / Marketing, not something this section
-  controls — nothing here needs to change for that.
-{% endcomment %}
-
 {{ 'footer-newsletter.css' | asset_url | stylesheet_tag }}
 
 <section
@@ -61,13 +39,12 @@
           {% form 'customer', id: 'FooterNewsletterForm', class: 'footer-newsletter-form' %}
             <input type="hidden" name="contact[tags]" value="newsletter">
 
-            {% comment %} Honeypot: real users never see or fill this in. {% endcomment %}
             <div class="footer-newsletter__honeypot" aria-hidden="true">
-              <label for="FooterNewsletterCompany-{{ section.id }}">Company</label>
+              <label for="FooterNewsletterHp-{{ section.id }}">Leave this field blank</label>
               <input
                 type="text"
-                id="FooterNewsletterCompany-{{ section.id }}"
-                name="contact[company]"
+                id="FooterNewsletterHp-{{ section.id }}"
+                name="contact[fn_hp_{{ section.id }}]"
                 tabindex="-1"
                 autocomplete="off"
                 data-fn-honeypot
