@@ -29,39 +29,49 @@
   {{ settings.type_primary_font | font_modify: 'weight', 'bold' | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
   {{ settings.type_primary_font | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
 
-  {% comment %} ── Preset logic ─────────────────────────────────────────
-    Two presets supported: 'hyper' (marketplace density) and 'focus'
-    (premium storefront). Add a new branch here before adding a third
-    preset to settings_schema.json — the else clause silently inherits
-    Focus values for any unknown preset value.
-  ──────────────────────────────────────────────────────────────────── {% endcomment %}
-  {%- liquid
-    assign preset = settings.theme_preset | default: 'hyper'
+{% comment %} ── Preset logic ─────────────────────────────────────────
+  Three presets supported:
+  - "" (empty)     → Launchpad (Default / Balanced)
+  - "marketplace"  → Hyper (Marketplace density)
+  - "storefront"   → Focus (Premium / more spacing)
 
-    if preset == 'hyper'
-      assign spacing_multiplier = 1.6
-      assign card_padding       = '14px'
-      assign grid_gap           = '12px'
-      assign header_padding_y   = '12px'
-      assign nav_font_size      = '14px'
-      assign font_weight_medium = '600'
-      assign font_weight_bold   = '700'
-    else
-      assign spacing_multiplier = 2.4
-      assign card_padding       = '24px'
-      assign grid_gap           = '24px'
-      assign header_padding_y   = '18px'
-      assign nav_font_size      = '15px'
-      assign font_weight_medium = '500'
-      assign font_weight_bold   = '600'
-    endif
+  Falls back to Launchpad if unknown value is used.
+─────────────────────────────────────────────────────────────────── {% endcomment %}
 
-    comment
-      plus: 0 coerces section_spacing_scale from string → number before
-      times: — without it Liquid outputs 0 when the value comes from settings.
-    endcomment
-    assign section_spacing = settings.section_spacing_scale | default: 1 | plus: 0 | times: spacing_multiplier | append: 'rem'
-  -%}
+{%- liquid
+  assign preset = settings.theme_preset | default: ''
+
+  if preset == 'marketplace'
+    assign spacing_multiplier = 1.6
+    assign card_padding       = '14px'
+    assign grid_gap           = '12px'
+    assign header_padding_y   = '12px'
+    assign nav_font_size      = '14px'
+    assign font_weight_medium = '600'
+    assign font_weight_bold   = '700'
+
+  elsif preset == 'storefront'
+    assign spacing_multiplier = 2.4
+    assign card_padding       = '24px'
+    assign grid_gap           = '24px'
+    assign header_padding_y   = '18px'
+    assign nav_font_size      = '15px'
+    assign font_weight_medium = '500'
+    assign font_weight_bold   = '600'
+
+  else
+    # Launchpad (Default)
+    assign spacing_multiplier = 2.0
+    assign card_padding       = '20px'
+    assign grid_gap           = '20px'
+    assign header_padding_y   = '16px'
+    assign nav_font_size      = '15px'
+    assign font_weight_medium = '500'
+    assign font_weight_bold   = '600'
+  endif
+
+  assign section_spacing = settings.section_spacing_scale | default: 1 | plus: 0 | times: spacing_multiplier | append: 'rem'
+-%}
 
   :root {
 
