@@ -12,7 +12,7 @@
 
   In-feed block types (from section.blocks):
     promo_banner
-    promo_carousel  + carousel_tab (children matched by position)
+    promo_carousel  (collections are set directly on the block)
     sub_collection
 {%- endcomment -%}
 
@@ -23,9 +23,8 @@
 {{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign banner_blocks       = section.blocks | where: 'type', 'promo_banner'
-  assign carousel_blocks     = section.blocks | where: 'type', 'promo_carousel'
-  assign carousel_tab_blocks = section.blocks | where: 'type', 'carousel_tab'
+  assign banner_blocks   = section.blocks | where: 'type', 'promo_banner'
+  assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
 -%}
 
 {%- paginate collection.products by section.settings.products_per_page -%}
@@ -50,8 +49,7 @@
         {%- for carousel in carousel_blocks -%}
           {%- assign carousel_position = carousel.settings.position | default: 0 -%}
           {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
-            {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
-            {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+            {%- render 'promo-carousel', block: carousel -%}
           {%- endif -%}
         {%- endfor -%}
 
@@ -74,8 +72,7 @@
       {%- for carousel in carousel_blocks -%}
         {%- assign carousel_position = carousel.settings.position | default: 0 -%}
         {%- if carousel_position > product_count and carousel_position > 0 -%}
-          {%- assign carousel_tabs = carousel_tab_blocks | where: 'settings.parent_position', carousel.settings.position -%}
-          {%- render 'promo-carousel', block: carousel, tab_blocks: carousel_tabs -%}
+          {%- render 'promo-carousel', block: carousel -%}
         {%- endif -%}
       {%- endfor -%}
 
