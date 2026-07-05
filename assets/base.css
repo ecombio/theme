@@ -4,13 +4,63 @@
    Design Direction:
    - United States Flag Colors + Apple System UI aesthetic
    - Clean, minimal, and refined layouts
-   - Consistent spacing and responsive structure
 
    Works together with theme.css
    ============================================ */
 
+/* ============================================
+   MODERN CSS RESET
+   ============================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  min-height: 100svh;
+}
+
+main {
+  flex: 1;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* ============================================
+   LAYOUT VARIABLES
+   ============================================ */
 :root {
-  /* Layout Variables */
   --page-width: 1280px;
   --page-margin: 24px;
 
@@ -24,7 +74,6 @@
 /* ============================================
    PAGE WIDTH SYSTEM
    ============================================ */
-
 .page-width {
   max-width: var(--page-width);
   margin: 0 auto;
@@ -43,16 +92,39 @@
   padding: 0 var(--footer-margin);
 }
 
-/* Full-bleed */
 .page-width--full {
   max-width: 100%;
   padding: 0;
 }
 
 /* ============================================
+   SECTION GRID SYSTEM (Full-width support)
+   ============================================ */
+.shopify-section {
+  --content-width: min(
+    calc(var(--page-width) - var(--page-margin) * 2),
+    calc(100% - var(--page-margin) * 2)
+  );
+  --content-margin: minmax(var(--page-margin), 1fr);
+  --content-grid: var(--content-margin) var(--content-width) var(--content-margin);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--content-grid);
+  width: 100%;
+}
+
+.shopify-section > * {
+  grid-column: 2;
+}
+
+.shopify-section > .full-width {
+  grid-column: 1 / -1;
+}
+
+/* ============================================
    STICKY HEADER + FOOTER
    ============================================ */
-
 .sticky-header {
   position: sticky;
   top: 0;
@@ -77,7 +149,6 @@ main {
 /* ============================================
    BASIC LAYOUT HELPERS
    ============================================ */
-
 .section {
   padding-block: var(--section-spacing);
 }
