@@ -25,11 +25,21 @@
   endif
 -%}
 
-<{% if has_link %}a href="{{ block.settings.link }}"{% else %}div{% endif %}
+{% if has_link %}
+<a 
+  href="{{ block.settings.link }}" 
   class="promo-banner"
   style="--banner-col-span: {{ col_span }}; --banner-row-span: {{ row_span }}; --banner-text-color: {{ block.settings.text_color | default: '#ffffff' }};"
   {{ block.shopify_attributes }}
 >
+{% else %}
+<div 
+  class="promo-banner"
+  style="--banner-col-span: {{ col_span }}; --banner-row-span: {{ row_span }}; --banner-text-color: {{ block.settings.text_color | default: '#ffffff' }};"
+  {{ block.shopify_attributes }}
+>
+{% endif %}
+
   <span class="promo-banner__media">
     {%- if block.settings.image -%}
       <img
@@ -79,4 +89,5 @@
       {%- endif -%}
     </span>
   {%- endif -%}
+
 </{% if has_link %}a{% else %}div{% endif %}>
