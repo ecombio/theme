@@ -1,213 +1,285 @@
-/* sections/main-product.css
+/*
+ * main-product.css
+ * Styles for snippets/main-product.liquid only.
+ * Depends on the design tokens (:root vars) defined in product-detail.css —
+ * make sure that stylesheet loads first on the page.
+ */
 
-   Ownership rule:
-   Consumes tokens from theme.css / css-variables.liquid only.
-   Does NOT define new colors, spacing scales, radii, or transitions —
-   reuses --color-*, --card-padding, --grid-gap, --radius-*,
-   --transition-*, --font-weight-* etc. If a value here isn't a var()
-   reference, it should be a genuine one-off with a comment explaining
-   why no existing token applies.
-
-   Layout primitives (.page-width, .shopify-section, .section) come
-   from base.css — this file does not redefine them.
-*/
-
-.product {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--grid-gap);
-}
-
-@media (min-width: 750px) {
-  .product {
-    grid-template-columns: 1.2fr 1fr;
-    gap: calc(var(--grid-gap) * 2);
-  }
-}
-
-/* ── Gallery ─────────────────────────────────────────────────────── */
-
-.product__media {
-  display: grid;
-  gap: var(--grid-gap);
-}
-
-.product__media-item {
-  border-radius: var(--radius-base);
-  overflow: hidden;
-  background-color: var(--color-surface);
-}
-
-/* ── Info column ─────────────────────────────────────────────────── */
-
-.product__info {
-  display: flex;
+.product-info-wrapper {
+  display:        flex;
   flex-direction: column;
-  gap: calc(var(--card-padding) / 2);
-  padding-block: var(--card-padding);
+  gap:            24px;
+  font-family:    var(--font-family);
+  color:          var(--color-text);
 }
 
-@media (min-width: 750px) {
-  .product__info {
-    position: sticky;
-    top: calc(var(--header-padding-y) * 2 + 60px);
-    align-self: start;
-  }
+/* ─── Header ──────────────────────────────────────────────── */
+.product-header {
+  position: relative;
 }
 
-.product__vendor {
-  color: var(--color-text-muted);
-  font-size: 0.875rem;
+.product-badge {
+  display:          inline-block;
+  background-color: var(--color-sale);
+  color:            white;
+  padding:          4px 12px;
+  border-radius:    12px;
+  font-size:        12px;
+  font-weight:      600;
+  margin-bottom:    12px;
 }
 
-.product__title {
-  font-weight: var(--font-weight-bold);
-  line-height: 1.15;
+.product-title {
+  font-size:   36px;
+  font-weight: 700;
+  line-height: 44px;
+  margin:      0 0 8px 0;
 }
 
-/* ── Price ───────────────────────────────────────────────────────── */
-
-.product__price-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5em;
+/* ─── Pricing ─────────────────────────────────────────────── */
+.product-pricing {
+  display: block;
 }
 
-.product__price {
-  font-weight: var(--font-weight-bold);
-  font-size: 1.25rem;
-}
-
-.product__price--sale {
-  color: var(--color-sale);
-}
-
-.product__price--compare {
-  color: var(--color-text-muted);
-  text-decoration: line-through;
-  font-weight: var(--font-weight-medium);
-}
-
-.product__save-badge {
-  background-color: var(--color-save-bg);
-  color: var(--color-save-text);
-  font-weight: var(--font-weight-medium);
-  font-size: 0.75rem;
-  padding: 0.15em 0.6em;
-  border-radius: var(--radius-sm);
-}
-
-/* ── Variant option pills ────────────────────────────────────────── */
-
-.product__option {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
-}
-
-.product__option-label {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-}
-
-.product__option-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em;
-}
-
-.product__option-pill {
-  border: 1px solid var(--color-pill-border);
-  background-color: var(--color-pill-bg);
-  color: var(--color-pill-text);
-  border-radius: var(--radius-sm);
-  padding: 0.5em 1em;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.product__option-pill:hover {
-  border-color: var(--color-pill-border-active);
-}
-
-.product__option-pill.is-active {
-  background-color: var(--color-pill-bg-active);
-  color: var(--color-pill-text-active);
-  border-color: var(--color-pill-border-active);
-}
-
-.product__option-pill.is-unavailable {
-  opacity: 0.4;
-  text-decoration: line-through;
-  cursor: not-allowed;
-}
-
-/* ── Quantity + Add to cart ──────────────────────────────────────── */
-
-.product__form-row {
-  display: flex;
-  gap: var(--grid-gap);
-  align-items: stretch;
-}
-
-.product__quantity {
-  display: flex;
+.price-wrapper {
+  display:     flex;
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--style-border-radius-inputs);
+  gap:         12px;
 }
 
-.product__quantity input {
-  width: 3em;
-  text-align: center;
-  border: none;
-  background: transparent;
+.price {
+  font-size:   28px;
+  font-weight: 700;
+  line-height: 36px;
 }
 
-.product__quantity button {
-  width: 2.5em;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: var(--transition-fast);
+.price.sale-price { color: var(--color-sale); }
+
+.compare-price {
+  font-size:       18px;
+  font-weight:     500;
+  color:           var(--color-text-secondary);
+  text-decoration: line-through;
 }
 
-.product__quantity button:hover {
-  background-color: var(--color-pill-bg);
+/* ─── Variant Pickers ─────────────────────────────────────── */
+.product-variants {
+  display: block;
 }
 
-.product__atc {
-  flex: 1;
-  background-color: var(--color-atc);
-  color: var(--color-atc-text);
-  font-weight: var(--font-weight-bold);
-  border: none;
-  border-radius: var(--style-border-radius-inputs);
-  padding: 0.9em 1.5em;
-  cursor: pointer;
-  transition: var(--transition-base);
+.variant-option {
+  margin-bottom: 20px;
+  transition:    outline 0.2s;
 }
 
-.product__atc:hover {
-  background-color: var(--color-atc-hover);
+.variant-option--error {
+  outline:        2px solid var(--color-sale);
+  outline-offset: 4px;
+  border-radius:  4px;
 }
 
-.product__atc:disabled,
-.product__atc.is-sold-out {
-  background-color: var(--color-atc-soldout-bg);
-  color: var(--color-atc-soldout-text);
-  cursor: not-allowed;
+.variant-label {
+  display:       block;
+  font-size:     15px;
+  font-weight:   600;
+  margin-bottom: 12px;
 }
 
-.product__atc.is-added {
-  background-color: var(--color-atc-added);
-  color: #ffffff;
+.selected-value { font-weight: 400; }
+
+.variant-fieldset {
+  border:  none;
+  padding: 0;
+  margin:  0;
 }
 
-/* ── Description ─────────────────────────────────────────────────── */
+.color-swatches,
+.variant-buttons {
+  display:   flex;
+  gap:       12px;
+  flex-wrap: wrap;
+}
 
-.product__description {
-  color: var(--color-foreground);
-  line-height: 1.6;
+/* Color swatches */
+.color-swatch-label {
+  display:  inline-block;
+  cursor:   pointer;
+  position: relative;
+}
+
+.color-swatch-label .color-input {
+  position:       absolute;
+  opacity:        0;
+  pointer-events: none;
+  width:          0;
+  height:         0;
+}
+
+.color-swatch-label .color-swatch {
+  display:        block;
+  width:          32px;
+  height:         32px;
+  border-radius:  4px;
+  border:         2px solid var(--color-border);
+  transition:     border-color 0.2s, box-shadow 0.2s;
+}
+
+.color-swatch-label .color-input:checked + .color-swatch {
+  border-color: var(--color-text);
+  box-shadow:   0 0 0 1px var(--color-text);
+}
+
+.color-swatch-label:hover .color-swatch { border-color: #999; }
+
+/* Variant buttons */
+.variant-buttons label {
+  display:  inline-block;
+  cursor:   pointer;
+  position: relative;
+}
+
+.variant-buttons .variant-radio {
+  position:       absolute;
+  opacity:        0;
+  pointer-events: none;
+  width:          0;
+  height:         0;
+}
+
+.variant-button {
+  display:          block;
+  padding:          10px 20px;
+  border:           1px solid var(--color-border);
+  border-radius:    24px;
+  background-color: var(--color-background);
+  font-size:        14px;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:       all 0.2s;
+}
+
+.variant-buttons .variant-radio:checked + .variant-button {
+  background-color: var(--color-text);
+  color:            var(--color-background);
+  border-color:     var(--color-text);
+}
+
+.variant-button:hover { border-color: var(--color-text); }
+
+/* ─── Quantity ────────────────────────────────────────────── */
+.quantity-selector-wrapper {
+  flex-shrink: 0;
+}
+
+.quantity-selector {
+  display:          inline-flex;
+  align-items:      center;
+  border:           1px solid var(--color-border);
+  border-radius:    8px;
+  background-color: var(--color-background);
+}
+
+.quantity-button {
+  width:           48px;
+  height:          48px;
+  border:          none;
+  background:      transparent;
+  cursor:          pointer;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  transition:      background-color 0.2s;
+}
+
+.quantity-button:hover { background-color: rgba(0, 0, 0, 0.05); }
+
+.quantity-input {
+  width:           60px;
+  height:          48px;
+  border:          none;
+  text-align:      center;
+  font-size:       16px;
+  font-weight:     500;
+  font-family:     var(--font-family);
+  -moz-appearance: textfield;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ─── Actions ─────────────────────────────────────────────── */
+.quantity-and-actions {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+}
+
+.quantity-actions-row {
+  display:     flex;
+  gap:         12px;
+  align-items: center;
+}
+
+.quantity-actions-row .add-to-cart { flex: 1; }
+
+.button {
+  width:         100%;
+  padding:       16px 24px;
+  border:        none;
+  border-radius: 8px;
+  font-size:     16px;
+  font-weight:   600;
+  font-family:   var(--font-family);
+  cursor:        pointer;
+  transition:    all 0.2s;
+}
+
+.button-primary {
+  background-color: #F5F5F5;
+  color:            var(--color-text);
+  border:           1px solid var(--color-border);
+}
+
+.button-primary:hover:not(:disabled) { background-color: #E0E0E0; }
+
+.button-primary:disabled,
+.button-secondary:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+.button-secondary {
+  background-color: var(--color-text);
+  color:            var(--color-background);
+}
+
+.button-secondary:hover:not(:disabled) { background-color: #333; }
+
+.button.success {
+  background-color: var(--color-success) !important;
+  color:            #fff !important;
+  border-color:     var(--color-success) !important;
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .product-title {
+    font-size:   28px;
+    line-height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quantity-actions-row {
+    flex-direction: column;
+    align-items:    stretch;
+  }
+
+  .quantity-actions-row .quantity-selector-wrapper {
+    display:         flex;
+    justify-content: center;
+  }
 }

@@ -1,125 +1,20 @@
-{% comment %}
-  sections/main-product.liquid
-
-  Structure only. All visual decisions are delegated to
-  main-product.css via tokens defined in theme.css / css-variables.liquid.
-  Reuses .page-width and .section from base.css rather than
-  reinventing width/spacing rules locally.
-{% endcomment %}
-
-{{ 'main-product.css' | asset_url | stylesheet_tag }}
-
-<div class="shopify-section section">
-  <product-form class="page-width">
-    <div class="product" data-product-id="{{ product.id }}">
-
-      {%- comment %} ── Gallery ── {% endcomment -%}
-      <div class="product__media">
-        {%- for media in product.media -%}
-          <div class="product__media-item">
-            {{ media | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '400,600,800,1200' }}
-          </div>
-        {%- endfor -%}
-      </div>
-
-      {%- comment %} ── Info ── {% endcomment -%}
-      <div class="product__info">
-
-        {%- if section.settings.show_vendor and product.vendor != blank -%}
-          <div class="product__vendor">{{ product.vendor }}</div>
-        {%- endif -%}
-
-        <h1 class="product__title">{{ product.title }}</h1>
-
-        <div class="product__price-row" data-product-price-row>
-          <span class="product__price {% if product.compare_at_price > product.price %}product__price--sale{% endif %}" data-product-price>
-            {{ product.price | money }}
-          </span>
-
-          {%- if product.compare_at_price > product.price -%}
-            <span class="product__price--compare" data-product-compare-price>
-              {{ product.compare_at_price | money }}
-            </span>
-            <span class="product__save-badge" data-product-save-badge>
-              {%- assign save_amount = product.compare_at_price | minus: product.price -%}
-              Save {{ save_amount | money }}
-            </span>
-          {%- endif -%}
-        </div>
-
-        {%- form 'product', product, class: 'product__form', data-product-form: '' -%}
-          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" data-product-variant-id>
-
-          {%- for option in product.options_with_values -%}
-            <div class="product__option">
-              <span class="product__option-label">{{ option.name }}</span>
-              <div class="product__option-pills" data-option-index="{{ forloop.index0 }}">
-                {%- for value in option.values -%}
-                  <button
-                    type="button"
-                    class="product__option-pill{% if value == option.selected_value %} is-active{% endif %}"
-                    data-option-value="{{ value | escape }}"
-                  >
-                    {{ value }}
-                  </button>
-                {%- endfor -%}
-              </div>
-            </div>
-          {%- endfor -%}
-
-          <div class="product__form-row">
-            <div class="product__quantity">
-              <button type="button" data-quantity-decrease aria-label="Decrease quantity">−</button>
-              <input type="number" name="quantity" value="1" min="1" data-quantity-input>
-              <button type="button" data-quantity-increase aria-label="Increase quantity">+</button>
-            </div>
-
-            <button
-              type="submit"
-              class="product__atc{% unless product.selected_or_first_available_variant.available %} is-sold-out{% endunless %}"
-              data-product-atc
-              {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}
-            >
-              <span data-atc-label>
-                {%- if product.selected_or_first_available_variant.available -%}
-                  Add to cart
-                {%- else -%}
-                  Sold out
-                {%- endif -%}
-              </span>
-            </button>
-          </div>
-        {%- endform -%}
-
-        {%- if product.description != blank -%}
-          <div class="product__description">
-            {{ product.description }}
-          </div>
-        {%- endif -%}
-
-      </div>
-    </div>
-
-    {%- comment %} Variant data for main-product.js — avoids a network
-    call per variant change. {% endcomment -%}
-    <script type="application/json" data-product-json>
-      {{ product.variants | json }}
-    </script>
-  </product-form>
-</div>
-
+<link rel="stylesheet" href="{{ 'main-product.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ 'main-product.css' | asset_url }}"></noscript>
 <script src="{{ 'main-product.js' | asset_url }}" defer></script>
 
-{% schema %}
-{
-  "name": "Product information",
-  "settings": [
-    {
-      "type": "checkbox",
-      "id": "show_vendor",
-      "label": "Show vendor name",
-      "default": true
-    }
-  ]
-}
-{% endschema %}
+{%- render 'breadcrumbs' -%}
+
+<div class="product-page" id="ProductSection">
+  <div class="product-layout">
+
+    <div class="product-col product-col--left">
+      {%- render 'product-media' -%}
+    </div>
+
+    <div class="product-col product-col--right product-col--scroll">
+      {%- render 'product-detail' -%}
+    </div>
+
+  </div>
+
+</div>
