@@ -2,23 +2,33 @@
   snippets/css-variables.liquid
 
   Outputs a single <style> block into <head> (via theme.liquid).
-  Everything that was previously hardcoded in product-card.css,
-  product-quickview.css, and theme.liquid inline styles lives here
-  as a single source of truth.
+
+  This file is the ONLY place that should contain settings-driven
+  design tokens (colors, spacing, widths, presets, fonts). It is
+  intentionally NOT going away: static assets (base.css, theme.css)
+  cannot read settings_data.json or evaluate Liquid, so anything a
+  merchant can change from the theme editor has to live here.
+
+  Static, non-configurable design constants (border radii that never
+  change, transition durations, ATC/pill/sale colors that aren't
+  exposed as settings) live in theme.css instead — see the :root
+  block there. Do not duplicate those constants here.
 
   Token namespaces:
-    --font-*          typography
-    --color-*         brand / UI palette
-    --radius-*        border radii
-    --transition-*    motion
-    --page-*          page-width layout
-    --header-*        header layout
-    --footer-*        footer layout
-    --section-*       section spacing
-    --card-*          product card density
-    --grid-*          grid gap density
-    --nav-*           navigation typography
+    --font-*          typography (settings-driven)
+    --color-*         brand / UI palette (settings-driven)
+    --style-border-radius-inputs   input radius (settings-driven)
+    --page-*          page-width layout (settings-driven)
+    --header-*        header layout (settings-driven)
+    --footer-*        footer layout (settings-driven)
+    --section-*       section spacing (settings + preset driven)
+    --card-*          product card density (preset driven)
+    --grid-*          grid gap density (preset driven)
+    --nav-*           navigation typography (preset driven)
     --font-weight-*   preset-driven weight scale
+
+  For static constants (--radius-base, --transition-*, --color-atc-text,
+  etc.) see theme.css. Do not redefine them here.
 {% endcomment %}
 
 {% style %}
@@ -80,18 +90,12 @@
     --font-primary--style:   {{ settings.type_primary_font.style }};
     --font-primary--weight:  {{ settings.type_primary_font.weight }};
 
-    /* ── Brand palette ───────────────────────────────────────────── */
-    /*
-      These replace every hardcoded hex in product-card.css and
-      product-quickview.css. Both files should reference these vars
-      rather than defining their own token blocks.
-    */
+    /* ── Brand palette (settings-driven) ─────────────────────────── */
     --color-background:      {{ settings.background_color }};
     --color-foreground:      {{ settings.foreground_color }};
 
     --color-accent:          {{ settings.accent_color      | default: '#4F46E5' }};
     --color-accent-hover:    {{ settings.accent_color_hover | default: '#4338CA' }};
-    --color-accent-text:     #ffffff;
 
     --color-text:            {{ settings.foreground_color  | default: '#111827' }};
     --color-text-muted:      {{ settings.text_muted_color  | default: '#6B7280' }};
@@ -99,49 +103,37 @@
     --color-surface:         {{ settings.background_color  | default: '#ffffff' }};
     --color-border:          {{ settings.border_color      | default: '#E5E7EB' }};
 
-    /* ATC button — yellow matches Amazon-style add-to-cart convention */
+    /* ATC button */
     --color-atc:             {{ settings.atc_color         | default: '#f5c518' }};
     --color-atc-hover:       {{ settings.atc_color_hover   | default: '#e6b800' }};
-    --color-atc-text:        #111111;
-    --color-atc-soldout-bg:  #E5E7EB;
-    --color-atc-soldout-text: #9CA3AF;
-    --color-atc-added:       #059669;
 
     /* Sale / savings */
     --color-sale:            {{ settings.sale_color        | default: '#DC2626' }};
-    --color-save-bg:         #FEF3C7;
     --color-save-text:       {{ settings.save_badge_color  | default: '#D97706' }};
 
-    /* Option pills */
-    --color-pill-bg:         #F3F4F6;
-    --color-pill-bg-active:  {{ settings.foreground_color  | default: '#111827' }};
-    --color-pill-text:       #374151;
-    --color-pill-text-active: #ffffff;
-    --color-pill-border:     {{ settings.border_color      | default: '#E5E7EB' }};
+    /* Option pills (settings-driven half only — static half in theme.css) */
+    --color-pill-bg-active:     {{ settings.foreground_color | default: '#111827' }};
+    --color-pill-border:        {{ settings.border_color      | default: '#E5E7EB' }};
     --color-pill-border-active: {{ settings.foreground_color | default: '#111827' }};
 
-    /* ── Radii ───────────────────────────────────────────────────── */
-    --radius-base:           10px;
-    --radius-sm:             6px;
-    --radius-inputs:         {{ settings.input_corner_radius }}px;
-
-    /* ── Motion ──────────────────────────────────────────────────── */
-    --transition-fast:       0.15s ease;
-    --transition-base:       0.2s ease;
-    --transition-slow:       0.35s ease;
+    /* ── Inputs (settings-driven radius) ─────────────────────────── */
+    /* NOTE: name matches critical.css's var(--style-border-radius-inputs).
+       Previously this was emitted as --radius-inputs, which nothing
+       consumed — the input radius setting was silently a no-op. */
+    --style-border-radius-inputs: {{ settings.input_corner_radius }}px;
 
     /* ── Page layout ─────────────────────────────────────────────── */
     --page-width:            {{ settings.max_page_width }};
     --page-margin:           {{ settings.min_page_margin }}px;
 
     /* ── Header layout ───────────────────────────────────────────── */
-    --header-width:          {{ settings.header_max_width   | default: settings.max_page_width }};
-    --header-margin:         {{ settings.header_page_margin | default: settings.min_page_margin }}px;
+    --header-width:          {{ settings.header_max_width | default: settings.max_page_width }};
+    --header-margin:         {{ settings.header_margin    | default: settings.min_page_margin }}px;
     --header-padding-y:      {{ header_padding_y }};
 
     /* ── Footer layout ───────────────────────────────────────────── */
-    --footer-width:          {{ settings.footer_max_width   | default: settings.max_page_width }};
-    --footer-margin:         {{ settings.footer_page_margin | default: settings.min_page_margin }}px;
+    --footer-width:          {{ settings.footer_max_width | default: settings.max_page_width }};
+    --footer-margin:         {{ settings.footer_margin    | default: settings.min_page_margin }}px;
 
     /* ── Preset-driven density ───────────────────────────────────── */
     --section-spacing:       {{ section_spacing }};
