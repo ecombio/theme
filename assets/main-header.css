@@ -65,10 +65,32 @@
   align-items: center;
   gap: 16px;
   width: 100%;
-  max-width: 1184px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding-inline: var(--section-padding, 24px);
   height: 64px;
+}
+
+/* ─────────────────────────────────────────────
+   SECTION LAYOUT (width + padding)
+   Mirrors the independent "Section Layout" pattern documented in
+   sections/example-width-section.liquid (also adopted by
+   snippets/main-product.liquid): --section-padding and --custom-width
+   are LOCAL vars, set inline per-instance from this section's own
+   schema settings below. They intentionally never read from the
+   global --page-margin / --page-width vars, so changing this
+   section's Section width / Side padding settings can't affect any
+   other section, and vice versa.
+   ───────────────────────────────────────────── */
+.main-header--default-width .main-header__inner {
+  max-width: 1184px;
+}
+
+.main-header--full-width .main-header__inner {
+  max-width: none;
+}
+
+.main-header--custom-width .main-header__inner {
+  max-width: var(--custom-width);
 }
 
 /* ─────────────────────────────────────────────
@@ -262,6 +284,11 @@
    Icon labels are hidden; icons are compact. Search row below.
    ───────────────────────────────────────────── */
 @media (max-width: 639px) {
+  /* Deliberately a fixed value, not var(--section-padding) — this is
+     the "layer a breakpoint override on top" option from the Section
+     Layout pattern (see example-width-section.liquid), so the
+     mobile-specific tightening stays in effect regardless of whatever
+     Side padding value is set for tablet/desktop. */
   .main-header__inner {
     padding: 0 12px;
     gap: 4px;
