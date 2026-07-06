@@ -23,12 +23,28 @@
      Tablet  : 640px – 1023px
      Desktop : ≥ 1024px
 
-   CONTAINER: .footer-width intentionally mirrors the header's
-   .main-header__inner container values (max-width: 1184px;
-   margin: 0 auto; padding: 0 24px, dropping to 0 12px under 640px)
-   so footer content lines up edge-to-edge with the header above it.
-   Do not change these values without checking main-header.css's
-   .main-header__inner rule still matches.
+   SECTION LAYOUT (width + padding): mirrors the independent pattern
+   from sections/example-width-section.liquid, also used by
+   sections/main-header.liquid. --section-padding and --custom-width
+   are LOCAL vars, set inline per-instance from this section's own
+   schema settings (see sections/main-footer.liquid) — they never
+   read from the global --page-margin / --page-width vars, so this
+   section's width/padding can't affect, or be affected by, any other
+   section.
+
+   This section's defaults (Default width → 1184px max-width, 24px
+   side padding, 12px fixed mobile override) are deliberately set to
+   match main-header's defaults exactly, so out of the box
+   `.footer-width` still lines up edge-to-edge with the header's
+   `.main-header__inner` above it. That alignment holds only while
+   both sections are left at matching settings — since each now has
+   independent controls, a merchant changing one section's Section
+   width / Side padding without changing the other's will make them
+   drift apart. That's an accepted tradeoff of independent per-section
+   control, not a bug. Do not reintroduce a shared/global width var
+   here as a "fix" without discussing it — see the note in
+   sections/main-footer.liquid for why header and footer went
+   independent in the first place.
 
    MOBILE ACCORDION: below 1024px, main-footer.js progressively
    converts each .footer-menu__column's heading into a toggle button
@@ -58,14 +74,34 @@
 
 .footer-width {
   width: 100%;
-  max-width: 1184px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding-inline: var(--section-padding, 24px);
+}
+
+/* Width modifiers — same three-way split as main-header's
+   .main-header--default-width / --full-width / --custom-width,
+   scoped to this section's own BEM namespace per the guidance in
+   example-width-section.liquid (this theme has no shared global
+   width utility classes). */
+.main-footer--default-width .footer-width {
+  max-width: 1184px;
+}
+
+.main-footer--full-width .footer-width {
+  max-width: none;
+}
+
+.main-footer--custom-width .footer-width {
+  max-width: var(--custom-width);
 }
 
 @media (max-width: 639px) {
+  /* Deliberately a fixed value, not var(--section-padding) — mirrors
+     main-header.css's mobile override (see that file's SECTION
+     LAYOUT comment): mobile stays tight regardless of whatever Side
+     padding value is set for tablet/desktop. */
   .footer-width {
-    padding: 0 12px;
+    padding-inline: 12px;
   }
 }
 

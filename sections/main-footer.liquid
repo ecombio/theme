@@ -7,17 +7,54 @@ Structure:
 - Payment icons + Social icons
 - Copyright + Policies
 
-Note: this section uses its own `.footer-width` container (defined in
-main-footer.css) which intentionally mirrors the header's container
-values (max-width: 1184px; margin: 0 auto; padding: 0 24px, dropping
-to 0 12px under 640px) so footer content lines up edge-to-edge with
-the header above it. Do not swap this for `.page-width--footer` or
-any other container class without checking its values match.
+SECTION LAYOUT (width + padding):
+Mirrors the independent "Section Layout" pattern from
+sections/example-width-section.liquid, already adopted by
+sections/main-header.liquid. --section-padding and --custom-width are
+LOCAL vars set inline below from this section's own schema settings —
+they never read from the global --page-margin / --page-width vars, so
+changing this section's Section width / Side padding can't affect any
+other section, and vice versa.
+
+This section's defaults (Default width, 24px padding, 12px fixed
+mobile override) are deliberately set to match main-header's defaults
+exactly, so out of the box the footer's `.footer-width` container still
+lines up edge-to-edge with the header's `.main-header__inner` above it,
+just as it always has.
+
+IMPORTANT: because both header and footer now control their width/
+padding independently (per-section, not shared), that alignment is only
+guaranteed while both are left at matching values. If a merchant changes
+Section width/Side padding on one but not the other, header and footer
+will visibly drift apart — that's an accepted tradeoff of giving each
+section independent control, not a bug. If perfect alignment needs to be
+enforced regardless of settings, header and footer would need to share
+a single synced value instead of two independent ones — a bigger change
+this section doesn't attempt.
 {% endcomment %}
 
 {{ 'main-footer.css' | asset_url | stylesheet_tag }}
 
-<footer class="main-footer" data-section-id="{{ section.id }}" data-section-type="main-footer">
+{%- liquid
+  assign section_width = section.settings.section_width
+  if section_width == blank
+    assign width_class = 'main-footer--default-width'
+  elsif section_width == 'full-width'
+    assign width_class = 'main-footer--full-width'
+  else
+    assign width_class = 'main-footer--custom-width'
+  endif
+-%}
+
+<footer class="main-footer {{ width_class }}"
+        data-section-id="{{ section.id }}"
+        data-section-type="main-footer"
+        style="
+          --section-padding: {{ section.settings.section_padding }}px;
+          {%- if section_width == 'custom-width' %}
+            --custom-width: {{ section.settings.custom_width }}rem;
+          {%- endif %}
+        ">
   <div class="footer-width">
 
     <!-- Footer Navigation Menu -->
@@ -133,6 +170,44 @@ any other container class without checking its values match.
 {
   "name": "Main footer",
   "settings": [
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": "",
+      "info": "Defaults to Default width so the footer lines up with the header above it. Changing this independently of the header's own Section width setting will break that alignment."
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24,
+      "info": "Applies at tablet and desktop widths. Mobile (< 640px) keeps its own fixed, tighter padding regardless of this setting. Defaults to 24px to match the header's default."
+    },
     {
       "type": "header",
       "content": "Footer Menu"
