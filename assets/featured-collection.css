@@ -41,3 +41,38 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Scrollable row: same "how many fit per view" as the grid above
+   (2 / 3 / 4 at the same breakpoints), but flowing horizontally with
+   scroll-snap instead of wrapping onto new lines. grid-template-columns
+   is reset to none so it doesn't fight grid-auto-columns below. */
+.featured-collection__grid--row {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 1.2rem) / 2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.featured-collection__grid--row::-webkit-scrollbar {
+  display: none;
+}
+
+.featured-collection__grid--row > * {
+  scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+  .featured-collection__grid--row {
+    grid-auto-columns: calc((100% - (1.2rem * 2)) / 3);
+  }
+}
+
+@media (min-width: 990px) {
+  .featured-collection__grid--row {
+    grid-auto-columns: calc((100% - (1.2rem * 3)) / 4);
+  }
+}

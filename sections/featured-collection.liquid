@@ -35,7 +35,7 @@
   >
     <h2 class="featured-collection__heading">{{ section.settings.heading | default: section.settings.collection.title }}</h2>
 
-    <div class="featured-collection__grid">
+    <div class="featured-collection__grid{% if section.settings.layout_style == 'row' %} featured-collection__grid--row{% endif %}">
       {%- for product in section.settings.collection.products limit: section.settings.limit -%}
         {%- render 'product-card', product: product -%}
       {%- endfor -%}
@@ -65,6 +65,18 @@
       "min": 4,
       "max": 12,
       "default": 8
+    },
+    { "type": "header", "content": "Grid" },
+    {
+      "type": "select",
+      "id": "layout_style",
+      "label": "Layout",
+      "options": [
+        { "value": "grid", "label": "Grid" },
+        { "value": "row", "label": "Scrollable row" }
+      ],
+      "default": "grid",
+      "info": "Grid wraps products onto multiple lines. Scrollable row keeps them on one line the person can scroll through horizontally."
     },
     { "type": "header", "content": "Section layout" },
     {
