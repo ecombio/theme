@@ -1,17 +1,7 @@
-{{ 'collection.css' | asset_url | stylesheet_tag }}
-{{ 'collection-filter.css' | asset_url | stylesheet_tag }}
+{%- comment -%} sections/main-collection.liquid {%- endcomment -%}
+{{ 'main-collection.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  SECTION WIDTH / SIDE PADDING:
-  Handled locally per the pattern in sections/example-width-section.liquid.
-  This opts .collection-page OUT of the shared width recipe that
-  collection.css previously documented as being "kept in sync" with
-  the header / utility bar / menu bar / footer (all fixed at
-  max-width: 1184px, padding 0 24px / 0 12px under 639px). That sync
-  comment has been removed from collection.css — this section's width
-  and padding are now driven only by its own "Section layout" schema
-  settings below and no longer track those other containers.
-{%- endcomment -%}
+{%- comment -%} Section width/padding is now local to this section only (schema-driven below) and no longer synced with header/utility bar/menu bar/footer's shared 1184px/24px recipe. {%- endcomment -%}
 
 {%- liquid
   assign active_tab = request.query_parameters['tab'] | default: 'products'
@@ -29,7 +19,19 @@
   endif
 -%}
 
-{%- render 'collection-hero', collection: collection -%}
+<div class="main-collection" id="main-collection">
+
+{%- comment -%} Inlined from snippets/collection-hero.liquid — renders collection title + description; styles now in main-collection.css. {%- endcomment -%}
+
+<div class="collection-hero" id="collection-hero">
+  <h1 class="collection-title">{{ collection.title }}</h1>
+
+  {%- if collection.description != blank -%}
+    <div class="collection-description rte">
+      {{ collection.description }}
+    </div>
+  {%- endif -%}
+</div>
 
 <section class="collection-section">
   <div
@@ -44,19 +46,95 @@
     "
   >
 
-    {%- render 'collection-toolbar', active_tab: active_tab -%}
+    {%- comment -%} Inlined from snippets/collection-toolbar.liquid — sticky desktop toolbar + fixed mobile bottom bar; talks to JS only via data-filter-toggle / data-tab / data-mobile-sort-toggle. {%- endcomment -%}
+
+    {%- comment -%} ── Sticky desktop toolbar ── {%- endcomment -%}
+    <div class="collection-toolbar" id="collection-toolbar" role="navigation" aria-label="Collection navigation">
+
+      {%- if section.settings.show_filters -%}
+        <button
+          class="collection-toolbar__filter-toggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="collection-filter"
+          aria-label="Toggle filters"
+          data-filter-toggle
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Filters
+        </button>
+      {%- endif -%}
+
+      <div class="tab-switcher" role="tablist" aria-label="Collection view">
+        <button
+          class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
+          role="tab"
+          type="button"
+          aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+          aria-controls="panel-products"
+          id="tab-products"
+          data-tab="products"
+          tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
+        >{{ section.settings.tab_products_label | default: 'Products' }}</button>
+
+        <button
+          class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
+          role="tab"
+          type="button"
+          aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+          aria-controls="panel-articles"
+          id="tab-articles"
+          data-tab="articles"
+          tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
+        >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
+      </div>
+
+    </div>
+
+    {%- comment -%} ── Fixed mobile bottom bar ── {%- endcomment -%}
+    {%- if section.settings.show_filters or section.settings.show_sort -%}
+      <div class="collection-mobile-bar" aria-label="Collection controls" role="toolbar">
+
+        {%- if section.settings.show_filters -%}
+          <button
+            class="collection-mobile-bar__btn"
+            type="button"
+            aria-expanded="false"
+            aria-controls="collection-filter"
+            aria-label="Toggle filters"
+            data-filter-toggle
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Filters
+          </button>
+        {%- endif -%}
+
+        {%- if section.settings.show_sort -%}
+          <button
+            class="collection-mobile-bar__btn"
+            type="button"
+            aria-expanded="false"
+            aria-label="Sort products"
+            data-mobile-sort-toggle
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Sort
+          </button>
+        {%- endif -%}
+
+      </div>
+    {%- endif -%}
 
     <div class="collection-body">
 
-      {%- comment -%}
-        ===== INLINED FROM: snippets/collection-filter.liquid =====
-        Originally: {%- render 'collection-filter' -%}
-        JS hook attributes preserved as-is:
-          [data-filter-toggle]  — toolbar buttons (outside this block)
-                                  target id="collection-filter"
-          [data-sort]           — sort <select>
-          FilterForm            — filter <form>
-      {%- endcomment -%}
+      {%- comment -%} Inlined from snippets/collection-filter.liquid — filter drawer (sort select, facet groups, price range, active pills); JS hooks: data-filter-toggle (external), data-sort, #FilterForm. {%- endcomment -%}
 
       {%- if section.settings.show_filters -%}
         <aside
@@ -84,11 +162,7 @@
           <form method="get" action="{{ collection.url }}" id="FilterForm">
 
             {%- for filter in collection.filters -%}
-              {%- comment -%}
-                FIX: filters now stay open by default (previously only opened
-                when a value inside them was already active). Removed the
-                conditional and added `open` unconditionally.
-              {%- endcomment -%}
+              {%- comment -%} FIX: filter groups now stay open by default (previously conditional on having an active value). {%- endcomment -%}
               <details
                 class="collection-filter__group"
                 open
@@ -168,10 +242,131 @@
 
         </aside>
       {%- endif -%}
-      {%- comment -%} ===== END INLINED collection-filter ===== {%- endcomment -%}
 
       <div class="collection-body__feed">
-        {%- render 'collection-feed', active_tab: active_tab -%}
+        {%- comment -%} Inlined from snippets/collection-feed.liquid — tab panel shell for products/articles; switching logic lives in collection-feed.js via data-panel. {%- endcomment -%}
+
+        <div class="collection-feed" id="collection-feed" data-collection-feed>
+
+          {%- comment -%} Products panel {%- endcomment -%}
+          <div
+            id="panel-products"
+            class="collection-feed__panel"
+            role="tabpanel"
+            aria-labelledby="tab-products"
+            data-panel="products"
+            {%- if active_tab != 'products' %} hidden{%- endif %}
+          >
+            {%- comment -%} Inlined from snippets/product-feed.liquid — product grid with in-feed blocks (sub-collections, promo banners/carousels) + pagination. {%- endcomment -%}
+
+            {{ 'product-card.css' | asset_url | stylesheet_tag }}
+            {{ 'sub-collections.css' | asset_url | stylesheet_tag }}
+            {{ 'promo-banner.css' | asset_url | stylesheet_tag }}
+            {{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
+
+            {%- liquid
+              assign banner_blocks   = section.blocks | where: 'type', 'promo_banner'
+              assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
+            -%}
+
+            {%- paginate collection.products by section.settings.products_per_page -%}
+
+              <div id="product-feed" class="product-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
+
+                {%- render 'sub-collections-carousel', collection: collection -%}
+
+                <div class="product-feed__grid">
+
+                  {%- for product in collection.products -%}
+
+                    {%- comment -%} In-feed banners at this position {%- endcomment -%}
+                    {%- for banner in banner_blocks -%}
+                      {%- assign banner_position = banner.settings.position | default: 0 -%}
+                      {%- if banner_position > 0 and banner_position == forloop.parentloop.index -%}
+                        {%- render 'promo-banner', block: banner -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- comment -%} In-feed carousels at this position {%- endcomment -%}
+                    {%- for carousel in carousel_blocks -%}
+                      {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+                      {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
+                        {%- render 'promo-carousel', block: carousel -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- render 'product-card', product: product -%}
+
+                  {%- else -%}
+                    <p class="collection-empty">No products found.</p>
+                  {%- endfor -%}
+
+                  {%- comment -%} Blocks positioned beyond product count render after last card {%- endcomment -%}
+                  {%- assign product_count = collection.products.size -%}
+
+                  {%- for banner in banner_blocks -%}
+                    {%- assign banner_position = banner.settings.position | default: 0 -%}
+                    {%- if banner_position > product_count and banner_position > 0 -%}
+                      {%- render 'promo-banner', block: banner -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+
+                  {%- for carousel in carousel_blocks -%}
+                    {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+                    {%- if carousel_position > product_count and carousel_position > 0 -%}
+                      {%- render 'promo-carousel', block: carousel -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+
+                </div>
+              </div>
+
+              {%- if paginate.pages > 1 -%}
+                <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+                  {%- if paginate.previous -%}
+                    <a href="{{ paginate.previous.url }}&tab=products" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
+                  {%- endif -%}
+                  {%- for part in paginate.parts -%}
+                    {%- if part.is_link -%}
+                      <a href="{{ part.url }}&tab=products" class="pagination__link">{{ part.title }}</a>
+                    {%- else -%}
+                      <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- if paginate.next -%}
+                    <a href="{{ paginate.next.url }}&tab=products" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
+                  {%- endif -%}
+                </nav>
+              {%- endif -%}
+
+            {%- endpaginate -%}
+          </div>
+
+          {%- comment -%} Articles panel {%- endcomment -%}
+          <div
+            id="panel-articles"
+            class="collection-feed__panel"
+            role="tabpanel"
+            aria-labelledby="tab-articles"
+            data-panel="articles"
+            {%- if active_tab != 'articles' %} hidden{%- endif %}
+          >
+            {%- comment -%} Inlined from snippets/article-feed.liquid — article grid sourced from collection.metafields.custom.posts. {%- endcomment -%}
+
+            {{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+            {%- assign articles = collection.metafields.custom.posts.value -%}
+
+            {%- if articles != blank -%}
+              <div id="article-feed" class="article-feed">
+                {%- for article in articles -%}
+                  {%- render 'article-card', article: article -%}
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+          </div>
+
+        </div>
       </div>
 
     </div>
@@ -179,7 +374,17 @@
   </div>
 </section>
 
-{%- render 'after-items' -%}
+{%- comment -%} Inlined from snippets/after-items.liquid — renders optional rich-text block sourced from collection.metafields.custom.after_item_lists. {%- endcomment -%}
+
+{%- assign after_page = collection.metafields.custom.after_item_lists.value -%}
+
+{%- if after_page != blank -%}
+  <div class="after-items rte">
+    {{ after_page.content }}
+  </div>
+{%- endif -%}
+
+<script src="{{ 'after-items.js' | asset_url }}" defer></script>
 
 {%- if section.settings.show_related_articles -%}
   {%- render 'related-articles', show_image: section.settings.show_article_images -%}
@@ -200,6 +405,8 @@
 {%- comment -%} Shared backdrop for filter drawer + sort sheet {%- endcomment -%}
 <div class="collection-mobile-backdrop" aria-hidden="true"></div>
 
+</div>
+
 <script src="{{ 'collection-filter.js' | asset_url }}" defer></script>
 <script src="{{ 'collection-feed.js' | asset_url }}" defer></script>
 <script src="{{ 'collection.js' | asset_url }}" defer></script>
@@ -207,7 +414,7 @@
 
 {% schema %}
 {
-  "name": "Collection",
+  "name": "Main collection",
   "tag": "section",
   "class": "section-collection",
   "settings": [
@@ -623,7 +830,7 @@
   ],
   "presets": [
     {
-      "name": "Collection",
+      "name": "Main collection",
       "blocks": []
     }
   ]
