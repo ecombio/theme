@@ -1,374 +1,356 @@
-console.log('Collection JS loaded');
+/* assets/main-collection.js
+   Consolidated script for sections/main-collection.liquid.
+
+   Inlined so far: collection.js, collection-filter.js, collection-feed.js.
+   Still separate (not yet inlined here): promo-carousel.js, after-items.js.
+
+   Load-order note: collection.js is placed first because it defines
+   window.CollectionBackdrop and window.CollectionBackdrop-consuming code
+   (in the collection-filter.js block below) reads it. Previously these
+   loaded as separate <script defer> tags in the opposite order
+   (collection-filter.js, then collection-feed.js, then collection.js) —
+   that only worked because the reference is lazy (inside click handlers,
+   not top-level), so by the time a user could click anything, every
+   deferred script had already run. Reordering here removes that
+   fragility rather than just preserving it. */
 
 /* ============================================================
-   main-collection.js
+   Inlined from collection.js — page-level utilities shared
+   across collection components: shared backdrop, mobile sort
+   sheet, sub-collections carousel.
    ============================================================ */
 
 (function () {
   'use strict';
 
-  function qs(sel, root)  { return (root || document).querySelector(sel); }
-  function qsa(sel, root) { return [...(root || document).querySelectorAll(sel)]; }
-  function getParams()    { return new URLSearchParams(window.location.search); }
+  /* ══════════════════════════════════════════════════════════
+     SHARED BACKDROP
+     Only one overlay in the DOM; open() stores a callback
+     so closeFilter and closeSortSheet don't collide.
+  ══════════════════════════════════════════════════════════ */
+  var backdrop = document.querySelector('.collection-mobile-backdrop');
 
-  function navigate(url) {
-    window.location.href = url;
+  function openBackdrop(onClose) {
+    if (!backdrop) return;
+    backdrop.classList.add('is-visible');
+    backdrop._onClose = onClose;
   }
 
-  // ── Accordion ──────────────────────────────────────────────
-
-  function initAccordions() {
-    qsa('.filter-group__toggle').forEach(function (btn) {
-      const body = qs('#' + btn.getAttribute('aria-controls'));
-      if (!body) return;
-      body.hidden = btn.getAttribute('aria-expanded') !== 'true';
-      btn.addEventListener('click', function () {
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-        body.hidden = expanded;
-      });
-    });
-  }
-
-  // ── Filter checkboxes ──────────────────────────────────────
-
-  function initFilterCheckboxes() {
-    qsa('.filter-option__checkbox[data-filter-url-add]').forEach(function (cb) {
-      cb.addEventListener('change', function () {
-        const url = cb.checked
-          ? cb.getAttribute('data-filter-url-add')
-          : cb.getAttribute('data-filter-url-remove');
-        if (url) navigate(url);
-      });
-    });
-  }
-
-  // ── Price filter ───────────────────────────────────────────
-
-  function initPriceFilter() {
-    const applyBtn = qs('[data-filter-price-apply]');
-    if (!applyBtn) return;
-
-    function apply() {
-      const minInput = qs('[data-filter-type="price-min"]');
-      const maxInput = qs('[data-filter-type="price-max"]');
-      const params   = getParams();
-      const min      = minInput ? minInput.value.trim() : '';
-      const max      = maxInput ? maxInput.value.trim() : '';
-
-      if (min) params.set(minInput.name, (parseFloat(min) * 100).toFixed(0));
-      else     params.delete(minInput ? minInput.name : 'filter.v.price.gte');
-
-      if (max) params.set(maxInput.name, (parseFloat(max) * 100).toFixed(0));
-      else     params.delete(maxInput ? maxInput.name : 'filter.v.price.lte');
-
-      params.delete('page');
-      const url = new URL(window.location.href);
-      url.search = params.toString();
-      navigate(url.toString());
+  function closeBackdrop(caller) {
+    if (!backdrop) return;
+    backdrop.classList.remove('is-visible');
+    if (typeof backdrop._onClose === 'function' && backdrop._onClose !== caller) {
+      backdrop._onClose();
     }
+    backdrop._onClose = null;
+  }
 
-    applyBtn.addEventListener('click', apply);
-    [qs('[data-filter-type="price-min"]'), qs('[data-filter-type="price-max"]')].forEach(function (input) {
-      if (input) input.addEventListener('keydown', function (e) { if (e.key === 'Enter') apply(); });
+  if (backdrop) {
+    backdrop.addEventListener('click', function () {
+      closeBackdrop(null);
     });
   }
 
-  // ── Active filter pills ────────────────────────────────────
+  // Expose so collection-filter.js can participate
+  window.CollectionBackdrop = {
+    open:  openBackdrop,
+    close: closeBackdrop,
+  };
 
-  function buildPills() {
-    const bar        = qs('#active-filters-bar');
-    const countBadge = qs('#active-filter-count');
-    if (!bar) return;
+  /* ══════════════════════════════════════════════════════════
+     MOBILE SORT SHEET
+     Built lazily on first open. Mirrors options from the
+     desktop #SortBy select so there's a single source of truth.
+  ══════════════════════════════════════════════════════════ */
+  var mobileSortBtn = document.querySelector('[data-mobile-sort-toggle]');
 
-    bar.innerHTML = '';
-    let count = 0;
-    const params = getParams();
+  if (mobileSortBtn) {
+    var sortSheet = null;
 
-    const priceGteKey  = findParamKey(params, /filter\.v\.price\.gte/i);
-    const priceLteKey  = findParamKey(params, /filter\.v\.price\.lte/i);
-    let   hasPricePill = false;
+    function buildSortSheet() {
+      var sheet = document.createElement('div');
+      sheet.className = 'mobile-sort-sheet';
+      sheet.setAttribute('role', 'dialog');
+      sheet.setAttribute('aria-modal', 'true');
+      sheet.setAttribute('aria-label', 'Sort options');
 
-    params.forEach(function (value, key) {
-      if (!/^filter\./i.test(key)) return;
+      var inner = '<div class="mobile-sort-sheet__inner">';
+      inner += '<div class="mobile-sort-sheet__handle"></div>';
+      inner += '<p class="mobile-sort-sheet__heading">Sort by</p>';
+      inner += '<ul class="mobile-sort-sheet__list">';
 
-      if (/filter\.v\.price\.(gte|lte)/i.test(key)) {
-        if (!hasPricePill) {
-          hasPricePill = true;
-          count++;
-          const gte = params.get(priceGteKey);
-          const lte = params.get(priceLteKey);
-          const min = gte ? '$' + (parseInt(gte, 10) / 100).toFixed(0) : '';
-          const max = lte ? '$' + (parseInt(lte, 10) / 100).toFixed(0) : '';
-          let label = 'Price: ';
-          if (min && max) label += min + ' \u2013 ' + max;
-          else if (min)   label += min + '+';
-          else            label += 'up to ' + max;
-
-          bar.appendChild(makePill(label, function () {
-            const p = getParams();
-            if (priceGteKey) p.delete(priceGteKey);
-            if (priceLteKey) p.delete(priceLteKey);
-            p.delete('page');
-            const url = new URL(window.location.href);
-            url.search = p.toString();
-            navigate(url.toString());
-          }));
-        }
-        return;
-      }
-
-      count++;
-      const label = formatFilterLabel(key, value);
-      bar.appendChild(makePill(label, function () {
-        const p   = getParams();
-        const all = p.getAll(key).filter(function (v) { return v !== value; });
-        p.delete(key);
-        all.forEach(function (v) { p.append(key, v); });
-        p.delete('page');
-        const url = new URL(window.location.href);
-        url.search = p.toString();
-        navigate(url.toString());
-      }));
-    });
-
-    if (countBadge) countBadge.textContent = count > 0 ? String(count) : '';
-  }
-
-  function findParamKey(params, re) {
-    let found = null;
-    params.forEach(function (v, k) { if (re.test(k)) found = k; });
-    return found;
-  }
-
-  function formatFilterLabel(key, value) {
-    if (/filter\.p\.available/i.test(key)) return 'In stock';
-    const parts = key.split('.');
-    const name  = parts[parts.length - 1].replace(/_/g, ' ');
-    const label = name.charAt(0).toUpperCase() + name.slice(1);
-    return label + ': ' + value.replace(/-/g, ' ');
-  }
-
-  function makePill(label, onRemove) {
-    const pill   = document.createElement('div');
-    pill.className = 'filter-pill';
-    const text   = document.createElement('span');
-    text.textContent = label;
-    const remove = document.createElement('button');
-    remove.className = 'filter-pill__remove';
-    remove.type = 'button';
-    remove.setAttribute('aria-label', 'Remove ' + label + ' filter');
-    remove.textContent = '\u00d7';
-    remove.addEventListener('click', onRemove);
-    pill.appendChild(text);
-    pill.appendChild(remove);
-    return pill;
-  }
-
-  // ── Sort ───────────────────────────────────────────────────
-
-  function initSort() {
-    const select = qs('[data-sort-select]');
-    if (!select) return;
-    select.addEventListener('change', function () {
-      const params = getParams();
-      params.set('sort_by', select.value);
-      params.delete('page');
-      const url = new URL(window.location.href);
-      url.search = params.toString();
-      navigate(url.toString());
-    });
-  }
-
-  // ── Sidebar ────────────────────────────────────────────────
-
-  function initFilterBtn() {
-    const sidebar  = qs('#collection-filters');
-    const openBtn  = qs('#filters-open-btn');
-    const backdrop = qs('#filters-backdrop');
-    if (!sidebar || !openBtn) return;
-
-    if (!qs('.collection-filters__close', sidebar)) {
-      const closeBtn     = document.createElement('button');
-      closeBtn.className = 'collection-filters__close';
-      closeBtn.type      = 'button';
-      closeBtn.setAttribute('aria-label', 'Close filters');
-      closeBtn.textContent = '\u00d7';
-      sidebar.insertBefore(closeBtn, sidebar.firstChild);
-      closeBtn.addEventListener('click', closeDrawer);
-    }
-
-    function isMobile() { return window.innerWidth < 1024; }
-
-    function openDrawer() {
-      sidebar.classList.add('is-open');
-      openBtn.setAttribute('aria-expanded', 'true');
-      if (backdrop) {
-        backdrop.classList.add('is-active');
-        backdrop.offsetHeight; // force reflow
-        backdrop.classList.add('is-visible');
-      }
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeDrawer() {
-      sidebar.classList.remove('is-open');
-      openBtn.setAttribute('aria-expanded', 'false');
-      if (backdrop) {
-        backdrop.classList.remove('is-visible');
-        setTimeout(function () { backdrop.classList.remove('is-active'); }, 280);
-      }
-      document.body.style.overflow = '';
-    }
-
-    function toggleDesktop() {
-      const isOpen = sidebar.classList.toggle('sidebar-open');
-      openBtn.setAttribute('aria-expanded', String(isOpen));
-    }
-
-    if (!isMobile()) {
-      sidebar.classList.add('sidebar-open');
-      openBtn.setAttribute('aria-expanded', 'true');
-    }
-
-    openBtn.addEventListener('click', function () {
-      isMobile() ? openDrawer() : toggleDesktop();
-    });
-
-    if (backdrop) backdrop.addEventListener('click', closeDrawer);
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sidebar.classList.contains('is-open')) closeDrawer();
-    });
-  }
-
-  // ── Sticky bar height ──────────────────────────────────────
-
-  function updateStickyBarHeight() {
-    const bar = qs('#collection-sticky-bar') || qs('.collection-sticky-bar');
-    if (!bar) return;
-    document.documentElement.style.setProperty('--sticky-bar-height', bar.offsetHeight + 'px');
-  }
-
-  // ── Sub-collection carousel ────────────────────────────────
-
-  function initSubcollectionCarousels() {
-    qsa('[data-subcollection-carousel]').forEach(function (carousel) {
-      var track   = carousel.querySelector('.subcollection-carousel__track');
-      var prevBtn = carousel.querySelector('.subcollection-carousel__btn--prev');
-      var nextBtn = carousel.querySelector('.subcollection-carousel__btn--next');
-
-      if (!track || !prevBtn || !nextBtn) return;
-
-      function scrollAmount() {
-        return track.clientWidth;
-      }
-
-      function updateButtons() {
-        prevBtn.disabled = track.scrollLeft <= 0;
-        nextBtn.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
-      }
-
-      prevBtn.addEventListener('click', function () {
-        track.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
-      });
-
-      nextBtn.addEventListener('click', function () {
-        track.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
-      });
-
-      track.addEventListener('scroll', updateButtons, { passive: true });
-
-      updateButtons();
-    });
-  }
-
-  // ── Init ───────────────────────────────────────────────────
-
-  document.addEventListener('DOMContentLoaded', function () {
-    initAccordions();
-    initFilterCheckboxes();
-    initPriceFilter();
-    initSort();
-    initFilterBtn();
-    buildPills();
-    updateStickyBarHeight();
-    initSubcollectionCarousels();
-
-    window.addEventListener('resize', updateStickyBarHeight);
-
-    const stickyBar = qs('.collection-sticky-bar');
-    if (stickyBar && window.ResizeObserver) {
-      new ResizeObserver(updateStickyBarHeight).observe(stickyBar);
-    }
-  });
-
-})();
-// ── Sub-collection carousel ────────────────────────────────
-
-  function initSubcollectionCarousels() {
-    qsa('[data-subcollection-carousel]').forEach(function (carousel) {
-      var track   = carousel.querySelector('.subcollection-carousel__track');
-      var prevBtn = carousel.querySelector('.subcollection-carousel__btn--prev');
-      var nextBtn = carousel.querySelector('.subcollection-carousel__btn--next');
-
-      if (!track || !prevBtn || !nextBtn) return;
-
-      // Mark button glyphs as decorative so aria-label is the only read text
-      prevBtn.querySelector('*') && prevBtn.firstChild && (prevBtn.innerHTML = '<span aria-hidden="true">&#8249;</span>');
-      nextBtn.querySelector('*') || (nextBtn.innerHTML = '<span aria-hidden="true">&#8250;</span>');
-
-      // Scroll by one tile width rather than the full track width,
-      // so no tiles get skipped over on wide screens.
-      function scrollAmount() {
-        var firstTile = track.querySelector('.subcollection-carousel__tile');
-        if (firstTile) {
-          var style = window.getComputedStyle(track);
-          var gap   = parseFloat(style.columnGap) || parseFloat(style.gap) || 12;
-          return firstTile.offsetWidth + gap;
-        }
-        // Fallback: scroll 40% of track width
-        return Math.round(track.clientWidth * 0.4);
-      }
-
-      // Use Math.round to handle sub-pixel values on retina screens
-      function atStart() { return Math.round(track.scrollLeft) <= 0; }
-      function atEnd()   { return Math.round(track.scrollLeft + track.clientWidth) >= track.scrollWidth; }
-
-      function updateButtons() {
-        prevBtn.disabled = atStart();
-        nextBtn.disabled = atEnd();
-      }
-
-      // Throttle scroll handler — only run updateButtons once per animation frame
-      var rafPending = false;
-      function onScroll() {
-        if (rafPending) return;
-        rafPending = true;
-        requestAnimationFrame(function () {
-          updateButtons();
-          rafPending = false;
+      var desktopSort = document.getElementById('SortBy');
+      if (desktopSort) {
+        Array.from(desktopSort.options).forEach(function (opt) {
+          var active = opt.selected ? ' mobile-sort-sheet__option--active' : '';
+          inner +=
+            '<li><button class="mobile-sort-sheet__option' + active + '" type="button" ' +
+            'data-sort-value="' + opt.value + '">' + opt.text + '</button></li>';
         });
       }
 
-      prevBtn.addEventListener('click', function () {
-        track.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
+      inner += '</ul></div>';
+      sheet.innerHTML = inner;
+
+      sheet.querySelectorAll('[data-sort-value]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var url = new URL(window.location.href);
+          url.searchParams.set('sort_by', btn.dataset.sortValue);
+          window.location.href = url.toString();
+        });
       });
 
-      nextBtn.addEventListener('click', function () {
-        track.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
-      });
+      document.body.appendChild(sheet);
+      return sheet;
+    }
 
-      track.addEventListener('scroll', onScroll, { passive: true });
+    function openSortSheet() {
+      if (!sortSheet) sortSheet = buildSortSheet();
+      sortSheet.getBoundingClientRect(); // force reflow before transition
+      sortSheet.classList.add('is-open');
+      mobileSortBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      openBackdrop(closeSortSheet);
+    }
 
-      // Re-check button state when the track resizes (sidebar toggle, viewport change)
-      if (window.ResizeObserver) {
-        new ResizeObserver(updateButtons).observe(track);
-      } else {
-        window.addEventListener('resize', updateButtons);
-      }
+    function closeSortSheet() {
+      if (!sortSheet) return;
+      sortSheet.classList.remove('is-open');
+      mobileSortBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      closeBackdrop(closeSortSheet);
+    }
 
-      // Initial state
-      updateButtons();
+    mobileSortBtn.addEventListener('click', function () {
+      sortSheet && sortSheet.classList.contains('is-open')
+        ? closeSortSheet()
+        : openSortSheet();
     });
   }
+
+  /* ══════════════════════════════════════════════════════════
+     SUB-COLLECTIONS CAROUSEL
+     Prev/next buttons scroll the track by ~3 card widths.
+  ══════════════════════════════════════════════════════════ */
+  document.querySelectorAll('[data-sub-collections]').forEach(function (carousel) {
+    var track = carousel.querySelector('[data-sub-collections-track]');
+    var prev  = carousel.querySelector('[data-sub-collections-prev]');
+    var next  = carousel.querySelector('[data-sub-collections-next]');
+    if (!track) return;
+
+    function updateNavState() {
+      if (prev) prev.disabled = track.scrollLeft <= 4;
+      if (next) next.disabled =
+        track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+    }
+
+    function scrollByAmount(dir) {
+      var cardWidth = track.firstElementChild
+        ? track.firstElementChild.getBoundingClientRect().width
+        : 120;
+      track.scrollBy({ left: dir * (cardWidth * 3 + 32), behavior: 'smooth' });
+    }
+
+    if (prev) prev.addEventListener('click', function () { scrollByAmount(-1); });
+    if (next) next.addEventListener('click', function () { scrollByAmount(1); });
+    track.addEventListener('scroll', updateNavState);
+    updateNavState();
+  });
+
+})();
+
+/* ============================================================
+   Inlined from collection-filter.js — filter drawer, shared
+   backdrop coordination (window.CollectionBackdrop, defined
+   above), sort select, filter form submit.
+   ============================================================ */
+
+(function () {
+  'use strict';
+
+  var filterPanel   = document.getElementById('collection-filter');
+  var filterToggles = document.querySelectorAll('[data-filter-toggle]');
+
+  if (!filterPanel) return;
+
+  /* ── Inject mobile close bar ──────────────────────────────── */
+  if (!filterPanel.querySelector('.collection-filter__close')) {
+    var closeBar = document.createElement('div');
+    closeBar.className = 'collection-filter__close';
+    closeBar.innerHTML =
+      '<span class="collection-filter__close-label">Filters</span>' +
+      '<button class="collection-filter__close-btn" type="button" aria-label="Close filters">&times;</button>';
+    filterPanel.insertBefore(closeBar, filterPanel.firstChild);
+    closeBar.querySelector('.collection-filter__close-btn')
+      .addEventListener('click', closeFilter);
+  }
+
+  /* ── Open / close ─────────────────────────────────────────── */
+  function openFilter() {
+    filterPanel.removeAttribute('hidden');
+    requestAnimationFrame(function () {
+      filterPanel.classList.add('is-open');
+    });
+    filterToggles.forEach(function (t) {
+      t.setAttribute('aria-expanded', 'true');
+    });
+    document.body.style.overflow = 'hidden';
+
+    if (window.CollectionBackdrop) {
+      window.CollectionBackdrop.open(closeFilter);
+    }
+  }
+
+  function closeFilter() {
+    filterPanel.classList.remove('is-open');
+    filterToggles.forEach(function (t) {
+      t.setAttribute('aria-expanded', 'false');
+    });
+    document.body.style.overflow = '';
+
+    filterPanel.addEventListener('transitionend', function handler() {
+      if (!filterPanel.classList.contains('is-open')) {
+        filterPanel.setAttribute('hidden', '');
+      }
+      filterPanel.removeEventListener('transitionend', handler);
+    });
+
+    if (window.CollectionBackdrop) {
+      window.CollectionBackdrop.close(closeFilter);
+    }
+  }
+
+  /* ── Toggle buttons ───────────────────────────────────────── */
+  filterToggles.forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var isMobile = window.innerWidth <= 768;
+
+      if (isMobile) {
+        filterPanel.classList.contains('is-open') ? closeFilter() : openFilter();
+      } else {
+        var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+
+        if (isOpen) {
+          filterPanel.setAttribute('hidden', '');
+          document.querySelector('.collection-body')
+            && document.querySelector('.collection-body')
+               .classList.add('collection-body--filters-hidden');
+        } else {
+          filterPanel.removeAttribute('hidden');
+          document.querySelector('.collection-body')
+            && document.querySelector('.collection-body')
+               .classList.remove('collection-body--filters-hidden');
+        }
+      }
+    });
+  });
+
+  /* ── Sort select (desktop) ────────────────────────────────── */
+  var sortSelect = document.querySelector('[data-sort]');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', function () {
+      var url = new URL(window.location.href);
+      url.searchParams.set('sort_by', sortSelect.value);
+      window.location.href = url.toString();
+    });
+  }
+
+  /* ── Filter form submit ───────────────────────────────────── */
+  var filterForm = document.getElementById('FilterForm');
+  if (filterForm) {
+    filterForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var url = new URL(window.location.href);
+      url.search = '';
+
+      new FormData(filterForm).forEach(function (val, key) {
+        url.searchParams.append(key, val);
+      });
+
+      // Preserve active tab
+      var page = document.querySelector('[data-collection-page]');
+      var activeTab = page ? page.dataset.activeTab : 'products';
+      url.searchParams.set('tab', activeTab);
+
+      window.location.href = url.toString();
+    });
+  }
+
+  /* ── Expose close for external use (e.g. backdrop click) ─── */
+  window.CollectionFilter = { close: closeFilter };
+
+})();
+
+/* ============================================================
+   Inlined from collection-feed.js — tab switching and browser
+   history (back/forward support) for the collection feed.
+   ============================================================ */
+
+(function () {
+  'use strict';
+
+  var page = document.querySelector('[data-collection-page]');
+  if (!page) return;
+
+  var tabs   = page.querySelectorAll('[data-tab]');
+  var panels = page.querySelectorAll('[data-panel]');
+
+  if (!tabs.length || !panels.length) return;
+
+  /* ── Core activate ────────────────────────────────────────── */
+  function activateTab(key, push) {
+    tabs.forEach(function (t) {
+      var on = t.dataset.tab === key;
+      t.classList.toggle('tab-switcher__tab--active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.setAttribute('tabindex', on ? '0' : '-1');
+    });
+
+    panels.forEach(function (p) {
+      if (p.dataset.panel === key) {
+        p.removeAttribute('hidden');
+      } else {
+        p.setAttribute('hidden', '');
+      }
+    });
+
+    page.dataset.activeTab = key;
+
+    if (push) {
+      var url = new URL(window.location.href);
+      url.searchParams.set('tab', key);
+      url.hash = '';
+      history.pushState({ tab: key }, '', url.toString());
+    }
+  }
+
+  /* ── Tab clicks ───────────────────────────────────────────── */
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () {
+      if (tab.dataset.tab !== page.dataset.activeTab) {
+        activateTab(tab.dataset.tab, true);
+      }
+    });
+
+    /* Arrow key navigation (ARIA tablist pattern) */
+    tab.addEventListener('keydown', function (e) {
+      var next;
+      if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
+      if (e.key === 'ArrowLeft')  next = tabs[i - 1] || tabs[tabs.length - 1];
+      if (next) {
+        next.focus();
+        next.click();
+      }
+    });
+  });
+
+  /* ── Popstate (back/forward) ──────────────────────────────── */
+  window.addEventListener('popstate', function (e) {
+    var key = (e.state && e.state.tab)
+      ? e.state.tab
+      : new URL(window.location.href).searchParams.get('tab') || 'products';
+    activateTab(key, false);
+  });
+
+})();
