@@ -12,6 +12,7 @@
 {{ 'main-article.css' | asset_url | stylesheet_tag }}
 {{ 'accordion.css'    | asset_url | stylesheet_tag }}
 {{ 'product-row.css'  | asset_url | stylesheet_tag }}
+{{ 'ai-summarizer.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign width_type = section.settings.section_width
@@ -58,6 +59,11 @@
   {% comment %} Article Content {% endcomment %}
   <article class="article-content">
     {{ article.content }}
+
+    {% comment %} AI Summarizer {% endcomment %}
+    {% if section.settings.show_ai_summarizer %}
+      {% render 'ai-summarizer', article: article %}
+    {% endif %}
 
     {% comment %} Comments {% endcomment %}
     {% if blog.comments_enabled? %}
@@ -119,11 +125,25 @@
 </div>
 
 <script src="{{ 'main-article.js' | asset_url }}" defer></script>
+{% if section.settings.show_ai_summarizer %}
+  <script src="{{ 'ai-summarizer.js' | asset_url }}" defer></script>
+{% endif %}
 
 {% schema %}
 {
   "name": "t:general.article",
   "settings": [
+    {
+      "type": "header",
+      "content": "AI summarizer"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_ai_summarizer",
+      "label": "Show AI summarizer",
+      "info": "Adds a card after the article content letting readers open a pre-filled summary prompt in Claude, ChatGPT, Gemini, and other AI tools. Edit the default prompt per-article via the article's ai_summarizer metafield (custom.ai_summarizer).",
+      "default": true
+    },
     {
       "type": "header",
       "content": "Section layout"
