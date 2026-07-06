@@ -26,15 +26,32 @@
   on, and copy the class + style attribute pattern from the <div>
   below into that section's markup.
 
-  IMPLEMENTATION REFERENCE:
-  sections/video-carousel.liquid (block: "Watch & learn") applies this
-  exact pattern. One difference worth noting there: this theme has no
-  shared global default-width/full-width/custom-width utility classes,
-  so that section scopes the three classes to its own BEM namespace —
-  video-carousel__default-width / video-carousel__full-width /
-  video-carousel__custom-width — defined in video-carousel.css, rather
-  than relying on global classes. Use it as the reference for wiring
-  this pattern into a section that already has its own CSS namespace.
+  APPLYING THIS TO OTHER SECTIONS:
+  - Copy the three schema settings (section_width, custom_width,
+    section_padding) as-is — ids, types, and the custom_width
+    visible_if all stay the same.
+  - Copy the width_type/width_class liquid assign and the style
+    attribute (--section-padding / --custom-width) onto that
+    section's outermost wrapping div.
+  - Class names: if the theme has shared global default-width /
+    full-width / custom-width utility classes, reuse those directly.
+    If not (as is the case in this theme today), scope the three
+    classes to that section's own BEM namespace instead — e.g.
+    {section-name}__default-width / {section-name}__full-width /
+    {section-name}__custom-width — and define them in that section's
+    own stylesheet. Either way, the liquid only needs the class
+    *names* to line up with whatever CSS actually defines the width
+    behavior; the settings and logic above don't change.
+  - Padding value: --section-padding is a single value applied at
+    every breakpoint by design (matching this example). If a section
+    previously had responsive/breakpoint-specific padding, decide
+    per-section whether to flatten it to one value or layer a
+    breakpoint override on top — that's a per-section CSS decision,
+    not something this snippet dictates.
+
+  ADOPTED BY (update this list as more sections migrate):
+  - sections/video-carousel.liquid ("Watch & learn") — scoped classes
+    example, since this theme has no global width utility classes.
 {%- endcomment -%}
 
 {%- liquid
