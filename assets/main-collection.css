@@ -142,7 +142,11 @@
    block rendered above the toolbar.
    ============================================================ */
 
-.collection-header {
+/* FIX: markup uses class="collection-hero" (see collection-hero.liquid /
+   main-collection.liquid), not "collection-header" — this selector was
+   previously targeting a class that doesn't exist in the DOM, so none
+   of its width/padding ever applied. Renamed to match the real markup. */
+.collection-hero {
   width: 100%;
   max-width: 1184px;
   margin: 0 auto;
@@ -150,7 +154,7 @@
 }
 
 @media (max-width: 639px) {
-  .collection-header {
+  .collection-hero {
     padding: 28px 12px 20px;
   }
 }
@@ -816,16 +820,20 @@
    rendered from collection.metafields.custom.after_item_lists.
    ============================================================ */
 
+/* FIX: previously hardcoded max-width: 1184px + its own horizontal
+   padding, which overrode the parent .collection-page's width/padding
+   settings (Section Width / Custom Width / Side Padding) instead of
+   inheriting them. .after-items now only controls vertical rhythm
+   and the divider border; horizontal sizing comes from the parent
+   .collection-page wrapper it lives inside. */
 .after-items {
-  max-width: 1184px;
-  margin: 0 auto;
-  padding: 5rem 30px;
+  padding-block: 5rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 639px) {
   .after-items {
-    padding: 2rem 12px;
+    padding-block: 2rem;
   }
 }
 
