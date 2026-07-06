@@ -305,29 +305,25 @@
    page load, which we don't control. Force it to respect the
    card's width instead of rendering its "No reviews"/star text
    as one unbreakable line that gets clipped by .product-card's
-   own overflow: hidden.
-
-   IMPORTANT (2026-07 fix): the wrapper (.jdgm-widget) is allowed to
-   WRAP — so the star rating and the "No reviews" text can drop onto
-   separate lines when they don't fit side by side — but each
-   individual piece of text is kept `white-space: nowrap` so it wraps
-   as a whole phrase, never splitting mid-word ("No" / "reviews" on
-   two lines). An earlier version of this rule set `white-space:
-   normal` on every descendant, which let the browser break *inside*
-   the phrase instead of moving it as a unit — that's what caused the
-   "No" / "reviews" split. */
-.product-card__reviews .jdgm-widget {
-  display: flex;
-  flex-wrap: wrap !important;
-  align-items: center;
-  column-gap: 4px;
-  row-gap: 2px;
+   own overflow: hidden. */
+.product-card__reviews .jdgm-widget,
+.product-card__reviews .jdgm-widget * {
   max-width: 100%;
+  white-space: normal !important;
+  flex-wrap: wrap !important;
 }
 
-.product-card__reviews .jdgm-widget > * {
-  white-space: nowrap !important;
-  max-width: 100%;
+/* CONTAINER-QUERY FIX: on narrow cards, drop the star rating and
+   review-count text onto separate lines instead of relying on
+   in-place wrapping, which some Judge.me markup variants resist
+   even with the overrides above. */
+@container product-card (max-width: 260px) {
+  .product-card__reviews .jdgm-widget {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
 }
 
 /* ── Pricing ──────────────────────────────────────────────── */
