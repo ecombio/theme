@@ -8,11 +8,24 @@
   into any section you want this behavior on, and copy the class +
   style attribute pattern from the <div> below into that section's
   markup.
+
+  "Default" is pinned to 1184px via the .default-width class (see
+  base.css) rather than relying on the theme's --page-width variable,
+  so it stays constant regardless of the max_page_width setting.
 {%- endcomment -%}
 
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = width_type
+  endif
+-%}
+
 <div
-  class="{{ section.settings.section_width }}"
-  {%- if section.settings.section_width == 'custom-width' %}
+  class="{{ width_class }}"
+  {%- if width_type == 'custom-width' %}
     style="--custom-width: {{ section.settings.custom_width }}rem;"
   {%- endif %}
 >
@@ -21,8 +34,8 @@
     <p>
       This block's outer div is a direct child of the section's
       .shopify-section grid wrapper, so its width class
-      (empty / full-width / custom-width) controls how it spans
-      that grid.
+      (default-width / full-width / custom-width) controls how it
+      spans that grid.
     </p>
   </div>
 </div>
