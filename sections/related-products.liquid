@@ -1,142 +1,278 @@
-{% comment %}
-  Section: related-products
-  Renders a "You May Also Like" product recommendations grid.
-  Uses the Shopify Product Recommendations API (algorithm-based).
-  Falls back to a manual collection if no recommendations are returned.
-{% endcomment %}
+{%- comment -%}
+  sections/related-products.liquid
+
+  Collection-based related products carousel.
+  Data source: collection.metafields.custom.related_products.value
+  (list.product_reference metafield on Collection).
+
+  Card markup/behavior is fully owned by snippets/product-card.liquid —
+  this section only supplies the carousel shell + layout, and passes
+  through show_quickview / show_compare / show_eta as section settings
+  so merchants can toggle those features per-instance without touching
+  the snippet.
+
+  Asset ownership: product-card.js is loaded globally via theme.liquid
+  (per its own header comment) — not re-loaded here. product-card.css
+  is loaded here explicitly, following the same convention used by
+  collection-products.liquid, since snippets don't load their own assets.
+
+  Section layout: section_width / custom_width / section_padding,
+  mirrors sections/example-width-section.liquid — scoped BEM width
+  classes, independent of global --page-margin.
+{%- endcomment -%}
+
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  assign products_to_show = section.settings.products_to_show
-  assign heading         = section.settings.heading
-  assign columns_desktop = section.settings.columns_desktop
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'related-products__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'related-products__full-width'
+  else
+    assign width_class = 'related-products__custom-width'
+  endif
+
+  assign products = collection.metafields.custom.related_products.value
+  assign show_quickview = section.settings.show_quickview
+  assign show_compare = section.settings.show_compare
+  assign show_eta = section.settings.show_eta
 -%}
 
-<div
-  class="related-products page-width"
-  id="related-products-{{ section.id }}"
-  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ products_to_show }}"
->
-  {%- if heading != blank -%}
-    <div class="related-products__header">
-      <h2 class="related-products__heading">{{ heading | escape }}</h2>
-    </div>
-  {%- endif -%}
+{% if products != blank %}
+  <div
+    class="{{ width_class }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
+  >
+    <div class="related-products-wrapper" id="related-products-{{ section.id }}">
+      {% if section.settings.heading != blank %}
+        <h2 class="related-products__title">{{ section.settings.heading }}</h2>
+      {% endif %}
 
-  {%- if recommendations.performed and recommendations.products_count > 0 -%}
-    <div class="related-products__grid related-products__grid--{{ columns_desktop }}-col">
-      {%- for product in recommendations.products limit: products_to_show -%}
-        {%- render 'product-card',
-          product:            product,
-          show_badge:         section.settings.show_badge,
-          show_selling_fast:  section.settings.show_selling_fast,
-          show_swatches:      section.settings.show_swatches,
-          image_ratio:        section.settings.image_ratio
-        -%}
-      {%- endfor -%}
-    </div>
-  {%- elsif section.settings.fallback_collection != blank -%}
-    {%- assign fallback = collections[section.settings.fallback_collection] -%}
-    {%- if fallback.products_count > 0 -%}
-      <div class="related-products__grid related-products__grid--{{ columns_desktop }}-col">
-        {%- for product in fallback.products limit: products_to_show -%}
-          {%- render 'product-card',
-            product:            product,
-            show_badge:         section.settings.show_badge,
-            show_selling_fast:  section.settings.show_selling_fast,
-            show_swatches:      section.settings.show_swatches,
-            image_ratio:        section.settings.image_ratio
-          -%}
-        {%- endfor -%}
+      <div class="related-products" data-related-products data-section-id="{{ section.id }}">
+        <div class="related-products__track" data-related-products-track tabindex="0">
+          {% for product in products %}
+            <div class="related-products__slide">
+              {% render 'product-card',
+                product: product,
+                show_quickview: show_quickview,
+                show_compare: show_compare,
+                show_eta: show_eta
+              %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <button
+          type="button"
+          class="related-products__button related-products__button--prev"
+          aria-label="Previous products"
+          data-related-products-prev
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          class="related-products__button related-products__button--next"
+          aria-label="Next products"
+          data-related-products-next
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
       </div>
-    {%- endif -%}
-  {%- endif -%}
-</div>
+    </div>
+  </div>
+
+  <style>
+    #related-products-{{ section.id }} {
+      --card-gap: 16px;
+      --card-width: 240px;
+    }
+
+    .related-products__default-width,
+    .related-products__full-width,
+    .related-products__custom-width {
+      padding-inline: var(--section-padding, 0px);
+    }
+
+    .related-products__default-width { margin-inline: auto; max-width: 120rem; }
+    .related-products__full-width { width: 100%; }
+    .related-products__custom-width { margin-inline: auto; max-width: var(--custom-width, 80rem); }
+
+    #related-products-{{ section.id }} .related-products__title {
+      margin: 0 0 1.5rem;
+      font-size: 2rem;
+    }
+
+    #related-products-{{ section.id }} .related-products {
+      position: relative;
+    }
+
+    #related-products-{{ section.id }} .related-products__track {
+      display: flex;
+      gap: var(--card-gap);
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    #related-products-{{ section.id }} .related-products__track::-webkit-scrollbar {
+      display: none;
+    }
+
+    #related-products-{{ section.id }} .related-products__slide {
+      flex: 0 0 var(--card-width);
+      scroll-snap-align: start;
+    }
+
+    #related-products-{{ section.id }} .related-products__button {
+      position: absolute;
+      top: 40%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+    }
+    #related-products-{{ section.id }} .related-products__button svg {
+      width: 18px;
+      height: 18px;
+    }
+    #related-products-{{ section.id }} .related-products__button--prev { left: -8px; }
+    #related-products-{{ section.id }} .related-products__button--next { right: -8px; }
+
+    #related-products-{{ section.id }} .related-products__button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    @media (max-width: 749px) {
+      #related-products-{{ section.id }} .related-products__button { display: none; }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var root = document.querySelector('[data-related-products][data-section-id="{{ section.id }}"]');
+      if (!root) return;
+
+      var track = root.querySelector('[data-related-products-track]');
+      var prevBtn = root.querySelector('[data-related-products-prev]');
+      var nextBtn = root.querySelector('[data-related-products-next]');
+
+      function scrollByCard(direction) {
+        var card = track.querySelector('.related-products__slide');
+        if (!card) return;
+        var gap = parseFloat(getComputedStyle(root).getPropertyValue('--card-gap')) || 16;
+        var distance = card.getBoundingClientRect().width + gap;
+        track.scrollBy({ left: direction * distance, behavior: 'smooth' });
+      }
+
+      function updateButtons() {
+        var maxScroll = track.scrollWidth - track.clientWidth - 1;
+        prevBtn.disabled = track.scrollLeft <= 0;
+        nextBtn.disabled = track.scrollLeft >= maxScroll;
+      }
+
+      prevBtn.addEventListener('click', function () { scrollByCard(-1); });
+      nextBtn.addEventListener('click', function () { scrollByCard(1); });
+      track.addEventListener('scroll', updateButtons, { passive: true });
+      window.addEventListener('resize', updateButtons);
+
+      // Re-sync wishlist/compare state on cards rendered into this
+      // dynamically-scrollable track (product-card.js listens for this).
+      document.dispatchEvent(new CustomEvent('productcard:injected'));
+
+      updateButtons();
+    })();
+  </script>
+{% endif %}
 
 {% schema %}
 {
   "name": "Related Products",
-  "tag": "section",
-  "class": "section-related-products",
-  "limit": 1,
-  "enabled_on": {
-    "templates": ["product"]
-  },
   "settings": [
     {
       "type": "text",
       "id": "heading",
-      "default": "You May Also Like",
-      "label": "Heading"
+      "label": "Heading",
+      "default": "Related Products"
+    },
+    {
+      "type": "header",
+      "content": "Product card features"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quickview",
+      "label": "Show quick view",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_compare",
+      "label": "Show compare",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_eta",
+      "label": "Show delivery estimate",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
     },
     {
       "type": "range",
-      "id": "products_to_show",
-      "min": 2,
-      "max": 10,
-      "step": 1,
-      "default": 5,
-      "label": "Maximum products to show"
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
     },
     {
-      "type": "select",
-      "id": "columns_desktop",
-      "label": "Number of columns on desktop",
-      "default": "5",
-      "options": [
-        { "value": "2", "label": "2 columns" },
-        { "value": "3", "label": "3 columns" },
-        { "value": "4", "label": "4 columns" },
-        { "value": "5", "label": "5 columns" }
-      ]
-    },
-    {
-      "type": "select",
-      "id": "image_ratio",
-      "label": "Image ratio",
-      "default": "portrait",
-      "options": [
-        { "value": "square",   "label": "Square (1:1)" },
-        { "value": "portrait", "label": "Portrait (3:4)" },
-        { "value": "landscape","label": "Landscape (4:3)" }
-      ]
-    },
-    {
-      "type": "header",
-      "content": "Product Card Options"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_badge",
-      "default": true,
-      "label": "Show product badges (Sale, Best Choice, etc.)"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_selling_fast",
-      "default": true,
-      "label": "Show \"Selling Fast\" banner when low stock"
-    },
-    {
-      "type": "number",
-      "id": "selling_fast_threshold",
-      "default": 5,
-      "label": "\"Selling Fast\" inventory threshold"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_swatches",
-      "default": true,
-      "label": "Show color swatches"
-    },
-    {
-      "type": "header",
-      "content": "Fallback Collection"
-    },
-    {
-      "type": "collection",
-      "id": "fallback_collection",
-      "label": "Fallback collection",
-      "info": "Shown when no algorithmic recommendations are available."
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ],
   "presets": [
