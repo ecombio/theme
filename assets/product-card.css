@@ -19,6 +19,25 @@
        (whatever wraps each rendered product-card) should also have
        min-width: 0 on its item class if the row is still overflowing
        after this change.
+
+   CONTAINER-QUERY FIX (2026-07):
+     • The bottom row (Add to cart + Compare) previously only wrapped
+       onto two lines inside `@media (max-width: 767px)` — i.e. it
+       reacted to the BROWSER WINDOW's width, not the CARD's width.
+       With grids showing 3-4+ columns, a card can be just as narrow
+       on a wide desktop viewport as it is on mobile, so that media
+       query never fired and the row silently overflowed the card,
+       getting sliced off by .product-card's overflow: hidden (the
+       "Co" / cut-off "Compare" and reviews-row symptom).
+     • Fixed by giving .product-card a named CSS container
+       (container-type/container-name) and switching the wrap rule to
+       an `@container` query keyed off the CARD's own inline size, so
+       it activates whenever the card itself gets narrow — regardless
+       of how many columns are producing that narrowness or how wide
+       the viewport is. The old viewport media query is left in place
+       too (harmless belt-and-suspenders for very old browsers without
+       container query support), but the container query is what now
+       actually does the work in the common multi-column case.
    ============================================================ */
 
 /* ── Defensive box-sizing reset ──────────────────────────────
@@ -56,6 +75,11 @@
   overflow: hidden;
   height: 100%;
   transition: box-shadow var(--product-card-transition), transform var(--product-card-transition);
+
+  /* CONTAINER-QUERY FIX: establish this card as a named inline-size
+     container so descendants can query ITS width, not the viewport's. */
+  container-type: inline-size;
+  container-name: product-card;
 }
 
 .product-card:hover {
@@ -289,6 +313,19 @@
   flex-wrap: wrap !important;
 }
 
+/* CONTAINER-QUERY FIX: on narrow cards, drop the star rating and
+   review-count text onto separate lines instead of relying on
+   in-place wrapping, which some Judge.me markup variants resist
+   even with the overrides above. */
+@container product-card (max-width: 260px) {
+  .product-card__reviews .jdgm-widget {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+}
+
 /* ── Pricing ──────────────────────────────────────────────── */
 .product-card__pricing {
   display: flex;
@@ -458,8 +495,12 @@
     padding: 7px 8px;
   }
 
-  /* At very narrow widths, drop Compare below the ATC button
-     instead of squeezing both into a shrinking row. */
+  /* At very narrow VIEWPORTS, drop Compare below the ATC button
+     instead of squeezing both into a shrinking row. Kept as a
+     harmless fallback for browsers without container query support
+     (all evergreen browsers support @container as of 2023, so the
+     rule below is the one that actually matters in practice — see
+     the CONTAINER-QUERY FIX note at the top of this file). */
   .product-card__bottom-row {
     flex-wrap: wrap;
   }
@@ -471,6 +512,22 @@
   /* Wishlist always visible on touch devices */
   .product-card__wishlist-btn {
     opacity: 1;
+  }
+}
+
+/* CONTAINER-QUERY FIX: this is what actually fires for narrow CARDS
+   on wide viewports (e.g. 3-4+ column desktop grids), which the
+   viewport media query above can never catch. Same visual result as
+   the mobile rule: Compare drops to its own line under Add to cart
+   instead of overflowing and getting clipped by .product-card's
+   overflow: hidden. */
+@container product-card (max-width: 260px) {
+  .product-card__bottom-row {
+    flex-wrap: wrap;
+  }
+
+  .product-card__compare-label {
+    flex-basis: 100%;
   }
 }
 
