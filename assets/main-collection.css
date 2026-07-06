@@ -142,20 +142,28 @@
    block rendered above the toolbar.
    ============================================================ */
 
-/* FIX: markup uses class="collection-hero" (see collection-hero.liquid /
+/* FIX (1): markup uses class="collection-hero" (see collection-hero.liquid /
    main-collection.liquid), not "collection-header" — this selector was
    previously targeting a class that doesn't exist in the DOM, so none
-   of its width/padding ever applied. Renamed to match the real markup. */
+   of its width/padding ever applied. Renamed to match the real markup.
+
+   FIX (2): collection-hero lives INSIDE .collection-page, which already
+   centers itself (margin: 0 auto) and sets horizontal sizing via
+   width_class / --custom-width / --section-padding. The original rule
+   re-declared its own max-width: 1184px + margin: 0 auto + horizontal
+   padding here, which happened to match the *default* section width by
+   coincidence — but silently stopped matching the rest of the section
+   the moment Section Width was set to Custom Width or Side Padding was
+   changed, since this rule ignored those settings entirely. Same class
+   of bug as the original .after-items issue. Now only vertical spacing
+   is set here; horizontal sizing is inherited from .collection-page. */
 .collection-hero {
-  width: 100%;
-  max-width: 1184px;
-  margin: 0 auto;
-  padding: 40px 24px 32px;
+  padding-block: 40px 32px;
 }
 
 @media (max-width: 639px) {
   .collection-hero {
-    padding: 28px 12px 20px;
+    padding-block: 28px 20px;
   }
 }
 
