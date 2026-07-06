@@ -376,11 +376,19 @@
 
     {%- comment -%} Inlined from snippets/after-items.liquid — renders optional rich-text block sourced from collection.metafields.custom.after_item_lists. {%- endcomment -%}
 
-    {%- assign after_page = collection.metafields.custom.after_item_lists.value -%}
+    {%- assign after_items_field = collection.metafields.custom.after_item_lists -%}
 
-    {%- if after_page != blank -%}
+    {%- if after_items_field.value != blank -%}
       <div class="after-items rte">
-        {{ after_page.content }}
+        {%- if after_items_field.type contains 'list' -%}
+          {%- comment -%} List-type metafield (e.g. list.page_reference) — loop and render each item's content {%- endcomment -%}
+          {%- for after_page in after_items_field.value -%}
+            {{ after_page.content }}
+          {%- endfor -%}
+        {%- else -%}
+          {%- comment -%} Single reference metafield — use directly {%- endcomment -%}
+          {{ after_items_field.value.content }}
+        {%- endif -%}
       </div>
     {%- endif -%}
 
