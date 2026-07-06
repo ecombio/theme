@@ -1,0 +1,221 @@
+/* ─────────────────────────────────────────
+   ai-summarizer.css
+   Classic nav-bar treatment — one slim row,
+   sits quietly under the article like a
+   utility toolbar, not a promo card.
+───────────────────────────────────────── */
+
+.ai-summarizer {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 2.5rem 0 1.5rem;
+  padding: 0.7rem 0.25rem;
+  border-top: 1px solid #e5e3de;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #c9a96e, #a87d3e 35%, transparent 70%) 1;
+  font-family: inherit;
+}
+
+/* ── Label ── */
+.ai-summarizer__label {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8579;
+  white-space: nowrap;
+}
+
+/* ── Scroll container (mobile: horizontal scroll, not stacking) ── */
+.ai-summarizer__scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ai-summarizer__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ai-summarizer__list {
+  display: flex;
+  align-items: stretch;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: max-content;
+}
+
+.ai-summarizer__item {
+  display: flex;
+  align-items: center;
+}
+
+.ai-summarizer__item + .ai-summarizer__item {
+  border-left: 1px solid #e5e3de;
+}
+
+/* ── Nav-link style button ── */
+.ai-summarizer__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4a4740;
+  white-space: nowrap;
+  position: relative;
+}
+
+.ai-summarizer__btn-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.ai-summarizer__btn::after {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: -1px;
+  height: 2px;
+  background: #a87d3e;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.15s ease;
+}
+
+.ai-summarizer__btn:hover {
+  color: #1a1a1a;
+}
+
+.ai-summarizer__btn:hover .ai-summarizer__btn-icon {
+  opacity: 1;
+}
+
+.ai-summarizer__btn:hover::after {
+  transform: scaleX(1);
+}
+
+.ai-summarizer__btn:active {
+  color: #a87d3e;
+}
+
+.ai-summarizer__btn:focus-visible {
+  outline: 2px solid #a87d3e;
+  outline-offset: -2px;
+}
+
+.ai-summarizer__btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Trailing note ── */
+.ai-summarizer__note {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: #b0aba2;
+  white-space: nowrap;
+  display: none;
+}
+
+@media (min-width: 860px) {
+  .ai-summarizer__note {
+    display: inline;
+  }
+}
+
+/* ── Toast (unchanged behavior, same look) ── */
+.ai-summarizer-toast {
+  position: fixed;
+  bottom: 1.75rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 0.55rem 1rem 0.55rem 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 9999;
+  max-width: calc(100vw - 2rem);
+}
+
+.ai-summarizer-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.ai-summarizer-toast.is-error {
+  background: #2d1a1a;
+}
+
+.ai-summarizer-toast__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.ai-summarizer-toast__icon svg {
+  width: 10px;
+  height: 10px;
+}
+
+.ai-summarizer-toast.is-error .ai-summarizer-toast__icon {
+  background: rgba(255, 80, 80, 0.2);
+  color: #ff8080;
+}
+
+.ai-summarizer-toast__text {
+  line-height: 1.35;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .ai-summarizer {
+    gap: 0.75rem;
+    padding: 0.6rem 0.15rem;
+  }
+
+  .ai-summarizer__label {
+    font-size: 0.65rem;
+  }
+
+  .ai-summarizer__btn {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .ai-summarizer__btn,
+  .ai-summarizer__btn::after,
+  .ai-summarizer-toast {
+    transition: none;
+  }
+}
