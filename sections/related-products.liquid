@@ -16,9 +16,24 @@
   is loaded here explicitly, following the same convention used by
   collection-products.liquid, since snippets don't load their own assets.
 
-  Section layout: section_width / custom_width / section_padding,
-  mirrors sections/example-width-section.liquid — scoped BEM width
-  classes, independent of global --page-margin.
+  SECTION LAYOUT — matches sections/example-width-section.liquid exactly:
+    - Outer div: width_class (default-width / full-width / custom-width,
+      scoped to this section's own BEM namespace since this theme has
+      no shared global width utility classes) + inline --section-padding
+      / --custom-width custom properties, both driven only by this
+      section's own settings — never reads global --page-margin.
+    - Inner div: class="section" with
+      style="padding-block: var(--section-spacing);" — this is what
+      controls vertical spacing above/below the section content
+      (heading + carousel), exactly like the reference example.
+      --section-spacing is the theme's existing global vertical-rhythm
+      variable; this section does not override or fight it.
+    - Previous version of this file was missing that inner ".section"
+      wrapper entirely, which is what caused the visible whitespace gap
+      between heading and cards — vertical spacing had nowhere correct
+      to come from, so it was patched after the fact with !important
+      margin resets. That patch has been removed; this version follows
+      the reference structure directly instead of overriding it.
 {%- endcomment -%}
 
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
@@ -42,6 +57,7 @@
 {% if products != blank %}
   <div
     class="{{ width_class }}"
+    id="related-products-{{ section.id }}"
     style="
       --section-padding: {{ section.settings.section_padding }}px;
       {%- if width_type == 'custom-width' %}
@@ -49,7 +65,7 @@
       {%- endif %}
     "
   >
-    <div class="related-products-wrapper" id="related-products-{{ section.id }}">
+    <div class="section" style="padding-block: var(--section-spacing);">
       {% if section.settings.heading != blank %}
         <h2 class="related-products__title">{{ section.settings.heading }}</h2>
       {% endif %}
@@ -99,19 +115,20 @@
       --card-width: 240px;
     }
 
-    .related-products__default-width,
-    .related-products__full-width,
-    .related-products__custom-width {
+    #related-products-{{ section.id }}.related-products__default-width,
+    #related-products-{{ section.id }}.related-products__full-width,
+    #related-products-{{ section.id }}.related-products__custom-width {
       padding-inline: var(--section-padding, 0px);
     }
 
-    .related-products__default-width { margin-inline: auto; max-width: 120rem; }
-    .related-products__full-width { width: 100%; }
-    .related-products__custom-width { margin-inline: auto; max-width: var(--custom-width, 80rem); }
+    #related-products-{{ section.id }}.related-products__default-width { margin-inline: auto; max-width: 120rem; }
+    #related-products-{{ section.id }}.related-products__full-width { width: 100%; }
+    #related-products-{{ section.id }}.related-products__custom-width { margin-inline: auto; max-width: var(--custom-width, 80rem); }
 
     #related-products-{{ section.id }} .related-products__title {
       margin: 0 0 1.5rem;
       font-size: 2rem;
+      line-height: 1.2;
     }
 
     #related-products-{{ section.id }} .related-products {
