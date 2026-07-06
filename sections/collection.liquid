@@ -1,16 +1,47 @@
 {{ 'collection.css' | asset_url | stylesheet_tag }}
 
+{%- comment -%}
+  SECTION WIDTH / SIDE PADDING:
+  Handled locally per the pattern in sections/example-width-section.liquid.
+  This opts .collection-page OUT of the shared width recipe that
+  collection.css previously documented as being "kept in sync" with
+  the header / utility bar / menu bar / footer (all fixed at
+  max-width: 1184px, padding 0 24px / 0 12px under 639px). That sync
+  comment has been removed from collection.css — this section's width
+  and padding are now driven only by its own "Section layout" schema
+  settings below and no longer track those other containers.
+{%- endcomment -%}
+
 {%- liquid
   assign active_tab = request.query_parameters['tab'] | default: 'products'
   unless active_tab == 'products' or active_tab == 'articles'
     assign active_tab = 'products'
   endunless
+
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'collection-page__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'collection-page__full-width'
+  else
+    assign width_class = 'collection-page__custom-width'
+  endif
 -%}
 
 {%- render 'collection-hero', collection: collection -%}
 
 <section class="collection-section">
-  <div class="collection-page" data-collection-page data-active-tab="{{ active_tab }}">
+  <div
+    class="collection-page {{ width_class }}"
+    data-collection-page
+    data-active-tab="{{ active_tab }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
+  >
 
     {%- render 'collection-toolbar', active_tab: active_tab -%}
 
@@ -100,6 +131,42 @@
       "id": "show_sort",
       "label": "Show sort",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     },
     {
       "type": "header",

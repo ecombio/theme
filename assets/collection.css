@@ -8,11 +8,14 @@
    Product grid         → product-feed.css
    Article grid         → article-feed.css
 
-   Container mirrors the header's width recipe exactly:
-   .main-header__inner / .utility-bar__inner / .menu-bar / .footer-width
-   / .collection-header / .after-items all use max-width: 1184px +
-   margin: 0 auto + padding: 0 24px, dropping to 0 12px under 639px.
-   Keep .collection-page in sync with those. */
+   SECTION WIDTH / SIDE PADDING:
+   .collection-page no longer mirrors the header/utility-bar/footer
+   width recipe. It now defines its own local --section-padding and
+   --custom-width variables, set inline per-instance from this
+   section's own "Section layout" schema settings (see
+   sections/collection.liquid and sections/example-width-section.liquid
+   for the pattern and rationale). Bumping the global Body side
+   padding setting elsewhere in the theme will not move this page. */
 
 /* ---------- Section wrapper ---------- */
 .collection-section {
@@ -20,9 +23,18 @@
 }
 
 .collection-page {
-  max-width: 1184px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding-inline: var(--section-padding, 24px);
+}
+
+.collection-page__default-width {
+  max-width: 1184px;
+}
+.collection-page__full-width {
+  max-width: none;
+}
+.collection-page__custom-width {
+  max-width: var(--custom-width);
 }
 
 /* ---------- Two-column body shell ---------- */
@@ -127,13 +139,5 @@
   .collection-body {
     grid-template-columns: 1fr;
     gap: 1rem;
-  }
-}
-
-/* Match header/footer breakpoint for horizontal padding */
-@media (max-width: 639px) {
-  .collection-page {
-    padding-left: 12px;
-    padding-right: 12px;
   }
 }
