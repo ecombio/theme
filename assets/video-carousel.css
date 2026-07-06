@@ -17,9 +17,10 @@
   padding: 0 var(--section-padding, 24px);
 }
 
-/* Full width: no max-width, spans the browser. Side padding still comes
-   from --section-padding so the prev/next arrows keep a gutter; set the
-   Side padding setting to 0 for true edge-to-edge with no gutter at all. */
+/* Full width: no max-width, spans the browser. Side padding comes from
+   --section-padding; set it to 0 for true edge-to-edge. (Arrow spacing
+   is now handled separately by .video-carousel__track's own padding,
+   not by this side padding — see the arrow rules below.) */
 .video-carousel__full-width {
   width: 100%;
   max-width: none;
@@ -52,18 +53,19 @@
 
 .video-carousel__wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .video-carousel__track {
-  flex: 1 1 auto;
+  width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* Small edge gutter so the overlaid arrows below don't sit flush on
+     top of the first/last video card. */
+  padding: 0 44px;
+  box-sizing: border-box;
 }
 
 .video-carousel__track::-webkit-scrollbar {
@@ -101,7 +103,10 @@
 }
 
 .video-carousel__arrow {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -109,20 +114,51 @@
   height: 40px;
   border-radius: 50%;
   border: 1px solid currentColor;
-  background: transparent;
+  background: var(--vc-bg, #fff);
   color: inherit;
   cursor: pointer;
+  opacity: 1;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.video-carousel__arrow:hover {
-  transform: scale(1.05);
+.video-carousel__arrow--prev {
+  left: 0;
+}
+
+.video-carousel__arrow--next {
+  right: 0;
+}
+
+.video-carousel__arrow:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.05);
 }
 
 .video-carousel__arrow:disabled {
   opacity: 0.3;
   cursor: default;
-  transform: none;
+}
+
+/* On devices with real hover (mouse/trackpad), keep the arrows out of
+   the way until the person's attention is on the carousel, instead of
+   permanently floating on top of the video thumbnails. Touch devices
+   fall back to the always-visible styles above, since there's no
+   hover state to reveal them. */
+@media (hover: hover) and (pointer: fine) {
+  .video-carousel__arrow {
+    opacity: 0;
+  }
+
+  .video-carousel__wrapper:hover .video-carousel__arrow,
+  .video-carousel__arrow:focus-visible {
+    opacity: 1;
+  }
+
+  .video-carousel__wrapper:hover .video-carousel__arrow:disabled,
+  .video-carousel__arrow:disabled:focus-visible {
+    /* Still reveal a disabled arrow on hover/focus so a dead end is
+       communicated (greyed out), rather than just disappearing. */
+    opacity: 0.3;
+  }
 }
 
 .video-carousel__dots {
