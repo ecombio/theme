@@ -33,8 +33,6 @@
 }
 
 /* ---------- Two-column body shell ---------- */
-/* Left column: filter sidebar
-   Right column: feed (products or articles)             */
 .collection-body {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -42,7 +40,6 @@
   align-items: start;
 }
 
-/* Collapsed when filters are hidden or toggled off */
 .collection-body--filters-hidden {
   grid-template-columns: 1fr;
 }
@@ -112,7 +109,6 @@
 
 /* ---------- Responsive ---------- */
 
-/* Tablet — 768px to 1024px */
 @media (max-width: 1024px) {
   .collection-body {
     grid-template-columns: 220px 1fr;
@@ -120,17 +116,15 @@
   }
 }
 
-/* Mobile — up to 768px */
 @media (max-width: 768px) {
   .collection-mobile-backdrop {
     display: block;
   }
 
   .collection-page {
-    padding-bottom: 5rem; /* room for fixed mobile bar */
+    padding-bottom: 5rem;
   }
 
-  /* Collapse to single column — filter renders as drawer */
   .collection-body {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -138,25 +132,9 @@
 }
 
 /* ============================================================
-   Inlined from collection-hero.css — collection title/description
-   block rendered above the toolbar.
+   Inlined from collection-hero.css
    ============================================================ */
 
-/* FIX (1): markup uses class="collection-hero" (see collection-hero.liquid /
-   main-collection.liquid), not "collection-header" — this selector was
-   previously targeting a class that doesn't exist in the DOM, so none
-   of its width/padding ever applied. Renamed to match the real markup.
-
-   FIX (2): collection-hero lives INSIDE .collection-page, which already
-   centers itself (margin: 0 auto) and sets horizontal sizing via
-   width_class / --custom-width / --section-padding. The original rule
-   re-declared its own max-width: 1184px + margin: 0 auto + horizontal
-   padding here, which happened to match the *default* section width by
-   coincidence — but silently stopped matching the rest of the section
-   the moment Section Width was set to Custom Width or Side Padding was
-   changed, since this rule ignored those settings entirely. Same class
-   of bug as the original .after-items issue. Now only vertical spacing
-   is set here; horizontal sizing is inherited from .collection-page. */
 .collection-hero {
   padding-block: 40px 32px;
 }
@@ -195,11 +173,9 @@
 }
 
 /* ============================================================
-   Inlined from collection-toolbar.css — sticky desktop toolbar
-   (filter toggle + tab switcher) and fixed mobile bottom bar.
+   Inlined from collection-toolbar.css
    ============================================================ */
 
-/* ---------- Toolbar ---------- */
 .collection-toolbar {
   display: flex;
   align-items: center;
@@ -207,18 +183,11 @@
   margin-bottom: 2rem;
   border-bottom: 1px solid #e5e5e5;
   position: sticky;
-  /* Sticks just below the real, current header height instead of a flat
-     0 — which used to put it underneath the fixed header on scroll.
-     --sticky-header-height is written by main-header-sticky.js and
-     updates live as the header's height changes (breakpoint, or the
-     desktop menu bar opening while sticky). Falls back to 0 if the var
-     hasn't been set yet (e.g. sticky header disabled, or JS not run). */
   top: var(--sticky-header-height, 0);
   z-index: 50;
   background: #fff;
 }
 
-/* ---------- Filter toggle (desktop) ---------- */
 .collection-toolbar__filter-toggle {
   appearance: none;
   background: none;
@@ -252,7 +221,6 @@
   border-bottom-color: #1a1a1a;
 }
 
-/* ---------- Tab switcher ---------- */
 .tab-switcher {
   display: flex;
   gap: 0.5rem;
@@ -301,9 +269,8 @@
   background: #1a1a1a;
 }
 
-/* ---------- Mobile bottom bar ---------- */
 .collection-mobile-bar {
-  display: none; /* shown via media query below */
+  display: none;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -345,7 +312,6 @@
   font-weight: 600;
 }
 
-/* ---------- Mobile sort sheet ---------- */
 .mobile-sort-sheet {
   position: fixed;
   bottom: 0;
@@ -418,9 +384,6 @@
   content: ' ✓';
 }
 
-/* ---------- Responsive ---------- */
-
-/* Tablet */
 @media (max-width: 1024px) {
   .collection-toolbar__filter-toggle {
     flex: 0 0 auto;
@@ -432,7 +395,6 @@
   }
 }
 
-/* Mobile */
 @media (max-width: 768px) {
   .collection-toolbar {
     flex-wrap: nowrap;
@@ -440,7 +402,6 @@
     margin-bottom: 1.25rem;
   }
 
-  /* Filter toggle moves to the bottom bar on mobile */
   .collection-toolbar__filter-toggle {
     display: none;
   }
@@ -465,7 +426,6 @@
   }
 }
 
-/* Small mobile */
 @media (max-width: 480px) {
   .tab-switcher__tab {
     padding: 0.75rem 1rem;
@@ -473,7 +433,6 @@
   }
 }
 
-/* Desktop — hide sort sheet */
 @media (min-width: 769px) {
   .mobile-sort-sheet {
     display: none;
@@ -481,21 +440,11 @@
 }
 
 /* ============================================================
-   Inlined from collection-filter.css — filter sidebar shell
-   (sticky/drawer positioning) plus all collection-filter__*
-   component styles.
+   Inlined from collection-filter.css
    ============================================================ */
 
-/* ---------- Sidebar shell ---------- */
 .collection-filter {
   position: sticky;
-  /* Clears BOTH the sticky header and the sticky toolbar stacked above
-     it. Previously a flat `top: 4rem` guess — that only ever accounted
-     for the toolbar (approximately), never the header, and broke the
-     moment either one's real height changed (breakpoint, or the
-     desktop menu bar opening while sticky). Both vars are written by
-     main-header-sticky.js; the 64px fallback approximates today's old
-     hardcoded toolbar clearance if the vars haven't been set yet. */
   top: calc(var(--sticky-header-height, 0px) + var(--sticky-toolbar-height, 64px));
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
@@ -505,7 +454,6 @@
   display: none;
 }
 
-/* ---------- Sort ---------- */
 .collection-filter__sort {
   display: flex;
   flex-direction: column;
@@ -530,7 +478,6 @@
   font-size: 0.95rem;
 }
 
-/* ---------- Filter groups ---------- */
 .collection-filter__group {
   border-bottom: 1px solid #ececec;
   padding: 0.9rem 0;
@@ -578,7 +525,6 @@
   padding-top: 0.75rem;
 }
 
-/* ---------- Filter options ---------- */
 .collection-filter__option {
   display: flex;
   align-items: center;
@@ -606,7 +552,6 @@
   color: #cfcfcf;
 }
 
-/* ---------- Price range ---------- */
 .collection-filter__price {
   display: flex;
   align-items: center;
@@ -622,7 +567,6 @@
   font-size: 0.9rem;
 }
 
-/* ---------- Active filter pills ---------- */
 .collection-filter__active {
   display: flex;
   flex-wrap: wrap;
@@ -653,7 +597,6 @@
   color: #6b6b6b;
 }
 
-/* ---------- Submit ---------- */
 .collection-filter__submit {
   width: 100%;
   margin-top: 1.5rem;
@@ -672,7 +615,6 @@
   background: #333;
 }
 
-/* ---------- Mobile drawer ---------- */
 @media (max-width: 768px) {
   .collection-filter {
     position: fixed;
@@ -686,8 +628,6 @@
     padding: 0 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* Reset sticky positioning for drawer mode — full-screen overlay
-       doesn't need to clear the header/toolbar stack above it. */
     top: 0;
   }
 
@@ -695,7 +635,6 @@
     transform: translateX(0);
   }
 
-  /* Injected close bar */
   .collection-filter__close {
     display: flex;
     align-items: center;
@@ -736,7 +675,6 @@
   }
 }
 
-/* Desktop — hide close bar */
 @media (min-width: 769px) {
   .collection-filter__close {
     display: none;
@@ -744,9 +682,7 @@
 }
 
 /* ============================================================
-   Inlined from collection-feed.css — feed wrapper and panel
-   visibility. Grid layout itself lives in the product/article
-   grid sections below.
+   Inlined from collection-feed.css
    ============================================================ */
 
 .collection-feed {
@@ -762,78 +698,77 @@
 }
 
 /* ============================================================
-   Inlined from product-feed.css — product grid layout only.
-   Two-column shell and filter sidebar shell live above.
+   Product grid — product-feed.css
    ============================================================ */
 
-/* ---------- Product grid ---------- */
+/* ---------- Product grid ----------
+   --columns is set inline (from the merchant's "Columns" setting,
+   2–6) on #product-feed. Each breakpoint below caps the *effective*
+   column count with min(), so:
+     - it never exceeds this breakpoint's max (4 / 3 / 2 / 1)
+     - it still respects a merchant setting LOWER than that max
+       (e.g. Columns set to 2 stays at 2 even on desktop/tablet) */
 .product-feed__grid {
   display: grid;
-  grid-template-columns: repeat(var(--columns, 4), 1fr);
+  grid-template-columns: repeat(min(var(--columns, 4), 4), 1fr);
   gap: 1.5rem;
 }
 
-/* ---------- Responsive ---------- */
-
-/* Tablet — 768px to 1024px */
+/* Tablet — 768px to 1024px: cap at 3 */
 @media (max-width: 1024px) {
   .product-feed__grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(min(var(--columns, 4), 3), 1fr);
   }
 }
 
-/* Mobile — up to 768px */
+/* Mobile — up to 768px: cap at 2 */
 @media (max-width: 768px) {
   .product-feed__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(min(var(--columns, 4), 2), 1fr);
     gap: 1rem;
   }
 }
 
-/* Small mobile — up to 480px */
+/* Small mobile — up to 480px: cap at 1 */
 @media (max-width: 480px) {
   .product-feed__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(min(var(--columns, 4), 1), 1fr);
     gap: 0.75rem;
   }
 }
 
 /* ============================================================
-   Inlined from article-feed.css — article grid layout only.
-   Article card component styles live in article-card.css.
+   Article grid — article-feed.css
    ============================================================ */
 
-/* ---------- Article grid ---------- */
 .article-feed {
   display: grid;
-  grid-template-columns: repeat(var(--columns, 4), 1fr);
+  grid-template-columns: repeat(min(var(--columns, 4), 4), 1fr);
   gap: 1.5rem;
 }
 
-/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .article-feed {
+    grid-template-columns: repeat(min(var(--columns, 4), 3), 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .article-feed {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(min(var(--columns, 4), 2), 1fr);
   }
 }
 
 @media (max-width: 480px) {
   .article-feed {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(min(var(--columns, 4), 1), 1fr);
   }
 }
 
 /* ============================================================
-   Inlined from after-items.css — optional rich-text block
-   rendered from collection.metafields.custom.after_item_lists.
+   Inlined from after-items.css
    ============================================================ */
 
-/* FIX: previously hardcoded max-width: 1184px + its own horizontal
-   padding, which overrode the parent .collection-page's width/padding
-   settings (Section Width / Custom Width / Side Padding) instead of
-   inheriting them. .after-items now only controls vertical rhythm
-   and the divider border; horizontal sizing comes from the parent
-   .collection-page wrapper it lives inside. */
 .after-items {
   padding-block: 5rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -845,7 +780,6 @@
   }
 }
 
-/* ── Typography (mirrors .rte defaults) ── */
 .after-items h1,
 .after-items h2,
 .after-items h3,
@@ -906,7 +840,6 @@
   background: rgba(0, 0, 0, 0.03);
 }
 
-/* ── Spacing fix: last child never has trailing margin ── */
 .after-items > *:last-child {
   margin-bottom: 0;
 }
