@@ -19,6 +19,8 @@
   endif
 -%}
 
+<div class="main-collection" id="main-collection">
+
 {%- comment -%} Inlined from snippets/collection-hero.liquid — renders collection title + description; container width mirrors the header (collection-hero.css). {%- endcomment -%}
 
 {{ 'collection-hero.css' | asset_url | stylesheet_tag }}
@@ -380,7 +382,19 @@
   </div>
 </section>
 
-{%- render 'after-items' -%}
+{%- comment -%} Inlined from snippets/after-items.liquid — renders optional rich-text block sourced from collection.metafields.custom.after_item_lists. {%- endcomment -%}
+
+{{ 'after-items.css' | asset_url | stylesheet_tag }}
+
+{%- assign after_page = collection.metafields.custom.after_item_lists.value -%}
+
+{%- if after_page != blank -%}
+  <div class="after-items rte">
+    {{ after_page.content }}
+  </div>
+{%- endif -%}
+
+<script src="{{ 'after-items.js' | asset_url }}" defer></script>
 
 {%- if section.settings.show_related_articles -%}
   {%- render 'related-articles', show_image: section.settings.show_article_images -%}
@@ -401,6 +415,8 @@
 {%- comment -%} Shared backdrop for filter drawer + sort sheet {%- endcomment -%}
 <div class="collection-mobile-backdrop" aria-hidden="true"></div>
 
+</div>
+
 <script src="{{ 'collection-filter.js' | asset_url }}" defer></script>
 <script src="{{ 'collection-feed.js' | asset_url }}" defer></script>
 <script src="{{ 'collection.js' | asset_url }}" defer></script>
@@ -408,7 +424,7 @@
 
 {% schema %}
 {
-  "name": "Collection",
+  "name": "Main collection",
   "tag": "section",
   "class": "section-collection",
   "settings": [
@@ -824,7 +840,7 @@
   ],
   "presets": [
     {
-      "name": "Collection",
+      "name": "Main collection",
       "blocks": []
     }
   ]
