@@ -4,7 +4,7 @@
 
   A slim 32px bar rendered above the main header via the theme layout.
   Componentized into snippets:
-    snippets/utility-links.liquid   — left-hand utility links (fixed settings slots, not blocks)
+    snippets/utility-links.liquid     — left-hand utility links (fixed settings slots, not blocks)
     snippets/currency-selector.liquid — currency form
     snippets/locale-selector.liquid   — language form
     snippets/region-picker.liquid     — region trigger + dropdown (teleported to body by JS)
@@ -15,6 +15,14 @@
 
   Add to layout/theme.liquid above {%- section 'header' -%}:
     {%- section 'utility-bar' -%}
+
+  SECTION WIDTH / SIDE PADDING:
+  Handled locally per the pattern in sections/example-width-section.liquid.
+  This section does NOT read the global --page-margin or --page-width
+  variables (snippets/css-variables.liquid) — --section-padding and
+  --custom-width are only ever set inline here, from this section's own
+  "Section layout" settings, so bumping the global Body side padding
+  setting elsewhere in the theme will never move this bar.
 {% endcomment %}
 
 {%- if section.settings.enable_bar -%}
@@ -24,12 +32,27 @@
     assign bar_style = section.settings.bar_style | default: 'hyper'
     assign show_curr  = section.settings.show_currency
     assign show_loc   = section.settings.show_locale
+
+    assign width_type = section.settings.section_width
+    if width_type == blank
+      assign width_class = 'utility-bar__default-width'
+    elsif width_type == 'full-width'
+      assign width_class = 'utility-bar__full-width'
+    else
+      assign width_class = 'utility-bar__custom-width'
+    endif
   -%}
 
-  <div class="utility-bar utility-bar--{{ bar_style }}"
+  <div class="utility-bar utility-bar--{{ bar_style }} {{ width_class }}"
        role="navigation"
        aria-label="Utility bar"
-       id="utility-bar">
+       id="utility-bar"
+       style="
+         --section-padding: {{ section.settings.section_padding }}px;
+         {%- if width_type == 'custom-width' %}
+           --custom-width: {{ section.settings.custom_width }}rem;
+         {%- endif %}
+       ">
 
     <div class="utility-bar__inner">
 
@@ -91,6 +114,42 @@
       "id": "show_locale",
       "label": "Show language selector",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     },
     {
       "type": "header",
