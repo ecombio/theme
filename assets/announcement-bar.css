@@ -1,6 +1,22 @@
 /* ==========================================================================
    Announcement Bar
    Uses variables from theme.css
+
+   SECTION LAYOUT (width + padding): mirrors the independent pattern from
+   sections/example-width-section.liquid, also used by sections/main-header
+   and sections/main-footer. --section-padding and --custom-width are LOCAL
+   vars, set inline per-instance from this section's own schema settings
+   (see sections/announcement-bar.liquid) — they never read from the global
+   --page-margin / --page-width vars, so this section's width/padding can't
+   affect, or be affected by, any other section.
+
+   Unlike header/footer, this bar has no existing container to mirror: it's
+   edge-to-edge by design, and its side padding exists to keep slide text
+   clear of the prev/next arrows (28px wide + 8px inset from each edge), not
+   to line up with anything else. Defaults below (Full width, 48px padding,
+   40px fixed on mobile) preserve the bar's original look exactly — "Boxed"
+   (1184px, matching the header's own default width) and "Custom width" are
+   opt-in only.
    ========================================================================== */
 
 .announcement-bar {
@@ -17,7 +33,29 @@
   align-items: center;
   justify-content: center;
   min-height: 38px;
-  padding: 8px 48px;
+  padding-block: 8px;
+  padding-inline: var(--section-padding, 48px);
+  margin-inline: auto;
+  width: 100%;
+}
+
+/* Width modifiers — same independent-per-section approach as
+   .main-header--default-width / --full-width / --custom-width and
+   .main-footer--default-width / --full-width / --custom-width, scoped to
+   this section's own BEM namespace (this theme has no shared global width
+   utility classes). "Full width" needs no max-width rule of its own — it's
+   the bar's natural, un-constrained state — but is still named explicitly
+   here for clarity and to match the other two modifiers' shape. */
+.announcement-bar--full-width .announcement-bar__track {
+  max-width: none;
+}
+
+.announcement-bar--boxed .announcement-bar__track {
+  max-width: 1184px;
+}
+
+.announcement-bar--custom-width .announcement-bar__track {
+  max-width: var(--custom-width);
 }
 
 .announcement-bar__slide {
@@ -132,6 +170,10 @@
 /* ── Mobile ───────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .announcement-bar__track {
+    /* Deliberately a fixed value, not var(--section-padding) — mirrors
+       main-header.css / main-footer.css's mobile overrides: mobile stays
+       at the bar's original tighter padding regardless of whatever Side
+       padding value is set for desktop/tablet. */
     padding-inline: 40px;
     min-height: 36px;
   }

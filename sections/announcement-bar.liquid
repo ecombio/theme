@@ -1,13 +1,54 @@
 {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 
+{%- comment -%}
+  SECTION LAYOUT (width + padding):
+  Mirrors the independent pattern from sections/example-width-section.liquid
+  (also used by sections/main-header.liquid and sections/main-footer.liquid).
+  --section-padding and --custom-width are LOCAL vars set inline below from
+  this section's own schema settings — they never read from the global
+  --page-margin / --page-width vars, so this section's width/padding can't
+  affect, or be affected by, any other section.
+
+  UNLIKE header/footer, this section has no existing container to mirror —
+  the bar is edge-to-edge by design, and its horizontal padding exists to
+  keep the slide text clear of the prev/next arrows (28px wide + 8px inset),
+  not to line up with anything else on the page. So the defaults here
+  preserve the bar's current look exactly (Full width, 48px side padding,
+  40px fixed on mobile) rather than adopting the header's 1184px / 24px
+  defaults. "Boxed" and "Custom width" are opt-in for merchants who want
+  the bar constrained instead.
+
+  If Side padding is set below roughly 36px on a slide config that also
+  shows arrows (more than one block), the arrows can start to crowd the
+  slide text — that's a content/config concern for the merchant to notice
+  in preview, not something this section enforces.
+{%- endcomment -%}
+
+{%- liquid
+  assign section_width = section.settings.section_width
+  if section_width == 'boxed'
+    assign width_class = 'announcement-bar--boxed'
+  elsif section_width == 'custom-width'
+    assign width_class = 'announcement-bar--custom-width'
+  else
+    assign width_class = 'announcement-bar--full-width'
+  endif
+-%}
+
 {%- if section.blocks.size > 0 -%}
   <div
-    class="announcement-bar"
+    class="announcement-bar {{ width_class }}"
     role="region"
     aria-label="Announcements"
     data-announcement-bar
     data-autorotate="{{ section.settings.autorotate }}"
     data-interval="{{ section.settings.autorotate_speed | times: 1000 }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if section_width == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
   >
     <div class="announcement-bar__track" data-track>
       {%- for block in section.blocks -%}
@@ -152,6 +193,44 @@
   "class": "section-announcement-bar",
   "max_blocks": 5,
   "settings": [
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Full width" },
+        { "value": "boxed", "label": "Boxed (matches header width)" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": "",
+      "info": "Full width matches the bar's current edge-to-edge look. This is independent of the header/footer's own Section width setting."
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 48,
+      "info": "Applies at desktop/tablet widths (≥ 768px). Mobile keeps its own fixed, tighter padding regardless of this setting. Keep at 36px or more if this bar shows more than one block, so slide text doesn't crowd the prev/next arrows."
+    },
     {
       "type": "checkbox",
       "id": "autorotate",
