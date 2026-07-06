@@ -7,6 +7,8 @@
  *   • Wishlist     — localStorage, aria-pressed + aria-label sync
  *   • Compare      — in-memory, renders compare-bar, max 5
  *   • Quick View   — delegates to product-quickview.js via custom event
+ *   • Sticky offsets — measures the real header/toolbar height and exposes
+ *     them as CSS custom properties so sticky elements stack correctly
  *
  * Fixes applied (from Architecture_Review, June 2026):
  *   [1]  ATC: btn.disabled = true on start prevents double-submit
@@ -20,6 +22,21 @@
  *            This file fires 'quickview:open' and product-quickview.js listens.
  *   [9]  Init: readyState guard handles deferred/async script loading
  *   [10] productcard:injected: re-syncs wishlist + compare on dynamic injection
+ *   [11] Sticky offsets (2026-07): base.css's .sticky-header only sets
+ *        `position: sticky; top: 0;` — it never defines
+ *        --sticky-header-height. main-collection.css's .collection-toolbar
+ *        and .collection-filter both read var(--sticky-header-height, 0) /
+ *        var(--sticky-toolbar-height, 64px) to stack below the header
+ *        instead of under it. Since that property was never actually set
+ *        anywhere, both fell back to their defaults, which don't match the
+ *        header's real height — so on scroll, the toolbar (and the top of
+ *        whatever content follows it) slid up underneath the header instead
+ *        of stopping below it. Header height isn't a fixed constant (it
+ *        changes with announcement bars, font-size settings, breakpoints),
+ *        so it's measured at runtime here rather than hardcoded in CSS.
+ *        This file is already loaded globally via theme.liquid (see header
+ *        comment above), so the measurement lives here instead of in a
+ *        separate script.
  */
 
 (() => {
@@ -314,6 +331,55 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
+  // [11] STICKY OFFSETS
+  // Measures .sticky-header (global) and #collection-toolbar (collection
+  // pages only) and writes their real pixel heights to CSS custom
+  // properties on :root, so main-collection.css's sticky toolbar/filter
+  // math is based on real values instead of unset defaults.
+  // ══════════════════════════════════════════════════════════════════════════════
+  const root = document.documentElement;
+
+  function px(value) {
+    return Math.round(value) + 'px';
+  }
+
+  function setStickyOffsets() {
+    const header = qs('.sticky-header');
+    if (header) {
+      root.style.setProperty('--sticky-header-height', px(header.offsetHeight));
+    }
+
+    // Only present on collection pages — guard so this runs safely
+    // on every page even though it's loaded globally.
+    const toolbar = document.getElementById('collection-toolbar');
+    if (toolbar) {
+      root.style.setProperty('--sticky-toolbar-height', px(toolbar.offsetHeight));
+    }
+  }
+
+  function initStickyOffsets() {
+    setStickyOffsets();
+
+    // Re-measure on resize (breakpoint changes, orientation change,
+    // announcement bar collapsing, etc.). Debounced to avoid thrashing
+    // layout on every resize tick.
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(setStickyOffsets, 100);
+    });
+
+    // Re-measure if header content changes size after load (e.g. an
+    // announcement bar dismissed via JS, or a font/webfont swap
+    // reflowing text) without a full resize event firing.
+    const header = qs('.sticky-header');
+    if (header && 'ResizeObserver' in window) {
+      const ro = new ResizeObserver(() => setStickyOffsets());
+      ro.observe(header);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
   // [10] productcard:injected
   // Fire this event after dynamically inserting new cards into the DOM
   // (e.g. recently-viewed, infinite scroll) to re-sync state indicators.
@@ -342,6 +408,7 @@
     initWishlist();
     initCompare();
     initQuickViewTrigger();
+    initStickyOffsets();
   }
 
   if (document.readyState === 'loading') {
