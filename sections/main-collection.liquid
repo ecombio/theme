@@ -295,7 +295,54 @@
       {%- comment -%} ===== END INLINED collection-filter ===== {%- endcomment -%}
 
       <div class="collection-body__feed">
-        {%- render 'collection-feed', active_tab: active_tab -%}
+        {%- comment -%}
+          ===== INLINED FROM: snippets/collection-feed.liquid =====
+          Originally: {%- render 'collection-feed', active_tab: active_tab -%}
+          Owns the tab panel shell — products panel and articles panel.
+          Tab switching logic lives in assets/collection-feed.js.
+
+          Expects:
+            active_tab  {String}  'products' | 'articles'
+
+          Renders:
+            product-feed  → products panel
+            article-feed  → articles panel
+
+          JS hook attributes:
+            [data-panel]  — panel switching target, read by collection-feed.js
+        {%- endcomment -%}
+
+        {{ 'collection-feed.css' | asset_url | stylesheet_tag }}
+
+        <div class="collection-feed" id="collection-feed" data-collection-feed>
+
+          {%- comment -%} Products panel {%- endcomment -%}
+          <div
+            id="panel-products"
+            class="collection-feed__panel"
+            role="tabpanel"
+            aria-labelledby="tab-products"
+            data-panel="products"
+            {%- if active_tab != 'products' %} hidden{%- endif %}
+          >
+            {%- render 'product-feed' -%}
+          </div>
+
+          {%- comment -%} Articles panel {%- endcomment -%}
+          <div
+            id="panel-articles"
+            class="collection-feed__panel"
+            role="tabpanel"
+            aria-labelledby="tab-articles"
+            data-panel="articles"
+            {%- if active_tab != 'articles' %} hidden{%- endif %}
+          >
+            {%- render 'article-feed' -%}
+          </div>
+
+        </div>
+
+        {%- comment -%} ===== END INLINED collection-feed ===== {%- endcomment -%}
       </div>
 
     </div>
