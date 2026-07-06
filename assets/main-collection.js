@@ -256,26 +256,147 @@
     });
   }
 
-  /* ── Filter form submit ───────────────────────────────────── */
-  var filterForm = document.getElementById('FilterForm');
-  if (filterForm) {
-    filterForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var url = new URL(window.location.href);
-      url.search = '';
+  /* ── Live filtering (AJAX via Section Rendering API) ─────────
+     Checking/unchecking a filter (or changing a price field)
+     re-fetches just this section's HTML with the new query params
+     and swaps in the updated product grid + filter sidebar, with
+     no full page reload. Unchecking a filter is just another
+     change event, so it live-reverts the same way.
 
-      new FormData(filterForm).forEach(function (val, key) {
-        url.searchParams.append(key, val);
+     Falls back to a normal full-page navigation if fetch fails,
+     or if JS never runs at all (the form's method="get" + inputs'
+     name attributes still work as plain query params). ─────── */
+  var filterForm    = document.getElementById('FilterForm');
+  var sectionRoot    = document.getElementById('main-collection');
+  var sectionId      = sectionRoot ? sectionRoot.dataset.sectionId : null;
+  var filterRequestToken = 0;
+
+  function buildFilterUrl() {
+    // Preserve sort_by (and any other non-filter params) from the
+    // CURRENT url before rebuilding the query string from the filter
+    // form, so applying a filter never resets sort back to default.
+    var currentUrl = new URL(window.location.href);
+    var existingSortBy = currentUrl.searchParams.get('sort_by');
+
+    var url = new URL(window.location.href);
+    url.search = '';
+
+    new FormData(filterForm).forEach(function (val, key) {
+      url.searchParams.append(key, val);
+    });
+
+    if (existingSortBy && !url.searchParams.has('sort_by')) {
+      url.searchParams.set('sort_by', existingSortBy);
+    }
+
+    // Preserve active tab
+    var page = document.querySelector('[data-collection-page]');
+    var activeTab = page ? page.dataset.activeTab : 'products';
+    url.searchParams.set('tab', activeTab);
+
+    return url;
+  }
+
+  function bindFilterFieldListeners() {
+    if (!filterForm) return;
+    filterForm.querySelectorAll('input[type="checkbox"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        applyFiltersLive(true);
       });
-
-      // Preserve active tab
-      var page = document.querySelector('[data-collection-page]');
-      var activeTab = page ? page.dataset.activeTab : 'products';
-      url.searchParams.set('tab', activeTab);
-
-      window.location.href = url.toString();
+    });
+    filterForm.querySelectorAll('input[type="number"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        applyFiltersLive(true);
+      });
     });
   }
+
+  function applyFiltersLive(pushHistory) {
+    if (!filterForm) return;
+
+    var displayUrl = buildFilterUrl();
+
+    if (!sectionId) {
+      // No section id available (e.g. template markup out of date) —
+      // fall back to the old full-page-reload behavior rather than
+      // silently doing nothing.
+      window.location.href = displayUrl.toString();
+      return;
+    }
+
+    var fetchUrl = new URL(displayUrl.toString());
+    fetchUrl.searchParams.set('section_id', sectionId);
+
+    var thisRequest = ++filterRequestToken;
+    var grid = document.querySelector('.product-feed__grid');
+    filterForm.setAttribute('aria-busy', 'true');
+    if (grid) grid.style.opacity = '0.5';
+
+    fetch(fetchUrl.toString())
+      .then(function (res) {
+        if (!res.ok) throw new Error('Filter request failed');
+        return res.text();
+      })
+      .then(function (html) {
+        // Another change happened while this request was in flight —
+        // drop this (now-stale) response instead of overwriting newer
+        // results with older ones.
+        if (thisRequest !== filterRequestToken) return;
+
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+
+        var newProductFeed = doc.getElementById('product-feed');
+        var currentProductFeed = document.getElementById('product-feed');
+        if (newProductFeed && currentProductFeed) {
+          currentProductFeed.replaceWith(newProductFeed);
+        }
+
+        var newFilterForm = doc.getElementById('FilterForm');
+        if (newFilterForm) {
+          // Swap in the refreshed filter markup (updated counts,
+          // active pills, disabled options) and rebind listeners,
+          // since the old input elements were just replaced.
+          filterForm.innerHTML = newFilterForm.innerHTML;
+          bindFilterFieldListeners();
+        }
+
+        var newPagination = doc.querySelector('.pagination');
+        var currentPagination = document.querySelector('.pagination');
+        if (currentPagination) currentPagination.remove();
+        if (newPagination) {
+          document.querySelector('.collection-feed__panel[data-panel="products"]')
+            .appendChild(newPagination);
+        }
+
+        if (pushHistory) {
+          history.pushState({ tab: displayUrl.searchParams.get('tab') }, '', displayUrl.toString());
+        }
+
+        filterForm.removeAttribute('aria-busy');
+      })
+      .catch(function () {
+        // Network error, bad response, etc. — don't leave the user
+        // stuck with a half-applied filter and a dimmed grid.
+        window.location.href = displayUrl.toString();
+      });
+  }
+
+  bindFilterFieldListeners();
+
+  if (filterForm) {
+    // Keep the Apply button / Enter-key submit working (e.g. after
+    // typing in a price field and pressing Enter), routed through the
+    // same live path instead of a full navigation.
+    filterForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      applyFiltersLive(true);
+    });
+  }
+
+  /* ── Back/forward support ─────────────────────────────────── */
+  window.addEventListener('popstate', function () {
+    applyFiltersLive(false);
+  });
 
   /* ── Expose close for external use (e.g. backdrop click) ─── */
   window.CollectionFilter = { close: closeFilter };
