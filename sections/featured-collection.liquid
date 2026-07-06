@@ -1,7 +1,38 @@
 {{ 'featured-collection.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  product-card.liquid doesn't load its own CSS (see asset ownership rule
+  in that file) — it expects the host page to have loaded it already.
+  This section renders product-card for every product in the grid, so
+  load it here explicitly (same convention used in video-carousel.liquid).
+{%- endcomment -%}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 {%- if section.settings.collection != blank -%}
-  <div class="featured-collection">
+  {%- comment -%}
+    Section width / side padding follow the shared pattern documented
+    in sections/example-width-section.liquid: --section-padding and
+    --custom-width are local to this section instance, set inline
+    here only, and never read from the global --page-margin /
+    --page-width variables.
+  {%- endcomment -%}
+  {%- liquid
+    assign width_type = section.settings.section_width
+    if width_type == blank
+      assign width_class = 'featured-collection__default-width'
+    else
+      assign width_class = 'featured-collection__' | append: width_type
+    endif
+  -%}
+
+  <div
+    class="featured-collection {{ width_class }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
+  >
     <h2 class="featured-collection__heading">{{ section.settings.heading | default: section.settings.collection.title }}</h2>
 
     <div class="featured-collection__grid">
@@ -34,6 +65,39 @@
       "min": 4,
       "max": 12,
       "default": 8
+    },
+    { "type": "header", "content": "Section layout" },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     }
   ],
   "presets": [
