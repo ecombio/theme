@@ -105,7 +105,7 @@
 .video-carousel__arrow {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) scale(1);
   z-index: 2;
   display: inline-flex;
   align-items: center;
@@ -118,7 +118,8 @@
   color: inherit;
   cursor: pointer;
   opacity: 1;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .video-carousel__arrow--prev {
@@ -130,7 +131,7 @@
 }
 
 .video-carousel__arrow:hover:not(:disabled) {
-  transform: translateY(-50%) scale(1.05);
+  transform: translateY(-50%) scale(1.08);
 }
 
 .video-carousel__arrow:disabled {
@@ -146,11 +147,19 @@
 @media (hover: hover) and (pointer: fine) {
   .video-carousel__arrow {
     opacity: 0;
+    transform: translateY(-50%) scale(0.85);
+    pointer-events: none;
   }
 
   .video-carousel__wrapper:hover .video-carousel__arrow,
   .video-carousel__arrow:focus-visible {
     opacity: 1;
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+  }
+
+  .video-carousel__wrapper:hover .video-carousel__arrow:hover:not(:disabled) {
+    transform: translateY(-50%) scale(1.08);
   }
 
   .video-carousel__wrapper:hover .video-carousel__arrow:disabled,
@@ -158,6 +167,7 @@
     /* Still reveal a disabled arrow on hover/focus so a dead end is
        communicated (greyed out), rather than just disappearing. */
     opacity: 0.3;
+    transform: translateY(-50%) scale(1);
   }
 }
 
