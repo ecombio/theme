@@ -1,6 +1,5 @@
 {{ 'collection.css' | asset_url | stylesheet_tag }}
 {{ 'collection-filter.css' | asset_url | stylesheet_tag }}
-{{ 'collection-feed.css' | asset_url | stylesheet_tag }}
 
 {%- comment -%}
   SECTION WIDTH / SIDE PADDING:
@@ -36,7 +35,6 @@
   <div
     class="collection-page {{ width_class }}"
     data-collection-page
-    data-section-id="{{ section.id }}"
     data-active-tab="{{ active_tab }}"
     style="
       --section-padding: {{ section.settings.section_padding }}px;
@@ -173,42 +171,7 @@
       {%- comment -%} ===== END INLINED collection-filter ===== {%- endcomment -%}
 
       <div class="collection-body__feed">
-        {%- comment -%}
-          ===== INLINED FROM: snippets/collection-feed.liquid =====
-          Originally: {%- render 'collection-feed', active_tab: active_tab -%}
-          Tab switching logic still lives in assets/collection-feed.js.
-          JS hook attributes preserved as-is:
-            [data-panel]  — panel switching target, read by collection-feed.js
-        {%- endcomment -%}
-
-        <div class="collection-feed" data-collection-feed>
-
-          {%- comment -%} Products panel {%- endcomment -%}
-          <div
-            id="panel-products"
-            class="collection-feed__panel"
-            role="tabpanel"
-            aria-labelledby="tab-products"
-            data-panel="products"
-            {%- if active_tab != 'products' %} hidden{%- endif %}
-          >
-            {%- render 'product-feed' -%}
-          </div>
-
-          {%- comment -%} Articles panel {%- endcomment -%}
-          <div
-            id="panel-articles"
-            class="collection-feed__panel"
-            role="tabpanel"
-            aria-labelledby="tab-articles"
-            data-panel="articles"
-            {%- if active_tab != 'articles' %} hidden{%- endif %}
-          >
-            {%- render 'article-feed' -%}
-          </div>
-
-        </div>
-        {%- comment -%} ===== END INLINED collection-feed ===== {%- endcomment -%}
+        {%- render 'collection-feed', active_tab: active_tab -%}
       </div>
 
     </div>
