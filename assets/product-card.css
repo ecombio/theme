@@ -21,6 +21,18 @@
        after this change.
    ============================================================ */
 
+/* ── Defensive box-sizing reset ──────────────────────────────
+   Scoped to .product-card so a missing/incomplete global reset
+   elsewhere in the theme can't cause children with width:100%
+   + their own padding to overflow the card by a fixed amount
+   (the "everything clipped at the same x-position" symptom). */
+.product-card,
+.product-card *,
+.product-card *::before,
+.product-card *::after {
+  box-sizing: border-box;
+}
+
 /* ── Tokens ───────────────────────────────────────────────── */
 .product-card {
   --product-card-accent:          #4F46E5;
@@ -261,6 +273,20 @@
 .product-card__reviews {
   min-height: 18px;
   font-size: 0.75rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Judge.me hydrates .jdgm-widget with its own markup/CSS after
+   page load, which we don't control. Force it to respect the
+   card's width instead of rendering its "No reviews"/star text
+   as one unbreakable line that gets clipped by .product-card's
+   own overflow: hidden. */
+.product-card__reviews .jdgm-widget,
+.product-card__reviews .jdgm-widget * {
+  max-width: 100%;
+  white-space: normal !important;
+  flex-wrap: wrap !important;
 }
 
 /* ── Pricing ──────────────────────────────────────────────── */
