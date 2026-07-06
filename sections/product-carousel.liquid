@@ -8,6 +8,12 @@
   for Add to Cart, Wishlist, Compare, and Quick View (each click fires
   twice: double-add to cart, wishlist toggles cancel out, Quick View
   fetches the product twice).
+
+  SECTION LAYOUT: width_class + --section-padding below follow the same
+  pattern as sections/example-width-section.liquid. --section-padding
+  is section-local (set inline from this section's own "Side padding"
+  setting) and intentionally does NOT read the global --page-margin,
+  so it is unaffected by Theme Settings > Layout > Body side padding.
 {%- endcomment -%}
 
 {%- liquid
@@ -36,12 +42,19 @@
   elsif show_arrows
     assign show_bottom_arrows = true
   endif
+
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = width_type
+  endif
 -%}
 
 {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
 
 <section
-  class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %}"
+  class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %} {{ width_class }}"
   id="pc-section-{{ section.id }}"
   data-section-id="{{ section.id }}"
   data-cards-desktop="{{ cards_desk }}"
@@ -49,6 +62,12 @@
   data-autoplay="{{ autoplay }}"
   data-autoplay-interval="{{ autoplay_ms }}"
   data-arrow-style="{{ arrow_position }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
 >
 
   {%- if heading != blank or subheading != blank or show_top_arrows -%}
@@ -366,6 +385,42 @@
         { "value": "2", "label": "2" }
       ],
       "default": "2"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     },
     {
       "type": "header",
