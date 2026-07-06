@@ -282,6 +282,11 @@
     url.search = '';
 
     new FormData(filterForm).forEach(function (val, key) {
+      // Skip blank values (e.g. an untouched price field with no value
+      // set) — submitting an empty filter.v.price.gte/lte param can
+      // cause the storefront to treat the range as effectively zero,
+      // filtering out products that should still match.
+      if (val === '') return;
       url.searchParams.append(key, val);
     });
 
