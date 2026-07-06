@@ -61,6 +61,13 @@ h6 {
    They previously were also hardcoded here, which meant these values
    silently never took effect (css-variables.liquid loads later in
    <head> and always won the cascade) — do not reintroduce them here.
+
+   IMPORTANT: --page-margin is GLOBAL. Do not use it inside the
+   SECTION GRID SYSTEM below — sections that need their own padding
+   use the section-local --section-padding variable instead (set
+   inline per-section via that section's own schema setting), so that
+   changing global Body side padding does not silently move
+   individually-configured sections. See "Section layout" note below.
    ============================================ */
 
 /* ============================================
@@ -115,15 +122,23 @@ h6 {
 }
 
 /* ── Default width (fixed, not settings-driven) ──────────────
-   Unlike .page-width / --content-width, this is intentionally NOT
-   tied to --page-width, so it stays at 1184px regardless of the
-   max_page_width theme setting. ────────────────────────────── */
+   Unlike .page-width / --content-width, the 1184px max-width here
+   is intentionally NOT tied to --page-width, so it stays constant
+   regardless of the Body width theme setting.
+
+   Padding uses --section-padding, a LOCAL variable set inline by
+   each section instance via its own "Side padding" setting (see
+   sections/example-width-section.liquid). It never reads
+   --page-margin, so changing the global Body side padding slider
+   will not move this section — each section's padding is opted-in
+   and independently controlled. Falls back to 24px if a section
+   doesn't set --section-padding at all. ─────────────────────── */
 .shopify-section > .default-width {
   grid-column: 1 / -1;
   width: 100%;
   max-width: var(--default-content-width, 1184px);
   margin-inline: auto;
-  padding-inline: 24px;
+  padding-inline: var(--section-padding, 24px);
   box-sizing: border-box;
 }
 
@@ -138,13 +153,16 @@ h6 {
 
    Fix: span the full grid (like .full-width does) and then size
    the element directly with max-width + margin auto — the same
-   technique .page-width already uses successfully. ────────────── */
+   technique .page-width already uses successfully.
+
+   Padding here also uses the LOCAL --section-padding variable
+   (same reasoning as .default-width above), not --page-margin. ── */
 .shopify-section > .custom-width {
   grid-column: 1 / -1;
   width: 100%;
   max-width: var(--custom-width, var(--page-width));
   margin-inline: auto;
-  padding-inline: var(--page-margin);
+  padding-inline: var(--section-padding, 24px);
   box-sizing: border-box;
 }
 

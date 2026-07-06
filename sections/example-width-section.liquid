@@ -1,17 +1,30 @@
 {%- comment -%}
   sections/example-width-section.liquid
 
-  This is a minimal, self-contained example showing how to wire up
-  the "Default / Full width / Custom width" option in a section.
+  Minimal, self-contained example showing how to wire up a fully
+  independent "Section Layout" control group:
+    - Section width: Default / Full width / Custom width
+    - Side padding: its own slider, decoupled from the global
+      --page-margin (Theme settings > Layout > Body side padding)
 
-  Copy the schema block's "section_width" and "custom_width" settings
-  into any section you want this behavior on, and copy the class +
-  style attribute pattern from the <div> below into that section's
-  markup.
+  WHY THIS IS SEPARATE FROM --page-margin / --page-width:
+  Those two variables are global (snippets/css-variables.liquid) and
+  drive header, footer, and body-wide layout. Wiring individual
+  sections to read from them means changing one global slider moves
+  every section that references it at once — which is what caused
+  sections like "Watch & learn" to visually break when Body side
+  padding was bumped to test something else.
 
-  "Default" is pinned to 1184px via the .default-width class (see
-  base.css) rather than relying on the theme's --page-width variable,
-  so it stays constant regardless of the max_page_width setting.
+  This section instead defines its OWN local CSS variables
+  (--section-max-width, --section-padding) that are only ever set
+  inline, per-instance, via this section's own schema settings. They
+  never read from --page-margin or --page-width, so this section is
+  fully independent of global Body settings.
+
+  Copy the schema block's "section_width", "custom_width", and
+  "section_padding" settings into any section you want this behavior
+  on, and copy the class + style attribute pattern from the <div>
+  below into that section's markup.
 {%- endcomment -%}
 
 {%- liquid
@@ -25,9 +38,12 @@
 
 <div
   class="{{ width_class }}"
-  {%- if width_type == 'custom-width' %}
-    style="--custom-width: {{ section.settings.custom_width }}rem;"
-  {%- endif %}
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
 >
   <div class="section" style="padding-block: var(--section-spacing);">
     <h2>{{ section.settings.heading | default: 'Example section' }}</h2>
@@ -35,7 +51,9 @@
       This block's outer div is a direct child of the section's
       .shopify-section grid wrapper, so its width class
       (default-width / full-width / custom-width) controls how it
-      spans that grid.
+      spans that grid. Its side padding comes from this section's own
+      "Side padding" setting, independent of the global Body side
+      padding setting.
     </p>
   </div>
 </div>
@@ -49,6 +67,10 @@
       "id": "heading",
       "label": "Heading",
       "default": "Example section"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
     },
     {
       "type": "select",
@@ -71,6 +93,16 @@
       "unit": "rem",
       "default": 80,
       "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     }
   ],
   "presets": [
