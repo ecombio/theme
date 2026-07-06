@@ -9,12 +9,30 @@
 {%- endcomment -%}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 
+{%- comment -%}
+  Section width / side padding below follow the pattern from
+  sections/example-width-section.liquid: --section-padding and
+  --custom-width are local to THIS section instance and are only ever
+  set inline here. They never read from the global --page-margin /
+  --page-width variables (snippets/css-variables.liquid), so bumping
+  the global Body side padding setting can no longer break this
+  section's layout the way it broke the old full_width checkbox.
+
+  Unlike the example section, this theme has no shared global
+  default-width/full-width/custom-width utility classes, so these
+  are scoped to this component as video-carousel__default-width /
+  video-carousel__full-width / video-carousel__custom-width in
+  video-carousel.css, replacing the old .video-carousel__boxed and
+  .video-carousel__full-bleed rules.
+{%- endcomment -%}
 {%- liquid
   assign show_arrows = section.settings.show_arrows
   assign show_dots = section.settings.show_dots
-  assign container_class = 'video-carousel__boxed'
-  if section.settings.full_width
-    assign container_class = 'video-carousel__full-bleed'
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'video-carousel__default-width'
+  else
+    assign width_class = 'video-carousel__' | append: width_type
   endif
 -%}
 
@@ -34,7 +52,15 @@
     --vc-card-ratio: {% if section.settings.card_style == 'reel' %}9 / 16{% else %}16 / 9{% endif %};
   "
 >
-  <div class="{{ container_class }}">
+  <div
+    class="{{ width_class }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
+  >
     {%- if section.settings.heading != blank or section.settings.subheading != blank -%}
       <div class="video-carousel__header">
         {%- if section.settings.heading != blank -%}
@@ -116,13 +142,6 @@
     { "type": "color", "id": "text_color", "label": "Text color" },
     { "type": "header", "content": "Layout" },
     {
-      "type": "checkbox",
-      "id": "full_width",
-      "label": "Full width",
-      "info": "Off caps the carousel at 1184px, matching your header's content width. On removes that cap so it spans the browser edge-to-edge.",
-      "default": false
-    },
-    {
       "type": "select",
       "id": "card_style",
       "label": "Card style",
@@ -144,6 +163,41 @@
       "label": "Autoplay first video's sound off preview",
       "default": false,
       "info": "Only applies to uploaded MP4 videos, muted."
+    },
+    { "type": "header", "content": "Section layout" },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": "",
+      "info": "Default caps the carousel at your theme's standard content width. Full width spans edge-to-edge. Custom width lets you set an exact max width below."
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24,
+      "info": "This section's own side padding, independent of the global Body side padding setting."
     },
     { "type": "header", "content": "Shoppable videos" },
     {

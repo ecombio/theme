@@ -4,29 +4,35 @@
   color: var(--vc-text, inherit);
 }
 
-/* Boxed (default): mirrors .main-header__inner from main-header.css exactly —
-   that's the container actually in use (per the "Main Header" section),
-   not the unused .ecombio-header__inner block also present in that file. */
-.video-carousel__boxed {
+/* Default width: same 1184px cap the old .video-carousel__boxed used
+   (mirrors .main-header__inner from main-header.css). Side padding now
+   comes from --section-padding, set inline per-instance from this
+   section's own "Side padding" setting — no longer hardcoded, and no
+   longer tied to the global --page-margin. Falls back to 24px if the
+   variable is ever missing. */
+.video-carousel__default-width {
   width: 100%;
   max-width: 1184px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--section-padding, 24px);
 }
 
-@media (max-width: 639px) {
-  .video-carousel__boxed {
-    padding: 0 12px;
-  }
-}
-
-/* Full-bleed: no max-width, spans the browser. Keeps a small side gutter
-   so the prev/next arrows aren't flush against the viewport edge — set
-   this to 0 yourself if you want true edge-to-edge with no gutter at all. */
-.video-carousel__full-bleed {
+/* Full width: no max-width, spans the browser. Side padding still comes
+   from --section-padding so the prev/next arrows keep a gutter; set the
+   Side padding setting to 0 for true edge-to-edge with no gutter at all. */
+.video-carousel__full-width {
   width: 100%;
   max-width: none;
-  padding: 0 16px;
+  padding: 0 var(--section-padding, 24px);
+}
+
+/* Custom width: max-width comes from --custom-width, set inline only
+   when Section width = Custom width (see video-carousel.liquid). */
+.video-carousel__custom-width {
+  width: 100%;
+  max-width: var(--custom-width, 1184px);
+  margin: 0 auto;
+  padding: 0 var(--section-padding, 24px);
 }
 
 .video-carousel__header {
