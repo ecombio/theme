@@ -1,0 +1,89 @@
+{{ 'related-articles.css' | asset_url | stylesheet_tag }}
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
+{% assign section_collection = section.settings.collection %}
+{% if section_collection == blank %}
+  {% assign section_collection = collection %}
+{% endif %}
+
+{% assign articles = section_collection.metafields.custom.related_post_cards.value %}
+{% assign show_image = section.settings.show_image %}
+
+{% if articles != blank %}
+  <div class="related-articles-wrapper" id="related-articles-{{ section.id }}">
+    {% if section.settings.heading != blank %}
+      <h2 class="related-articles__title">{{ section.settings.heading }}</h2>
+    {% endif %}
+
+    <div
+      class="related-articles{% unless show_image %} related-articles--hide-images{% endunless %}"
+      data-related-articles
+      data-section-id="{{ section.id }}"
+    >
+      <div class="related-articles__swiper swiper">
+        <div class="related-articles__track swiper-wrapper">
+          {% for article in articles %}
+            <div class="related-articles__slide swiper-slide">
+              {% render 'article-card', article: article, show_image: show_image %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="related-articles__button related-articles__button--prev"
+        aria-label="Previous articles"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="related-articles__button related-articles__button--next"
+        aria-label="Next articles"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer="defer"></script>
+  {{ 'related-articles.js' | asset_url | script_tag }}
+{% endif %}
+
+{% schema %}
+{
+  "name": "Related Articles",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Related Articles"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "Defaults to the current collection if left blank (only works on collection templates)."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "Show images",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Related Articles"
+    }
+  ]
+}
+{% endschema %}
