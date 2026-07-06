@@ -1,5 +1,5 @@
 /* ============================================
-   MODERN CSS RESET
+   BASE.CSS RESET
    ============================================ */
 * {
   box-sizing: border-box;
@@ -112,6 +112,27 @@ h6 {
 
 .shopify-section > .full-width {
   grid-column: 1 / -1;
+}
+
+/* ── Custom width option ──────────────────────────────────────
+   NOTE ON A BUG WE HIT: an earlier version of this rule tried to
+   override --content-width on the CHILD (.custom-width) hoping it
+   would resize the PARENT's grid-template-columns. That doesn't
+   work — CSS custom properties only inherit downward (parent to
+   child), so grid-template-columns on .shopify-section had already
+   resolved --content-width using the page-wide value before this
+   child rule was ever considered. The slider changed nothing.
+
+   Fix: span the full grid (like .full-width does) and then size
+   the element directly with max-width + margin auto — the same
+   technique .page-width already uses successfully. ────────────── */
+.shopify-section > .custom-width {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: var(--custom-width, var(--page-width));
+  margin-inline: auto;
+  padding-inline: var(--page-margin);
+  box-sizing: border-box;
 }
 
 /* ============================================
