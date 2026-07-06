@@ -10,20 +10,22 @@
   works when rendered in a context where `collection` exists (e.g.
   collection template).
 
-  Section layout: mirrors sections/example-width-section.liquid —
-  section_width / custom_width / section_padding settings, scoped
-  BEM width classes (this theme has no shared global width utility
-  classes), independent of global --page-margin.
+  Section layout: uses the SHARED global width classes from base.css
+  (.shopify-section > .default-width / .full-width / .custom-width),
+  same pattern as sections/example-width-section.liquid. Do NOT
+  reintroduce section-scoped width/padding CSS here — that duplicated
+  the global rules with different values (120rem vs the shared
+  --default-content-width, and incorrectly padded full-width) and
+  drifted out of sync. Only this section's own carousel/card styling
+  stays local.
 {%- endcomment -%}
 
 {%- liquid
   assign width_type = section.settings.section_width
   if width_type == blank
-    assign width_class = 'related-articles__default-width'
-  elsif width_type == 'full-width'
-    assign width_class = 'related-articles__full-width'
+    assign width_class = 'default-width'
   else
-    assign width_class = 'related-articles__custom-width'
+    assign width_class = width_type
   endif
 
   assign articles = collection.metafields.custom.related_post_cards.value
@@ -111,16 +113,6 @@
       --card-gap: 16px;
       --card-width: 280px;
     }
-
-    .related-articles__default-width,
-    .related-articles__full-width,
-    .related-articles__custom-width {
-      padding-inline: var(--section-padding, 0px);
-    }
-
-    .related-articles__default-width { margin-inline: auto; max-width: 120rem; }
-    .related-articles__full-width { width: 100%; }
-    .related-articles__custom-width { margin-inline: auto; max-width: var(--custom-width, 80rem); }
 
     #related-articles-{{ section.id }} .related-articles__title {
       margin: 0 0 1.5rem;
