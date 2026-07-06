@@ -1,0 +1,272 @@
+{%- doc -%}
+  Renders a single clickable video thumbnail card.
+  Accepts:
+    - block: {% content_for_block %} object with settings: video_url, video_file, thumbnail, title, subtitle, product
+    - index: 1-based position in the carousel (used for aria labelling / autoplay-first logic)
+    - cta_style: section-level setting, one of 'none', 'overlay', 'icon_button',
+      'text_button', 'card_outside_video'. Applies to every video-card the host
+      section renders — this is intentionally not a per-block setting, so a
+      merchant can't end up with five differently-styled CTAs in one carousel.
+
+  If block.settings.product is set, a lightweight product panel is written
+  inline (below) into a hidden <template> — a gallery (main image +
+  thumbnails), title/price, and an add-to-cart button. video-card.js reads
+  that template's innerHTML and passes it through the video-card:play
+  event; video-modal.js clones it into the modal's product pane and wires
+  up thumbnail-click-to-swap. This happens regardless of cta_style,
+  including 'none' — the modal is the fallback way to reach the product
+  when there's no on-card CTA.
+
+  This panel is intentionally NOT a product-card render — no
+  quickview/compare/wishlist wiring or product-card.css dependency, just
+  markup built for this modal context. Its styles live in video-card.css
+  (under the "modal product panel" section) since that's where this
+  markup is authored, even though it only ever displays inside video-modal.
+
+  cta_style controls how the selected product is surfaced on the card itself:
+    - none:                no on-card CTA; product only reachable via the modal
+    - overlay:              gradient scrim + product thumbnail + name/price baked over the footage
+    - icon_button:          small floating cart icon, corner of the footage
+    - text_button:          solid bar over the footage with name/price + Add button
+    - card_outside_video:   footer strip below the footage with thumbnail, name/price, Add button
+
+  Because card_outside_video and icon_button/text_button need a real,
+  independently-clickable "Add to cart" button, the outer play trigger can't
+  be a <button> (buttons can't nest buttons). It's a role="button" div instead;
+  video-card.js handles both click and keyboard activation for it.
+
+  video-card__cta-name / video-card__cta-price / video-card__cta-info and
+  video-card__cta-thumb are shared across the CTA styles that show product
+  text/art — one set of classes, styled contextually per parent in
+  video-card.css, rather than a differently-named twin for each style.
+{%- enddoc -%}
+
+{%- liquid
+  assign video_url = block.settings.video_url
+  assign video_file = block.settings.video_file
+  assign thumbnail = block.settings.thumbnail
+  assign title = block.settings.title
+  assign subtitle = block.settings.subtitle
+  assign card_product = block.settings.product
+  assign cta_style = cta_style | default: 'card_outside_video'
+
+  if video_file
+    assign video_type = 'file'
+  elsif video_url != blank
+    assign video_type = video_url.type
+  else
+    assign video_type = 'none'
+  endif
+
+  assign show_cta = false
+  assign variant_id = blank
+  if card_product
+    assign variant_id = card_product.selected_or_first_available_variant.id
+    if cta_style != 'none'
+      assign show_cta = true
+    endif
+  endif
+-%}
+
+{%- capture cart_icon -%}
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/>
+    <circle cx="9" cy="21" r="1"/>
+    <circle cx="18" cy="21" r="1"/>
+  </svg>
+{%- endcapture -%}
+
+{%- capture add_to_cart_attrs -%}
+  data-add-to-cart data-variant-id="{{ variant_id }}" aria-label="Add {{ card_product.title }} to cart"{% unless variant_id %} disabled{% endunless %}
+{%- endcapture -%}
+
+{%- capture product_text -%}
+  <span class="video-card__cta-info">
+    <span class="video-card__cta-name">{{ card_product.title }}</span>
+    <span class="video-card__cta-price">{{ card_product.price | money }}</span>
+  </span>
+{%- endcapture -%}
+
+{%- capture product_thumb -%}
+  <span class="video-card__cta-thumb">
+    {%- if card_product.featured_image -%}
+      <img
+        src="{{ card_product.featured_image | image_url: width: 100 }}"
+        alt="{{ card_product.featured_image.alt | default: card_product.title }}"
+        loading="lazy"
+        width="38"
+        height="38"
+      >
+    {%- endif -%}
+  </span>
+{%- endcapture -%}
+
+{%- if card_product -%}
+  {%- assign show_compare = false -%}
+  {%- if card_product.compare_at_price > card_product.price -%}
+    {%- assign show_compare = true -%}
+  {%- endif -%}
+  {%- capture product_panel -%}
+    <div class="video-modal-product">
+      <div class="video-modal-product__gallery">
+        <div class="video-modal-product__main">
+          {%- if card_product.featured_image -%}
+            <img
+              data-modal-product-main-image
+              src="{{ card_product.featured_image | image_url: width: 800 }}"
+              alt="{{ card_product.featured_image.alt | default: card_product.title }}"
+              width="800"
+              height="800"
+              loading="lazy"
+            >
+          {%- else -%}
+            <span class="video-modal-product__main-placeholder" aria-hidden="true"></span>
+          {%- endif -%}
+        </div>
+
+        {%- if card_product.images.size > 1 -%}
+          <div class="video-modal-product__thumbs" role="tablist" aria-label="Product images">
+            {%- for image in card_product.images -%}
+              <button
+                type="button"
+                class="video-modal-product__thumb{% if forloop.first %} is-active{% endif %}"
+                data-modal-product-thumb
+                data-full-src="{{ image | image_url: width: 800 }}"
+                role="tab"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-label="Show image {{ forloop.index }} of {{ forloop.length }}"
+              >
+                <img src="{{ image | image_url: width: 120 }}" alt="" width="60" height="60" loading="lazy">
+              </button>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      </div>
+
+      <div class="video-modal-product__info">
+        {%- if card_product.vendor != blank -%}
+          <p class="video-modal-product__vendor">{{ card_product.vendor }}</p>
+        {%- endif -%}
+
+        <h3 class="video-modal-product__title">{{ card_product.title }}</h3>
+
+        <div class="video-modal-product__price-row">
+          <span class="video-modal-product__price">{{ card_product.price | money }}</span>
+          {%- if show_compare -%}
+            <span class="video-modal-product__save">
+              Save {{ card_product.compare_at_price | minus: card_product.price | money }}
+            </span>
+            <span class="video-modal-product__compare-at">{{ card_product.compare_at_price | money }}</span>
+          {%- endif -%}
+        </div>
+
+        <button type="button" class="video-modal-product__add-to-cart" {{ add_to_cart_attrs }}>
+          Add to cart
+        </button>
+      </div>
+    </div>
+  {%- endcapture -%}
+{%- endif -%}
+
+<div
+  class="video-card"
+  {{ block.shopify_attributes }}
+  data-video-card
+  data-video-type="{{ video_type }}"
+  data-cta-style="{{ cta_style }}"
+  {% if video_url != blank %}data-video-id="{{ video_url.id }}"{% endif %}
+  {% if video_file %}data-video-file-url="{{ video_file.sources.last.url }}"{% endif %}
+>
+  <div
+    class="video-card__trigger"
+    data-video-trigger
+    role="button"
+    tabindex="0"
+    aria-label="Play video{% if title != blank %}: {{ title }}{% endif %}"
+    {% if video_type == 'none' %}aria-disabled="true"{% endif %}
+  >
+    <span class="video-card__thumbnail">
+      {%- if thumbnail -%}
+        <img
+          class="video-card__image"
+          src="{{ thumbnail | image_url: width: 600 }}"
+          srcset="
+            {{ thumbnail | image_url: width: 300 }} 300w,
+            {{ thumbnail | image_url: width: 600 }} 600w,
+            {{ thumbnail | image_url: width: 900 }} 900w
+          "
+          sizes="(min-width: 990px) 33vw, (min-width: 750px) 50vw, 90vw"
+          alt="{{ thumbnail.alt | default: title | default: 'Video thumbnail' }}"
+          loading="lazy"
+          width="{{ thumbnail.width }}"
+          height="{{ thumbnail.height }}"
+        >
+      {%- elsif video_file and video_file.preview_image -%}
+        <img
+          class="video-card__image"
+          src="{{ video_file.preview_image | image_url: width: 600 }}"
+          alt="{{ title | default: 'Video thumbnail' }}"
+          loading="lazy"
+        >
+      {%- else -%}
+        <span class="video-card__placeholder" aria-hidden="true"></span>
+      {%- endif -%}
+
+      <span class="video-card__play-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" focusable="false">
+          <circle cx="12" cy="12" r="12" class="video-card__play-bg"/>
+          <polygon points="10 8 17 12 10 16" fill="currentColor"/>
+        </svg>
+      </span>
+
+      {%- if show_cta -%}
+        {%- case cta_style -%}
+          {%- when 'overlay' -%}
+            <span class="video-card__overlay-scrim">
+              {{ product_thumb }}
+              {{ product_text }}
+            </span>
+
+          {%- when 'icon_button' -%}
+            <button type="button" class="video-card__cta video-card__cta--icon" {{ add_to_cart_attrs }}>
+              {{ cart_icon }}
+            </button>
+
+          {%- when 'text_button' -%}
+            <span class="video-card__text-bar">
+              {{ product_text }}
+              <button type="button" class="video-card__cta" {{ add_to_cart_attrs }}>Add</button>
+            </span>
+        {%- endcase -%}
+      {%- endif -%}
+    </span>
+
+    {%- if title != blank or subtitle != blank -%}
+      <span class="video-card__caption">
+        {%- if title != blank -%}
+          <span class="video-card__title">{{ title }}</span>
+        {%- endif -%}
+        {%- if subtitle != blank -%}
+          <span class="video-card__subtitle">{{ subtitle }}</span>
+        {%- endif -%}
+      </span>
+    {%- endif -%}
+  </div>
+
+  {%- if show_cta and cta_style == 'card_outside_video' -%}
+    <div class="video-card__footer">
+      {{ product_thumb }}
+      {{ product_text }}
+      <button type="button" class="video-card__cta" {{ add_to_cart_attrs }}>
+        {{ cart_icon }}
+        Add
+      </button>
+    </div>
+  {%- endif -%}
+
+  {%- if card_product -%}
+    <template data-video-product-template>
+      {{ product_panel }}
+    </template>
+  {%- endif -%}
+</div>
