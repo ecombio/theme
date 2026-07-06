@@ -19,6 +19,16 @@
   Section layout: section_width / custom_width / section_padding,
   mirrors sections/example-width-section.liquid — scoped BEM width
   classes, independent of global --page-margin.
+
+  SPACING FIX (2026-07): theme-level global CSS (heading margins /
+  .shopify-section wrapper spacing) was stacking on top of this
+  section's own title/wrapper margins, producing a larger-than-intended
+  gap between the "Related Products" heading and the carousel. This
+  section's wrapper and title now explicitly zero out inherited
+  margin/padding before applying their own values, and win over
+  conflicting theme rules via !important on the title's margin — since
+  those global rules are outside this file's control and could change
+  independently of this section.
 {%- endcomment -%}
 
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
@@ -109,13 +119,25 @@
     .related-products__full-width { width: 100%; }
     .related-products__custom-width { margin-inline: auto; max-width: var(--custom-width, 80rem); }
 
+    /* SPACING FIX: zero out any inherited margin/padding on the
+       wrapper itself before this section's own spacing rules apply,
+       so theme-level section/heading spacing can't stack on top. */
+    #related-products-{{ section.id }}.related-products-wrapper,
+    #related-products-{{ section.id }} {
+      margin: 0;
+      padding: 0;
+    }
+
     #related-products-{{ section.id }} .related-products__title {
-      margin: 0 0 1.5rem;
+      margin: 0 0 1.5rem !important;
+      padding: 0 !important;
       font-size: 2rem;
+      line-height: 1.2;
     }
 
     #related-products-{{ section.id }} .related-products {
       position: relative;
+      margin-top: 0;
     }
 
     #related-products-{{ section.id }} .related-products__track {
