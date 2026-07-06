@@ -50,11 +50,30 @@
   assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
   assign show_menu_bar_tablet = section.settings.show_menu_bar_tablet
   assign enable_search_drawer_tablet = section.settings.enable_search_drawer_tablet
+
+  # ── Section layout (width + padding) ──
+  # Mirrors sections/example-width-section.liquid / snippets/main-product.liquid:
+  # --section-padding / --custom-width are local vars set inline below, fully
+  # independent of the global --page-margin / --page-width vars.
+  assign section_width = section.settings.section_width
+  if section_width == blank
+    assign width_class = 'main-header--default-width'
+  elsif section_width == 'full-width'
+    assign width_class = 'main-header--full-width'
+  else
+    assign width_class = 'main-header--custom-width'
+  endif
 -%}
 
-<header class="main-header{% if enable_sticky %} main-header--sticky-enabled{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
+<header class="main-header {{ width_class }}{% if enable_sticky %} main-header--sticky-enabled{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
         id="main-header"
-        role="banner">
+        role="banner"
+        style="
+          --section-padding: {{ section.settings.section_padding }}px;
+          {%- if section_width == 'custom-width' %}
+            --custom-width: {{ section.settings.custom_width }}rem;
+          {%- endif %}
+        ">
 
   <div class="main-header__bar">
     <div class="main-header__inner">
@@ -108,6 +127,41 @@
   "tag": "div",
   "class": "main-header-section",
   "settings": [
+    { "type": "header", "content": "Section layout" },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24,
+      "info": "Applies at tablet and desktop widths. Mobile (< 640px) keeps its own fixed, tighter padding regardless of this setting."
+    },
+
     { "type": "header", "content": "Mobile Division (< 640px)" },
     {
       "type": "select",
