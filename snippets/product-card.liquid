@@ -27,6 +27,19 @@
       (eliminates the JS→CSS class coupling documented in Architecture_Review.pdf)
     • Guard flag renamed: window.__cardProductFeaturesLoaded → window.__productCardLoaded
     • File rename: card-product-carousel.liquid → product-card.liquid
+
+  IMAGE SIZES FIX (2026-07):
+    • `sizes` was hardcoded to '(max-width: 767px) 50vw, 25vw', which
+      assumes the grid always shows 2 columns on mobile. But
+      main-collection.css's .product-feed__grid caps the grid at
+      1 column below 480px, 2 columns below 768px, and 3 columns below
+      1024px. Because the old `sizes` claimed 50vw even inside the
+      1-column (<=480px) breakpoint, browsers fetched a smaller srcset
+      candidate than the card actually needed and stretched it across
+      the full card width — a soft/pixelated image at the narrowest
+      breakpoint specifically.
+    • `sizes` now mirrors the real grid breakpoints so the browser
+      requests the correctly-sized image at each width.
 {%- endcomment -%}
 
 {%- liquid
@@ -56,6 +69,8 @@
   assign show_compare   = show_compare   | default: true
   assign show_eta       = show_eta       | default: true
   assign is_sponsored   = is_sponsored   | default: false
+
+  assign card_image_sizes = '(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
 -%}
 
 {{- '' -}}
@@ -88,7 +103,7 @@
             class: 'product-card__img product-card__img--primary',
             loading: 'lazy',
             widths: '200, 300, 400, 600',
-            sizes: '(max-width: 767px) 50vw, 25vw',
+            sizes: card_image_sizes,
             alt: card_image.alt | default: card_title | escape
         }}
         {%- if card_image2 != blank -%}
@@ -99,7 +114,7 @@
               class: 'product-card__img product-card__img--secondary',
               loading: 'lazy',
               widths: '200, 300, 400, 600',
-              sizes: '(max-width: 767px) 50vw, 25vw',
+              sizes: card_image_sizes,
               alt: card_image2.alt | default: card_title | escape
           }}
         {%- endif -%}
