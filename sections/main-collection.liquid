@@ -1,17 +1,7 @@
 {{ 'collection.css' | asset_url | stylesheet_tag }}
 {{ 'collection-filter.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  SECTION WIDTH / SIDE PADDING:
-  Handled locally per the pattern in sections/example-width-section.liquid.
-  This opts .collection-page OUT of the shared width recipe that
-  collection.css previously documented as being "kept in sync" with
-  the header / utility bar / menu bar / footer (all fixed at
-  max-width: 1184px, padding 0 24px / 0 12px under 639px). That sync
-  comment has been removed from collection.css — this section's width
-  and padding are now driven only by its own "Section layout" schema
-  settings below and no longer track those other containers.
-{%- endcomment -%}
+{%- comment -%} Section width/padding is now local to this section only (schema-driven below) and no longer synced with header/utility bar/menu bar/footer's shared 1184px/24px recipe. {%- endcomment -%}
 
 {%- liquid
   assign active_tab = request.query_parameters['tab'] | default: 'products'
@@ -29,13 +19,7 @@
   endif
 -%}
 
-{%- comment -%}
-  ===== INLINED FROM: snippets/collection-hero.liquid =====
-  Originally: {%- render 'collection-hero', collection: collection -%}
-  Renders the collection page header: title and optional description.
-  Container width mirrors the header (max-width: 1184px, padding 24px,
-  dropping to 12px under 639px) — see collection-hero.css.
-{%- endcomment -%}
+{%- comment -%} Inlined from snippets/collection-hero.liquid — renders collection title + description; container width mirrors the header (collection-hero.css). {%- endcomment -%}
 
 {{ 'collection-hero.css' | asset_url | stylesheet_tag }}
 
@@ -48,8 +32,6 @@
     </div>
   {%- endif -%}
 </div>
-
-{%- comment -%} ===== END INLINED collection-hero ===== {%- endcomment -%}
 
 <section class="collection-section">
   <div
@@ -64,23 +46,7 @@
     "
   >
 
-    {%- comment -%}
-      ===== INLINED FROM: snippets/collection-toolbar.liquid =====
-      Originally: {%- render 'collection-toolbar', active_tab: active_tab -%}
-      Renders the sticky toolbar (filter toggle + tab switcher) and the
-      fixed mobile bottom bar (filter + sort).
-
-      Expects section.settings:
-        show_filters         {Boolean}
-        show_sort            {Boolean}
-        tab_products_label   {String}
-        tab_articles_label   {String}
-
-      Communicates outward via data attributes only:
-        [data-filter-toggle]      → collection-filter.js opens/closes drawer
-        [data-tab]                → collection-feed.js switches panels
-        [data-mobile-sort-toggle] → collection.js opens sort sheet
-    {%- endcomment -%}
+    {%- comment -%} Inlined from snippets/collection-toolbar.liquid — sticky desktop toolbar + fixed mobile bottom bar; talks to JS only via data-filter-toggle / data-tab / data-mobile-sort-toggle. {%- endcomment -%}
 
     {{ 'collection-toolbar.css' | asset_url | stylesheet_tag }}
 
@@ -168,19 +134,9 @@
       </div>
     {%- endif -%}
 
-    {%- comment -%} ===== END INLINED collection-toolbar ===== {%- endcomment -%}
-
     <div class="collection-body">
 
-      {%- comment -%}
-        ===== INLINED FROM: snippets/collection-filter.liquid =====
-        Originally: {%- render 'collection-filter' -%}
-        JS hook attributes preserved as-is:
-          [data-filter-toggle]  — toolbar buttons (outside this block)
-                                  target id="collection-filter"
-          [data-sort]           — sort <select>
-          FilterForm            — filter <form>
-      {%- endcomment -%}
+      {%- comment -%} Inlined from snippets/collection-filter.liquid — filter drawer (sort select, facet groups, price range, active pills); JS hooks: data-filter-toggle (external), data-sort, #FilterForm. {%- endcomment -%}
 
       {%- if section.settings.show_filters -%}
         <aside
@@ -208,11 +164,7 @@
           <form method="get" action="{{ collection.url }}" id="FilterForm">
 
             {%- for filter in collection.filters -%}
-              {%- comment -%}
-                FIX: filters now stay open by default (previously only opened
-                when a value inside them was already active). Removed the
-                conditional and added `open` unconditionally.
-              {%- endcomment -%}
+              {%- comment -%} FIX: filter groups now stay open by default (previously conditional on having an active value). {%- endcomment -%}
               <details
                 class="collection-filter__group"
                 open
@@ -292,25 +244,9 @@
 
         </aside>
       {%- endif -%}
-      {%- comment -%} ===== END INLINED collection-filter ===== {%- endcomment -%}
 
       <div class="collection-body__feed">
-        {%- comment -%}
-          ===== INLINED FROM: snippets/collection-feed.liquid =====
-          Originally: {%- render 'collection-feed', active_tab: active_tab -%}
-          Owns the tab panel shell — products panel and articles panel.
-          Tab switching logic lives in assets/collection-feed.js.
-
-          Expects:
-            active_tab  {String}  'products' | 'articles'
-
-          Renders:
-            product-feed  → products panel
-            article-feed  → articles panel
-
-          JS hook attributes:
-            [data-panel]  — panel switching target, read by collection-feed.js
-        {%- endcomment -%}
+        {%- comment -%} Inlined from snippets/collection-feed.liquid — tab panel shell for products/articles; switching logic lives in collection-feed.js via data-panel. {%- endcomment -%}
 
         {{ 'collection-feed.css' | asset_url | stylesheet_tag }}
 
@@ -325,24 +261,7 @@
             data-panel="products"
             {%- if active_tab != 'products' %} hidden{%- endif %}
           >
-            {%- comment -%}
-              ===== INLINED FROM: snippets/product-feed.liquid =====
-              Originally: {%- render 'product-feed' -%}
-              Renders the product grid with in-feed blocks (sub-collections,
-              promo banners, promo carousels) and pagination.
-
-              Expects section.settings:
-                products_per_page  {Number}
-                columns            {Number}
-
-              In-feed block types (from section.blocks):
-                promo_banner
-                promo_carousel  (collections are set directly on the block)
-                sub_collection
-
-              id/class both set to "product-feed" — same name everywhere:
-              product-feed.css, product-feed.js (if any), and this markup.
-            {%- endcomment -%}
+            {%- comment -%} Inlined from snippets/product-feed.liquid — product grid with in-feed blocks (sub-collections, promo banners/carousels) + pagination. {%- endcomment -%}
 
             {{ 'product-feed.css' | asset_url | stylesheet_tag }}
             {{ 'product-card.css' | asset_url | stylesheet_tag }}
@@ -426,8 +345,6 @@
               {%- endif -%}
 
             {%- endpaginate -%}
-
-            {%- comment -%} ===== END INLINED product-feed ===== {%- endcomment -%}
           </div>
 
           {%- comment -%} Articles panel {%- endcomment -%}
@@ -439,15 +356,7 @@
             data-panel="articles"
             {%- if active_tab != 'articles' %} hidden{%- endif %}
           >
-            {%- comment -%}
-              ===== INLINED FROM: snippets/article-feed.liquid =====
-              Originally: {%- render 'article-feed' -%}
-              Renders the article grid, sourced from the collection's
-              custom.posts metafield (see schema paragraph under "Articles").
-
-              id/class both set to "article-feed" — same name everywhere:
-              article-feed.css, article-feed.js (if any), and this markup.
-            {%- endcomment -%}
+            {%- comment -%} Inlined from snippets/article-feed.liquid — article grid sourced from collection.metafields.custom.posts. {%- endcomment -%}
 
             {{ 'article-feed.css' | asset_url | stylesheet_tag }}
             {{ 'article-card.css' | asset_url | stylesheet_tag }}
@@ -461,13 +370,9 @@
                 {%- endfor -%}
               </div>
             {%- endif -%}
-
-            {%- comment -%} ===== END INLINED article-feed ===== {%- endcomment -%}
           </div>
 
         </div>
-
-        {%- comment -%} ===== END INLINED collection-feed ===== {%- endcomment -%}
       </div>
 
     </div>
