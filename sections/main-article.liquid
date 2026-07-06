@@ -1,11 +1,26 @@
 {% comment %}
   Article template section
   https://shopify.dev/docs/storefronts/themes/architecture/templates/article
+
+  Section Layout controls (section_width / custom_width / section_padding)
+  follow the pattern documented in sections/example-width-section.liquid.
+  These are local CSS variables (--section-padding, --custom-width) set
+  inline per-instance — they are independent of the global --page-margin
+  / --page-width variables used by the header, footer, and body layout.
 {% endcomment %}
 
 {{ 'main-article.css' | asset_url | stylesheet_tag }}
 {{ 'accordion.css'    | asset_url | stylesheet_tag }}
 {{ 'product-row.css'  | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'main-article__default-width'
+  else
+    assign width_class = 'main-article__' | append: width_type
+  endif
+-%}
 
   <div class="article-banner" {% if article.image %}style="background-image: url('{{ article.image | image_url: width: 1600 }}')"{% endif %}>
     <div class="article-banner__inner">
@@ -19,6 +34,15 @@
   </div>
 
 {% comment %} ── Main Article Layout ── {% endcomment %}
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
 <div class="main-article">
 
   {% comment %} Left Sidebar {% endcomment %}
@@ -92,12 +116,50 @@
   </aside>
 
 </div>
+</div>
 
 <script src="{{ 'main-article.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
   "name": "t:general.article",
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    }
+  ]
 }
 {% endschema %}
