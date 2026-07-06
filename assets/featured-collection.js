@@ -1,0 +1,95 @@
+(function () {
+  function initFeaturedCollection(root) {
+    var track = root.querySelector('[data-fc-track]');
+    if (!track) return;
+
+    var prevBtn = root.querySelector('[data-fc-prev]');
+    var nextBtn = root.querySelector('[data-fc-next]');
+    var dotsWrap = root.querySelector('[data-fc-dots]');
+
+    function pageCount() {
+      if (!track.clientWidth) return 1;
+      return Math.max(1, Math.round(track.scrollWidth / track.clientWidth));
+    }
+
+    function currentPage() {
+      if (!track.clientWidth) return 0;
+      return Math.round(track.scrollLeft / track.clientWidth);
+    }
+
+    function updateArrows() {
+      if (prevBtn) prevBtn.disabled = track.scrollLeft <= 1;
+      if (nextBtn) {
+        var maxScroll = track.scrollWidth - track.clientWidth;
+        nextBtn.disabled = track.scrollLeft >= maxScroll - 1;
+      }
+    }
+
+    function updateDots() {
+      if (!dotsWrap) return;
+      var dots = dotsWrap.querySelectorAll('[data-fc-dot]');
+      var page = currentPage();
+      dots.forEach(function (dot, index) {
+        dot.setAttribute('aria-current', index === page ? 'true' : 'false');
+      });
+    }
+
+    function buildDots() {
+      if (!dotsWrap) return;
+      dotsWrap.innerHTML = '';
+      var pages = pageCount();
+      for (var i = 0; i < pages; i++) {
+        var dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'featured-collection__dot';
+        dot.setAttribute('data-fc-dot', '');
+        dot.setAttribute('role', 'tab');
+        dot.setAttribute('aria-label', 'Go to page ' + (i + 1));
+        (function (index) {
+          dot.addEventListener('click', function () {
+            track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
+          });
+        })(i);
+        dotsWrap.appendChild(dot);
+      }
+      updateDots();
+    }
+
+    var scrollTimeout;
+    function onScroll() {
+      updateArrows();
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateDots, 80);
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' });
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        track.scrollBy({ left: track.clientWidth, behavior: 'smooth' });
+      });
+    }
+
+    track.addEventListener('scroll', onScroll, { passive: true });
+
+    var resizeTimeout;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function () {
+        buildDots();
+        updateArrows();
+      }, 150);
+    });
+
+    buildDots();
+    updateArrows();
+  }
+
+  document
+    .querySelectorAll('[data-featured-collection][data-layout="row"]')
+    .forEach(initFeaturedCollection);
+})();
