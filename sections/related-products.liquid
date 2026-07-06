@@ -13,31 +13,21 @@
 
   Asset ownership: both product-card.js AND product-card.css are
   loaded globally via theme.liquid. Do NOT add a stylesheet_tag for
-  product-card.css here — a previous version of this section loaded
-  it a second time locally, which was redundant with the global load.
-  If product-card.css is ever changed back to a section-scoped asset,
-  reinstate an explicit load here (following the pattern
-  collection-products.liquid uses) — but check theme.liquid first.
+  product-card.css here.
 
   SECTION LAYOUT — uses the SHARED global width classes from base.css
   (.shopify-section > .default-width / .full-width / .custom-width),
-  same pattern as sections/example-width-section.liquid. Do NOT
-  reintroduce section-scoped width/padding CSS here (an earlier
-  version duplicated those rules under related-products__* with a
-  different default max-width and incorrectly padded full-width,
-  which drifted out of sync with the shared rules).
+  same pattern as sections/example-width-section.liquid.
     - Inner div: class="section" with
       style="padding-block: var(--section-spacing);" controls
-      vertical spacing above/below the section content (heading +
-      carousel), exactly like the reference example.
-      --section-spacing is the theme's existing global vertical-rhythm
-      variable; this section does not override or fight it.
-    - Previous version of this file was missing that inner ".section"
-      wrapper entirely, which is what caused the visible whitespace gap
-      between heading and cards — vertical spacing had nowhere correct
-      to come from, so it was patched after the fact with !important
-      margin resets. That patch has been removed; this version follows
-      the reference structure directly instead of overriding it.
+      vertical spacing above/below the section content.
+    - Carousel bleed: .related-products bleeds out to the edge of the
+      padded container (negative margin = --section-padding) and
+      re-applies that same padding on itself, so the track's edge
+      cards sit flush with the container edge. The prev/next buttons
+      sit 8px inset from that edge, layered on the edge card, instead
+      of floating in the section's side-padding gutter (which
+      previously caused a strip of empty space + a floating arrow).
 {%- endcomment -%}
 
 {%- liquid
@@ -123,6 +113,8 @@
 
     #related-products-{{ section.id }} .related-products {
       position: relative;
+      margin-inline: calc(var(--section-padding, 0px) * -1);
+      padding-inline: var(--section-padding, 0px);
     }
 
     #related-products-{{ section.id }} .related-products__track {
@@ -153,6 +145,7 @@
       border-radius: 50%;
       border: 1px solid rgba(0,0,0,0.15);
       background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -163,8 +156,8 @@
       width: 18px;
       height: 18px;
     }
-    #related-products-{{ section.id }} .related-products__button--prev { left: -8px; }
-    #related-products-{{ section.id }} .related-products__button--next { right: -8px; }
+    #related-products-{{ section.id }} .related-products__button--prev { left: 8px; }
+    #related-products-{{ section.id }} .related-products__button--next { right: 8px; }
 
     #related-products-{{ section.id }} .related-products__button:disabled {
       opacity: 0.3;
