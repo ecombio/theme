@@ -439,7 +439,30 @@
             data-panel="articles"
             {%- if active_tab != 'articles' %} hidden{%- endif %}
           >
-            {%- render 'article-feed' -%}
+            {%- comment -%}
+              ===== INLINED FROM: snippets/article-feed.liquid =====
+              Originally: {%- render 'article-feed' -%}
+              Renders the article grid, sourced from the collection's
+              custom.posts metafield (see schema paragraph under "Articles").
+
+              id/class both set to "article-feed" — same name everywhere:
+              article-feed.css, article-feed.js (if any), and this markup.
+            {%- endcomment -%}
+
+            {{ 'article-feed.css' | asset_url | stylesheet_tag }}
+            {{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+            {%- assign articles = collection.metafields.custom.posts.value -%}
+
+            {%- if articles != blank -%}
+              <div id="article-feed" class="article-feed">
+                {%- for article in articles -%}
+                  {%- render 'article-card', article: article -%}
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+
+            {%- comment -%} ===== END INLINED article-feed ===== {%- endcomment -%}
           </div>
 
         </div>
