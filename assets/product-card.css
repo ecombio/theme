@@ -9,6 +9,16 @@
      • CSS custom properties renamed: --cpc-* → --product-card-*
      • ATC label selector updated: .card-product__atc-label → [data-atc-label]
        (matches the data-attribute hook in product-card.liquid)
+
+   RESPONSIVE FIX (added):
+     • .product-card now sets min-width: 0. Without this, a grid/flex
+       item can't shrink below its content's intrinsic width, so at
+       narrow breakpoints the card grows wider than its column and
+       titles/prices/checkboxes get clipped instead of wrapping.
+       NOTE: the outer grid/flex container in collection-products.liquid
+       (whatever wraps each rendered product-card) should also have
+       min-width: 0 on its item class if the row is still overflowing
+       after this change.
    ============================================================ */
 
 /* ── Tokens ───────────────────────────────────────────────── */
@@ -27,6 +37,7 @@
 
   display: flex;
   flex-direction: column;
+  min-width: 0; /* FIX: prevents grid/flex blowout at narrow breakpoints */
   border-radius: var(--product-card-radius);
   background: var(--product-card-surface);
   border: 1px solid var(--product-card-border);
@@ -213,6 +224,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0; /* FIX: allows title/price text to wrap/ellipsis instead of overflowing */
   padding: 12px 12px 14px;
   gap: 6px;
 }
@@ -238,6 +250,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
+  word-break: break-word; /* FIX: wraps long words instead of clipping at the card edge */
 }
 
 .product-card__title:hover {
@@ -291,6 +304,9 @@
   font-size: 0.72rem;
   color: var(--product-card-text-secondary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* FIX: was clipping mid-character at narrow widths */
+  max-width: 100%;
 }
 
 .product-card__comp-value s {
@@ -324,6 +340,7 @@
 /* ── ATC button ───────────────────────────────────────────── */
 .product-card__atc-btn {
   flex: 1;
+  min-width: 0; /* FIX: lets the button shrink instead of pushing Compare off-card */
   position: relative;
   overflow: hidden;
   padding: 8px 10px;
@@ -413,6 +430,16 @@
   .product-card__atc-btn {
     font-size: 0.72rem;
     padding: 7px 8px;
+  }
+
+  /* At very narrow widths, drop Compare below the ATC button
+     instead of squeezing both into a shrinking row. */
+  .product-card__bottom-row {
+    flex-wrap: wrap;
+  }
+
+  .product-card__compare-label {
+    flex-basis: 100%;
   }
 
   /* Wishlist always visible on touch devices */
