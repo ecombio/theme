@@ -1,0 +1,56 @@
+{%- comment -%}
+  Renders a single article card.
+  Usage: {% render 'article-card', article: article, blog: blog %}
+{%- endcomment -%}
+
+<article class="cat-feed-card">
+  <a href="{{ article.url }}" class="cat-feed-card__link">
+    <div class="cat-feed-card__image-wrap">
+      {%- if article.image -%}
+        <img
+          class="cat-feed-card__image"
+          src="{{ article.image | image_url: width: 800 }}"
+          srcset="
+            {{ article.image | image_url: width: 400 }} 400w,
+            {{ article.image | image_url: width: 800 }} 800w,
+            {{ article.image | image_url: width: 1200 }} 1200w
+          "
+          sizes="(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw"
+          alt="{{ article.image.alt | escape }}"
+          loading="lazy"
+          width="{{ article.image.width }}"
+          height="{{ article.image.height }}"
+        >
+      {%- else -%}
+        <div class="cat-feed-card__image cat-feed-card__image--placeholder">{{ 'image' | placeholder_svg_tag }}</div>
+      {%- endif -%}
+    </div>
+
+    <div class="cat-feed-card__body">
+      {%- if article.tags.size > 0 -%}
+        <div class="cat-feed-card__tags">
+          {%- for tag in article.tags limit: 2 -%}
+            <span class="cat-feed-card__tag">{{ tag }}</span>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      <h3 class="cat-feed-card__title">{{ article.title }}</h3>
+
+      {%- if article.excerpt.size > 0 -%}
+        <p class="cat-feed-card__excerpt">{{ article.excerpt | strip_html | truncate: 120 }}</p>
+      {%- else -%}
+        <p class="cat-feed-card__excerpt">{{ article.content | strip_html | truncate: 120 }}</p>
+      {%- endif -%}
+
+      <div class="cat-feed-card__meta">
+        <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+          {{ article.published_at | date: '%B %d, %Y' }}
+        </time>
+        {%- if article.author -%}
+          <span class="cat-feed-card__author">· {{ article.author }}</span>
+        {%- endif -%}
+      </div>
+    </div>
+  </a>
+</article>
