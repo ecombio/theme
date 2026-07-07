@@ -8,6 +8,17 @@
     - search_terms  (string)  the current search query
     - section        (object)  parent section, for settings:
                                 results_per_page
+
+  OBJECT_TYPE FIX (2026-07): mirrors the fix in product-results.liquid.
+  search.results is only scoped to articles when the request carries
+  `type=article` -- requests that reach /search without a `type` param
+  (e.g. the generic header search box) return a mix of products,
+  articles, and pages, and this loop used to render every one of them
+  through 'article-card' unconditionally. Now filters by
+  result.object_type, and tracks rendered_count separately from
+  forloop's own count since the old `{%- else -%}` on the for loop
+  only fires when search.results is truly empty, not when it's
+  nonempty but contains zero articles.
 {%- endcomment -%}
 
 {%- comment -%}
@@ -19,11 +30,18 @@
 {%- paginate search.results by section.settings.results_per_page -%}
 
   <div id="search-articles-grid" class="article-feed">
+    {%- assign rendered_count = 0 -%}
     {%- for result in search.results -%}
+      {%- if result.object_type != 'article' -%}
+        {%- continue -%}
+      {%- endif -%}
+      {%- assign rendered_count = rendered_count | plus: 1 -%}
       {%- render 'article-card', article: result -%}
-    {%- else -%}
-      <p class="search-empty">No articles found for &ldquo;{{ search_terms }}&rdquo;.</p>
     {%- endfor -%}
+
+    {%- if rendered_count == 0 -%}
+      <p class="search-empty">No articles found for &ldquo;{{ search_terms }}&rdquo;.</p>
+    {%- endif -%}
   </div>
 
   {%- if paginate.pages > 1 -%}
