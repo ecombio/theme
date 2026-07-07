@@ -8,14 +8,34 @@
   unmodified (that snippet only ever expects a Product object) while
   pages/articles get their own lightweight result row.
 
+  No on-page search bar here — the header's search input is the only
+  entry point into /search; this section is purely the results view.
+
+  FILTERING:
+    Reuses snippets/collection-filter.liquid, same as sections/collection.liquid,
+    instead of a bespoke search filter UI. Rendered inside the same
+    .collection-body / .collection-body__feed wrapper collection.liquid
+    uses so collection-filter's layout CSS (in collection.css) applies
+    unchanged.
+    collection-filter.liquid was originally written only against the
+    `collection` object and has been patched (branching on
+    `template.name`) to read from `search` instead when rendered here —
+    see the CONTEXT note at the top of that snippet for specifics
+    (sort options fallback, hidden q/type inputs on the filter form).
+    Requires this section's show_filters / show_sort settings below,
+    same setting ids collection-filter.liquid already expects.
+
   ASSET OWNERSHIP:
-    This section renders <snippet render 'product-card' /> so it is
-    responsible for loading product-card's CSS dependency, same as
-    collection-products.liquid does. See product-card.liquid header.
+    This section renders 'product-card' and 'collection-filter', so it
+    owns loading both of their CSS dependencies (product-card.css,
+    collection.css — collection-filter.css is loaded by the snippet
+    itself) plus collection-filter.js, the same way collection.liquid
+    owns its own dependencies.
 
   Wired to assets/main-search.js (loaded below, section-scoped).
 {%- endcomment -%}
 
+{{ 'collection.css' | asset_url | stylesheet_tag }}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
 {{ 'main-search.css' | asset_url | stylesheet_tag }}
 
@@ -47,27 +67,6 @@
     {%- else -%}
       <h1 class="main-search__title">Search</h1>
     {%- endif -%}
-
-    <form action="{{ routes.search_url }}" method="get" role="search" class="main-search__form" data-main-search-form>
-      <input type="hidden" name="type" value="{{ current_type }}" data-search-type-input>
-      <label class="visually-hidden" for="main-search-input">Search</label>
-      <input
-        id="main-search-input"
-        type="search"
-        name="q"
-        value="{{ search_terms | escape }}"
-        placeholder="Search products, pages, articles&hellip;"
-        class="main-search__input"
-        autocomplete="off"
-        data-main-search-input
-      >
-      <button type="submit" class="main-search__submit" aria-label="Search">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M12.5 12.5 16 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </form>
   </div>
 
   {%- if search.performed and total_results > 0 -%}
@@ -87,7 +86,13 @@
     assign article_results = search.results | where: 'object_type', 'article'
   -%}
 
-    {%- comment -%}── TYPE FILTER TABS + SORT ──{%- endcomment -%}
+  <div class="collection-body">
+
+    {%- render 'collection-filter' -%}
+
+    <div class="collection-body__feed">
+
+    {%- comment -%}── TYPE FILTER TABS ──{%- endcomment -%}
     <div class="main-search__controls">
       <div class="main-search__tabs" role="tablist" data-search-tabs>
         <button
@@ -133,18 +138,6 @@
           </button>
         {%- endif -%}
       </div>
-
-      {%- if product_results.size > 0 -%}
-        <div class="main-search__sort">
-          <label for="main-search-sort" class="visually-hidden">Sort by</label>
-          <select id="main-search-sort" class="main-search__sort-select" data-search-sort>
-            <option value="relevance" {% if sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
-            <option value="best-selling" {% if sort_by == 'best-selling' %}selected{% endif %}>Best selling</option>
-            <option value="price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>Price: low to high</option>
-            <option value="price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>Price: high to low</option>
-          </select>
-        </div>
-      {%- endif -%}
     </div>
 
     {%- comment -%}── PRODUCT GRID ──{%- endcomment -%}
@@ -215,6 +208,12 @@
       </nav>
     {%- endif -%}
 
+    </div>
+    {%- comment -%} /collection-body__feed {%- endcomment -%}
+
+  </div>
+  {%- comment -%} /collection-body {%- endcomment -%}
+
   {%- endpaginate -%}
   {%- elsif search.performed -%}
 
@@ -229,6 +228,7 @@
 
 </div>
 
+<script src="{{ 'collection-filter.js' | asset_url }}" defer></script>
 <script src="{{ 'main-search.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
@@ -243,6 +243,18 @@
       "max": 48,
       "step": 4,
       "default": 24
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filters",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort",
+      "default": true
     }
   ]
 }
