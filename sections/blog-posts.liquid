@@ -1,6 +1,12 @@
 {% comment %}
   Only shows articles that have theme.article-tags metafield filled
   Supports multi-tag selection via ?tags=tag1,tag2 (OR logic)
+
+  Defensive parsing: handles article-tags whether it's a proper
+  "List of single line text" metafield OR a plain text metafield that
+  happens to hold a JSON array string (e.g. '["news","recipes"]' or '[]').
+  Best fix long-term is to set the metafield type to "List of single line text"
+  in Settings > Custom data > Articles.
 {% endcomment %}
 
 {{ 'blog-posts.css' | asset_url | stylesheet_tag }}
@@ -23,7 +29,20 @@
   {% comment %} === Collect tags only from articles that have the metafield === {% endcomment %}
   {% assign all_tags = '' | split: '' %}
   {% for article in target_blog.articles %}
-    {% assign a_tags = article.metafields.theme['article-tags'].value | default: empty %}
+    {% assign raw_tags = article.metafields.theme['article-tags'].value %}
+    {% assign a_tags = empty %}
+    {% if raw_tags != blank and raw_tags != "[]" %}
+      {% if raw_tags.first %}
+        {% comment %} Real list-type metafield {% endcomment %}
+        {% assign a_tags = raw_tags %}
+      {% else %}
+        {% comment %} Text metafield holding JSON - parse it safely {% endcomment %}
+        {% assign parsed_tags = raw_tags | parse_json %}
+        {% if parsed_tags.size > 0 %}
+          {% assign a_tags = parsed_tags %}
+        {% endif %}
+      {% endif %}
+    {% endif %}
     {% if a_tags != blank %}
       {% for tag in a_tags %}
         {% unless all_tags contains tag %}
@@ -71,7 +90,18 @@
   {% comment %} === Only show articles matching at least one selected tag === {% endcomment %}
   <div class="blog-posts-grid">
     {% for article in target_blog.articles limit: section.settings.limit %}
-      {% assign art_tags = article.metafields.theme['article-tags'].value | default: empty %}
+      {% assign raw_art_tags = article.metafields.theme['article-tags'].value %}
+      {% assign art_tags = empty %}
+      {% if raw_art_tags != blank and raw_art_tags != "[]" %}
+        {% if raw_art_tags.first %}
+          {% assign art_tags = raw_art_tags %}
+        {% else %}
+          {% assign parsed_art_tags = raw_art_tags | parse_json %}
+          {% if parsed_art_tags.size > 0 %}
+            {% assign art_tags = parsed_art_tags %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
 
       {% if art_tags != blank %}
         {% assign show_article = false %}
