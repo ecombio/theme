@@ -2,11 +2,15 @@
  * assets/main-search.js
  * Behavior for sections/main-search.liquid
  *
- * Scope: search-page-only concerns (type tabs, sort-by, keeping the
- * URL in sync). Per-card behavior (wishlist, quickview, compare, ATC)
- * belongs to product-card.js, which is loaded globally via theme.liquid
- * and already runs against the cards this section renders — this file
- * does not duplicate any of that.
+ * Scope: search-page-only concerns â€” right now just the result-type
+ * tabs (All / Products / Pages / Articles) and keeping their state in
+ * the URL. Two things this file deliberately does NOT do:
+ *   - Per-card behavior (wishlist, quickview, compare, ATC): that's
+ *     product-card.js, loaded globally via theme.liquid, already
+ *     running against the cards this section renders.
+ *   - Sorting: snippets/collection-filter.liquid (shared with the
+ *     collection page) owns the sort <select> and its own JS
+ *     (collection-filter.js), also loaded by this section.
  *
  * Guard flag follows the same naming convention as product-card.js's
  * window.__productCardLoaded.
@@ -18,8 +22,6 @@
 
   function initMainSearch(root) {
     var tabsWrap = root.querySelector('[data-search-tabs]');
-    var typeInput = root.querySelector('[data-search-type-input]');
-    var sortSelect = root.querySelector('[data-search-sort]');
 
     if (tabsWrap) {
       tabsWrap.addEventListener('click', function (event) {
@@ -30,13 +32,6 @@
         setActiveTab(tabsWrap, tab);
         showPanel(root, type);
         syncUrl(root, { type: type === 'all' ? null : type });
-        if (typeInput) typeInput.value = type;
-      });
-    }
-
-    if (sortSelect) {
-      sortSelect.addEventListener('change', function () {
-        syncUrl(root, { sort_by: sortSelect.value });
       });
     }
   }
