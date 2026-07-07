@@ -1,5 +1,6 @@
 {% comment %}
   Only shows articles that have theme.article-tags metafield filled
+  Supports multi-tag selection via ?tags=tag1,tag2 (OR logic)
 {% endcomment %}
 
 {{ 'blog-posts.css' | asset_url | stylesheet_tag }}
@@ -8,14 +9,16 @@
 {% assign target_blog = blogs['articles'] %}
 
 <div class="blog-posts-section section-{{ section.id }}">
-  
+
   {% if section.settings.heading != blank %}
     <div class="blog-posts-header">
       <h2 class="blog-posts-title">{{ section.settings.heading }}</h2>
     </div>
   {% endif %}
 
-  {% assign current_tag = request.params.tag %}
+  {% comment %} === Multi-tag selection from URL, e.g. ?tags=news,recipes === {% endcomment %}
+  {% assign current_tags_param = request.params.tags | default: '' %}
+  {% assign current_tags = current_tags_param | split: ',' %}
 
   {% comment %} === Collect tags only from articles that have the metafield === {% endcomment %}
   {% assign all_tags = '' | split: '' %}
@@ -31,34 +34,65 @@
   {% endfor %}
   {% assign all_tags = all_tags | split: '|' | uniq | compact %}
 
-  {% comment %} === Tag Filter Bar === {% endcomment %}
+  {% comment %} === Tag Filter Bar (multi-select, toggles) === {% endcomment %}
   {% if all_tags.size > 0 %}
     <div class="tag-filter-bar" id="tag-filter-bar">
-      <a href="{{ target_blog.url }}" class="tag-pill {% if current_tag == blank %}active{% endif %}">
+      <a href="{{ target_blog.url }}" class="tag-pill {% if current_tags_param == blank %}active{% endif %}">
         All
       </a>
       {% for tag in all_tags %}
-        <a href="{{ target_blog.url }}?tag={{ tag | url_encode }}" 
-           class="tag-pill {% if current_tag == tag %}active{% endif %}">
+        {% assign is_active = false %}
+        {% if current_tags contains tag %}
+          {% assign is_active = true %}
+        {% endif %}
+
+        {% comment %} Build the tag list this pill should link to (toggle behavior) {% endcomment %}
+        {% assign new_tags_list = '' | split: '' %}
+        {% if is_active %}
+          {% for t in current_tags %}
+            {% unless t == tag %}
+              {% assign new_tags_list = new_tags_list | push: t %}
+            {% endunless %}
+          {% endfor %}
+        {% else %}
+          {% assign new_tags_list = current_tags | push: tag %}
+        {% endif %}
+        {% assign new_tags_param = new_tags_list | join: ',' %}
+
+        <a href="{% if new_tags_param == blank %}{{ target_blog.url }}{% else %}{{ target_blog.url }}?tags={{ new_tags_param | url_encode }}{% endif %}"
+           class="tag-pill {% if is_active %}active{% endif %}"
+           data-tag="{{ tag | escape }}">
           {{ tag }}
         </a>
       {% endfor %}
     </div>
   {% endif %}
 
-  {% comment %} === Only show articles that have the metafield === {% endcomment %}
+  {% comment %} === Only show articles matching at least one selected tag === {% endcomment %}
   <div class="blog-posts-grid">
-    {% for article in target_blog.articles %}
+    {% for article in target_blog.articles limit: section.settings.limit %}
       {% assign art_tags = article.metafields.theme['article-tags'].value | default: empty %}
 
       {% if art_tags != blank %}
-        {% if current_tag == blank or art_tags contains current_tag %}
+        {% assign show_article = false %}
+        {% if current_tags_param == blank %}
+          {% assign show_article = true %}
+        {% else %}
+          {% for t in current_tags %}
+            {% if art_tags contains t %}
+              {% assign show_article = true %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if show_article %}
           <article class="blog-post-card">
-            
+
             {% if article.image %}
               <a href="{{ article.url }}" class="blog-post-image">
-                <img 
-                  src="{{ article.image | image_url: width: 800, height: 520, crop: 'center' }}" 
+                <img
+                  src="{{ article.image | image_url: width: 800, height: 520, crop: 'center' }}"
                   alt="{{ article.image.alt | escape }}"
                   loading="lazy">
               </a>
@@ -75,7 +109,25 @@
 
               <div class="blog-post-tags">
                 {% for tag in art_tags %}
-                  <a href="{{ target_blog.url }}?tag={{ tag | url_encode }}" class="tag-pill small">
+                  {% assign card_is_active = false %}
+                  {% if current_tags contains tag %}
+                    {% assign card_is_active = true %}
+                  {% endif %}
+
+                  {% assign card_new_tags = '' | split: '' %}
+                  {% if card_is_active %}
+                    {% for t in current_tags %}
+                      {% unless t == tag %}
+                        {% assign card_new_tags = card_new_tags | push: t %}
+                      {% endunless %}
+                    {% endfor %}
+                  {% else %}
+                    {% assign card_new_tags = current_tags | push: tag %}
+                  {% endif %}
+                  {% assign card_new_tags_param = card_new_tags | join: ',' %}
+
+                  <a href="{% if card_new_tags_param == blank %}{{ target_blog.url }}{% else %}{{ target_blog.url }}?tags={{ card_new_tags_param | url_encode }}{% endif %}"
+                     class="tag-pill small {% if card_is_active %}active{% endif %}">
                     {{ tag }}
                   </a>
                 {% endfor %}
