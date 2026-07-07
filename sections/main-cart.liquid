@@ -8,18 +8,18 @@
   Assets loaded via theme.liquid:
     cart-drawer.css            → shared tokens
     cart-recommendations.css   → rec rail styles (shared with drawer — same BEM classes)
-    cart-page.css              → page-specific layout
+    main-cart.css              → page-specific layout
     cart-drawer.js             → drawer + EcombioCart API (needed for the
                                  open-drawer links and badge updates)
     cart-page-recommendations.js → page-native rec rail logic (NOT cart-recommendations.js —
                                  that one is drawer-only; see its own header for why)
-    cart-page.js               → qty/remove/subtotal for the page table,
+    main-cart.js               → qty/remove/subtotal for the page table,
                                  plus the init event that triggers recs
 
   The recs shell (snippets/cart-recommendations.liquid) is shared markup,
   rendered below the items table here and inside the drawer elsewhere.
 {%- endcomment -%}
-{{ 'cart-page.css' | asset_url | stylesheet_tag }}
+{{ 'main-cart.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign show_related        = section.settings.show_related
@@ -32,7 +32,7 @@
 {%- comment -%}
   cart-page-recommendations.js reads rec config directly from this element
   (#ecombio-cart-page-config) — no drawer dependency, no id monkey-patching.
-  cart-page.js dispatches 'cart:page:recs:init' on load so recs fetch once
+  main-cart.js dispatches 'cart:page:recs:init' on load so recs fetch once
   the DOM is ready.
 {%- endcomment -%}
 <div
@@ -298,7 +298,7 @@
   </div>
 </main>
 {{- 'cart-page-recommendations.js' | asset_url | script_tag }}
-{{- 'cart-page.js' | asset_url | script_tag }}
+{{- 'main-cart.js' | asset_url | script_tag }}
 {% schema %}
 {
   "name": "Cart",
