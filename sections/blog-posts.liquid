@@ -3,9 +3,16 @@
 
   Always pulls from blogs['articles'] (i.e. /blogs/articles).
   Renders each article using snippets/article-card.liquid (which pulls
-  in its own article-card.css). No metafield-based tag filtering — tag
-  pills use Shopify's native blog tags (target_blog.tags) and native
-  /tagged/ routes.
+  in its own article-card.css).
+
+  TAG PILLS:
+  Tag pills are driven by a comma-separated "Tags" text setting
+  (section.settings.custom_tags) rather than target_blog.tags. Each
+  entered value still links to Shopify's native /tagged/{handle}
+  route, so it will only filter correctly if the text matches an
+  existing native blog tag applied to articles. There's no validation
+  tying the two together — keeping the comma list in sync with real
+  article tags is on whoever edits the section.
 
   SECTION LAYOUT:
   Follows the same independent width/padding pattern as
@@ -28,6 +35,7 @@
   else
     assign width_class = width_type
   endif
+  assign custom_tags = section.settings.custom_tags | split: ','
 -%}
 
 <div
@@ -47,12 +55,13 @@
       </div>
     {% endif %}
 
-    {% if target_blog.tags.size > 0 %}
+    {% if custom_tags.size > 0 %}
       <div class="blog-posts__tags">
         <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
           All
         </a>
-        {% for tag in target_blog.tags %}
+        {% for tag in custom_tags %}
+          {%- assign tag = tag | strip -%}
           <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
              class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
             {{ tag }}
@@ -123,6 +132,13 @@
       "id": "heading",
       "label": "Heading",
       "default": "Latest Articles"
+    },
+    {
+      "type": "text",
+      "id": "custom_tags",
+      "label": "Tags (comma-separated)",
+      "info": "Each tag should match an existing blog tag exactly if you want it to link to a filtered view.",
+      "default": "News, Guides, Announcements"
     },
     {
       "type": "range",
