@@ -74,26 +74,40 @@
   color: var(--color-text-muted, #6b6b6b);
 }
 
-/* Body layout: filter aside + feed */
+/* Body layout: filter aside + feed
+   FLEXBOX FIX (2026-07): this used to be `display: grid` with
+   explicit tracks (16rem 1fr). That broke when search-filter.js
+   toggled the aside's `hidden` attribute client-side: an element with
+   `display: none` is removed from grid layout entirely, so with only
+   one item left, grid auto-placement dropped .search-body__feed into
+   the FIRST track (16rem) instead of the 1fr track, squeezing the
+   whole product grid into a narrow column with empty space beside it.
+   The old `.search-body--filters-hidden` class only handled the
+   equivalent server-rendered case (show_filters false at initial
+   load) — it never re-applied when JS toggled the aside after the
+   page had already rendered.
+
+   Flexbox doesn't have this failure mode: a hidden sibling just stops
+   taking up space and the remaining item naturally fills the row, so
+   no JS-vs-CSS state mismatch is possible. .search-filter now carries
+   its own explicit width (search-filter.css) instead of borrowing it
+   from a grid track. */
 
 .search-body {
-  display: grid;
-  grid-template-columns: 16rem 1fr;
+  display: flex;
+  align-items: flex-start;
   gap: 2rem;
   padding-block: 1.5rem;
 }
 
-.search-body--filters-hidden {
-  grid-template-columns: 1fr;
-}
-
 .search-body__feed {
+  flex: 1;
   min-width: 0;
 }
 
 @media (max-width: 768px) {
   .search-body {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 
