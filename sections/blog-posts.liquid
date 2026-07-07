@@ -7,19 +7,25 @@
 
   TAGS (custom_tags setting):
   A comma-separated "Tags" text setting (section.settings.custom_tags)
-  drives two things at once:
+  drives two things at once. Type tags in their natural, native form
+  (e.g. "Electric Scooters") — matching however tags are actually
+  entered on articles in admin:
 
-  1. Pills — each entered value renders a pill linking to Shopify's
-     native /tagged/{handle} route, so it only filters correctly if
-     the text matches an existing native blog tag applied to articles.
-  2. Card rendering — the article grid itself is filtered down to only
+  1. Pills — each entered value renders a pill. The URL slug is
+     auto-derived via Liquid's `handle` filter (lowercases, replaces
+     spaces/special chars with hyphens), so "Electric Scooters" always
+     becomes /tagged/electric-scooters without typing hyphens
+     manually. This matches Shopify's own tag URL generation.
+  2. Card rendering — the article grid is filtered down to only
      articles whose native article.tags contains at least one of the
-     entered values. If custom_tags is blank, all articles show as
-     before (no filtering).
+     entered values (compared as typed, not the hyphenated slug). If
+     custom_tags is blank, all articles show as before (no filtering).
 
   There's no validation tying the setting to real article tags —
   keeping the comma list in sync with what's actually applied to
-  articles in the admin is on whoever edits the section.
+  articles in the admin (spelling and casing) is on whoever edits the
+  section, since the match against article.tags is a literal string
+  comparison.
 
   PAGINATION CAVEAT:
   {% paginate %} slices target_blog.articles by `limit` BEFORE this
@@ -79,15 +85,9 @@
         </a>
         {% for tag in custom_tags %}
           {%- assign tag = tag | strip -%}
-          {%- assign display_tag = '' -%}
-          {%- assign display_words = tag | replace: '-', ' ' | split: ' ' -%}
-          {%- for word in display_words -%}
-            {%- assign display_tag = display_tag | append: word | capitalize | append: ' ' -%}
-          {%- endfor -%}
-          {%- assign display_tag = display_tag | strip -%}
           <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
              class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
-            {{ display_tag }}
+            {{ tag }}
           </a>
         {% endfor %}
       </div>
@@ -182,8 +182,8 @@
       "type": "text",
       "id": "custom_tags",
       "label": "Tags (comma-separated)",
-      "info": "Each tag should match an existing blog tag exactly if you want it to link to a filtered view.",
-      "default": "News, Guides, Announcements"
+      "info": "Type tags as they appear on your articles (e.g. \"Electric Scooters\"). The /tagged/ URL is auto-generated from this text (spaces become hyphens, lowercased) — no need to type hyphens yourself.",
+      "default": "Electric Scooters, Batteries, Accessories"
     },
     {
       "type": "range",
