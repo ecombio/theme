@@ -17,6 +17,13 @@
   assign search_terms = search.terms
   assign results_count = search.results_count | default: 0
 
+  # Filters only apply to product search (Shopify does not support
+  # faceted filters on article search results)
+  assign show_filters = false
+  if section.settings.show_filters and active_type == 'product'
+    assign show_filters = true
+  endif
+
   assign width_type = section.settings.section_width
   if width_type == blank
     assign width_class = 'search-page__default-width'
@@ -60,6 +67,23 @@
 
         <div class="search-toolbar" id="search-toolbar" role="navigation" aria-label="Search results navigation">
 
+          {%- if section.settings.show_filters -%}
+            <button
+              class="search-toolbar__filter-toggle"
+              type="button"
+              aria-expanded="{% if show_filters %}true{% else %}false{% endif %}"
+              aria-controls="search-filter"
+              aria-label="Toggle filters"
+              data-filter-toggle
+              {%- if active_type != 'product' %} disabled{%- endif %}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Filters
+            </button>
+          {%- endif -%}
+
           <div class="tab-switcher" role="tablist" aria-label="Search result type">
             <a
               href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product"
@@ -99,112 +123,239 @@
 
         </div>
 
-        {%- if section.settings.show_sort -%}
+        {%- if section.settings.show_filters or section.settings.show_sort -%}
           <div class="search-mobile-bar" aria-label="Search controls" role="toolbar">
-            <button
-              class="search-mobile-bar__btn"
-              type="button"
-              aria-expanded="false"
-              aria-label="Sort results"
-              data-mobile-sort-toggle
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Sort
-            </button>
+
+            {%- if section.settings.show_filters -%}
+              <button
+                class="search-mobile-bar__btn"
+                type="button"
+                aria-expanded="false"
+                aria-controls="search-filter"
+                aria-label="Toggle filters"
+                data-filter-toggle
+                {%- if active_type != 'product' %} disabled{%- endif %}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Filters
+              </button>
+            {%- endif -%}
+
+            {%- if section.settings.show_sort -%}
+              <button
+                class="search-mobile-bar__btn"
+                type="button"
+                aria-expanded="false"
+                aria-label="Sort results"
+                data-mobile-sort-toggle
+                {%- if active_type != 'product' %} disabled{%- endif %}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Sort
+              </button>
+            {%- endif -%}
+
           </div>
         {%- endif -%}
 
-        <div class="search-feed" id="search-feed" data-search-feed>
+        <div class="search-body{% unless show_filters %} search-body--filters-hidden{% endunless %}" data-search-body>
 
-          <!-- PRODUCTS PANEL -->
-          <div
-            id="panel-products"
-            class="search-feed__panel"
-            role="tabpanel"
-            aria-labelledby="tab-products"
-            data-panel="product"
-            {%- if active_type != 'product' %} hidden{%- endif %}
-          >
-            {{ 'product-card.css' | asset_url | stylesheet_tag }}
+          {%- if section.settings.show_filters -%}
+            <aside
+              class="search-filter"
+              id="search-filter"
+              aria-label="Product filters"
+              data-search-filter
+              {%- unless show_filters %} hidden{%- endunless %}
+            >
 
-            {%- if active_type == 'product' -%}
-              {%- paginate search.results by section.settings.results_per_page -%}
+              <div class="search-filter__close">
+                <span class="search-filter__close-label">Filters</span>
+                <button class="search-filter__close-btn" type="button" aria-label="Close filters" data-filter-close>&times;</button>
+              </div>
 
-                <div id="search-results-grid" class="search-results-grid" style="--columns: {{ section.settings.columns | default: 4 }};">
-                  {%- for result in search.results -%}
-                    {%- render 'product-card', product: result -%}
+              {%- if active_type == 'product' -%}
+                <form method="get" action="{{ routes.search_url }}" id="SearchFilterForm">
+                  <input type="hidden" name="q" value="{{ search_terms }}">
+                  <input type="hidden" name="type" value="product">
+
+                  {%- for filter in search.filters -%}
+                    <details class="search-filter__group" open>
+                      <summary class="search-filter__group-label">
+                        {{ filter.label }}
+                        {%- if filter.active_values.size > 0 -%}
+                          <span class="search-filter__group-badge">{{ filter.active_values.size }}</span>
+                        {%- endif -%}
+                      </summary>
+
+                      <div class="search-filter__group-body">
+                        {%- case filter.type -%}
+                          {%- when 'list' -%}
+                            {%- for value in filter.values -%}
+                              <label class="search-filter__option
+                                {%- if value.active %} search-filter__option--active{%- endif %}
+                                {%- if value.count == 0 and value.active == false %} search-filter__option--disabled{%- endif %}">
+                                <input
+                                  type="checkbox"
+                                  name="{{ value.param_name }}"
+                                  value="{{ value.value }}"
+                                  {%- if value.active %} checked{%- endif %}
+                                  {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
+                                >
+                                {{ value.label }} <span>({{ value.count }})</span>
+                              </label>
+                            {%- endfor -%}
+
+                          {%- when 'price_range' -%}
+                            <div class="search-filter__price">
+                              <input
+                                type="number"
+                                name="{{ filter.min_value.param_name }}"
+                                value="{{ filter.min_value.value }}"
+                                min="0"
+                                max="{{ filter.range_max }}"
+                                placeholder="0"
+                              >
+                              <span>&ndash;</span>
+                              <input
+                                type="number"
+                                name="{{ filter.max_value.param_name }}"
+                                value="{{ filter.max_value.value }}"
+                                min="0"
+                                max="{{ filter.range_max }}"
+                                placeholder="{{ filter.range_max }}"
+                              >
+                            </div>
+                        {%- endcase -%}
+                      </div>
+                    </details>
                   {%- else -%}
-                    <p class="search-empty">No products found for &ldquo;{{ search_terms }}&rdquo;.</p>
+                    <p class="search-filter__empty">No filters available for this search.</p>
                   {%- endfor -%}
-                </div>
 
-                {%- if paginate.pages > 1 -%}
-                  <nav class="pagination" aria-label="Pagination">
-                    {%- if paginate.previous -%}
-                      <a href="{{ paginate.previous.url }}&type=product" class="pagination__link">&larr; Previous</a>
-                    {%- endif -%}
-                    {%- for part in paginate.parts -%}
-                      {%- if part.is_link -%}
-                        <a href="{{ part.url }}&type=product" class="pagination__link">{{ part.title }}</a>
-                      {%- else -%}
-                        <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
-                      {%- endif -%}
-                    {%- endfor -%}
-                    {%- if paginate.next -%}
-                      <a href="{{ paginate.next.url }}&type=product" class="pagination__link">Next &rarr;</a>
-                    {%- endif -%}
-                  </nav>
-                {%- endif -%}
-
-              {%- endpaginate -%}
-            {%- endif -%}
-          </div>
-
-          <!-- ARTICLES PANEL -->
-          <div
-            id="panel-articles"
-            class="search-feed__panel"
-            role="tabpanel"
-            aria-labelledby="tab-articles"
-            data-panel="article"
-            {%- if active_type != 'article' %} hidden{%- endif %}
-          >
-            {{ 'article-card.css' | asset_url | stylesheet_tag }}
-
-            {%- if active_type == 'article' -%}
-              {%- paginate search.results by section.settings.results_per_page -%}
-
-                <div id="search-articles-grid" class="article-feed">
-                  {%- for result in search.results -%}
-                    {%- render 'article-card', article: result -%}
-                  {%- else -%}
-                    <p class="search-empty">No articles found for &ldquo;{{ search_terms }}&rdquo;.</p>
+                  {%- assign active_count = 0 -%}
+                  {%- for filter in search.filters -%}
+                    {%- assign active_count = active_count | plus: filter.active_values.size -%}
                   {%- endfor -%}
-                </div>
 
-                {%- if paginate.pages > 1 -%}
-                  <nav class="pagination" aria-label="Pagination">
-                    {%- if paginate.previous -%}
-                      <a href="{{ paginate.previous.url }}&type=article" class="pagination__link">&larr; Previous</a>
-                    {%- endif -%}
-                    {%- for part in paginate.parts -%}
-                      {%- if part.is_link -%}
-                        <a href="{{ part.url }}&type=article" class="pagination__link">{{ part.title }}</a>
+                  {%- if active_count > 0 -%}
+                    <div class="search-filter__active">
+                      {%- for filter in search.filters -%}
+                        {%- for value in filter.active_values -%}
+                          <a href="{{ value.url_to_remove }}&type=product" class="search-filter__pill">
+                            {{ value.label }} &times;
+                          </a>
+                        {%- endfor -%}
+                      {%- endfor -%}
+                      <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__pill search-filter__pill--clear">Clear all</a>
+                    </div>
+                  {%- endif -%}
+
+                  <button type="submit" class="search-filter__submit">Apply</button>
+                </form>
+              {%- endif -%}
+
+            </aside>
+          {%- endif -%}
+
+          <div class="search-body__feed">
+
+            <div class="search-feed" id="search-feed" data-search-feed>
+
+              <!-- PRODUCTS PANEL -->
+              <div
+                id="panel-products"
+                class="search-feed__panel"
+                role="tabpanel"
+                aria-labelledby="tab-products"
+                data-panel="product"
+                {%- if active_type != 'product' %} hidden{%- endif %}
+              >
+                {{ 'product-card.css' | asset_url | stylesheet_tag }}
+
+                {%- if active_type == 'product' -%}
+                  {%- paginate search.results by section.settings.results_per_page -%}
+
+                    <div id="search-results-grid" class="search-results-grid" style="--columns: {{ section.settings.columns | default: 4 }};">
+                      {%- for result in search.results -%}
+                        {%- render 'product-card', product: result -%}
                       {%- else -%}
-                        <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
-                      {%- endif -%}
-                    {%- endfor -%}
-                    {%- if paginate.next -%}
-                      <a href="{{ paginate.next.url }}&type=article" class="pagination__link">Next &rarr;</a>
-                    {%- endif -%}
-                  </nav>
-                {%- endif -%}
+                        <p class="search-empty">No products found for &ldquo;{{ search_terms }}&rdquo;.</p>
+                      {%- endfor -%}
+                    </div>
 
-              {%- endpaginate -%}
-            {%- endif -%}
+                    {%- if paginate.pages > 1 -%}
+                      <nav class="pagination" aria-label="Pagination">
+                        {%- if paginate.previous -%}
+                          <a href="{{ paginate.previous.url }}&type=product" class="pagination__link">&larr; Previous</a>
+                        {%- endif -%}
+                        {%- for part in paginate.parts -%}
+                          {%- if part.is_link -%}
+                            <a href="{{ part.url }}&type=product" class="pagination__link">{{ part.title }}</a>
+                          {%- else -%}
+                            <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                          {%- endif -%}
+                        {%- endfor -%}
+                        {%- if paginate.next -%}
+                          <a href="{{ paginate.next.url }}&type=product" class="pagination__link">Next &rarr;</a>
+                        {%- endif -%}
+                      </nav>
+                    {%- endif -%}
+
+                  {%- endpaginate -%}
+                {%- endif -%}
+              </div>
+
+              <!-- ARTICLES PANEL -->
+              <div
+                id="panel-articles"
+                class="search-feed__panel"
+                role="tabpanel"
+                aria-labelledby="tab-articles"
+                data-panel="article"
+                {%- if active_type != 'article' %} hidden{%- endif %}
+              >
+                {{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+                {%- if active_type == 'article' -%}
+                  {%- paginate search.results by section.settings.results_per_page -%}
+
+                    <div id="search-articles-grid" class="article-feed">
+                      {%- for result in search.results -%}
+                        {%- render 'article-card', article: result -%}
+                      {%- else -%}
+                        <p class="search-empty">No articles found for &ldquo;{{ search_terms }}&rdquo;.</p>
+                      {%- endfor -%}
+                    </div>
+
+                    {%- if paginate.pages > 1 -%}
+                      <nav class="pagination" aria-label="Pagination">
+                        {%- if paginate.previous -%}
+                          <a href="{{ paginate.previous.url }}&type=article" class="pagination__link">&larr; Previous</a>
+                        {%- endif -%}
+                        {%- for part in paginate.parts -%}
+                          {%- if part.is_link -%}
+                            <a href="{{ part.url }}&type=article" class="pagination__link">{{ part.title }}</a>
+                          {%- else -%}
+                            <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                          {%- endif -%}
+                        {%- endfor -%}
+                        {%- if paginate.next -%}
+                          <a href="{{ paginate.next.url }}&type=article" class="pagination__link">Next &rarr;</a>
+                        {%- endif -%}
+                      </nav>
+                    {%- endif -%}
+
+                  {%- endpaginate -%}
+                {%- endif -%}
+              </div>
+
+            </div>
           </div>
 
         </div>
@@ -262,6 +413,12 @@
       "max": 48,
       "step": 4,
       "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filters (Products tab only)",
+      "default": true
     },
     {
       "type": "checkbox",
