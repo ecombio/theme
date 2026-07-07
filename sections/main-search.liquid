@@ -2,6 +2,7 @@
 {{ 'main-search.css' | asset_url | stylesheet_tag }}
 {{ 'promo-banner.css' | asset_url | stylesheet_tag }}
 {{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
+{{ 'search-filter.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   # Use search.types as primary source of truth (most reliable)
@@ -78,7 +79,118 @@
         <div class="search-body{% unless show_filters %} search-body--filters-hidden{% endunless %}" data-search-body>
 
           {%- if section.settings.show_filters -%}
-            {%- render 'search-filter', search_terms: search_terms, active_type: active_type, show_filters: show_filters -%}
+            {%- comment -%}
+              -----------------------------------------------------
+              Inlined from snippets/search-filter.liquid
+              -----------------------------------------------------
+              The product-filter drawer. Filters only apply to
+              product search -- Shopify doesn't support faceted
+              filters on article results -- so the filter <form>
+              only renders when active_type is 'product'. On the
+              Articles tab the drawer still renders with a short
+              placeholder message instead of the form, so the
+              sidebar's presence/width stays consistent across both
+              tabs instead of disappearing and reflowing the
+              results grid.
+            {%- endcomment -%}
+
+            <aside
+              class="search-filter"
+              id="search-filter"
+              aria-label="Product filters"
+              data-search-filter
+              {%- unless show_filters %} hidden{%- endunless %}
+            >
+
+              <div class="search-filter__close">
+                <span class="search-filter__close-label">Filters</span>
+                <button class="search-filter__close-btn" type="button" aria-label="Close filters" data-filter-close>&times;</button>
+              </div>
+
+              {%- if active_type == 'product' -%}
+                <form method="get" action="{{ routes.search_url }}" id="SearchFilterForm">
+                  <input type="hidden" name="q" value="{{ search_terms }}">
+                  <input type="hidden" name="type" value="product">
+
+                  {%- for filter in search.filters -%}
+                    <details class="search-filter__group" open>
+                      <summary class="search-filter__group-label">
+                        {{ filter.label }}
+                        {%- if filter.active_values.size > 0 -%}
+                          <span class="search-filter__group-badge">{{ filter.active_values.size }}</span>
+                        {%- endif -%}
+                      </summary>
+
+                      <div class="search-filter__group-body">
+                        {%- case filter.type -%}
+                          {%- when 'list' -%}
+                            {%- for value in filter.values -%}
+                              <label class="search-filter__option
+                                {%- if value.active %} search-filter__option--active{%- endif %}
+                                {%- if value.count == 0 and value.active == false %} search-filter__option--disabled{%- endif %}">
+                                <input
+                                  type="checkbox"
+                                  name="{{ value.param_name }}"
+                                  value="{{ value.value }}"
+                                  {%- if value.active %} checked{%- endif %}
+                                  {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
+                                >
+                                {{ value.label }} <span>({{ value.count }})</span>
+                              </label>
+                            {%- endfor -%}
+
+                          {%- when 'price_range' -%}
+                            <div class="search-filter__price">
+                              <input
+                                type="number"
+                                name="{{ filter.min_value.param_name }}"
+                                value="{{ filter.min_value.value }}"
+                                min="0"
+                                max="{{ filter.range_max }}"
+                                placeholder="0"
+                              >
+                              <span>&ndash;</span>
+                              <input
+                                type="number"
+                                name="{{ filter.max_value.param_name }}"
+                                value="{{ filter.max_value.value }}"
+                                min="0"
+                                max="{{ filter.range_max }}"
+                                placeholder="{{ filter.range_max }}"
+                              >
+                            </div>
+                        {%- endcase -%}
+                      </div>
+                    </details>
+                  {%- else -%}
+                    <p class="search-filter__empty">No filters are configured for this search.</p>
+                  {%- endfor -%}
+
+                  {%- assign active_count = 0 -%}
+                  {%- for filter in search.filters -%}
+                    {%- assign active_count = active_count | plus: filter.active_values.size -%}
+                  {%- endfor -%}
+
+                  {%- if active_count > 0 -%}
+                    <div class="search-filter__active">
+                      {%- for filter in search.filters -%}
+                        {%- for value in filter.active_values -%}
+                          <a href="{{ value.url_to_remove }}&type=product" class="search-filter__pill">
+                            {{ value.label }} &times;
+                          </a>
+                        {%- endfor -%}
+                      {%- endfor -%}
+                      <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__pill search-filter__pill--clear">Clear all</a>
+                    </div>
+                  {%- endif -%}
+
+                  <button type="submit" class="search-filter__submit">Apply</button>
+                </form>
+              {%- else -%}
+                <p class="search-filter__empty">Filters aren&rsquo;t available for articles &mdash; switch to the Products tab to filter results.</p>
+              {%- endif -%}
+
+            </aside>
           {%- endif -%}
 
           <div class="search-body__feed">
@@ -109,6 +221,7 @@
 {%- endcomment -%}
 <script src="{{ 'main-search.js' | asset_url }}" defer></script>
 <script src="{{ 'promo-carousel.js' | asset_url }}" defer></script>
+<script src="{{ 'search-filter.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
