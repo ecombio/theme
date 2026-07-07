@@ -5,14 +5,31 @@
   Renders each article using snippets/article-card.liquid (which pulls
   in its own article-card.css).
 
-  TAG PILLS:
-  Tag pills are driven by a comma-separated "Tags" text setting
-  (section.settings.custom_tags) rather than target_blog.tags. Each
-  entered value still links to Shopify's native /tagged/{handle}
-  route, so it will only filter correctly if the text matches an
-  existing native blog tag applied to articles. There's no validation
-  tying the two together — keeping the comma list in sync with real
-  article tags is on whoever edits the section.
+  TAGS (custom_tags setting):
+  A comma-separated "Tags" text setting (section.settings.custom_tags)
+  drives two things at once:
+
+  1. Pills — each entered value renders a pill linking to Shopify's
+     native /tagged/{handle} route, so it only filters correctly if
+     the text matches an existing native blog tag applied to articles.
+  2. Card rendering — the article grid itself is filtered down to only
+     articles whose native article.tags contains at least one of the
+     entered values. If custom_tags is blank, all articles show as
+     before (no filtering).
+
+  There's no validation tying the setting to real article tags —
+  keeping the comma list in sync with what's actually applied to
+  articles in the admin is on whoever edits the section.
+
+  PAGINATION CAVEAT:
+  {% paginate %} slices target_blog.articles by `limit` BEFORE this
+  filter runs. That means a page of `limit` articles may render fewer
+  than `limit` cards if some articles on that page don't match any
+  custom_tags value — the page-count math (paginate.pages, prev/next)
+  reflects the full unfiltered article count, not the filtered
+  visible count. Acceptable for now per current scope, but flagging
+  since it means the last page (or any page) can look sparse or even
+  empty despite paginate.pages saying there's more.
 
   SECTION LAYOUT:
   Follows the same independent width/padding pattern as
@@ -73,16 +90,38 @@
     {% paginate target_blog.articles by section.settings.limit %}
       {% if target_blog.articles.size > 0 %}
         <div class="blog-posts__grid" style="--blog-posts-columns: {{ section.settings.columns }};">
+          {%- assign visible_index = 0 -%}
           {% for article in target_blog.articles %}
-            {% comment %} Eager-load the first row so LCP isn't hurt by lazy-loading above-the-fold images {% endcomment %}
-            {% assign loading = 'lazy' %}
-            {% if forloop.index <= section.settings.columns %}
-              {% assign loading = 'eager' %}
-            {% endif %}
+            {%- liquid
+              assign show_article = false
+              if custom_tags.size == 0
+                assign show_article = true
+              else
+                for tag in custom_tags
+                  assign trimmed_tag = tag | strip
+                  if article.tags contains trimmed_tag
+                    assign show_article = true
+                  endif
+                endfor
+              endif
+            -%}
 
-            {% render 'article-card', article: article, loading: loading %}
+            {% if show_article %}
+              {%- assign visible_index = visible_index | plus: 1 -%}
+              {% comment %} Eager-load the first row so LCP isn't hurt by lazy-loading above-the-fold images {% endcomment %}
+              {% assign loading = 'lazy' %}
+              {% if visible_index <= section.settings.columns %}
+                {% assign loading = 'eager' %}
+              {% endif %}
+
+              {% render 'article-card', article: article, loading: loading %}
+            {% endif %}
           {% endfor %}
         </div>
+
+        {% if custom_tags.size > 0 and visible_index == 0 %}
+          <p class="blog-posts__empty">No articles match the selected tags on this page.</p>
+        {% endif %}
 
         {% if paginate.pages > 1 %}
           <nav class="blog-posts__pagination" role="navigation" aria-label="Pagination">
