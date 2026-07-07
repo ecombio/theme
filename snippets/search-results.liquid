@@ -1,48 +1,24 @@
 {%- comment -%}
   snippets/search-results.liquid
   ------------------------------------------------------------------
-  Renders the Products/Articles tab switcher plus the two result
-  panels. Each panel defers to its own snippet so the product and
-  article rendering logic (and their paginate loops) stay isolated.
+  Renders the two result panels (tabpanels). The Products/Articles
+  tab switcher itself lives in search-toolbar.liquid (the ids
+  referenced by aria-labelledby below — tab-products / tab-articles —
+  are defined there); this snippet used to render its own duplicate
+  copy of that tab switcher, which produced two conflicting sets of
+  the same DOM ids on the page. Removed in favor of a single tab
+  switcher owned by the toolbar. Each panel defers to its own
+  snippet so the product and article rendering logic (and their
+  paginate loops) stay isolated.
 
   Expects:
     - search_terms  (string)  the current search query, e.g. search.terms
     - active_type    (string)  'product' or 'article'
     - section        (object)  the parent section, for settings:
-                                tab_products_label, tab_articles_label,
                                 columns, results_per_page
 {%- endcomment -%}
 
-{%- liquid
-  assign tab_products_label = section.settings.tab_products_label | default: 'Products'
-  assign tab_articles_label = section.settings.tab_articles_label | default: 'Articles'
--%}
-
 <div class="search-feed" id="search-feed" data-search-feed>
-
-  <div class="tab-switcher" role="tablist" aria-label="Search result type">
-    <a
-      href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product"
-      class="tab-switcher__tab{% if active_type == 'product' %} tab-switcher__tab--active{% endif %}"
-      role="tab"
-      aria-selected="{% if active_type == 'product' %}true{% else %}false{% endif %}"
-      aria-controls="panel-products"
-      id="tab-products"
-      data-type="product"
-      tabindex="{% if active_type == 'product' %}0{% else %}-1{% endif %}"
-    >{{ tab_products_label }}</a>
-
-    <a
-      href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=article"
-      class="tab-switcher__tab{% if active_type == 'article' %} tab-switcher__tab--active{% endif %}"
-      role="tab"
-      aria-selected="{% if active_type == 'article' %}true{% else %}false{% endif %}"
-      aria-controls="panel-articles"
-      id="tab-articles"
-      data-type="article"
-      tabindex="{% if active_type == 'article' %}0{% else %}-1{% endif %}"
-    >{{ tab_articles_label }}</a>
-  </div>
 
   <div
     id="panel-products"
