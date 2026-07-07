@@ -116,6 +116,19 @@
             </button>
           {%- endif -%}
 
+          {%- comment -%}
+            TAB SWITCHING IS NOW AJAX (2026-07): these are still real
+            <a href> links to ?type=product|article -- that's what
+            makes plain navigation (JS disabled, fetch failure, no
+            section id) work as a reliable fallback -- but
+            main-search.js's toolbar IIFE intercepts the click and
+            re-fetches this section via the Section Rendering API
+            instead, so switching tabs no longer causes a full page
+            reload in the common case. data-type is what that handler
+            keys off of; it's also present on the "Switch to
+            Products" link inside the Articles-tab filter placeholder
+            below, so that link goes through the exact same live path.
+          {%- endcomment -%}
           <div class="tab-switcher" role="tablist" aria-label="Search result type">
             <a
               href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product"
@@ -321,7 +334,15 @@
                   </svg>
                   <p class="search-filter__placeholder-title">No filters for articles</p>
                   <p class="search-filter__placeholder-text">Filters only apply to product results. Switch tabs to narrow products down by price, type, and more.</p>
-                  <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__placeholder-btn">Switch to Products</a>
+                  {%- comment -%}
+                    data-type="product" lets main-search.js's AJAX
+                    tab-switch handler pick this up alongside the two
+                    real tabs above -- functionally it's the same
+                    action as clicking the Products tab, so it goes
+                    through the identical live-fetch path (with the
+                    same full-navigation fallback if JS can't run it).
+                  {%- endcomment -%}
+                  <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__placeholder-btn" data-type="product">Switch to Products</a>
                 </div>
               {%- endif -%}
 
@@ -542,8 +563,10 @@
 </div>
 
 {%- comment -%}
-  main-search.js has been retired: its only behavior (the sort
-  <select>) now lives in search-toolbar.js.
+  main-search.js owns the filter drawer, live filtering, the sort
+  <select>, AJAX tab switching (Products <-> Articles, via the Section
+  Rendering API), and scroll-restore for both result grids. See the
+  file's own header comment for the full breakdown.
 {%- endcomment -%}
 <script src="{{ 'main-search.js' | asset_url }}" defer></script>
 <script src="{{ 'promo-carousel.js' | asset_url }}" defer></script>
