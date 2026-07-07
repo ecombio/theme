@@ -144,92 +144,7 @@
       <div class="collection-body{% unless section.settings.show_filters %} collection-body--filters-hidden{% endunless %}">
 
         {%- if section.settings.show_filters -%}
-          <aside
-            class="collection-filter"
-            id="collection-filter"
-            aria-label="Product filters"
-          >
-
-            <form method="get" action="{{ collection.url }}" id="FilterForm">
-
-              {%- for filter in collection.filters -%}
-                <details
-                  class="collection-filter__group"
-                  open
-                >
-                  <summary class="collection-filter__group-label">
-                    {{ filter.label }}
-                    {%- if filter.active_values.size > 0 -%}
-                      <span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>
-                    {%- endif -%}
-                  </summary>
-
-                  <div class="collection-filter__group-body">
-                    {%- case filter.type -%}
-                      {%- when 'list' -%}
-                        {%- for value in filter.values -%}
-                          <label class="collection-filter__option
-                            {%- if value.active %} collection-filter__option--active{%- endif %}
-                            {%- if value.count == 0 and value.active == false %} collection-filter__option--disabled{%- endif %}">
-                            <input
-                              type="checkbox"
-                              name="{{ value.param_name }}"
-                              value="{{ value.value }}"
-                              {%- if value.active %} checked{%- endif %}
-                              {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
-                            >
-                            {{ value.label }} <span>({{ value.count }})</span>
-                          </label>
-                        {%- endfor -%}
-
-                      {%- when 'price_range' -%}
-                        <div class="collection-filter__price">
-                          <input
-                            type="number"
-                            name="{{ filter.min_value.param_name }}"
-                            value="{{ filter.min_value.value }}"
-                            min="0"
-                            max="{{ filter.range_max }}"
-                            placeholder="0"
-                          >
-                          <span>–</span>
-                          <input
-                            type="number"
-                            name="{{ filter.max_value.param_name }}"
-                            value="{{ filter.max_value.value }}"
-                            min="0"
-                            max="{{ filter.range_max }}"
-                            placeholder="{{ filter.range_max }}"
-                          >
-                        </div>
-                    {%- endcase -%}
-                  </div>
-                </details>
-              {%- endfor -%}
-
-              {%- assign active_count = 0 -%}
-              {%- for filter in collection.filters -%}
-                {%- assign active_count = active_count | plus: filter.active_values.size -%}
-              {%- endfor -%}
-
-              {%- if active_count > 0 -%}
-                <div class="collection-filter__active">
-                  {%- for filter in collection.filters -%}
-                    {%- for value in filter.active_values -%}
-                      <a href="{{ value.url_to_remove }}" class="collection-filter__pill">
-                        {{ value.label }} &times;
-                      </a>
-                    {%- endfor -%}
-                  {%- endfor -%}
-                  <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
-                </div>
-              {%- endif -%}
-
-              <button type="submit" class="collection-filter__submit">Apply</button>
-
-            </form>
-
-          </aside>
+          {%- render 'collection-filter', collection: collection -%}
         {%- endif -%}
 
         <div class="collection-body__feed">
@@ -255,6 +170,72 @@
               -%}
 
               {%- paginate collection.products by section.settings.products_per_page -%}
+
+                {%- if section.settings.show_filters -%}
+                  {%- comment -%}
+                    Active-filters strip: horizontally-scrollable "Your
+                    Selections" row, rendered above the grid (rather
+                    than buried in the sidebar in snippets/collection-
+                    filter.liquid) so it's visible even when the
+                    sidebar is collapsed/closed. Reuses the exact same
+                    .collection-filter__pill markup/classes as before,
+                    so the colors and styling stay identical — only
+                    the layout container is new. Depends on assets/
+                    collection-filter.css / .js, both loaded by
+                    snippets/collection-filter.liquid, which renders
+                    unconditionally alongside this when show_filters
+                    is on.
+                  {%- endcomment -%}
+                  {%- assign active_count = 0 -%}
+                  {%- for filter in collection.filters -%}
+                    {%- assign active_count = active_count | plus: filter.active_values.size -%}
+                  {%- endfor -%}
+
+                  <div
+                    class="collection-active-filters"
+                    id="collection-active-filters"
+                    aria-label="Active filters"
+                    {%- if active_count == 0 %} hidden{%- endif %}
+                  >
+                    <span class="collection-active-filters__label">Your Selections</span>
+
+                    <button
+                      type="button"
+                      class="collection-active-filters__nav collection-active-filters__nav--prev"
+                      aria-label="Scroll active filters left"
+                      data-active-filters-prev
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+
+                    <div class="collection-active-filters__track" data-active-filters-track>
+                      {%- for filter in collection.filters -%}
+                        {%- for value in filter.active_values -%}
+                          <a href="{{ value.url_to_remove }}" class="collection-filter__pill">
+                            {{ value.label }} &times;
+                          </a>
+                        {%- endfor -%}
+                      {%- endfor -%}
+
+                      {%- if active_count > 0 -%}
+                        <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+                      {%- endif -%}
+                    </div>
+
+                    <button
+                      type="button"
+                      class="collection-active-filters__nav collection-active-filters__nav--next"
+                      aria-label="Scroll active filters right"
+                      data-active-filters-next
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                {%- endif -%}
 
                 <div id="product-feed" class="product-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
 
