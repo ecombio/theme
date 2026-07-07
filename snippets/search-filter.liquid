@@ -3,10 +3,11 @@
   ------------------------------------------------------------------
   The product-filter drawer. Filters only apply to product search —
   Shopify doesn't support faceted filters on article results — so the
-  form only renders when active_type is 'product'. On the Articles
-  tab the drawer still renders (if the merchant has filters enabled)
-  but shows just the header/close button, matching the section's
-  original behavior.
+  filter <form> only renders when active_type is 'product'. On the
+  Articles tab the drawer still renders (whenever the merchant has
+  filters enabled) with a short placeholder message instead of the
+  form, so the sidebar's presence/width stays consistent across both
+  tabs instead of disappearing and reflowing the results grid.
 
   Expects:
     - search_terms (string)  the current search query
@@ -86,7 +87,7 @@
           </div>
         </details>
       {%- else -%}
-        <p class="search-filter__empty">No filters available for this search.</p>
+        <p class="search-filter__empty">No filters are configured for this search.</p>
       {%- endfor -%}
 
       {%- assign active_count = 0 -%}
@@ -109,6 +110,8 @@
 
       <button type="submit" class="search-filter__submit">Apply</button>
     </form>
+  {%- else -%}
+    <p class="search-filter__empty">Filters aren&rsquo;t available for articles &mdash; switch to the Products tab to filter results.</p>
   {%- endif -%}
 
 </aside>
