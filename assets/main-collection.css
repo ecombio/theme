@@ -9,6 +9,24 @@
    itself — see that file's header comment). */
 
 /* ============================================================
+   Apple-style design tokens, scoped to this section so they don't
+   leak into the rest of the theme. Currently driving the active-
+   filters strip (pills, nav arrows, fade); safe to extend to the
+   tab-switcher and filter sidebar in a later pass.
+   ============================================================ */
+
+.main-collection {
+  --apl-bg-card: #ffffff;
+  --apl-bg-track: #f0f0f2;
+  --apl-blue: #0a6cff;
+  --apl-text: #1a1a1e;
+  --apl-text-secondary: #8e8e93;
+  --apl-border: #e5e5ea;
+  --apl-radius-control: 12px;
+  --apl-radius-pill: 999px;
+}
+
+/* ============================================================
    Inlined from collection.css — page wrapper, two-column body
    shell, empty state, pagination, and the shared mobile backdrop.
    ============================================================ */
@@ -214,15 +232,27 @@
 .collection-active-filters {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
   flex: 1 1 auto;
   min-width: 0;
   margin: 0 0.5rem;
-  position: relative;
 }
 
 .collection-active-filters[hidden] {
   display: none;
+}
+
+/* Scroll region: prev arrow + track + next arrow. Fading and 28px
+   arrow-inset math both live here now, scoped to just this wrapper,
+   so Clear all (a sibling, outside this element) can never throw
+   the fade position off regardless of its own width. */
+.collection-active-filters__scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
 }
 
 .collection-active-filters__track {
@@ -249,10 +279,12 @@
 /* ---------- Edge fade (white shadow) over the scrollable track ----------
    Sits between the nav buttons and the track, on top of whatever
    pills are scrolled underneath it, so overflow reads as a soft fade
-   to white rather than a hard clip. Purely decorative (pointer-events:
-   none) so it never blocks clicks on the pills or nav buttons. */
-.collection-active-filters::before,
-.collection-active-filters::after {
+   to the card background rather than a hard clip. Purely decorative
+   (pointer-events: none) so it never blocks clicks on the pills or
+   nav buttons. Scoped to __scroll, so it only ever measures against
+   the prev/track/next trio — never Clear all. */
+.collection-active-filters__scroll::before,
+.collection-active-filters__scroll::after {
   content: '';
   position: absolute;
   top: 0;
@@ -262,14 +294,14 @@
   z-index: 1;
 }
 
-.collection-active-filters::before {
+.collection-active-filters__scroll::before {
   left: 28px; /* sits just past the prev nav button */
-  background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+  background: linear-gradient(to right, var(--apl-bg-card, #fff), rgba(255, 255, 255, 0));
 }
 
-.collection-active-filters::after {
+.collection-active-filters__scroll::after {
   right: 28px; /* sits just before the next nav button */
-  background: linear-gradient(to left, #fff, rgba(255, 255, 255, 0));
+  background: linear-gradient(to left, var(--apl-bg-card, #fff), rgba(255, 255, 255, 0));
 }
 
 .collection-active-filters__nav {
@@ -280,9 +312,9 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1px solid #d4d4d4;
-  background: #fff;
-  color: #1a1a1a;
+  border: none;
+  background: var(--apl-bg-track, #f0f0f2);
+  color: var(--apl-text, #1a1a1a);
   cursor: pointer;
   padding: 0;
   position: relative;
@@ -291,7 +323,7 @@
 }
 
 .collection-active-filters__nav:hover {
-  background: #f4f4f4;
+  background: #e6e6e9;
 }
 
 .collection-active-filters__nav:disabled {
@@ -300,9 +332,11 @@
   pointer-events: none;
 }
 
-/* Clear all now sits outside the scrollable track/arrows, so it needs
+/* Clear all now sits outside the scroll region entirely, so it needs
    its own flex sizing rather than inheriting the track's overflow
-   behavior — it should never shrink or wrap. */
+   behavior — it should never shrink or wrap. Visual styling (flat
+   text-link look) lives with the rest of the pill styles in
+   collection-filter.css, since it shares that base class. */
 .collection-active-filters .collection-filter__pill--clear {
   flex: 0 0 auto;
   white-space: nowrap;
