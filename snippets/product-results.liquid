@@ -8,15 +8,32 @@
   Expects:
     - search_terms  (string)  the current search query
     - section        (object)  parent section, for settings:
-                                columns, results_per_page
+                                columns, results_per_page, and for
+                                section.blocks (promo_banner /
+                                promo_carousel)
+
+  BANNER/CAROUSEL SUPPORT (2026-07): restored here. The section's
+  promo_banner / promo_carousel blocks are products-tab-only content
+  (see main-search.liquid's schema paragraphs under "In-feed banners"
+  / "Promo carousels"), so this snippet reads section.blocks directly
+  -- same as it always has access to `section` for settings -- rather
+  than main-search.liquid pre-filtering blocks and passing them down
+  as extra params. absolute_index uses paginate.current_offset, not
+  forloop.index alone, so a block positioned at e.g. slot 20 renders
+  once overall instead of on every page.
 {%- endcomment -%}
-{{ 'product-results.css' | asset_url | stylesheet_tag }}
 
 {%- comment -%}
-  product-card.css is NOT loaded here — per the asset ownership rule
-  documented in product-card.liquid, snippets don't load their own
-  assets. It's loaded by the parent section (main-search.liquid).
+  product-card.css, promo-banner.css, and promo-carousel.css are NOT
+  loaded here -- per the asset ownership rule documented in
+  product-card.liquid, snippets don't load their own assets. They're
+  loaded by the parent section (main-search.liquid).
 {%- endcomment -%}
+
+{%- liquid
+  assign banner_blocks = section.blocks | where: 'type', 'promo_banner'
+  assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
+-%}
 
 {%- paginate search.results by section.settings.results_per_page -%}
 
@@ -26,10 +43,42 @@
     style="--columns: {{ section.settings.columns | default: 4 }};"
   >
     {%- for result in search.results -%}
+      {%- assign absolute_index = paginate.current_offset | plus: forloop.index -%}
+
+      {%- for banner in banner_blocks -%}
+        {%- assign banner_position = banner.settings.position | default: 0 -%}
+        {%- if banner_position > 0 and banner_position == absolute_index -%}
+          {%- render 'promo-banner', block: banner -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- for carousel in carousel_blocks -%}
+        {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+        {%- if carousel_position > 0 and carousel_position == absolute_index -%}
+          {%- render 'promo-carousel', block: carousel -%}
+        {%- endif -%}
+      {%- endfor -%}
+
       {%- render 'product-card', product: result -%}
+
     {%- else -%}
       <p class="search-empty">No products found for &ldquo;{{ search_terms }}&rdquo;.</p>
     {%- endfor -%}
+
+    {%- unless paginate.next -%}
+      {%- for banner in banner_blocks -%}
+        {%- assign banner_position = banner.settings.position | default: 0 -%}
+        {%- if banner_position > paginate.items and banner_position > 0 -%}
+          {%- render 'promo-banner', block: banner -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- for carousel in carousel_blocks -%}
+        {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+        {%- if carousel_position > paginate.items and carousel_position > 0 -%}
+          {%- render 'promo-carousel', block: carousel -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endunless -%}
   </div>
 
   {%- if paginate.pages > 1 -%}
@@ -51,5 +100,3 @@
   {%- endif -%}
 
 {%- endpaginate -%}
-
-<script src="{{ 'product-results.js' | asset_url }}" defer></script>
