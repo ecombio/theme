@@ -87,6 +87,20 @@
           >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
         </div>
 
+        {%- if section.settings.show_sort -%}
+          <div class="collection-toolbar__sort">
+            <label for="SortBy" class="visually-hidden">Sort</label>
+            <select id="SortBy" data-sort>
+              {%- for option in collection.sort_options -%}
+                <option
+                  value="{{ option.value }}"
+                  {%- if option.value == collection.sort_by %} selected{%- endif %}
+                >{{ option.name }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+        {%- endif -%}
+
       </div>
 
       {%- if section.settings.show_filters or section.settings.show_sort -%}
@@ -135,20 +149,6 @@
             id="collection-filter"
             aria-label="Product filters"
           >
-
-            {%- if section.settings.show_sort -%}
-              <div class="collection-filter__sort">
-                <label for="SortBy">Sort</label>
-                <select id="SortBy" data-sort>
-                  {%- for option in collection.sort_options -%}
-                    <option
-                      value="{{ option.value }}"
-                      {%- if option.value == collection.sort_by %} selected{%- endif %}
-                    >{{ option.name }}</option>
-                  {%- endfor -%}
-                </select>
-              </div>
-            {%- endif -%}
 
             <form method="get" action="{{ collection.url }}" id="FilterForm">
 
@@ -401,7 +401,7 @@
       "id": "columns",
       "label": "Columns",
       "min": 2,
-      "max": 6,
+      "max": 4,
       "step": 1,
       "default": 4
     },
