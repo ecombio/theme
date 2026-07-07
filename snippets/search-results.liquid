@@ -21,21 +21,19 @@
     - section        (object)  the parent section, for settings:
                                 columns, results_per_page
 {%- endcomment -%}
-{{ 'search-results.css' | asset_url | stylesheet_tag }}
-
 {%- comment -%}
-  Assets formerly loaded by product-results.liquid and
-  article-results.liquid, now loaded here since both snippets are
-  inlined into this file. product-card.css / article-card.css are
-  still NOT loaded here — per the asset ownership rule documented in
-  product-card.liquid, card snippets don't load their own assets;
-  that stays the parent section's (main-search.liquid) job. Note
-  article-results.liquid previously broke that rule itself by loading
-  article-card.css directly — preserved as-is below to avoid changing
+  search-results.css now also contains the rules formerly in
+  product-results.css and article-results.css, merged in since both
+  snippets are inlined into this file — one stylesheet_tag covers all
+  three. product-card.css / article-card.css are still NOT loaded
+  here — per the asset ownership rule documented in product-card.
+  liquid, card snippets don't load their own assets; that stays the
+  parent section's (main-search.liquid) job. Note article-results.
+  liquid previously broke that rule itself by loading article-card.css
+  directly — preserved as its own load below to avoid changing
   behavior, but worth cleaning up as a follow-up.
 {%- endcomment -%}
-{{ 'product-results.css' | asset_url | stylesheet_tag }}
-{{ 'article-results.css' | asset_url | stylesheet_tag }}
+{{ 'search-results.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
 <div class="search-feed" id="search-feed" data-search-feed>
@@ -144,6 +142,10 @@
 
 </div>
 
+{%- comment -%}
+  search-results.js now also contains the scroll-restore behavior
+  formerly in product-results.js and article-results.js, merged in
+  since both snippets are inlined into this file — one script tag
+  covers all three.
+{%- endcomment -%}
 <script src="{{ 'search-results.js' | asset_url }}" defer></script>
-<script src="{{ 'product-results.js' | asset_url }}" defer></script>
-<script src="{{ 'article-results.js' | asset_url }}" defer></script>
