@@ -1,14 +1,20 @@
-/* assets/search-filter.js
-   Owned by snippets/search-filter.liquid.
+/* assets/main-search.js
+   Owned by sections/main-search.liquid.
+
+   This file was previously retired (its only behavior, the sort
+   <select>, moved to search-toolbar.js) but is now revived as the
+   home for the filter-drawer and live-filtering logic that used to
+   live in assets/search-filter.js (snippets/search-filter.liquid was
+   inlined into sections/main-search.liquid, and this merge does the
+   same for its script — one fewer file to load, one fewer script tag
+   in the section markup).
 
    Two responsibilities:
 
    1. Opening/closing the filter drawer: the toggle buttons live in
-      the section toolbar/mobile bar (outside this snippet), the
-      backdrop element lives in the section markup too — this script
-      still owns all of that behavior since it's all "does the filter
-      drawer show or not," which is this snippet's concern even when
-      the trigger elements sit elsewhere in the DOM.
+      the section toolbar/mobile bar, the backdrop element lives in
+      the section markup too — this script owns all of that behavior
+      since it's all "does the filter drawer show or not."
 
    2. Live filtering (AJAX via the Section Rendering API): checking a
       filter or editing a price field re-fetches just the main-search
@@ -37,8 +43,8 @@
           which collection's hero text doesn't have an equivalent of.
 */
 (function () {
-  if (window.__searchFilterLoaded) return;
-  window.__searchFilterLoaded = true;
+  if (window.__mainSearchLoaded) return;
+  window.__mainSearchLoaded = true;
 
   var filterAside = document.getElementById('search-filter');
   if (!filterAside) return;
