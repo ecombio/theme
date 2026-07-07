@@ -2,8 +2,9 @@
    MVP stylesheet for sections/main-search.liquid.
    Repurposed from main-collection.css — same class names kept
    on purpose so both sections share one visual language.
-   Trimmed out: tab-switcher, mobile sort sheet, sub-collections,
-   article grid, promo banners/carousels, after-items. */
+   Trimmed out: mobile sort sheet, sub-collections, promo
+   banners/carousels, after-items. Tab-switcher + article grid
+   are now pulled in to support the Products/Articles toggle. */
 
 /* ---------- Section wrapper ---------- */
 .collection-section {
@@ -140,10 +141,11 @@
   font-size: 0.9rem;
 }
 
-/* ---------- Toolbar (filter toggle only — no tabs) ---------- */
+/* ---------- Toolbar (filter toggle + tab-switcher) ---------- */
 .collection-toolbar {
   display: flex;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 2rem;
   border-bottom: 1px solid #e5e5e5;
   position: sticky;
@@ -168,6 +170,7 @@
   white-space: nowrap;
   transition: color 0.15s ease, border-color 0.15s ease;
   margin-bottom: -1px;
+  flex: 0 0 20%;
 }
 
 .collection-toolbar__filter-toggle:hover {
@@ -182,6 +185,54 @@
 .collection-toolbar__filter-toggle[aria-expanded="true"] {
   color: #1a1a1a;
   border-bottom-color: #1a1a1a;
+}
+
+.tab-switcher {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 80%;
+}
+
+.tab-switcher__tab {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.85rem 1.25rem;
+  color: #6b6b6b;
+  position: relative;
+  transition: color 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.tab-switcher__tab:hover {
+  color: #1a1a1a;
+}
+
+.tab-switcher__tab:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.tab-switcher__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.tab-switcher__tab--active {
+  color: #1a1a1a;
+}
+
+.tab-switcher__tab--active::after {
+  background: #1a1a1a;
 }
 
 .collection-mobile-bar {
@@ -222,13 +273,48 @@
   font-weight: 600;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .collection-toolbar__filter-toggle {
+    flex: 0 0 auto;
+    padding: 0.85rem 0.75rem;
+  }
+
+  .tab-switcher {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .collection-toolbar {
+    flex-wrap: nowrap;
+    gap: 0;
+    margin-bottom: 1.25rem;
+  }
+
+  .collection-toolbar__filter-toggle {
+    display: none;
+  }
+
+  .tab-switcher {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .tab-switcher::-webkit-scrollbar {
     display: none;
   }
 
   .collection-mobile-bar {
     display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-switcher__tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -461,11 +547,20 @@
   }
 }
 
-/* ---------- Feed + product grid ---------- */
+/* ---------- Feed + panels ---------- */
 .collection-feed {
   width: 100%;
 }
 
+.collection-feed__panel {
+  width: 100%;
+}
+
+.collection-feed__panel[hidden] {
+  display: none;
+}
+
+/* ---------- Product grid ---------- */
 .product-feed__grid {
   display: grid;
   grid-template-columns: repeat(min(var(--columns, 4), 4), 1fr);
@@ -489,5 +584,30 @@
   .product-feed__grid {
     grid-template-columns: repeat(min(var(--columns, 4), 1), 1fr);
     gap: 0.75rem;
+  }
+}
+
+/* ---------- Article grid ---------- */
+.article-feed {
+  display: grid;
+  grid-template-columns: repeat(min(var(--columns, 4), 4), 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .article-feed {
+    grid-template-columns: repeat(min(var(--columns, 4), 3), 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .article-feed {
+    grid-template-columns: repeat(min(var(--columns, 4), 2), 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .article-feed {
+    grid-template-columns: repeat(min(var(--columns, 4), 1), 1fr);
   }
 }
