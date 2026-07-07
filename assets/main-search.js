@@ -23,6 +23,9 @@
         section toolbar/mobile bar, the backdrop element lives in the
         section markup too — this owns all of that behavior since
         it's all "does the filter drawer show or not."
+      - The dimming backdrop is a MOBILE-ONLY drawer affordance (see
+        isMobileViewport() below) — it no longer appears on desktop,
+        where the filter aside is just a normal in-flow sidebar.
       - Live filtering (AJAX via the Section Rendering API): checking
         a filter or editing a price field re-fetches just the
         main-search section's HTML with the new query params and
@@ -86,6 +89,18 @@
   var filterToggles = document.querySelectorAll('[data-filter-toggle]');
   var filterClose = document.querySelector('[data-filter-close]');
 
+  // BACKDROP FIX (2026-07): the drawer/backdrop treatment is a mobile-
+  // only pattern — on desktop the filter aside is just a normal
+  // in-flow sidebar (see the flexbox layout in main-search.css), so
+  // dimming the whole page behind it doesn't make sense there. This
+  // mirrors the `max-width: 768px` breakpoint main-search.css already
+  // uses to switch .search-filter into its fixed/drawer positioning,
+  // so "is it a drawer right now" stays in sync between the CSS and
+  // the JS instead of drifting apart.
+  function isMobileViewport() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
   function setToggleState(expanded) {
     filterToggles.forEach(function (btn) {
       btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
@@ -95,12 +110,16 @@
   function openFilters() {
     filterAside.hidden = false;
     setToggleState(true);
-    if (backdrop) backdrop.classList.add('is-visible');
+    // Only add the dimming overlay when the aside is actually behaving
+    // like a drawer (mobile). On desktop this just toggles the sidebar
+    // in place with no overlay.
+    if (backdrop && isMobileViewport()) backdrop.classList.add('is-visible');
   }
 
   function closeFilters() {
     filterAside.hidden = true;
     setToggleState(false);
+    // Safe to always remove, even on desktop where it was never added.
     if (backdrop) backdrop.classList.remove('is-visible');
   }
 
@@ -119,6 +138,16 @@
 
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') closeFilters();
+  });
+
+  // If the viewport crosses the mobile breakpoint while the drawer is
+  // open (e.g. rotating a tablet, or resizing a desktop window down
+  // and back up), drop a stale backdrop rather than leaving the page
+  // dimmed once it's no longer behaving like a drawer.
+  window.addEventListener('resize', function () {
+    if (backdrop && !isMobileViewport()) {
+      backdrop.classList.remove('is-visible');
+    }
   });
 
   /* ── Live filtering (AJAX via Section Rendering API) ──────────
@@ -194,6 +223,10 @@
 
     var thisRequest = ++filterRequestToken;
     var grid = document.getElementById('search-results-grid');
+    // aria-busy also drives the visual loading state (dimmed fields +
+    // spinner) via CSS in main-search.css — this used to only dim the
+    // results grid, leaving the filter form itself looking idle/
+    // interactive while a request was actually in flight.
     filterForm.setAttribute('aria-busy', 'true');
     if (grid) grid.style.opacity = '0.5';
 
@@ -290,6 +323,21 @@
       window.location.href = url.toString();
     });
   }
+
+  // TAB SWITCH LOADING STATE (2026-07): tabs are still deliberately
+  // plain links to ?type=product|article (see the file header for
+  // why — reliability over a full AJAX rewrite), so this doesn't
+  // intercept the navigation. It just gives the feed an immediate
+  // "something is happening" state the instant a tab is clicked,
+  // rather than leaving the current results sitting there inert
+  // until the new page finishes loading.
+  var searchFeed = document.getElementById('search-feed');
+  document.querySelectorAll('.tab-switcher__tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      if (tab.classList.contains('tab-switcher__tab--active')) return; // already on this tab
+      if (searchFeed) searchFeed.classList.add('is-loading');
+    });
+  });
 
   document.addEventListener('keydown', function (event) {
     var tab = event.target.closest('[role="tab"]');

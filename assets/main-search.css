@@ -15,6 +15,21 @@
 
    Color fallbacks for the toolbar match collection-toolbar.css so
    the search and collection toolbars stay visually consistent.
+
+   BRAND COLORS (2026-07): --color-accent / --color-accent-secondary
+   are expected to be set globally by the theme (they're read with a
+   fallback everywhere in this file, never hardcoded), but the
+   fallbacks here have been set to the brand palette — Old Glory Red
+   #B31942 as the primary accent, Old Glory Blue #0A3161 as the
+   secondary — so this section still looks on-brand even on a store
+   that hasn't defined those variables yet.
+
+   PRESET-READY: every color in this file is a `var(--token, fallback)`
+   read, never a bare hex value, specifically so a future preset
+   system (e.g. "hyper" / "focus") can swap the whole section's
+   palette just by redefining --color-accent / --color-accent-
+   secondary / --color-text etc. at a higher scope (e.g. on
+   `[data-theme-preset]`) — no changes needed here when that lands.
 */
 
 .main-search {
@@ -111,11 +126,11 @@
 
 .tab-switcher__tab--active {
   color: var(--color-text, #1a1a1a);
-  border-bottom-color: var(--color-accent, #1a1a1a);
+  border-bottom-color: var(--color-accent, #B31942);
 }
 
 .tab-switcher__tab:focus-visible {
-  outline: 2px solid var(--color-accent, #1a1a1a);
+  outline: 2px solid var(--color-accent, #B31942);
   outline-offset: 2px;
 }
 
@@ -236,8 +251,21 @@
   z-index: 40;
 }
 
-.search-mobile-backdrop.is-visible {
-  display: block;
+/* BACKDROP FIX (2026-07): scoped to the same breakpoint the drawer
+   itself uses (see .search-filter's mobile positioning below), as a
+   defensive second layer alongside the JS check in main-search.js —
+   even if `.is-visible` somehow got added outside of mobile, it
+   still can't render there. */
+@media (min-width: 769px) {
+  .search-mobile-backdrop.is-visible {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-mobile-backdrop.is-visible {
+    display: block;
+  }
 }
 
 /* Filter drawer
@@ -300,7 +328,7 @@
 }
 
 .search-filter__group-badge {
-  background: var(--color-accent, #111);
+  background: var(--color-accent, #B31942);
   color: var(--color-accent-contrast, #fff);
   border-radius: 999px;
   font-size: 0.75rem;
@@ -355,15 +383,15 @@
 }
 
 .search-filter__pill--clear {
-  border-color: var(--color-accent, #111);
-  color: var(--color-accent, #111);
+  border-color: var(--color-accent, #B31942);
+  color: var(--color-accent, #B31942);
 }
 
 .search-filter__submit {
   margin-top: 1rem;
   width: 100%;
   padding: 0.6rem;
-  background: var(--color-accent, #111);
+  background: var(--color-accent, #B31942);
   color: var(--color-accent-contrast, #fff);
   border: none;
   border-radius: 4px;
@@ -373,6 +401,101 @@
 .search-filter__empty {
   color: var(--color-text-muted, #6b6b6b);
   font-size: 0.9rem;
+}
+
+/* Articles-tab placeholder (2026-07)
+   Replaces the old single small <p class="search-filter__empty">
+   line, which left the sidebar feeling empty/broken rather than
+   intentional. Sizing (padding, icon dimensions) is set independent
+   of the filter form's own content so switching tabs doesn't change
+   .search-filter's width — same "no layout shift" goal the width fix
+   above already covers for the hidden/shown case. */
+
+.search-filter__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem 1.5rem;
+}
+
+.search-filter__placeholder-icon {
+  color: var(--color-accent-secondary, #0A3161);
+  margin-bottom: 0.25rem;
+}
+
+.search-filter__placeholder-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text, #1a1a1a);
+}
+
+.search-filter__placeholder-text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-text-muted, #6b6b6b);
+}
+
+.search-filter__placeholder-btn {
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.15rem;
+  background: var(--color-accent, #B31942);
+  color: var(--color-accent-contrast, #fff);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.search-filter__placeholder-btn:hover {
+  opacity: 0.85;
+}
+
+.search-filter__placeholder-btn:focus-visible {
+  outline: 2px solid var(--color-accent-secondary, #0A3161);
+  outline-offset: 2px;
+}
+
+/* Live-filtering loading state (2026-07)
+   Previously only the results grid dimmed (via inline style in
+   main-search.js) while a filter request was in flight, leaving the
+   form itself looking fully idle/interactive. filterForm gets
+   aria-busy="true" for the duration of the request (see
+   applyFiltersLive in main-search.js) — this turns that into a
+   visible state: the fields dim and a small spinner appears, so it's
+   clear the form itself is what's updating. */
+
+#SearchFilterForm[aria-busy="true"] {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+#SearchFilterForm[aria-busy="true"]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--color-accent-secondary, #0A3161);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: search-filter-spin 0.6s linear infinite;
+}
+
+@keyframes search-filter-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Mobile drawer positioning */
@@ -402,6 +525,33 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* Tab-switch loading state (2026-07)
+   Tabs are still plain links that do a full page navigation (see the
+   note in main-search.js) — this class just gets added the instant a
+   tab is clicked, for immediate feedback while that navigation is in
+   flight, rather than the previous results sitting there looking
+   fully idle until the new page arrives. */
+.search-feed.is-loading {
+  position: relative;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.search-feed.is-loading::after {
+  content: '';
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: -0.875rem;
+  border: 3px solid var(--color-accent-secondary, #0A3161);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: search-filter-spin 0.6s linear infinite;
 }
 
 .search-feed__panel[hidden] {
@@ -436,8 +586,8 @@
 }
 
 .pagination__link--current {
-  background: var(--color-accent, #111);
-  border-color: var(--color-accent, #111);
+  background: var(--color-accent, #B31942);
+  border-color: var(--color-accent, #B31942);
   color: var(--color-accent-contrast, #fff);
 }
 
