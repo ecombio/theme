@@ -1,7 +1,12 @@
-{%- comment -%} sections/main-search.liquid — MVP, repurposed from main-collection.liquid {%- endcomment -%}
+{%- comment -%} sections/main-search.liquid — repurposed from main-collection.liquid to add a Products/Articles tab switcher {%- endcomment -%}
 {{ 'main-search.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
+  assign active_tab = request.query_parameters['tab'] | default: 'products'
+  unless active_tab == 'products' or active_tab == 'articles'
+    assign active_tab = 'products'
+  endunless
+
   assign width_type = section.settings.section_width
   if width_type == blank
     assign width_class = 'collection-page__default-width'
@@ -15,6 +20,7 @@
   <div
     class="collection-page {{ width_class }}"
     data-search-page
+    data-active-tab="{{ active_tab }}"
     style="
       --section-padding: {{ section.settings.section_padding }}px;
       {%- if width_type == 'custom-width' %}
@@ -36,8 +42,9 @@
 
     <section class="collection-section">
 
-      {%- if section.settings.show_filters -%}
-        <div class="collection-toolbar" id="search-toolbar" role="navigation" aria-label="Search filters navigation">
+      <div class="collection-toolbar" id="search-toolbar" role="navigation" aria-label="Search filters navigation">
+
+        {%- if section.settings.show_filters -%}
           <button
             class="collection-toolbar__filter-toggle"
             type="button"
@@ -51,8 +58,35 @@
             </svg>
             Filters
           </button>
+        {%- endif -%}
+
+        <div class="tab-switcher" role="tablist" aria-label="Search results view">
+          <button
+            class="tab-switcher__tab{% if active_tab == 'products' %} tab-switcher__tab--active{% endif %}"
+            role="tab"
+            type="button"
+            aria-selected="{% if active_tab == 'products' %}true{% else %}false{% endif %}"
+            aria-controls="panel-products"
+            id="tab-products"
+            data-tab="products"
+            tabindex="{% if active_tab == 'products' %}0{% else %}-1{% endif %}"
+          >{{ section.settings.tab_products_label | default: 'Products' }}</button>
+
+          <button
+            class="tab-switcher__tab{% if active_tab == 'articles' %} tab-switcher__tab--active{% endif %}"
+            role="tab"
+            type="button"
+            aria-selected="{% if active_tab == 'articles' %}true{% else %}false{% endif %}"
+            aria-controls="panel-articles"
+            id="tab-articles"
+            data-tab="articles"
+            tabindex="{% if active_tab == 'articles' %}0{% else %}-1{% endif %}"
+          >{{ section.settings.tab_articles_label | default: 'Articles' }}</button>
         </div>
 
+      </div>
+
+      {%- if section.settings.show_filters -%}
         <div class="collection-mobile-bar" aria-label="Search controls" role="toolbar">
           <button
             class="collection-mobile-bar__btn"
@@ -90,7 +124,8 @@
 
             <form method="get" action="{{ routes.search_url }}" id="FilterForm">
               <input type="hidden" name="q" value="{{ search.terms | escape }}">
-              <input type="hidden" name="type" value="product">
+              <input type="hidden" name="type" value="product,article">
+              <input type="hidden" name="tab" value="{{ active_tab }}" data-tab-input>
 
               {%- for filter in search.filters -%}
                 <details class="collection-filter__group" open>
@@ -152,52 +187,119 @@
         {%- endif -%}
 
         <div class="collection-body__feed">
-          <div class="collection-feed" id="search-feed">
-            {{ 'product-card.css' | asset_url | stylesheet_tag }}
 
-            {%- paginate search.results by section.settings.products_per_page -%}
+          <div class="collection-feed" id="search-feed" data-search-feed>
 
-              <div id="product-feed" class="product-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
-                <div class="product-feed__grid">
-                  {%- assign has_results = false -%}
-                  {%- for item in search.results -%}
-                    {%- if item.object_type == 'product' -%}
-                      {%- assign has_results = true -%}
-                      {%- render 'product-card', product: item -%}
-                    {%- endif -%}
-                  {%- endfor -%}
+            <div
+              id="panel-products"
+              class="collection-feed__panel"
+              role="tabpanel"
+              aria-labelledby="tab-products"
+              data-panel="products"
+              {%- if active_tab != 'products' %} hidden{%- endif %}
+            >
+              {{ 'product-card.css' | asset_url | stylesheet_tag }}
 
-                  {%- unless has_results -%}
-                    <p class="collection-empty">
-                      {%- if search.performed -%}
-                        No results found for &ldquo;{{ search.terms }}&rdquo;.
-                      {%- else -%}
-                        Enter a search term to see results.
+              {%- paginate search.results by section.settings.results_per_page -%}
+
+                <div id="product-feed" class="product-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
+                  <div class="product-feed__grid">
+                    {%- assign has_products = false -%}
+                    {%- for item in search.results -%}
+                      {%- if item.object_type == 'product' -%}
+                        {%- assign has_products = true -%}
+                        {%- render 'product-card', product: item -%}
                       {%- endif -%}
-                    </p>
-                  {%- endunless -%}
+                    {%- endfor -%}
+
+                    {%- unless has_products -%}
+                      <p class="collection-empty">
+                        {%- if search.performed -%}
+                          No product results found for &ldquo;{{ search.terms }}&rdquo;.
+                        {%- else -%}
+                          Enter a search term to see results.
+                        {%- endif -%}
+                      </p>
+                    {%- endunless -%}
+                  </div>
                 </div>
-              </div>
 
-              {%- if paginate.pages > 1 -%}
-                <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
-                  {%- if paginate.previous -%}
-                    <a href="{{ paginate.previous.url }}" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
-                  {%- endif -%}
-                  {%- for part in paginate.parts -%}
-                    {%- if part.is_link -%}
-                      <a href="{{ part.url }}" class="pagination__link">{{ part.title }}</a>
-                    {%- else -%}
-                      <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                {%- if paginate.pages > 1 -%}
+                  <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+                    {%- if paginate.previous -%}
+                      <a href="{{ paginate.previous.url }}&tab=products" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
                     {%- endif -%}
-                  {%- endfor -%}
-                  {%- if paginate.next -%}
-                    <a href="{{ paginate.next.url }}" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
-                  {%- endif -%}
-                </nav>
-              {%- endif -%}
+                    {%- for part in paginate.parts -%}
+                      {%- if part.is_link -%}
+                        <a href="{{ part.url }}&tab=products" class="pagination__link">{{ part.title }}</a>
+                      {%- else -%}
+                        <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- if paginate.next -%}
+                      <a href="{{ paginate.next.url }}&tab=products" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
+                    {%- endif -%}
+                  </nav>
+                {%- endif -%}
 
-            {%- endpaginate -%}
+              {%- endpaginate -%}
+            </div>
+
+            <div
+              id="panel-articles"
+              class="collection-feed__panel"
+              role="tabpanel"
+              aria-labelledby="tab-articles"
+              data-panel="articles"
+              {%- if active_tab != 'articles' %} hidden{%- endif %}
+            >
+              {{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+              {%- paginate search.results by section.settings.results_per_page -%}
+
+                <div id="article-feed-wrap">
+                  <div class="article-feed">
+                    {%- assign has_articles = false -%}
+                    {%- for item in search.results -%}
+                      {%- if item.object_type == 'article' -%}
+                        {%- assign has_articles = true -%}
+                        {%- render 'article-card', article: item -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- unless has_articles -%}
+                      <p class="collection-empty">
+                        {%- if search.performed -%}
+                          No article results found for &ldquo;{{ search.terms }}&rdquo;.
+                        {%- else -%}
+                          Enter a search term to see results.
+                        {%- endif -%}
+                      </p>
+                    {%- endunless -%}
+                  </div>
+                </div>
+
+                {%- if paginate.pages > 1 -%}
+                  <nav class="pagination" aria-label="{{ 'general.pagination.label' | t }}">
+                    {%- if paginate.previous -%}
+                      <a href="{{ paginate.previous.url }}&tab=articles" class="pagination__link">&larr; {{ 'general.pagination.previous' | t }}</a>
+                    {%- endif -%}
+                    {%- for part in paginate.parts -%}
+                      {%- if part.is_link -%}
+                        <a href="{{ part.url }}&tab=articles" class="pagination__link">{{ part.title }}</a>
+                      {%- else -%}
+                        <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- if paginate.next -%}
+                      <a href="{{ paginate.next.url }}&tab=articles" class="pagination__link">{{ 'general.pagination.next' | t }} &rarr;</a>
+                    {%- endif -%}
+                  </nav>
+                {%- endif -%}
+
+              {%- endpaginate -%}
+            </div>
+
           </div>
         </div>
 
@@ -220,6 +322,18 @@
   "class": "section-search",
   "settings": [
     {
+      "type": "text",
+      "id": "tab_products_label",
+      "label": "Products tab label",
+      "default": "Products"
+    },
+    {
+      "type": "text",
+      "id": "tab_articles_label",
+      "label": "Articles tab label",
+      "default": "Articles"
+    },
+    {
       "type": "range",
       "id": "columns",
       "label": "Columns",
@@ -230,8 +344,8 @@
     },
     {
       "type": "range",
-      "id": "products_per_page",
-      "label": "Products per page",
+      "id": "results_per_page",
+      "label": "Results per page",
       "min": 4,
       "max": 48,
       "step": 4,
