@@ -8,7 +8,7 @@
     1. Collection page (unchanged):
        {%- render 'collection-filter', collection: collection -%}
 
-    2. Search results page (new):
+    2. Search results page:
        {%- render 'collection-filter', search_terms: search.terms, result_type: 'product' -%}
 
   Whichever is passed determines where the filters come from, what
@@ -49,7 +49,10 @@
     {%- endunless -%}
 
     {%- for filter in filters -%}
-      <details class="collection-filter__group" open>
+      <details
+        class="collection-filter__group"
+        open
+      >
         <summary class="collection-filter__group-label">
           {{ filter.label }}
           {%- if filter.active_values.size > 0 -%}
@@ -78,11 +81,36 @@
             {%- when 'price_range' -%}
               <div class="collection-filter__price-wrap" data-price-filter>
                 <div class="collection-filter__price">
-                  <input type="number" name="{{ filter.min_value.param_name }}" value="{{ filter.min_value.value }}" min="0" max="{{ filter.range_max }}" placeholder="min." data-price-input="min">
+                  <input
+                    type="number"
+                    name="{{ filter.min_value.param_name }}"
+                    value="{{ filter.min_value.value }}"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    placeholder="min."
+                    data-price-input="min"
+                  >
                   <span>–</span>
-                  <input type="number" name="{{ filter.max_value.param_name }}" value="{{ filter.max_value.value }}" min="0" max="{{ filter.range_max }}" placeholder="max." data-price-input="max">
+                  <input
+                    type="number"
+                    name="{{ filter.max_value.param_name }}"
+                    value="{{ filter.max_value.value }}"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    placeholder="max."
+                    data-price-input="max"
+                  >
                 </div>
 
+                {%- comment -%}
+                  Decorative distribution bars. Shopify's price_range
+                  filter only exposes range_max — it doesn't hand back
+                  per-bucket product counts — so this renders a plain
+                  bell-shaped curve rather than a real histogram. Swap
+                  the `bar_height` values below for real bucket counts
+                  if that data ever becomes available (e.g. a metafield
+                  driven price histogram).
+                {%- endcomment -%}
                 <div class="collection-filter__histogram" aria-hidden="true">
                   {%- assign bar_count = 16 -%}
                   {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
@@ -96,20 +124,58 @@
                 <div class="collection-filter__range-slider" data-range-slider>
                   <div class="collection-filter__range-track"></div>
                   <div class="collection-filter__range-track-active" data-range-active></div>
-                  <input type="range" class="collection-filter__range-input collection-filter__range-input--min" min="0" max="{{ filter.range_max }}" value="{{ filter.min_value.value | default: 0 }}" data-range-thumb="min" aria-label="Minimum price">
-                  <input type="range" class="collection-filter__range-input collection-filter__range-input--max" min="0" max="{{ filter.range_max }}" value="{{ filter.max_value.value | default: filter.range_max }}" data-range-thumb="max" aria-label="Maximum price">
+                  <input
+                    type="range"
+                    class="collection-filter__range-input collection-filter__range-input--min"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    value="{{ filter.min_value.value | default: 0 }}"
+                    data-range-thumb="min"
+                    aria-label="Minimum price"
+                  >
+                  <input
+                    type="range"
+                    class="collection-filter__range-input collection-filter__range-input--max"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    value="{{ filter.max_value.value | default: filter.range_max }}"
+                    data-range-thumb="max"
+                    aria-label="Maximum price"
+                  >
                 </div>
 
+                {%- comment -%}
+                  Quick-pick brackets, split evenly across range_max.
+                  There's no per-bracket count available from Shopify's
+                  filter object for price (unlike the list-type filters
+                  above, which do have real `value.count`), so none is
+                  shown here.
+                {%- endcomment -%}
                 {%- assign quarter = filter.range_max | divided_by: 4.0 -%}
                 {%- assign b1 = quarter | round -%}
                 {%- assign b2 = quarter | times: 2 | round -%}
                 {%- assign b3 = quarter | times: 3 | round -%}
                 <div class="collection-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
-                  <label class="collection-filter__price-option"><input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}"> Less than ${{ b1 }}</label>
-                  <label class="collection-filter__price-option"><input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}"> ${{ b1 }} to ${{ b2 }}</label>
-                  <label class="collection-filter__price-option"><input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}"> ${{ b2 }} to ${{ b3 }}</label>
-                  <label class="collection-filter__price-option"><input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}"> ${{ b3 }} to ${{ filter.range_max }}</label>
-                  <label class="collection-filter__price-option"><input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max=""> More than ${{ filter.range_max }}</label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
+                    Less than ${{ b1 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}">
+                    ${{ b1 }} to ${{ b2 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}">
+                    ${{ b2 }} to ${{ b3 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}">
+                    ${{ b3 }} to ${{ filter.range_max }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max="">
+                    More than ${{ filter.range_max }}
+                  </label>
                 </div>
               </div>
           {%- endcase -%}
