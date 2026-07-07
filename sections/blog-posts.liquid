@@ -1,0 +1,80 @@
+{% comment %}
+  Simple articles grid section.
+  Renders each article using snippets/article-card.liquid (which pulls in
+  its own article-card.css). No tag filtering, dynamic content, or JS —
+  just a blog picker, heading, and article grid.
+{% endcomment %}
+
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
+{{ 'blog-posts.css' | asset_url | stylesheet_tag }}
+
+{% assign target_blog = blogs[section.settings.blog] %}
+
+<div class="blog-posts-section section-{{ section.id }}">
+
+  {% if section.settings.heading != blank %}
+    <div class="blog-posts__header">
+      <h2 class="blog-posts__title">{{ section.settings.heading }}</h2>
+    </div>
+  {% endif %}
+
+  {% if target_blog.articles.size > 0 %}
+    <div class="blog-posts__grid" style="--articles-columns: {{ section.settings.columns }};">
+      {% for article in target_blog.articles limit: section.settings.limit %}
+        {% comment %} Eager-load the first row so LCP isn't hurt by lazy-loading above-the-fold images {% endcomment %}
+        {% assign loading = 'lazy' %}
+        {% if forloop.index <= section.settings.columns %}
+          {% assign loading = 'eager' %}
+        {% endif %}
+
+        {% render 'article-card', article: article, loading: loading %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="blog-posts__empty">No articles to show yet.</p>
+  {% endif %}
+
+</div>
+
+{% schema %}
+{
+  "name": "Articles",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Latest Articles"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "min": 3,
+      "max": 24,
+      "step": 1,
+      "default": 12,
+      "label": "Max articles to show"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "label": "Columns (desktop)"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Articles",
+      "category": "Blog"
+    }
+  ]
+}
+{% endschema %}
