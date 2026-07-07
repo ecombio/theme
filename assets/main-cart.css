@@ -1,0 +1,467 @@
+/* =========================================================================
+   main-cart.css
+   Full-page cart layout for sections/main-cart.liquid
+
+   Relies on the shared --ecd-* design-token layer declared in
+   cart-drawer.css (colors, radii, type, spacing). Fallback values are
+   provided inline via var(--ecd-x, fallback) so this file still renders
+   sensibly if that stylesheet is ever missing, but the source of truth
+   for the tokens themselves lives in cart-drawer.css — don't redeclare
+   them here.
+
+   Structure:
+     1. Page shell
+     2. Empty state
+     3. Layout grid (items column + summary column)
+     4. Items table
+     5. Product cell
+     6. Price / qty / remove cells
+     7. Order summary
+     8. Loading overlay
+     9. Responsive (tablet / mobile)
+   ========================================================================= */
+
+/* ---------- 1. Page shell ---------- */
+
+.ecombio-cart-page {
+  --_gap: var(--ecd-space-lg, 2rem);
+  color: var(--ecd-color-text, #1a1a1a);
+  font-family: var(--ecd-font-body, system-ui, sans-serif);
+  background: var(--ecd-color-bg, #fff);
+  position: relative;
+}
+
+.ecombio-cart-page__inner {
+  max-width: var(--ecd-container-max, 1200px);
+  margin: 0 auto;
+  padding: var(--ecd-space-xl, 3rem) var(--ecd-space-md, 1.5rem) var(--ecd-space-xxl, 4rem);
+}
+
+.ecombio-cart-page__heading {
+  font-family: var(--ecd-font-heading, var(--ecd-font-body, system-ui, sans-serif));
+  font-size: var(--ecd-font-size-xl, 1.75rem);
+  font-weight: var(--ecd-font-weight-bold, 700);
+  line-height: 1.2;
+  margin: 0 0 var(--ecd-space-lg, 2rem);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.ecombio-cart-page__count {
+  font-size: var(--ecd-font-size-md, 1rem);
+  font-weight: var(--ecd-font-weight-regular, 400);
+  color: var(--ecd-color-text-muted, #6b6b6b);
+}
+
+/* ---------- 2. Empty state ---------- */
+
+.ecombio-cart-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--ecd-space-sm, 1rem);
+  padding: var(--ecd-space-xxl, 4rem) var(--ecd-space-md, 1.5rem);
+  min-height: 40vh;
+}
+
+.ecombio-cart-page__empty-icon {
+  color: var(--ecd-color-border, #d8d8d8);
+  margin-bottom: var(--ecd-space-xs, 0.5rem);
+}
+
+.ecombio-cart-page__empty-heading {
+  font-family: var(--ecd-font-heading, var(--ecd-font-body, system-ui, sans-serif));
+  font-size: var(--ecd-font-size-lg, 1.375rem);
+  font-weight: var(--ecd-font-weight-bold, 700);
+  margin: 0 0 var(--ecd-space-xs, 0.5rem);
+}
+
+/* ---------- 3. Layout grid ---------- */
+
+.ecombio-cart-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: var(--_gap);
+  align-items: start;
+}
+
+.ecombio-cart-page__items-col {
+  min-width: 0;
+}
+
+/* ---------- 4. Items table ---------- */
+
+.ecombio-cart-page__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ecombio-cart-page__thead .ecombio-cart-page__th {
+  text-align: left;
+  font-size: var(--ecd-font-size-xs, 0.75rem);
+  font-weight: var(--ecd-font-weight-medium, 500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ecd-color-text-muted, #6b6b6b);
+  padding: 0 var(--ecd-space-sm, 1rem) var(--ecd-space-sm, 1rem);
+  border-bottom: 1px solid var(--ecd-color-border, #e5e5e5);
+}
+
+.ecombio-cart-page__th--price,
+.ecombio-cart-page__th--total {
+  text-align: right;
+}
+
+.ecombio-cart-page__th--qty {
+  text-align: center;
+}
+
+.ecombio-cart-page__th--remove {
+  width: 2.5rem;
+}
+
+.ecombio-cart-page__row {
+  border-bottom: 1px solid var(--ecd-color-border, #e5e5e5);
+}
+
+.ecombio-cart-page__row:last-child {
+  border-bottom: none;
+}
+
+.ecombio-cart-page__td {
+  padding: var(--ecd-space-md, 1.5rem) var(--ecd-space-sm, 1rem);
+  vertical-align: middle;
+}
+
+.ecombio-cart-page__td--price,
+.ecombio-cart-page__td--total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ecombio-cart-page__td--qty {
+  text-align: center;
+}
+
+.ecombio-cart-page__td--remove {
+  text-align: right;
+  width: 2.5rem;
+}
+
+/* ---------- 5. Product cell ---------- */
+
+.ecombio-cart-page__product {
+  display: flex;
+  align-items: center;
+  gap: var(--ecd-space-sm, 1rem);
+}
+
+.ecombio-cart-page__item-image-link {
+  flex-shrink: 0;
+  display: block;
+}
+
+.ecombio-cart-page__item-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: var(--ecd-radius-sm, 8px);
+  background: var(--ecd-color-surface, #f4f4f4);
+  display: block;
+}
+
+.ecombio-cart-page__item-image--placeholder {
+  border: 1px dashed var(--ecd-color-border, #d8d8d8);
+}
+
+.ecombio-cart-page__item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ecombio-cart-page__item-title {
+  font-size: var(--ecd-font-size-md, 1rem);
+  font-weight: var(--ecd-font-weight-medium, 500);
+  color: var(--ecd-color-text, #1a1a1a);
+  text-decoration: none;
+}
+
+.ecombio-cart-page__item-title:hover {
+  text-decoration: underline;
+}
+
+.ecombio-cart-page__item-variant,
+.ecombio-cart-page__item-selling-plan {
+  margin: 0;
+  font-size: var(--ecd-font-size-sm, 0.875rem);
+  color: var(--ecd-color-text-muted, #6b6b6b);
+}
+
+/* ---------- 6. Price / qty / remove cells ---------- */
+
+.ecombio-cart-page__price {
+  font-variant-numeric: tabular-nums;
+}
+
+.ecombio-cart-page__price--was {
+  display: block;
+  color: var(--ecd-color-text-muted, #6b6b6b);
+  font-size: var(--ecd-font-size-sm, 0.875rem);
+  text-decoration: line-through;
+}
+
+.ecombio-cart-page__qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--ecd-color-border, #d8d8d8);
+  border-radius: var(--ecd-radius-full, 999px);
+  overflow: hidden;
+}
+
+.ecombio-cart-page__qty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--ecd-color-text, #1a1a1a);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ecombio-cart-page__qty-btn:hover {
+  background: var(--ecd-color-surface, #f4f4f4);
+}
+
+.ecombio-cart-page__qty-btn:focus-visible {
+  outline: 2px solid var(--ecd-color-accent, #1a1a1a);
+  outline-offset: -2px;
+}
+
+.ecombio-cart-page__qty-value {
+  min-width: 1.75rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ecd-font-size-sm, 0.875rem);
+}
+
+.ecombio-cart-page__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--ecd-color-text-muted, #6b6b6b);
+  cursor: pointer;
+  border-radius: var(--ecd-radius-sm, 8px);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ecombio-cart-page__remove:hover {
+  background: var(--ecd-color-surface, #f4f4f4);
+  color: var(--ecd-color-danger, #c0392b);
+}
+
+.ecombio-cart-page__remove:focus-visible {
+  outline: 2px solid var(--ecd-color-accent, #1a1a1a);
+  outline-offset: 2px;
+}
+
+/* ---------- 7. Order summary ---------- */
+
+.ecombio-cart-page__summary {
+  position: sticky;
+  top: var(--ecd-space-lg, 2rem);
+  background: var(--ecd-color-surface, #f9f9f9);
+  border: 1px solid var(--ecd-color-border, #e5e5e5);
+  border-radius: var(--ecd-radius-md, 12px);
+  padding: var(--ecd-space-lg, 2rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.ecombio-cart-page__summary-heading {
+  font-family: var(--ecd-font-heading, var(--ecd-font-body, system-ui, sans-serif));
+  font-size: var(--ecd-font-size-lg, 1.25rem);
+  font-weight: var(--ecd-font-weight-bold, 700);
+  margin: 0 0 var(--ecd-space-md, 1.5rem);
+}
+
+.ecombio-cart-page__discounts {
+  list-style: none;
+  margin: 0 0 var(--ecd-space-sm, 1rem);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ecombio-cart-page__discount {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--ecd-font-size-sm, 0.875rem);
+  color: var(--ecd-color-success, #2f7d4f);
+}
+
+.ecombio-cart-page__discount-amount {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.ecombio-cart-page__subtotal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--ecd-font-size-md, 1rem);
+  font-weight: var(--ecd-font-weight-medium, 500);
+  padding-top: var(--ecd-space-sm, 1rem);
+  border-top: 1px solid var(--ecd-color-border, #e5e5e5);
+}
+
+.ecombio-cart-page__subtotal-row span:last-child {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ecd-font-size-lg, 1.25rem);
+  font-weight: var(--ecd-font-weight-bold, 700);
+}
+
+.ecombio-cart-page__tax-note {
+  margin: 0.5rem 0 var(--ecd-space-md, 1.5rem);
+  font-size: var(--ecd-font-size-xs, 0.75rem);
+  color: var(--ecd-color-text-muted, #6b6b6b);
+}
+
+.ecombio-cart-page__checkout {
+  width: 100%;
+  text-align: center;
+  margin-bottom: var(--ecd-space-sm, 1rem);
+}
+
+.ecombio-cart-page__continue {
+  text-align: center;
+  font-size: var(--ecd-font-size-sm, 0.875rem);
+  color: var(--ecd-color-text-muted, #6b6b6b);
+  text-decoration: underline;
+}
+
+.ecombio-cart-page__continue:hover {
+  color: var(--ecd-color-text, #1a1a1a);
+}
+
+/* ---------- 8. Loading overlay ---------- */
+
+.ecombio-cart-page__loading {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ecd-color-bg, #fff) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--ecd-z-overlay, 10);
+}
+
+.ecombio-cart-page__loading[hidden] {
+  display: none;
+}
+
+.ecombio-cart-page__spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 3px solid var(--ecd-color-border, #e5e5e5);
+  border-top-color: var(--ecd-color-accent, #1a1a1a);
+  animation: ecombio-cart-page-spin 0.7s linear infinite;
+}
+
+@keyframes ecombio-cart-page-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecombio-cart-page__spinner {
+    animation-duration: 1.4s;
+  }
+}
+
+/* ---------- 9. Responsive ---------- */
+
+@media (max-width: 900px) {
+  .ecombio-cart-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ecombio-cart-page__summary {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .ecombio-cart-page__inner {
+    padding: var(--ecd-space-lg, 2rem) var(--ecd-space-sm, 1rem) var(--ecd-space-xl, 3rem);
+  }
+
+  /* Stack the table into cards: hide the header row, turn each row into
+     a labeled block, and use data-label (set in the liquid) for the cells
+     that need a visible caption on small screens. */
+  .ecombio-cart-page__thead {
+    display: none;
+  }
+
+  .ecombio-cart-page__table,
+  .ecombio-cart-page__table tbody,
+  .ecombio-cart-page__row,
+  .ecombio-cart-page__td {
+    display: block;
+    width: 100%;
+  }
+
+  .ecombio-cart-page__row {
+    padding: var(--ecd-space-md, 1.5rem) 0;
+  }
+
+  .ecombio-cart-page__td {
+    padding: 0.35rem 0;
+  }
+
+  .ecombio-cart-page__td--product {
+    padding-bottom: var(--ecd-space-sm, 1rem);
+  }
+
+  .ecombio-cart-page__td--price,
+  .ecombio-cart-page__td--qty,
+  .ecombio-cart-page__td--total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .ecombio-cart-page__td--price::before,
+  .ecombio-cart-page__td--qty::before,
+  .ecombio-cart-page__td--total::before {
+    content: attr(data-label);
+    font-size: var(--ecd-font-size-xs, 0.75rem);
+    color: var(--ecd-color-text-muted, #6b6b6b);
+  }
+
+  .ecombio-cart-page__td--remove {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .ecombio-cart-page__item-image {
+    width: 80px;
+    height: 80px;
+  }
+}
