@@ -15,11 +15,28 @@
   {%- paginate -%} loop so the two result sets don't interfere with
   each other.
 
+  In-feed promo_banner / promo_carousel blocks (products panel only,
+  matching main-collection.liquid's behavior — Shopify search doesn't
+  facet/merchandise article results the same way, so blocks aren't
+  offered on that tab) are positioned using an ABSOLUTE index across
+  the whole result set:
+
+    absolute_index = paginate.current_offset + forloop.index
+
+  rather than forloop.parentloop.index alone. forloop.parentloop.index
+  resets to 1 on every page, so comparing a block's `position` setting
+  against it directly would render that block once per page instead of
+  once at the intended spot in the overall result set — the same bug
+  found in main-collection.liquid's original banner/carousel loop.
+  Same reasoning applies to the "position beyond the end" case: it's
+  gated on `paginate.next` being absent, so the "append at the end"
+  fallback only fires on the last page.
+
   Expects:
     - search_terms  (string)  the current search query, e.g. search.terms
     - active_type    (string)  'product' or 'article'
     - section        (object)  the parent section, for settings:
-                                columns, results_per_page
+                                columns, results_per_page, and blocks
 {%- endcomment -%}
 {%- comment -%}
   search-results.css now also contains the rules formerly in
@@ -31,7 +48,9 @@
   parent section's (main-search.liquid) job. Note article-results.
   liquid previously broke that rule itself by loading article-card.css
   directly — preserved as its own load below to avoid changing
-  behavior, but worth cleaning up as a follow-up.
+  behavior, but worth cleaning up as a follow-up. promo-banner.css /
+  promo-carousel.css are likewise owned and loaded by main-search.
+  liquid, not here.
 {%- endcomment -%}
 {{ 'search-results.css' | asset_url | stylesheet_tag }}
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
@@ -51,6 +70,11 @@
       {%- comment -%} snippet: product-results (formerly snippets/product-results.liquid) {%- endcomment -%}
       <div id="product-results" class="product-results">
 
+        {%- liquid
+          assign banner_blocks   = section.blocks | where: 'type', 'promo_banner'
+          assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
+        -%}
+
         {%- paginate search.results by section.settings.results_per_page -%}
 
           <div
@@ -59,10 +83,50 @@
             style="--columns: {{ section.settings.columns | default: 4 }};"
           >
             {%- for result in search.results -%}
+
+              {%- assign absolute_index = paginate.current_offset | plus: forloop.index -%}
+
+              {%- for banner in banner_blocks -%}
+                {%- assign banner_position = banner.settings.position | default: 0 -%}
+                {%- if banner_position > 0 and banner_position == absolute_index -%}
+                  {%- render 'promo-banner', block: banner -%}
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- for carousel in carousel_blocks -%}
+                {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+                {%- if carousel_position > 0 and carousel_position == absolute_index -%}
+                  {%- render 'promo-carousel', block: carousel -%}
+                {%- endif -%}
+              {%- endfor -%}
+
               {%- render 'product-card', product: result -%}
+
             {%- else -%}
               <p class="search-empty">No products found for &ldquo;{{ search_terms }}&rdquo;.</p>
             {%- endfor -%}
+
+            {%- comment -%}
+              "Position beyond the result count" = "put it at the end".
+              Only render on the last page (no paginate.next), or this
+              would append the block once per page instead of once,
+              overall.
+            {%- endcomment -%}
+            {%- unless paginate.next -%}
+              {%- for banner in banner_blocks -%}
+                {%- assign banner_position = banner.settings.position | default: 0 -%}
+                {%- if banner_position > 0 and banner_position > paginate.items -%}
+                  {%- render 'promo-banner', block: banner -%}
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- for carousel in carousel_blocks -%}
+                {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+                {%- if carousel_position > 0 and carousel_position > paginate.items -%}
+                  {%- render 'promo-carousel', block: carousel -%}
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endunless -%}
           </div>
 
           {%- if paginate.pages > 1 -%}
