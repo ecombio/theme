@@ -1,0 +1,353 @@
+/* assets/collection-filter.css
+   Styles for snippets/collection-filter.liquid: the filter sidebar on
+   desktop and the slide-in drawer on mobile (<= 768px).
+
+   Note: the active-filters strip ("Your Selections" pills) is NOT
+   styled here anymore — it now lives in the toolbar, next to the
+   tabs, so its rules moved to main-collection.css alongside the rest
+   of .collection-toolbar. Only the filter panel itself
+   (#collection-filter and its contents) is styled here. */
+
+.collection-filter {
+  position: sticky;
+  top: calc(var(--sticky-header-height, 0px) + var(--sticky-toolbar-height, 64px));
+  max-height: calc(100vh - 5rem);
+  overflow-y: auto;
+  width: 247px;
+}
+
+.collection-filter[hidden] {
+  display: none;
+}
+
+.collection-filter__group {
+  border-bottom: 1px solid #ececec;
+  padding: 0.9rem 0;
+}
+
+.collection-filter__group-label {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.collection-filter__group-label::-webkit-details-marker {
+  display: none;
+}
+
+.collection-filter__group-label::before {
+  content: '+';
+  display: inline-block;
+  width: 1rem;
+  font-weight: 400;
+  color: #6b6b6b;
+}
+
+.collection-filter__group[open] > .collection-filter__group-label::before {
+  content: '–';
+}
+
+.collection-filter__group-badge {
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+}
+
+.collection-filter__group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-top: 0.75rem;
+}
+
+.collection-filter__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #2a2a2a;
+  cursor: pointer;
+}
+
+.collection-filter__option span {
+  color: #9a9a9a;
+  font-size: 0.85rem;
+}
+
+.collection-filter__option--active {
+  font-weight: 600;
+}
+
+.collection-filter__option--disabled {
+  color: #b8b8b8;
+  cursor: not-allowed;
+}
+
+.collection-filter__option--disabled span {
+  color: #cfcfcf;
+}
+
+.collection-filter__price-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.collection-filter__price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.collection-filter__price input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Histogram (decorative price distribution) ---------- */
+
+.collection-filter__histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 46px;
+}
+
+.collection-filter__histogram-bar {
+  flex: 1 1 0;
+  min-height: 3px;
+  background: #f2d98a;
+  border-radius: 2px 2px 0 0;
+}
+
+/* ---------- Dual-thumb range slider ---------- */
+
+.collection-filter__range-slider {
+  position: relative;
+  height: 20px;
+  margin: 0 2px;
+}
+
+.collection-filter__range-track,
+.collection-filter__range-track-active {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.collection-filter__range-track {
+  left: 0;
+  right: 0;
+  background: #d4d4d4;
+}
+
+.collection-filter__range-track-active {
+  background: #d9a300;
+}
+
+.collection-filter__range-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.collection-filter__range-input--min {
+  z-index: 2;
+}
+
+.collection-filter__range-input--max {
+  z-index: 3;
+}
+
+.collection-filter__range-input.is-active-top {
+  z-index: 4;
+}
+
+.collection-filter__range-input::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.collection-filter__range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #d9a300;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  margin-top: 0;
+}
+
+.collection-filter__range-input::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.collection-filter__range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #d9a300;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+/* ---------- Quick-pick price brackets ---------- */
+
+.collection-filter__price-brackets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.collection-filter__price-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: #2a2a2a;
+  cursor: pointer;
+}
+
+.collection-filter__price-option input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #1a1a1a;
+  cursor: pointer;
+}
+
+.collection-filter__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #1a1a1a;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.collection-filter__pill:hover {
+  background: #f4f4f4;
+}
+
+.collection-filter__pill--clear {
+  border-color: transparent;
+  text-decoration: underline;
+  color: #6b6b6b;
+}
+
+.collection-filter__submit {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.collection-filter__submit:hover {
+  background: #333;
+}
+
+/* ---------- Mobile drawer state ---------- */
+
+@media (max-width: 768px) {
+  .collection-filter {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    overflow-y: auto;
+    background: #fff;
+    padding: 0 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    top: 0;
+  }
+
+  .collection-filter.is-open {
+    transform: translateX(0);
+  }
+
+  .collection-filter__close {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -1.25rem 1.25rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e5e5;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+  }
+
+  .collection-filter__close-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .collection-filter__close-btn {
+    appearance: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: #6b6b6b;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: color 0.15s ease;
+  }
+
+  .collection-filter__close-btn:hover {
+    color: #1a1a1a;
+  }
+
+  .collection-filter__group-body {
+    gap: 0.7rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .collection-filter__close {
+    display: none;
+  }
+}
