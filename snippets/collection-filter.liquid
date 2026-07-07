@@ -1,190 +1,196 @@
 {%- comment -%}
   snippets/collection-filter.liquid
-  Self-contained filter sidebar. Owns its own markup, styles, and JS.
-  Rendered into the left column of the collection two-column shell —
-  and, as of the main-search integration, into the same slot on
-  sections/main-search.liquid.
 
-  Expects section.settings:
-    show_sort   {Boolean}
-    show_filters {Boolean}
+  Renders the collection filter sidebar/drawer: filter groups (list +
+  price range types), the active-filter pill row, and the Apply button.
 
-  CONTEXT (collection vs. search):
-    This snippet originally assumed it only ever runs on the collection
-    template and read straight from the global `collection` object. It's
-    now rendered from two templates, so it branches on `template.name`:
-      - collection: unchanged behavior, still backed by `collection.*`.
-      - search: backed by `search.*` instead. Two knock-on differences,
-        both scoped to the `is_search` branches below:
-          1. `search` has no `sort_options` array (unlike `collection`),
-             so a fixed fallback list of Shopify's supported search
-             sort values is used instead.
-          2. FilterForm posts via plain GET, which replaces the entire
-             querystring — on search that would silently drop `q` (and
-             the results-type tab param main-search.liquid maintains),
-             so hidden inputs re-assert them. Collection has no
-             equivalent param to preserve, so this is a no-op there.
+  The mobile "close bar" header (title + × button) is NOT rendered here —
+  collection-filter.js injects it on first open, since it's a UI-only
+  affordance that only exists in the mobile drawer state.
 
-  Communicates outward via events:
-    No direct DOM coupling to product-feed or collection.liquid.
-    collection-filter.js dispatches no custom events currently —
-    filter changes trigger a full page navigation via form submit
-    or sort select change, both handled within collection-filter.js.
+  Self-contained: this snippet loads its own CSS/JS below rather than
+  relying on the calling section to load them, so `{%- render
+  'collection-filter', collection: collection -%}` is all a section
+  needs to pull in the whole component. (Matches how e.g. product-card,
+  sub-collection, and promo-banner load their own assets right where
+  they're rendered in sections/main-collection.liquid.)
 
-  JS hook attributes:
-    [data-filter-toggle]  — toolbar buttons (outside this snippet)
-                            target id="collection-filter"
-    [data-sort]           — sort <select>
-    FilterForm            — filter <form>
+  Runtime dependency: assets/collection-filter.js expects
+  window.CollectionBackdrop, defined in assets/main-collection.js. That
+  reference is read lazily (inside click handlers), so load order
+  between the two script tags doesn't matter in practice.
+
+  Accepts:
+    collection - {Object} the collection whose .filters should render.
 {%- endcomment -%}
 
 {{ 'collection-filter.css' | asset_url | stylesheet_tag }}
 
-{%- liquid
-  assign is_search = false
-  if template.name == 'search'
-    assign is_search = true
-  endif
+<aside
+  class="collection-filter"
+  id="collection-filter"
+  aria-label="Product filters"
+>
 
-  if is_search
-    assign filter_source = search
-    assign filter_url    = routes.search_url
-  else
-    assign filter_source = collection
-    assign filter_url    = collection.url
-  endif
--%}
+  <form method="get" action="{{ collection.url }}" id="FilterForm">
 
-{%- if section.settings.show_filters -%}
-  <aside
-    class="collection-filter"
-    id="collection-filter"
-    aria-label="Product filters"
-  >
-
-    {%- comment -%} Close button injected by collection-filter.js on mobile {%- endcomment -%}
-
-    {%- if section.settings.show_sort -%}
-      <div class="collection-filter__sort">
-        <label for="SortBy">Sort</label>
-        <select id="SortBy" data-sort>
-          {%- if is_search -%}
-            {%- comment -%}
-              search has no .sort_options; these are Shopify's documented
-              valid values for search.sort_by.
-            {%- endcomment -%}
-            <option value="relevance" {% if filter_source.sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
-            <option value="best-selling" {% if filter_source.sort_by == 'best-selling' %}selected{% endif %}>Best selling</option>
-            <option value="price-ascending" {% if filter_source.sort_by == 'price-ascending' %}selected{% endif %}>Price: low to high</option>
-            <option value="price-descending" {% if filter_source.sort_by == 'price-descending' %}selected{% endif %}>Price: high to low</option>
-          {%- else -%}
-            {%- for option in collection.sort_options -%}
-              <option
-                value="{{ option.value }}"
-                {%- if option.value == collection.sort_by %} selected{%- endif %}
-              >{{ option.name }}</option>
-            {%- endfor -%}
+    {%- for filter in collection.filters -%}
+      <details
+        class="collection-filter__group"
+        open
+      >
+        <summary class="collection-filter__group-label">
+          {{ filter.label }}
+          {%- if filter.active_values.size > 0 -%}
+            <span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>
           {%- endif -%}
-        </select>
-      </div>
-    {%- endif -%}
+        </summary>
 
-    <form method="get" action="{{ filter_url }}" id="FilterForm">
+        <div class="collection-filter__group-body">
+          {%- case filter.type -%}
+            {%- when 'list' -%}
+              {%- for value in filter.values -%}
+                <label class="collection-filter__option
+                  {%- if value.active %} collection-filter__option--active{%- endif %}
+                  {%- if value.count == 0 and value.active == false %} collection-filter__option--disabled{%- endif %}">
+                  <input
+                    type="checkbox"
+                    name="{{ value.param_name }}"
+                    value="{{ value.value }}"
+                    {%- if value.active %} checked{%- endif %}
+                    {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
+                  >
+                  {{ value.label }} <span>({{ value.count }})</span>
+                </label>
+              {%- endfor -%}
 
-      {%- if is_search -%}
-        {%- comment -%}
-          Native GET form submission replaces the whole querystring, so
-          without these the filter form would drop the search term and
-          the products/pages/articles tab main-search.liquid tracks.
-        {%- endcomment -%}
-        <input type="hidden" name="q" value="{{ search.terms | escape }}">
-        {%- assign current_result_type = request.query_parameters['type'] | default: 'all' -%}
-        {%- unless current_result_type == 'all' -%}
-          <input type="hidden" name="type" value="{{ current_result_type }}">
-        {%- endunless -%}
-      {%- endif -%}
-
-      {%- for filter in filter_source.filters -%}
-        <details
-          class="collection-filter__group"
-          {%- if filter.active_values.size > 0 %} open{%- endif %}
-        >
-          <summary class="collection-filter__group-label">
-            {{ filter.label }}
-            {%- if filter.active_values.size > 0 -%}
-              <span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>
-            {%- endif -%}
-          </summary>
-
-          <div class="collection-filter__group-body">
-            {%- case filter.type -%}
-              {%- when 'list' -%}
-                {%- for value in filter.values -%}
-                  <label class="collection-filter__option
-                    {%- if value.active %} collection-filter__option--active{%- endif %}
-                    {%- if value.count == 0 and value.active == false %} collection-filter__option--disabled{%- endif %}">
-                    <input
-                      type="checkbox"
-                      name="{{ value.param_name }}"
-                      value="{{ value.value }}"
-                      {%- if value.active %} checked{%- endif %}
-                      {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
-                    >
-                    {{ value.label }} <span>({{ value.count }})</span>
-                  </label>
-                {%- endfor -%}
-
-              {%- when 'price_range' -%}
+            {%- when 'price_range' -%}
+              <div class="collection-filter__price-wrap" data-price-filter>
                 <div class="collection-filter__price">
                   <input
                     type="number"
                     name="{{ filter.min_value.param_name }}"
-                    value="{{ filter.min_value.value | divided_by: 100.0 }}"
+                    value="{{ filter.min_value.value }}"
                     min="0"
-                    max="{{ filter.range_max | divided_by: 100.0 }}"
-                    placeholder="0"
+                    max="{{ filter.range_max }}"
+                    placeholder="min."
+                    data-price-input="min"
                   >
                   <span>–</span>
                   <input
                     type="number"
                     name="{{ filter.max_value.param_name }}"
-                    value="{{ filter.max_value.value | divided_by: 100.0 }}"
+                    value="{{ filter.max_value.value }}"
                     min="0"
-                    max="{{ filter.range_max | divided_by: 100.0 }}"
-                    placeholder="{{ filter.range_max | divided_by: 100.0 }}"
+                    max="{{ filter.range_max }}"
+                    placeholder="max."
+                    data-price-input="max"
                   >
                 </div>
-            {%- endcase -%}
-          </div>
-        </details>
-      {%- endfor -%}
 
-      {%- comment -%} Active filter pills {%- endcomment -%}
-      {%- assign active_count = 0 -%}
-      {%- for filter in filter_source.filters -%}
-        {%- assign active_count = active_count | plus: filter.active_values.size -%}
-      {%- endfor -%}
+                {%- comment -%}
+                  Decorative distribution bars. Shopify's price_range
+                  filter only exposes range_max — it doesn't hand back
+                  per-bucket product counts — so this renders a plain
+                  bell-shaped curve rather than a real histogram. Swap
+                  the `bar_height` values below for real bucket counts
+                  if that data ever becomes available (e.g. a metafield
+                  driven price histogram).
+                {%- endcomment -%}
+                <div class="collection-filter__histogram" aria-hidden="true">
+                  {%- assign bar_count = 16 -%}
+                  {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
+                  {%- for i in (1..bar_count) -%}
+                    {%- assign dist = i | minus: mid | abs -%}
+                    {%- assign bar_height = bar_count | minus: dist | times: 6 -%}
+                    <span class="collection-filter__histogram-bar" style="height: {{ bar_height }}%"></span>
+                  {%- endfor -%}
+                </div>
 
-      {%- if active_count > 0 -%}
-        <div class="collection-filter__active">
-          {%- for filter in filter_source.filters -%}
-            {%- for value in filter.active_values -%}
-              <a href="{{ value.url_to_remove }}" class="collection-filter__pill">
-                {{ value.label }} &times;
-              </a>
-            {%- endfor -%}
-          {%- endfor -%}
-          {%- if is_search -%}
-            <a href="{{ routes.search_url }}?q={{ search.terms | url_encode }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
-          {%- else -%}
-            <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
-          {%- endif -%}
+                <div class="collection-filter__range-slider" data-range-slider>
+                  <div class="collection-filter__range-track"></div>
+                  <div class="collection-filter__range-track-active" data-range-active></div>
+                  <input
+                    type="range"
+                    class="collection-filter__range-input collection-filter__range-input--min"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    value="{{ filter.min_value.value | default: 0 }}"
+                    data-range-thumb="min"
+                    aria-label="Minimum price"
+                  >
+                  <input
+                    type="range"
+                    class="collection-filter__range-input collection-filter__range-input--max"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    value="{{ filter.max_value.value | default: filter.range_max }}"
+                    data-range-thumb="max"
+                    aria-label="Maximum price"
+                  >
+                </div>
+
+                {%- comment -%}
+                  Quick-pick brackets, split evenly across range_max.
+                  There's no per-bracket count available from Shopify's
+                  filter object for price (unlike the list-type filters
+                  above, which do have real `value.count`), so none is
+                  shown here.
+                {%- endcomment -%}
+                {%- assign quarter = filter.range_max | divided_by: 4.0 -%}
+                {%- assign b1 = quarter | round -%}
+                {%- assign b2 = quarter | times: 2 | round -%}
+                {%- assign b3 = quarter | times: 3 | round -%}
+                <div class="collection-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
+                    Less than ${{ b1 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}">
+                    ${{ b1 }} to ${{ b2 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}">
+                    ${{ b2 }} to ${{ b3 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}">
+                    ${{ b3 }} to ${{ filter.range_max }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max="">
+                    More than ${{ filter.range_max }}
+                  </label>
+                </div>
+              </div>
+          {%- endcase -%}
         </div>
-      {%- endif -%}
+      </details>
+    {%- endfor -%}
 
-      <button type="submit" class="collection-filter__submit">Apply</button>
+    {%- assign active_count = 0 -%}
+    {%- for filter in collection.filters -%}
+      {%- assign active_count = active_count | plus: filter.active_values.size -%}
+    {%- endfor -%}
 
-    </form>
+    {%- if active_count > 0 -%}
+      <div class="collection-filter__active">
+        {%- for filter in collection.filters -%}
+          {%- for value in filter.active_values -%}
+            <a href="{{ value.url_to_remove }}" class="collection-filter__pill">
+              {{ value.label }} &times;
+            </a>
+          {%- endfor -%}
+        {%- endfor -%}
+        <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+      </div>
+    {%- endif -%}
 
-  </aside>
-{%- endif -%}
+    <button type="submit" class="collection-filter__submit">Apply</button>
+
+  </form>
+
+</aside>
+
+<script src="{{ 'collection-filter.js' | asset_url }}" defer></script>
