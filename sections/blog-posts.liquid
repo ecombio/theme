@@ -7,25 +7,26 @@
 
   TAGS (custom_tags setting):
   A comma-separated "Tags" text setting (section.settings.custom_tags)
-  drives two things at once. Type tags in their natural, native form
-  (e.g. "Electric Scooters") — matching however tags are actually
-  entered on articles in admin:
+  drives two things at once. Type tags in whatever readable form you
+  want displayed (e.g. "Electric Scooters") — the raw typed text is
+  used ONLY for the visible pill label:
 
-  1. Pills — each entered value renders a pill. The URL slug is
-     auto-derived via Liquid's `handle` filter (lowercases, replaces
-     spaces/special chars with hyphens), so "Electric Scooters" always
-     becomes /tagged/electric-scooters without typing hyphens
-     manually. This matches Shopify's own tag URL generation.
+  1. Pills — the URL slug and the active-state check both use
+     `tag | handle` (lowercases, replaces spaces/special chars with
+     hyphens), matching this store's actual article tag format
+     (e.g. "electric-scooters"). So "Electric Scooters" displays as
+     typed but links to /tagged/electric-scooters and correctly
+     detects the active pill.
   2. Card rendering — the article grid is filtered down to only
-     articles whose native article.tags contains at least one of the
-     entered values (compared as typed, not the hyphenated slug). If
-     custom_tags is blank, all articles show as before (no filtering).
+     articles whose native article.tags contains the same handleized
+     slug (not the raw display text). If custom_tags is blank, all
+     articles show as before (no filtering).
 
-  There's no validation tying the setting to real article tags —
-  keeping the comma list in sync with what's actually applied to
-  articles in the admin (spelling and casing) is on whoever edits the
-  section, since the match against article.tags is a literal string
-  comparison.
+  This assumes real article tags in admin are stored in the
+  hyphenated/lowercased handle form. If a store instead tags articles
+  with natural casing/spacing (e.g. "Electric Scooters" verbatim as
+  the actual tag), this matching would need to compare against the
+  raw text instead of the handleized slug — flag if that's the case.
 
   PAGINATION CAVEAT:
   {% paginate %} slices target_blog.articles by `limit` BEFORE this
@@ -85,8 +86,9 @@
         </a>
         {% for tag in custom_tags %}
           {%- assign tag = tag | strip -%}
-          <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
-             class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
+          {%- assign tag_slug = tag | handle -%}
+          <a href="{{ target_blog.url }}/tagged/{{ tag_slug }}"
+             class="blog-posts__tag-pill {% if target_blog.current_tags contains tag_slug %}is-active{% endif %}">
             {{ tag }}
           </a>
         {% endfor %}
@@ -104,7 +106,7 @@
                 assign show_article = true
               else
                 for tag in custom_tags
-                  assign trimmed_tag = tag | strip
+                  assign trimmed_tag = tag | strip | handle
                   if article.tags contains trimmed_tag
                     assign show_article = true
                   endif
@@ -182,7 +184,7 @@
       "type": "text",
       "id": "custom_tags",
       "label": "Tags (comma-separated)",
-      "info": "Type tags as they appear on your articles (e.g. \"Electric Scooters\"). The /tagged/ URL is auto-generated from this text (spaces become hyphens, lowercased) — no need to type hyphens yourself.",
+      "info": "Type tags however you'd like them displayed (e.g. \"Electric Scooters\"). The /tagged/ URL and article matching auto-use the hyphenated, lowercased form behind the scenes — no need to type hyphens yourself.",
       "default": "Electric Scooters, Batteries, Accessories"
     },
     {
