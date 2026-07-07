@@ -14,6 +14,20 @@
    so it can intercept a click on a not-yet-loaded tab before
    main-collection.js's bubble-phase listener toggles visibility on
    an empty panel.
+
+   FIXED (2026-07): the #collection-filter aside swap used to be
+   gated behind `if (type === 'product')`, so switching TO the
+   Articles tab for the first time never replaced the sidebar. If the
+   page loaded on Products (real filter form: price slider, checkbox
+   groups, etc. rendered in the aside) and the user then clicked
+   Articles, fetchType('article', tabEl) ran but skipped the aside
+   swap entirely -- the product filter form stayed in the DOM while
+   the Articles panel appeared underneath it, instead of being
+   replaced by the "No filters for articles" placeholder that
+   main-search.liquid renders for the article branch. The aside swap
+   now always runs; only the active-filters pill strip (which is
+   genuinely products-only -- Shopify doesn't facet article results)
+   stays gated to the product branch.
 */
 (function () {
   'use strict';
@@ -62,13 +76,22 @@
           currentPanel.dataset.loaded = 'true';
         }
 
-        // Products tab may bring a freshly-rendered filter aside +
-        // active-filters strip with it the first time it loads.
-        if (type === 'product') {
-          var newFilter = doc.getElementById('collection-filter');
-          var currentFilter = document.getElementById('collection-filter');
-          if (newFilter && currentFilter) currentFilter.outerHTML = newFilter.outerHTML;
+        // The filter aside always needs to match the newly-fetched
+        // tab: switching to Products swaps in the real filter form
+        // (price slider, checkbox groups, etc.); switching to
+        // Articles swaps in the "No filters for articles" placeholder
+        // that main-search.liquid renders for the article branch.
+        // This must run for BOTH tab types, not just 'product' --
+        // otherwise the previous tab's aside content is left stale
+        // in the DOM.
+        var newFilter = doc.getElementById('collection-filter');
+        var currentFilter = document.getElementById('collection-filter');
+        if (newFilter && currentFilter) currentFilter.outerHTML = newFilter.outerHTML;
 
+        // The active-filters pill strip only ever applies to product
+        // results (Shopify doesn't facet article results), so this
+        // stays scoped to the product branch.
+        if (type === 'product') {
           var newActiveFilters = doc.getElementById('collection-active-filters');
           var currentActiveFilters = document.getElementById('collection-active-filters');
           if (newActiveFilters && currentActiveFilters) currentActiveFilters.outerHTML = newActiveFilters.outerHTML;
