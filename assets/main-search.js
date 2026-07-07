@@ -3,14 +3,18 @@
 
    This file was previously retired, then briefly revived to hold the
    filter-drawer/live-filtering logic merged in from assets/search-
-   filter.js. This merge folds in a second, previously separate file,
-   assets/search-toolbar.js (was owned by snippets/search-toolbar.
-   liquid), so this is now the single script for the whole search
-   page. It's laid out as two independent IIFEs below rather than one
-   combined block, because the filter IIFE bails out early whenever
-   `#search-filter` isn't on the page (filters disabled) — merging
-   everything into one function would have made the sort-select and
-   tab-nav logic incorrectly depend on the filter drawer existing.
+   filter.js, then merged again with assets/search-toolbar.js (was
+   owned by snippets/search-toolbar.liquid). This merge folds in a
+   third, previously separate file, assets/search-results.js (was
+   owned by snippets/search-results.liquid, which itself had already
+   inlined the formerly-separate product-results.liquid and article-
+   results.liquid snippets/scripts). This is now the single script
+   for the whole search page. It's laid out as independent IIFEs
+   below rather than one combined block, since several of them bail
+   out early when their target element isn't on the page (filters
+   disabled, or the Products/Articles panel not being the active
+   one) — merging everything into one function would make unrelated
+   behaviors incorrectly depend on each other's markup existing.
 
    Responsibilities:
 
@@ -39,9 +43,9 @@
           - Tab switching itself is NOT live here (unlike
             collection's tab switching, which collection-feed.js does
             intercept) — search's tabs are deliberately plain links
-            to ?type=product|article, per the note below and in
-            search-results.js. This only makes the FILTER FORM's
-            fields live; it never touches tab navigation.
+            to ?type=product|article, per responsibility #2 below.
+            This only makes the FILTER FORM's fields live; it never
+            touches tab navigation.
           - Also swaps the hero's result count ("N results for
             'query'") since that changes as filters narrow the
             results, which collection's hero text doesn't have an
@@ -59,8 +63,17 @@
       enhances keyboard travel between the two tabs; it never blocks
       the default navigation.
 
-   Grid scroll-restore lives in product-results.js / article-
-   results.js.
+   3. Scroll-restore for both result grids (formerly search-
+      results.js, which had itself already absorbed product-
+      results.js and article-results.js): remembers scroll position
+      within whichever grid the shopper clicked into (a product, a
+      quick-view trigger, an article), so the browser back button
+      restores them to where they were instead of dropping them back
+      at the top of the results. The two grids get separate IIFEs,
+      load guards, and sessionStorage key prefixes so they stay fully
+      independent — each one's grid lookup simply no-ops (via the
+      early `if (!grid) return`) on whichever panel isn't
+      active/rendered for the current search type.
 */
 (function () {
   if (window.__searchFilterLoaded) return;
@@ -307,5 +320,66 @@
       t.tabIndex = i === nextIndex ? 0 : -1;
     });
     tabs[nextIndex].focus();
+  });
+})();
+
+/* ------------------------------------------------------------------
+   formerly: product-results.js (via search-results.js)
+
+   Remembers scroll position within the product grid so that using
+   the browser back button (after opening a product or quick view)
+   restores the shopper to where they were, instead of dropping them
+   back at the top of the results.
+   ------------------------------------------------------------------ */
+(function () {
+  if (window.__productResultsLoaded) return;
+  window.__productResultsLoaded = true;
+
+  var storageKey = 'productResultsScroll:' + window.location.pathname + window.location.search;
+  var grid = document.getElementById('search-results-grid');
+  if (!grid) return;
+
+  grid.addEventListener('click', function (event) {
+    if (event.target.closest('a, [data-atc-btn], [data-quickview-btn]')) {
+      sessionStorage.setItem(storageKey, String(window.scrollY));
+    }
+  });
+
+  window.addEventListener('pageshow', function () {
+    var savedY = sessionStorage.getItem(storageKey);
+    if (savedY !== null) {
+      window.scrollTo(0, parseInt(savedY, 10));
+      sessionStorage.removeItem(storageKey);
+    }
+  });
+})();
+
+/* ------------------------------------------------------------------
+   formerly: article-results.js (via search-results.js)
+
+   Same scroll-restore behavior as above, scoped to the article grid,
+   so returning from an article via the back button lands the
+   shopper back where they were.
+   ------------------------------------------------------------------ */
+(function () {
+  if (window.__articleResultsLoaded) return;
+  window.__articleResultsLoaded = true;
+
+  var storageKey = 'articleResultsScroll:' + window.location.pathname + window.location.search;
+  var grid = document.getElementById('search-articles-grid');
+  if (!grid) return;
+
+  grid.addEventListener('click', function (event) {
+    if (event.target.closest('a')) {
+      sessionStorage.setItem(storageKey, String(window.scrollY));
+    }
+  });
+
+  window.addEventListener('pageshow', function () {
+    var savedY = sessionStorage.getItem(storageKey);
+    if (savedY !== null) {
+      window.scrollTo(0, parseInt(savedY, 10));
+      sessionStorage.removeItem(storageKey);
+    }
   });
 })();
