@@ -1,5 +1,6 @@
 {%- comment -%} sections/main-search.liquid {%- endcomment -%}
 {{ 'main-search.css' | asset_url | stylesheet_tag }}
+{{ 'search-toolbar.css' | asset_url | stylesheet_tag }}
 {{ 'search-filter.css' | asset_url | stylesheet_tag }}
 {{ 'search-results.css' | asset_url | stylesheet_tag }}
 {{ 'product-results.css' | asset_url | stylesheet_tag }}
@@ -71,103 +72,7 @@
 
       <section class="search-section">
 
-        <div class="search-toolbar" id="search-toolbar" role="navigation" aria-label="Search results navigation">
-
-          {%- if section.settings.show_filters -%}
-            <button
-              class="search-toolbar__filter-toggle"
-              type="button"
-              aria-expanded="{% if show_filters %}true{% else %}false{% endif %}"
-              aria-controls="search-filter"
-              aria-label="Toggle filters"
-              data-filter-toggle
-              {%- if active_type != 'product' %} disabled{%- endif %}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-              Filters
-            </button>
-          {%- endif -%}
-
-          <div class="tab-switcher" role="tablist" aria-label="Search result type">
-            <a
-              href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product"
-              class="tab-switcher__tab{% if active_type == 'product' %} tab-switcher__tab--active{% endif %}"
-              role="tab"
-              aria-selected="{% if active_type == 'product' %}true{% else %}false{% endif %}"
-              aria-controls="panel-products"
-              id="tab-products"
-              data-type="product"
-              tabindex="{% if active_type == 'product' %}0{% else %}-1{% endif %}"
-            >{{ section.settings.tab_products_label | default: 'Products' }}</a>
-
-            <a
-              href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=article"
-              class="tab-switcher__tab{% if active_type == 'article' %} tab-switcher__tab--active{% endif %}"
-              role="tab"
-              aria-selected="{% if active_type == 'article' %}true{% else %}false{% endif %}"
-              aria-controls="panel-articles"
-              id="tab-articles"
-              data-type="article"
-              tabindex="{% if active_type == 'article' %}0{% else %}-1{% endif %}"
-            >{{ section.settings.tab_articles_label | default: 'Articles' }}</a>
-          </div>
-
-          {%- if section.settings.show_sort -%}
-            <div class="search-toolbar__sort"{% if active_type != 'product' %} style="display:none;"{% endif %}>
-              <label for="SortBy" class="visually-hidden">Sort</label>
-              <select id="SortBy" data-sort>
-                {%- for option in search.sort_options -%}
-                  <option value="{{ option.value }}" {% if option.value == search.sort_by %}selected{% endif %}>
-                    {{ option.name }}
-                  </option>
-                {%- endfor -%}
-              </select>
-            </div>
-          {%- endif -%}
-
-        </div>
-
-        {%- if section.settings.show_filters or section.settings.show_sort -%}
-          <div class="search-mobile-bar" aria-label="Search controls" role="toolbar">
-
-            {%- if section.settings.show_filters -%}
-              <button
-                class="search-mobile-bar__btn"
-                type="button"
-                aria-expanded="false"
-                aria-controls="search-filter"
-                aria-label="Toggle filters"
-                data-filter-toggle
-                {%- if active_type != 'product' %} disabled{%- endif %}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-                Filters
-              </button>
-            {%- endif -%}
-
-            {%- if section.settings.show_sort -%}
-              <button
-                class="search-mobile-bar__btn"
-                type="button"
-                aria-expanded="false"
-                aria-label="Sort results"
-                data-mobile-sort-toggle
-                {%- if active_type != 'product' %} disabled{%- endif %}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Sort
-              </button>
-            {%- endif -%}
-
-          </div>
-        {%- endif -%}
+        {%- render 'search-toolbar', search_terms: search_terms, active_type: active_type, show_filters: show_filters, section: section -%}
 
         <div class="search-body{% unless show_filters %} search-body--filters-hidden{% endunless %}" data-search-body>
 
@@ -197,7 +102,11 @@
 
 </div>
 
-<script src="{{ 'main-search.js' | asset_url }}" defer></script>
+{%- comment -%}
+  main-search.js has been retired: its only behavior (the sort
+  <select>) now lives in search-toolbar.js.
+{%- endcomment -%}
+<script src="{{ 'search-toolbar.js' | asset_url }}" defer></script>
 <script src="{{ 'search-filter.js' | asset_url }}" defer></script>
 <script src="{{ 'search-results.js' | asset_url }}" defer></script>
 <script src="{{ 'product-results.js' | asset_url }}" defer></script>
