@@ -17,16 +17,6 @@
   search. Everything else (markup, price slider, JS hooks) is
   identical either way -- collection-filter.js doesn't know or care
   which mode rendered the form it's binding to.
-
-  2026-07 UPDATE: on the search page this snippet now ALWAYS renders
-  (main-search.liquid no longer swaps it for a separate placeholder
-  <aside> when the Articles tab is active). That used to blow away
-  the form's DOM -- open <details>, price-slider JS bindings -- every
-  time you switched tabs. Now the same node persists; the block below
-  shows an inline "products only" notice and main-collection.css dims
-  the form (via the [data-active-tab="articles"] attribute on the
-  page's parent wrapper, kept in sync client-side by main-search.js)
-  instead of removing anything.
 {%- endcomment -%}
 
 {%- liquid
@@ -50,21 +40,6 @@
   id="collection-filter"
   aria-label="Product filters"
 >
-
-  {%- unless collection -%}
-    {%- comment -%}
-      Only relevant on the search page (collection is blank there).
-      Hidden by default; main-collection.css shows this and dims
-      #FilterForm below whenever the page's [data-active-tab] is
-      "articles". No JS needed to toggle it beyond keeping that
-      attribute in sync, which main-search.js already does on every
-      tab click.
-    {%- endcomment -%}
-    <div class="collection-filter__articles-notice" data-filter-articles-notice>
-      <p class="collection-filter__placeholder-title">Filters apply to products only</p>
-      <p class="collection-filter__placeholder-text">Switch to the Products tab to use price, type, and other filters.</p>
-    </div>
-  {%- endunless -%}
 
   <form method="get" action="{{ form_action }}" id="FilterForm">
 

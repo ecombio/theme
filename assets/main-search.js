@@ -14,15 +14,6 @@
    so it can intercept a click on a not-yet-loaded tab before
    main-collection.js's bubble-phase listener toggles visibility on
    an empty panel.
-
-   2026-07 UPDATE: on every tab click, page.dataset.activeTab is now
-   updated synchronously, before any fetch/preventDefault decision is
-   made. main-collection.css reads this attribute
-   ([data-active-tab="articles"]) to show the "products only" notice
-   in the (now persistent, never-swapped) filter sidebar and to dim
-   #FilterForm. Previously that attribute only ever got its initial
-   value from the server-rendered page and was never updated
-   client-side, so it would be stale after the first tab switch.
 */
 (function () {
   'use strict';
@@ -71,25 +62,12 @@
           currentPanel.dataset.loaded = 'true';
         }
 
-        // Products tab may bring freshly-rendered filter groups +
+        // Products tab may bring a freshly-rendered filter aside +
         // active-filters strip with it the first time it loads.
-        // NOTE: #collection-filter itself is no longer swapped via
-        // outerHTML here -- that used to replace the whole <aside>
-        // (destroying open <details> state and the price-slider's
-        // JS bindings) every time this ran. Only the filter GROUPS
-        // are refreshed in place now, leaving the notice/dimming
-        // wrapper and the form node itself untouched.
         if (type === 'product') {
-          var newGroups = doc.querySelectorAll('#collection-filter .collection-filter__group');
-          var currentForm = document.getElementById('FilterForm');
-          if (newGroups.length && currentForm) {
-            var existingGroups = currentForm.querySelectorAll('.collection-filter__group');
-            existingGroups.forEach(function (g) { g.remove(); });
-            var submitBtn = currentForm.querySelector('.collection-filter__submit');
-            newGroups.forEach(function (g) {
-              currentForm.insertBefore(g.cloneNode(true), submitBtn);
-            });
-          }
+          var newFilter = doc.getElementById('collection-filter');
+          var currentFilter = document.getElementById('collection-filter');
+          if (newFilter && currentFilter) currentFilter.outerHTML = newFilter.outerHTML;
 
           var newActiveFilters = doc.getElementById('collection-active-filters');
           var currentActiveFilters = document.getElementById('collection-active-filters');
@@ -113,11 +91,6 @@
     tabEl.addEventListener('click', function (e) {
       var type = tabEl.dataset.tab === 'articles' ? 'article' : 'product';
       var panel = document.getElementById(panelIdFor(type));
-
-      // Sync immediately -- doesn't wait on any fetch, so the filter
-      // sidebar's notice/dim state flips the instant you click,
-      // regardless of whether this tab still needs a network fetch.
-      page.dataset.activeTab = tabEl.dataset.tab;
 
       if (panel && panel.dataset.loaded === 'true') return; // already loaded — let main-collection.js handle it normally
 
