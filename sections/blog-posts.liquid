@@ -19,6 +19,20 @@
     </div>
   {% endif %}
 
+  {% if target_blog.tags.size > 0 %}
+    <div class="blog-posts__tags">
+      <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
+        All
+      </a>
+      {% for tag in target_blog.tags %}
+        <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
+           class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
+          {{ tag }}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   {% if target_blog.articles.size > 0 %}
     <div class="blog-posts__grid" style="--articles-columns: {{ section.settings.columns }};">
       {% for article in target_blog.articles limit: section.settings.limit %}
