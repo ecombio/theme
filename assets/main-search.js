@@ -1,83 +1,126 @@
 /**
- * assets/main-search.js
- * Behavior for sections/main-search.liquid
- *
- * Scope: search-page-only concerns â€” right now just the result-type
- * tabs (All / Products / Pages / Articles) and keeping their state in
- * the URL. Two things this file deliberately does NOT do:
- *   - Per-card behavior (wishlist, quickview, compare, ATC): that's
- *     product-card.js, loaded globally via theme.liquid, already
- *     running against the cards this section renders.
- *   - Sorting: snippets/collection-filter.liquid (shared with the
- *     collection page) owns the sort <select> and its own JS
- *     (collection-filter.js), also loaded by this section.
- *
- * Guard flag follows the same naming convention as product-card.js's
- * window.__productCardLoaded.
+ * main-search.js — Independent panel loading via Section Rendering API
  */
-
 (function () {
-  if (window.__mainSearchLoaded) return;
-  window.__mainSearchLoaded = true;
+  'use strict';
 
-  function initMainSearch(root) {
-    var tabsWrap = root.querySelector('[data-search-tabs]');
+  const sectionRoot = document.getElementById('main-search');
+  if (!sectionRoot) return;
 
-    if (tabsWrap) {
-      tabsWrap.addEventListener('click', function (event) {
-        var tab = event.target.closest('[data-search-tab]');
-        if (!tab || !tabsWrap.contains(tab)) return;
+  const sectionId = sectionRoot.dataset.sectionId;
+  const page = document.querySelector('[data-search-page]');
+  const feed = document.getElementById('search-feed');
+  if (!page || !feed || !sectionId) return;
 
-        var type = tab.getAttribute('data-search-tab');
-        setActiveTab(tabsWrap, tab);
-        showPanel(root, type);
-        syncUrl(root, { type: type === 'all' ? null : type });
-      });
-    }
+  const tabs = document.querySelectorAll('.tab-switcher__tab[data-type]');
+  const populated = new Set();
+
+  function getCurrentType() {
+    return page.dataset.activeType || 'product';
   }
 
-  function setActiveTab(tabsWrap, activeTab) {
-    var tabs = tabsWrap.querySelectorAll('[data-search-tab]');
-    for (var i = 0; i < tabs.length; i++) {
-      var isActive = tabs[i] === activeTab;
-      tabs[i].classList.toggle('main-search__tab--active', isActive);
-      tabs[i].setAttribute('aria-selected', isActive ? 'true' : 'false');
-    }
-  }
-
-  function showPanel(root, type) {
-    var panels = root.querySelectorAll('[data-search-panel]');
-    for (var i = 0; i < panels.length; i++) {
-      var panelType = panels[i].getAttribute('data-search-panel');
-      var shouldShow = type === 'all' || panelType === type;
-      panels[i].hidden = !shouldShow;
-    }
-  }
-
-  // Reloads the page with updated query params so full-text search
-  // and sorting stay server-driven (matches how the section's liquid
-  // reads search.types / search.sort_by). Passing a null value removes
-  // the param instead of setting it to the string "null".
-  function syncUrl(root, params) {
-    var url = new URL(window.location.href);
-
-    Object.keys(params).forEach(function (key) {
-      var value = params[key];
-      if (value === null || value === undefined || value === '') {
-        url.searchParams.delete(key);
-      } else {
-        url.searchParams.set(key, value);
-      }
+  function setActiveType(type) {
+    page.dataset.activeType = type;
+    tabs.forEach(t => {
+      const active = t.dataset.type === type;
+      t.classList.toggle('tab-switcher__tab--active', active);
+      t.setAttribute('aria-selected', active);
     });
 
-    // Changing type or sort should reset pagination.
-    url.searchParams.delete('page');
-
-    window.location.href = url.toString();
+    const p = document.getElementById('panel-products');
+    const a = document.getElementById('panel-articles');
+    if (p) p.hidden = (type !== 'product');
+    if (a) a.hidden = (type !== 'article');
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var root = document.querySelector('[data-main-search]');
-    if (root) initMainSearch(root);
+  async function fetchPanel(type, extraParams = '') {
+    const url = new URL(window.location.href);
+    url.searchParams.set('type', type);
+    url.searchParams.set('section_id', sectionId);
+
+    if (extraParams) {
+      new URLSearchParams(extraParams).forEach((v, k) => url.searchParams.set(k, v));
+    }
+    if (type === 'article') url.searchParams.delete('sort_by');
+
+    try {
+      const res = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const newFeed = doc.getElementById('search-feed');
+
+      if (newFeed) {
+        feed.innerHTML = newFeed.innerHTML;
+        populated.add(type);
+        setActiveType(type);
+        attachListeners();
+      }
+    } catch (e) {
+      window.location.href = url.toString().replace(`section_id=${sectionId}`, '');
+    }
+  }
+
+  function attachListeners() {
+    // Pagination (event delegation)
+    feed.onclick = function (e) {
+      const link = e.target.closest('.pagination__link');
+      if (!link) return;
+      e.preventDefault();
+      const type = getCurrentType();
+      const params = new URL(link.href).searchParams.toString();
+      fetchPanel(type, params);
+    };
+
+    // Sort
+    const sort = document.querySelector('[data-sort]');
+    if (sort) {
+      sort.onchange = () => {
+        if (getCurrentType() === 'product') {
+          fetchPanel('product', `sort_by=${sort.value}`);
+        }
+      };
+    }
+  }
+
+  // Tab clicks
+  tabs.forEach(tab => {
+    tab.onclick = function (e) {
+      e.preventDefault();
+      const type = tab.dataset.type;
+      if (type === getCurrentType()) return;
+
+      if (populated.has(type)) {
+        setActiveType(type);
+        const url = new URL(window.location.href);
+        url.searchParams.set('type', type);
+        history.pushState({}, '', url);
+      } else {
+        fetchPanel(type);
+      }
+    };
   });
+
+  // Mobile sort sheet + backdrop (simplified)
+  const mobileBtn = document.querySelector('[data-mobile-sort-toggle]');
+  const backdrop = document.querySelector('.search-mobile-backdrop');
+  if (mobileBtn && backdrop) {
+    mobileBtn.onclick = () => {
+      // You can expand this with the full sheet logic from your collection if needed
+      alert('Mobile sort sheet would open here (copy from your collection version)');
+    };
+  }
+
+  // Init
+  function init() {
+    populated.add(getCurrentType());
+    attachListeners();
+
+    window.addEventListener('popstate', () => {
+      const type = new URL(window.location.href).searchParams.get('type') || 'product';
+      if (populated.has(type)) setActiveType(type);
+      else fetchPanel(type);
+    });
+  }
+
+  init();
 })();
