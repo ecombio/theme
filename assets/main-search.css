@@ -24,6 +24,14 @@
    secondary — so this section still looks on-brand even on a store
    that hasn't defined those variables yet.
 
+   TAB SWITCHING IS NOW AJAX (2026-07): main-search.js's toolbar IIFE
+   intercepts Products/Articles tab clicks and re-fetches the section
+   via the Section Rendering API instead of doing a full page
+   navigation. .search-feed.is-loading (below) — previously just
+   cosmetic feedback while a real navigation was in flight — now
+   covers a genuine in-page fetch, reusing the same dimmed+spinner
+   treatment the live-filtering loading state already uses.
+
    PRESET-READY: every color in this file is a `var(--token, fallback)`
    read, never a bare hex value, specifically so a future preset
    system (e.g. "hyper" / "focus") can swap the whole section's
@@ -528,19 +536,25 @@
 }
 
 /* Tab-switch loading state (2026-07)
-   Tabs are still plain links that do a full page navigation (see the
-   note in main-search.js) — this class just gets added the instant a
-   tab is clicked, for immediate feedback while that navigation is in
-   flight, rather than the previous results sitting there looking
-   fully idle until the new page arrives. */
-.search-feed.is-loading {
+   Tab clicks are now intercepted and re-fetched via the Section
+   Rendering API instead of doing a full page navigation (see
+   main-search.js's toolbar IIFE) — this class gets added (after a
+   short delay, so a fast response never flashes it on) while that
+   fetch is in flight, and removed once the new content is patched in
+   or the request falls back to a full navigation. main-search.js
+   also mirrors this with aria-busy="true"/false on #search-feed for
+   assistive tech, hence the matching selector below rather than
+   relying on the class alone. */
+.search-feed.is-loading,
+.search-feed[aria-busy="true"] {
   position: relative;
   opacity: 0.5;
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
-.search-feed.is-loading::after {
+.search-feed.is-loading::after,
+.search-feed[aria-busy="true"]::after {
   content: '';
   position: absolute;
   top: 2rem;
