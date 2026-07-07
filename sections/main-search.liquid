@@ -24,16 +24,11 @@
   assign search_terms = search.terms
   assign results_count = search.results_count | default: 0
 
-  # Whether the filter panel exists in the DOM at all — a pure
-  # merchant-setting check, independent of which tab is active. The
-  # panel itself now decides (via active_type) whether to show a real
-  # filter form or just its header/close button, so this no longer
-  # needs to know about tabs. Used to (a) decide whether to render the
-  # search-filter snippet and (b) reserve its grid column, so the
-  # layout doesn't shift between tabs.
-  assign filters_enabled = false
-  if section.settings.show_filters
-    assign filters_enabled = true
+  # Filters only apply to product search (Shopify does not support
+  # faceted filters on article search results)
+  assign show_filters = false
+  if section.settings.show_filters and active_type == 'product'
+    assign show_filters = true
   endif
 
   assign width_type = section.settings.section_width
