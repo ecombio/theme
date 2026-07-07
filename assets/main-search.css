@@ -1,15 +1,17 @@
 /* assets/main-search.css
    Owned by sections/main-search.liquid.
    Covers the hero, the section-level body layout (filter aside +
-   feed), the filter drawer, and the toolbar (filter toggle, tab
-   switcher, sort select) plus its condensed mobile-bar counterpart.
-   search-toolbar.css has been merged into this file since the
-   toolbar markup itself is inlined into main-search.liquid (no
-   longer a separate snippet) — all of this section's UI now lives
-   in one owned asset. Tab/panel/grid/pagination styles for the
-   results themselves still live in search-results.css,
-   product-results.css, and article-results.css, which this section
-   also loads.
+   feed), the filter drawer, the toolbar (filter toggle, tab
+   switcher, sort select) plus its condensed mobile-bar counterpart,
+   and the results feed (panel wrapper, pagination/empty state, and
+   the product/article result grids). search-toolbar.css and
+   search-results.css have both been merged into this file — the
+   toolbar and results markup are inlined into main-search.liquid /
+   search-results.liquid rather than being separate owned snippets,
+   so all of this section's styling now lives in one asset. If
+   search-results.css is still being loaded directly by
+   search-results.liquid, remove that stylesheet_tag to avoid loading
+   these rules twice.
 
    Color fallbacks for the toolbar match collection-toolbar.css so
    the search and collection toolbars stay visually consistent.
@@ -389,3 +391,121 @@
     display: flex;
   }
 }
+
+/* Results feed
+   Merged in from assets/search-results.css. Covers the panel
+   wrapper and the pagination / empty-state markup that's identical
+   in both the product-results and article-results blocks (kept
+   here, in their shared parent, instead of duplicated per block). */
+
+.search-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.search-feed__panel[hidden] {
+  display: none;
+}
+
+.search-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted, #6b6b6b);
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.pagination__link {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--color-border, #e2e2e2);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--color-text, #111);
+  text-decoration: none;
+}
+
+.pagination__link:hover {
+  border-color: var(--color-accent, #111);
+}
+
+.pagination__link--current {
+  background: var(--color-accent, #111);
+  border-color: var(--color-accent, #111);
+  color: var(--color-accent-contrast, #fff);
+}
+
+/* ------------------------------------------------------------------
+   snippet: product-results (formerly assets/product-results.css)
+   Card-level styling lives in product-card.css — this section only
+   owns the grid container that arranges those cards, plus the
+   #product-results wrapper it now sits inside. Breakpoints mirror
+   main-collection.css's grid (1 col <=480px, 2 col <768px, 3 col
+   <1024px) so this stays visually consistent with the rest of the
+   site, per the note in product-card.liquid's IMAGE SIZES FIX.
+   ------------------------------------------------------------------ */
+
+#product-results {
+  display: contents;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 4), minmax(0, 1fr));
+  gap: 1.5rem 1rem;
+}
+
+@media (max-width: 1024px) {
+  .search-results-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .search-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .search-results-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* /snippet: product-results */
+
+/* ------------------------------------------------------------------
+   snippet: article-results (formerly assets/article-results.css)
+   Card-level styling lives in article-card.css — this section only
+   owns the grid container that arranges those cards, plus the
+   #article-results wrapper it now sits inside.
+   ------------------------------------------------------------------ */
+
+#article-results {
+  display: contents;
+}
+
+.article-feed {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .article-feed {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .article-feed {
+    grid-template-columns: 1fr;
+  }
+}
+/* /snippet: article-results */
