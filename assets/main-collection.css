@@ -753,3 +753,66 @@
 .after-items h4[id] {
   scroll-margin-top: 240px !important;
 }
+/* ============================================================
+   SEARCH PAGE: persistent filter sidebar (2026-07)
+   Append to the bottom of assets/main-collection.css.
+
+   main-search.liquid now always renders the real
+   #collection-filter / #FilterForm (via collection-filter.liquid),
+   on both the Products and Articles tabs -- it's never swapped out
+   for a placeholder anymore. These rules show/hide the
+   "products only" notice and dim the form itself based on
+   [data-active-tab] (on .collection-page), which main-search.js
+   keeps in sync on every tab click, before any network fetch.
+
+   Requires the FilterForm id fix: the form's real id is
+   #FilterForm (not #SearchFilterForm -- check your markup before
+   assuming otherwise).
+   ============================================================ */
+
+.collection-filter__articles-notice {
+  display: none;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border, #e2e2e2);
+  margin-bottom: 0.75rem;
+}
+
+[data-active-tab="articles"] .collection-filter__articles-notice {
+  display: block;
+}
+
+[data-active-tab="articles"] #FilterForm {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Loading state for AJAX tab switching (feed dims + spinner while
+   main-search.js fetches an unloaded tab's content). If
+   .collection-feed already has an is-loading/aria-busy treatment
+   elsewhere in this file, skip this block -- don't double-define. */
+.collection-feed.is-loading,
+.collection-feed[aria-busy="true"] {
+  position: relative;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.collection-feed.is-loading::after,
+.collection-feed[aria-busy="true"]::after {
+  content: '';
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: -0.875rem;
+  border: 3px solid var(--color-accent-secondary, #0A3161);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: collection-filter-spin 0.6s linear infinite;
+}
+
+@keyframes collection-filter-spin {
+  to { transform: rotate(360deg); }
+}
