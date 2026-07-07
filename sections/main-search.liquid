@@ -305,7 +305,24 @@
                   <button type="submit" class="search-filter__submit">Apply</button>
                 </form>
               {%- else -%}
-                <p class="search-filter__empty">Filters aren&rsquo;t available for articles &mdash; switch to the Products tab to filter results.</p>
+                {%- comment -%}
+                  ARTICLES-TAB PLACEHOLDER (2026-07): previously a
+                  single small <p>, which "ghosted" the sidebar —
+                  made it feel empty/broken rather than intentional.
+                  Kept as a block-level placeholder (not the form) so
+                  .search-filter's width stays exactly the same as it
+                  is on the Products tab; only the CONTENTS differ,
+                  same "no layout shift" reasoning as the width fix
+                  documented in main-search.css.
+                {%- endcomment -%}
+                <div class="search-filter__placeholder">
+                  <svg class="search-filter__placeholder-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 4h16v2.586a1 1 0 0 1-.293.707l-5.414 5.414a1 1 0 0 0-.293.707V19l-4 2v-7.586a1 1 0 0 0-.293-.707L4.293 7.293A1 1 0 0 1 4 6.586V4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  </svg>
+                  <p class="search-filter__placeholder-title">No filters for articles</p>
+                  <p class="search-filter__placeholder-text">Filters only apply to product results. Switch tabs to narrow products down by price, type, and more.</p>
+                  <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__placeholder-btn">Switch to Products</a>
+                </div>
               {%- endif -%}
 
             </aside>
