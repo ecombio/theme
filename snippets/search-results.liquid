@@ -1,0 +1,49 @@
+{%- comment -%}
+  snippets/search-results.liquid
+  ------------------------------------------------------------------
+  Renders the two result panels (tabpanels). The Products/Articles
+  tab switcher itself lives in search-toolbar.liquid (the ids
+  referenced by aria-labelledby below — tab-products / tab-articles —
+  are defined there); this snippet used to render its own duplicate
+  copy of that tab switcher, which produced two conflicting sets of
+  the same DOM ids on the page. Removed in favor of a single tab
+  switcher owned by the toolbar. Each panel defers to its own
+  snippet so the product and article rendering logic (and their
+  paginate loops) stay isolated.
+
+  Expects:
+    - search_terms  (string)  the current search query, e.g. search.terms
+    - active_type    (string)  'product' or 'article'
+    - section        (object)  the parent section, for settings:
+                                columns, results_per_page
+{%- endcomment -%}
+
+<div class="search-feed" id="search-feed" data-search-feed>
+
+  <div
+    id="panel-products"
+    class="search-feed__panel"
+    role="tabpanel"
+    aria-labelledby="tab-products"
+    data-panel="products"
+    {%- if active_type != 'product' %} hidden{%- endif %}
+  >
+    {%- if active_type == 'product' -%}
+      {%- render 'product-results', search_terms: search_terms, section: section -%}
+    {%- endif -%}
+  </div>
+
+  <div
+    id="panel-articles"
+    class="search-feed__panel"
+    role="tabpanel"
+    aria-labelledby="tab-articles"
+    data-panel="articles"
+    {%- if active_type != 'article' %} hidden{%- endif %}
+  >
+    {%- if active_type == 'article' -%}
+      {%- render 'article-results', search_terms: search_terms, section: section -%}
+    {%- endif -%}
+  </div>
+
+</div>
