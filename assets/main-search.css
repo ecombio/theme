@@ -1,16 +1,235 @@
-/* assets/main-search.css
-   Companion to sections/main-search.liquid.
+/**
+ * assets/main-search.css
+ * Styles for sections/main-search.liquid
+ *
+ * GRID BREAKPOINTS:
+ *   .main-search__grid reuses the .product-feed__grid class name so it
+ *   inherits the same column breakpoints documented in main-collection.css
+ *   (1 col <=480px, 2 cols <768px, 3 cols <1024px, 4 cols >=1024px).
+ *   product-card.liquid's `sizes` attribute is hardcoded to match those
+ *   exact breakpoints (see its IMAGE SIZES FIX comment) — if you change
+ *   the column counts here, update main-collection.css AND
+ *   product-card.liquid's card_image_sizes together, or images will be
+ *   fetched at the wrong resolution again.
+ */
 
-   Adapted from main-collection.css: hero, toolbar, and tab-switcher
-   rules are carried over near-verbatim. The two-column filter-sidebar
-   body and everything under it (.collection-filter*, mobile filter
-   drawer) has been dropped since search has no filters — this is a
-   single-column layout with sort living in the toolbar itself instead
-   of a sidebar. Still separate (not inlined here): product-card.css,
-   article-card.css. */
+.main-search {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+/* ── Header ── */
+
+.main-search__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.main-search__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.main-search__term {
+  font-weight: 700;
+}
+
+.main-search__form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-border, #d9d9d9);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 260px;
+}
+
+.main-search__input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.95rem;
+  background: transparent;
+}
+
+.main-search__submit {
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--color-text, #1a1a1a);
+}
+
+/* ── Tabs + sort controls ── */
+
+.main-search__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border, #e5e5e5);
+  padding-bottom: 16px;
+}
+
+.main-search__tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.main-search__tab {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  color: var(--color-text-subdued, #666);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.main-search__tab:hover {
+  background: var(--color-surface-subtle, #f2f2f2);
+}
+
+.main-search__tab--active {
+  background: var(--color-text, #1a1a1a);
+  color: var(--color-background, #fff);
+}
+
+.main-search__sort-select {
+  border: 1px solid var(--color-border, #d9d9d9);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  background: var(--color-background, #fff);
+}
+
+/* ── Product grid (shared column rhythm with collection grid) ── */
+
+.product-feed__grid.main-search__grid {
+  display: grid;
+  gap: 24px 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 481px) {
+  .product-feed__grid.main-search__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .product-feed__grid.main-search__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-feed__grid.main-search__grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px 20px;
+  }
+}
+
+.main-search__grid[hidden],
+.main-search__result-list[hidden] {
+  display: none;
+}
+
+/* ── Page / article result rows ── */
+
+.main-search__result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 760px;
+}
+
+.main-search__result-row {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border, #eee);
+}
+
+.main-search__result-row:first-child {
+  padding-top: 0;
+}
+
+.main-search__result-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-text, #1a1a1a);
+}
+
+.main-search__result-title:hover {
+  text-decoration: underline;
+}
+
+.main-search__result-excerpt {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-subdued, #666);
+  line-height: 1.5;
+}
+
+/* ── Empty state ── */
+
+.main-search__empty {
+  padding: 48px 0;
+  text-align: center;
+}
+
+.main-search__empty-text {
+  color: var(--color-text-subdued, #666);
+  font-size: 1rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* ── Pagination ── */
+
+.main-search__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.main-search__page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  color: var(--color-text, #1a1a1a);
+}
+
+.main-search__page-link:hover {
+  background: var(--color-surface-subtle, #f2f2f2);
+}
+
+.main-search__page-link--current {
+  background: var(--color-text, #1a1a1a);
+  color: var(--color-background, #fff);
+}
 
 .visually-hidden {
-  position: absolute !important;
+  position: absolute;
   width: 1px;
   height: 1px;
   padding: 0;
@@ -19,426 +238,4 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-/* ---------- Section wrapper ---------- */
-.search-section {
-  padding: 2rem 0 4rem;
-}
-
-.search-page {
-  margin: 0 auto;
-  padding-inline: var(--section-padding, 24px);
-}
-
-.search-page__default-width {
-  max-width: 1184px;
-}
-.search-page__full-width {
-  max-width: none;
-}
-.search-page__custom-width {
-  max-width: var(--custom-width);
-}
-
-/* ---------- Empty / no-query state ---------- */
-.search-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 4rem 1rem;
-  color: #6b6b6b;
-  font-size: 1rem;
-}
-
-.search-hero__prompt {
-  padding: 3rem 0 5rem;
-  color: #6b6b6b;
-  font-size: 1rem;
-}
-
-/* ---------- Pagination ---------- */
-.pagination {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin-top: 2.5rem;
-}
-
-.pagination__link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.25rem;
-  height: 2.25rem;
-  padding: 0 0.6rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: #1a1a1a;
-  text-decoration: none;
-  transition: background 0.15s ease;
-}
-
-.pagination__link:hover {
-  background: #f0f0f0;
-}
-
-.pagination__link--current {
-  background: #1a1a1a;
-  color: #fff;
-}
-
-/* ============================================================
-   Hero
-   ============================================================ */
-
-.search-hero {
-  padding-block: 40px 32px;
-}
-
-@media (max-width: 639px) {
-  .search-hero {
-    padding-block: 28px 20px;
-  }
-
-  .search-title {
-    font-size: 1.5rem;
-  }
-}
-
-.search-result-count {
-  color: var(--hs-text-muted, #6b6b6b);
-  margin-top: 0.35rem;
-}
-
-/* ============================================================
-   Toolbar — tab-switcher on the left, sort on the right.
-   No filter-toggle button here (unlike main-collection.css)
-   since there are no filters to show/hide.
-   ============================================================ */
-
-.search-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e5e5e5;
-  position: sticky;
-  top: var(--sticky-header-height, 0);
-  z-index: 50;
-  background: #fff;
-}
-
-.tab-switcher {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.tab-switcher__tab {
-  appearance: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 0.85rem 1.25rem;
-  color: #6b6b6b;
-  text-decoration: none;
-  position: relative;
-  transition: color 0.15s ease;
-  margin-bottom: -1px;
-}
-
-.tab-switcher__tab:hover {
-  color: #1a1a1a;
-}
-
-.tab-switcher__tab:focus-visible {
-  outline: 2px solid #1a1a1a;
-  outline-offset: 2px;
-}
-
-.tab-switcher__tab::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: transparent;
-  transition: background 0.15s ease;
-}
-
-.tab-switcher__tab--active {
-  color: #1a1a1a;
-}
-
-.tab-switcher__tab--active::after {
-  background: #1a1a1a;
-}
-
-.search-toolbar__sort {
-  flex: 0 0 auto;
-  padding: 0.6rem 0;
-}
-
-.search-toolbar__sort select {
-  padding: 0.5rem 0.65rem;
-  border: 1px solid #d4d4d4;
-  border-radius: 4px;
-  background: #fff;
-  font-size: 0.9rem;
-}
-
-.search-mobile-bar {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: #fff;
-  border-top: 1px solid #e5e5e5;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.search-mobile-bar__btn {
-  flex: 1 1 100%;
-  appearance: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.9rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #1a1a1a;
-  transition: background 0.15s ease;
-}
-
-.search-mobile-bar__btn:hover,
-.search-mobile-bar__btn:active {
-  background: #f4f4f4;
-}
-
-.search-mobile-bar__btn[aria-expanded="true"] {
-  font-weight: 600;
-}
-
-.mobile-sort-sheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 210;
-  background: #fff;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
-  padding-bottom: env(safe-area-inset-bottom);
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mobile-sort-sheet.is-open {
-  transform: translateY(0);
-}
-
-.mobile-sort-sheet__inner {
-  padding: 1.25rem 1.5rem;
-}
-
-.mobile-sort-sheet__handle {
-  width: 36px;
-  height: 4px;
-  background: #d4d4d4;
-  border-radius: 999px;
-  margin: 0 auto 1rem;
-}
-
-.mobile-sort-sheet__heading {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b6b6b;
-  margin: 0 0 0.75rem;
-}
-
-.mobile-sort-sheet__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.mobile-sort-sheet__option {
-  appearance: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 0.75rem 0;
-  font-size: 0.95rem;
-  color: #1a1a1a;
-  border-bottom: 1px solid #f0f0f0;
-  transition: color 0.15s ease;
-}
-
-.mobile-sort-sheet__option:last-child {
-  border-bottom: none;
-}
-
-.mobile-sort-sheet__option--active {
-  font-weight: 600;
-}
-
-.mobile-sort-sheet__option--active::after {
-  content: ' ✓';
-}
-
-@media (max-width: 768px) {
-  .search-toolbar {
-    margin-bottom: 1.25rem;
-  }
-
-  .search-toolbar__sort {
-    display: none; /* replaced by the mobile sort sheet */
-  }
-
-  .tab-switcher {
-    flex: 1 1 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .tab-switcher::-webkit-scrollbar {
-    display: none;
-  }
-
-  .search-mobile-bar {
-    display: flex;
-  }
-
-  .mobile-sort-sheet {
-    display: block;
-  }
-
-  .search-page {
-    padding-bottom: 5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .tab-switcher__tab {
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (min-width: 769px) {
-  .mobile-sort-sheet {
-    display: none;
-  }
-}
-
-/* ---------- Mobile sort-sheet backdrop ---------- */
-.search-mobile-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 199;
-  background: rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.search-mobile-backdrop.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-@media (max-width: 768px) {
-  .search-mobile-backdrop {
-    display: block;
-  }
-}
-
-/* ============================================================
-   Feed — single-column body, no sidebar.
-   ============================================================ */
-
-.search-feed {
-  width: 100%;
-}
-
-.search-feed__panel {
-  width: 100%;
-}
-
-.search-feed__panel[hidden] {
-  display: none;
-}
-
-/* ---------- Product results grid ----------
-   Same --columns capping pattern as main-collection.css's
-   .product-feed__grid: caps the effective column count per
-   breakpoint while still respecting a merchant setting lower
-   than that breakpoint's max. */
-.search-results-grid {
-  display: grid;
-  grid-template-columns: repeat(min(var(--columns, 4), 4), 1fr);
-  gap: 1.5rem;
-}
-
-@media (max-width: 1024px) {
-  .search-results-grid {
-    grid-template-columns: repeat(min(var(--columns, 4), 3), 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .search-results-grid {
-    grid-template-columns: repeat(min(var(--columns, 4), 2), 1fr);
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .search-results-grid {
-    grid-template-columns: repeat(min(var(--columns, 4), 1), 1fr);
-    gap: 0.75rem;
-  }
-}
-
-/* ---------- Article results grid ---------- */
-.article-feed {
-  display: grid;
-  grid-template-columns: repeat(min(var(--columns, 4), 4), 1fr);
-  gap: 1.5rem;
-}
-
-@media (max-width: 1024px) {
-  .article-feed {
-    grid-template-columns: repeat(min(var(--columns, 4), 3), 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .article-feed {
-    grid-template-columns: repeat(min(var(--columns, 4), 2), 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .article-feed {
-    grid-template-columns: repeat(min(var(--columns, 4), 1), 1fr);
-  }
 }
