@@ -1,59 +1,122 @@
-{% comment %}
-  Simple articles grid section. Always pulls from blogs['articles']
-  (i.e. /blogs/articles).
-  Renders each article using snippets/article-card.liquid (which pulls in
-  its own article-card.css). No tag filtering, dynamic content, or JS —
-  just a heading and article grid.
-{% endcomment %}
+{%- comment -%}
+  sections/blog-posts.liquid
+
+  Always pulls from blogs['articles'] (i.e. /blogs/articles).
+  Renders each article using snippets/article-card.liquid (which pulls
+  in its own article-card.css). No metafield-based tag filtering — tag
+  pills use Shopify's native blog tags (target_blog.tags) and native
+  /tagged/ routes.
+
+  SECTION LAYOUT:
+  Follows the same independent width/padding pattern as
+  sections/example-width-section.liquid — this section's outer div
+  gets its width class (default-width / full-width / custom-width)
+  and --section-padding from ITS OWN schema settings only. It never
+  reads --page-margin / --page-width, so the global Body side padding
+  setting cannot silently move this section. See that file's header
+  comment for the full rationale.
+{%- endcomment -%}
 
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 {{ 'blog-posts.css' | asset_url | stylesheet_tag }}
 
-{% assign target_blog = blogs['articles'] %}
+{%- liquid
+  assign target_blog = blogs['articles']
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = width_type
+  endif
+-%}
 
-<div class="blog-posts-section section-{{ section.id }}">
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+  <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
-  {% if section.settings.heading != blank %}
-    <div class="blog-posts__header">
-      <h2 class="blog-posts__title">{{ section.settings.heading }}</h2>
-    </div>
-  {% endif %}
+    {% if section.settings.heading != blank %}
+      <div class="blog-posts__header">
+        <h2 class="blog-posts__title">{{ section.settings.heading }}</h2>
+      </div>
+    {% endif %}
 
-  {% if target_blog.tags.size > 0 %}
-    <div class="blog-posts__tags">
-      <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
-        All
-      </a>
-      {% for tag in target_blog.tags %}
-        <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
-           class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
-          {{ tag }}
+    {% if target_blog.tags.size > 0 %}
+      <div class="blog-posts__tags">
+        <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
+          All
         </a>
-      {% endfor %}
-    </div>
-  {% endif %}
+        {% for tag in target_blog.tags %}
+          <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
+             class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
+            {{ tag }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
 
-  {% if target_blog.articles.size > 0 %}
-    <div class="blog-posts__grid" style="--articles-columns: {{ section.settings.columns }};">
-      {% for article in target_blog.articles limit: section.settings.limit %}
-        {% comment %} Eager-load the first row so LCP isn't hurt by lazy-loading above-the-fold images {% endcomment %}
-        {% assign loading = 'lazy' %}
-        {% if forloop.index <= section.settings.columns %}
-          {% assign loading = 'eager' %}
+    {% paginate target_blog.articles by section.settings.limit %}
+      {% if target_blog.articles.size > 0 %}
+        <div class="blog-posts__grid" style="--blog-posts-columns: {{ section.settings.columns }};">
+          {% for article in target_blog.articles %}
+            {% comment %} Eager-load the first row so LCP isn't hurt by lazy-loading above-the-fold images {% endcomment %}
+            {% assign loading = 'lazy' %}
+            {% if forloop.index <= section.settings.columns %}
+              {% assign loading = 'eager' %}
+            {% endif %}
+
+            {% render 'article-card', article: article, loading: loading %}
+          {% endfor %}
+        </div>
+
+        {% if paginate.pages > 1 %}
+          <nav class="blog-posts__pagination" role="navigation" aria-label="Pagination">
+            {% if paginate.previous %}
+              <a href="{{ paginate.previous.url }}" class="blog-posts__page-link blog-posts__page-link--prev">
+                ← Previous
+              </a>
+            {% endif %}
+
+            <ul class="blog-posts__page-list">
+              {% for part in paginate.parts %}
+                <li>
+                  {% if part.is_link %}
+                    <a href="{{ part.url }}" class="blog-posts__page-link">{{ part.title }}</a>
+                  {% else %}
+                    {% if part.title == paginate.current_page %}
+                      <span class="blog-posts__page-link is-active" aria-current="page">{{ part.title }}</span>
+                    {% else %}
+                      <span class="blog-posts__page-link blog-posts__page-link--gap">{{ part.title }}</span>
+                    {% endif %}
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+
+            {% if paginate.next %}
+              <a href="{{ paginate.next.url }}" class="blog-posts__page-link blog-posts__page-link--next">
+                Next →
+              </a>
+            {% endif %}
+          </nav>
         {% endif %}
+      {% else %}
+        <p class="blog-posts__empty">No articles to show yet.</p>
+      {% endif %}
+    {% endpaginate %}
 
-        {% render 'article-card', article: article, loading: loading %}
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="blog-posts__empty">No articles to show yet.</p>
-  {% endif %}
-
+  </div>
 </div>
 
 {% schema %}
 {
-  "name": "Articles",
+  "name": "Blog posts",
   "settings": [
     {
       "type": "text",
@@ -68,7 +131,7 @@
       "max": 24,
       "step": 1,
       "default": 12,
-      "label": "Max articles to show"
+      "label": "Articles per page"
     },
     {
       "type": "range",
@@ -78,11 +141,47 @@
       "step": 1,
       "default": 3,
       "label": "Columns (desktop)"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ],
   "presets": [
     {
-      "name": "Articles",
+      "name": "Blog posts",
       "category": "Blog"
     }
   ]
