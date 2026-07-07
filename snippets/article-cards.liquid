@@ -1,56 +1,71 @@
 {%- comment -%}
-  Renders a single article card.
-  Usage: {% render 'article-card', article: article, blog: blog %}
+  Accepts:
+  - article: {Object} Article Liquid object
+  - loading: {String} optional, 'eager' | 'lazy' (default: 'lazy')
+      Pass 'eager' for above-the-fold cards (e.g. the first row in a grid)
+      to avoid hurting LCP.
+
+  Accessibility note: the whole card is a single click/focus target via
+  .article-card__title-link (stretched-link pattern). The image link and
+  "Read article" text are decorative/visual only — screen reader and
+  keyboard users get exactly one stop per card, on the title.
 {%- endcomment -%}
 
-<article class="cat-feed-card">
-  <a href="{{ article.url }}" class="cat-feed-card__link">
-    <div class="cat-feed-card__image-wrap">
-      {%- if article.image -%}
-        <img
-          class="cat-feed-card__image"
-          src="{{ article.image | image_url: width: 800 }}"
-          srcset="
-            {{ article.image | image_url: width: 400 }} 400w,
-            {{ article.image | image_url: width: 800 }} 800w,
-            {{ article.image | image_url: width: 1200 }} 1200w
-          "
-          sizes="(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw"
-          alt="{{ article.image.alt | escape }}"
-          loading="lazy"
-          width="{{ article.image.width }}"
-          height="{{ article.image.height }}"
-        >
-      {%- else -%}
-        <div class="cat-feed-card__image cat-feed-card__image--placeholder">{{ 'image' | placeholder_svg_tag }}</div>
-      {%- endif -%}
-    </div>
-
-    <div class="cat-feed-card__body">
-      {%- if article.tags.size > 0 -%}
-        <div class="cat-feed-card__tags">
-          {%- for tag in article.tags limit: 2 -%}
-            <span class="cat-feed-card__tag">{{ tag }}</span>
-          {%- endfor -%}
-        </div>
-      {%- endif -%}
-
-      <h3 class="cat-feed-card__title">{{ article.title }}</h3>
-
-      {%- if article.excerpt.size > 0 -%}
-        <p class="cat-feed-card__excerpt">{{ article.excerpt | strip_html | truncate: 120 }}</p>
-      {%- else -%}
-        <p class="cat-feed-card__excerpt">{{ article.content | strip_html | truncate: 120 }}</p>
-      {%- endif -%}
-
-      <div class="cat-feed-card__meta">
-        <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
-          {{ article.published_at | date: '%B %d, %Y' }}
-        </time>
-        {%- if article.author -%}
-          <span class="cat-feed-card__author">· {{ article.author }}</span>
-        {%- endif -%}
-      </div>
-    </div>
+<article class="article-card">
+  <a href="{{ article.url }}" class="article-card__image-wrapper" aria-hidden="true" tabindex="-1">
+    {%- comment -%}
+      Show the article image if it exists, otherwise fall back to Shopify's built-in placeholder SVG.
+    {%- endcomment -%}
+    {%- if article.image -%}
+      <img
+        src="{{ article.image | image_url: width: 800 }}"
+        srcset="
+          {{- article.image | image_url: width: 400 }} 400w,
+          {{ article.image | image_url: width: 600 }} 600w,
+          {{ article.image | image_url: width: 800 }} 800w,
+          {{ article.image | image_url: width: 1000 }} 1000w
+        "
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+        alt="{{ article.image.alt | default: article.title | escape }}"
+        class="article-card__image"
+        loading="{{ loading | default: 'lazy' }}"
+        width="{{ article.image.width }}"
+        height="{{ article.image.height }}"
+      >
+    {%- else -%}
+      {{ 'lifestyle-1' | placeholder_svg_tag: 'article-card__image article-card__image--placeholder' }}
+    {%- endif -%}
   </a>
+
+  <div class="article-card__content">
+    <div class="article-card__meta">
+      <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+        {{ article.published_at | date: format: 'abbreviated_date' }}
+      </time>
+
+      {%- if article.metafields.custom.reading_time != blank -%}
+        <span class="article-card__metafield-tag">
+          {{ article.metafields.custom.reading_time }} min read
+        </span>
+      {%- endif -%}
+    </div>
+
+    <h3 class="article-card__title">
+      <a href="{{ article.url }}" class="article-card__title-link">{{ article.title }}</a>
+    </h3>
+
+    <p class="article-card__excerpt">
+      {%- if article.excerpt.size > 0 -%}
+        {{ article.excerpt | strip_html | truncatewords: 20 }}
+      {%- elsif article.content.size > 0 -%}
+        {{ article.content | strip_html | truncatewords: 20 }}
+      {%- else -%}
+        Read the full story.
+      {%- endif -%}
+    </p>
+
+    <span class="article-card__read-more" aria-hidden="true">
+      Read article
+    </span>
+  </div>
 </article>
