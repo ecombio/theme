@@ -19,10 +19,16 @@
   assign search_terms = search.terms
   assign results_count = search.results_count | default: 0
 
-  # Filters only apply to product search (Shopify does not support
-  # faceted filters on article search results)
+  # Whether the filter sidebar is enabled at all. Previously this was
+  # also gated on active_type == 'product' (Shopify has no faceted
+  # filtering for articles), which hid the whole sidebar -- and
+  # collapsed the feed to full width -- the moment you switched to
+  # the Articles tab. Now the sidebar stays put on both tabs
+  # (search-filter.liquid shows a placeholder message on Articles
+  # instead of disappearing), so this only reflects the merchant's
+  # setting.
   assign show_filters = false
-  if section.settings.show_filters and active_type == 'product'
+  if section.settings.show_filters
     assign show_filters = true
   endif
 
