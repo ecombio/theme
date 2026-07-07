@@ -1,239 +1,88 @@
-/* assets/main-search.js
-   Companion to sections/main-search.liquid.
-
-   Unlike main-collection.js's live-filter AJAX (which re-fetches the
-   SAME type of content with different filter params), tab switching
-   here re-fetches a DIFFERENT type of content entirely (?type=product
-   vs ?type=article), because that's the only lever Shopify's search
-   object gives us for scoping + paginating results by type. So instead
-   of swapping one grid element, a tab switch swaps the whole panel
-   (grid + pagination + sort options) for whichever type is now active.
-
-   The tab links and pagination links are real <a href> elements, so
-   with JS disabled everything still works via normal navigation. */
+/**
+ * assets/main-search.js
+ * Behavior for sections/main-search.liquid
+ *
+ * Scope: search-page-only concerns (type tabs, sort-by, keeping the
+ * URL in sync). Per-card behavior (wishlist, quickview, compare, ATC)
+ * belongs to product-card.js, which is loaded globally via theme.liquid
+ * and already runs against the cards this section renders — this file
+ * does not duplicate any of that.
+ *
+ * Guard flag follows the same naming convention as product-card.js's
+ * window.__productCardLoaded.
+ */
 
 (function () {
-  'use strict';
+  if (window.__mainSearchLoaded) return;
+  window.__mainSearchLoaded = true;
 
-  var page = document.querySelector('[data-search-page]');
-  if (!page) return;
+  function initMainSearch(root) {
+    var tabsWrap = root.querySelector('[data-search-tabs]');
+    var typeInput = root.querySelector('[data-search-type-input]');
+    var sortSelect = root.querySelector('[data-search-sort]');
 
-  var sectionRoot = document.getElementById('main-search');
-  var sectionId = sectionRoot ? sectionRoot.dataset.sectionId : null;
-  var tabs = page.querySelectorAll('.tab-switcher__tab[data-type]');
-  var sortSelect = document.querySelector('[data-sort]');
-  var requestToken = 0;
+    if (tabsWrap) {
+      tabsWrap.addEventListener('click', function (event) {
+        var tab = event.target.closest('[data-search-tab]');
+        if (!tab || !tabsWrap.contains(tab)) return;
 
-  /* ══════════════════════════════════════════════════════════
-     Build a URL for a given type + sort_by, preserving q and
-     everything else already on the current URL.
-  ══════════════════════════════════════════════════════════ */
-  function buildUrl(type, sortBy) {
-    var url = new URL(window.location.href);
-    url.searchParams.set('type', type);
-    if (sortBy) {
-      url.searchParams.set('sort_by', sortBy);
-    } else if (type !== page.dataset.activeType) {
-      // Sort options differ between products and articles — drop any
-      // sort_by carried over from the other tab rather than sending
-      // a value that may not apply.
-      url.searchParams.delete('sort_by');
-    }
-    url.searchParams.delete('page'); // switching type/sort resets pagination
-    return url;
-  }
-
-  /* ══════════════════════════════════════════════════════════
-     Fetch the section for a given URL and swap in the parts
-     that changed: the active panel's grid + pagination, the
-     tab active states, and the sort <select>'s option list.
-  ══════════════════════════════════════════════════════════ */
-  function fetchAndSwap(url, pushHistory) {
-    if (!sectionId) {
-      window.location.href = url.toString();
-      return;
-    }
-
-    var fetchUrl = new URL(url.toString());
-    fetchUrl.searchParams.set('section_id', sectionId);
-
-    var thisRequest = ++requestToken;
-    var feed = document.getElementById('search-feed');
-    if (feed) feed.style.opacity = '0.5';
-
-    fetch(fetchUrl.toString())
-      .then(function (res) {
-        if (!res.ok) throw new Error('Search request failed');
-        return res.text();
-      })
-      .then(function (html) {
-        if (thisRequest !== requestToken) return; // stale response
-
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        var newType = url.searchParams.get('type');
-
-        // Swap the ENTIRE feed (both panels) as one unit rather than
-        // patching pieces independently. The server already computed
-        // the correct hidden/visible state and content for both panels
-        // in this one response — grabbing it wholesale means there's
-        // no selector-mismatch path that can leave stale content behind
-        // while attributes elsewhere get toggled out of sync with it.
-        var newFeed = doc.getElementById('search-feed');
-        var currentFeed = document.getElementById('search-feed');
-        if (!newFeed || !currentFeed) {
-          window.location.href = url.toString();
-          return;
-        }
-        currentFeed.replaceWith(newFeed);
-
-        var newSortSelect = doc.querySelector('[data-sort]');
-        if (newSortSelect) {
-          sortSelect = newSortSelect; // old node was just removed with the old feed
-          sortSelect.addEventListener('change', function () {
-            fetchAndSwap(buildUrl(page.dataset.activeType, sortSelect.value), true);
-          });
-        }
-
-        var newResultCount = doc.querySelector('.search-result-count');
-        var currentResultCount = document.querySelector('.search-result-count');
-        if (newResultCount && currentResultCount) {
-          currentResultCount.replaceWith(newResultCount);
-        }
-
-        tabs.forEach(function (t) {
-          var on = t.dataset.type === newType;
-          t.classList.toggle('tab-switcher__tab--active', on);
-          t.setAttribute('aria-selected', on ? 'true' : 'false');
-          t.setAttribute('tabindex', on ? '0' : '-1');
-        });
-
-        page.dataset.activeType = newType;
-
-        if (pushHistory) {
-          history.pushState({ type: newType }, '', url.toString());
-        }
-      })
-      .catch(function () {
-        // Network error, bad response, etc. — fall back to a real nav
-        // rather than leaving the page half-updated.
-        window.location.href = url.toString();
+        var type = tab.getAttribute('data-search-tab');
+        setActiveTab(tabsWrap, tab);
+        showPanel(root, type);
+        syncUrl(root, { type: type === 'all' ? null : type });
+        if (typeInput) typeInput.value = type;
       });
+    }
+
+    if (sortSelect) {
+      sortSelect.addEventListener('change', function () {
+        syncUrl(root, { sort_by: sortSelect.value });
+      });
+    }
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Tab clicks
-  ══════════════════════════════════════════════════════════ */
-  tabs.forEach(function (tab, i) {
-    tab.addEventListener('click', function (e) {
-      if (tab.dataset.type === page.dataset.activeType) return;
-      e.preventDefault();
-      fetchAndSwap(buildUrl(tab.dataset.type, null), true);
-    });
+  function setActiveTab(tabsWrap, activeTab) {
+    var tabs = tabsWrap.querySelectorAll('[data-search-tab]');
+    for (var i = 0; i < tabs.length; i++) {
+      var isActive = tabs[i] === activeTab;
+      tabs[i].classList.toggle('main-search__tab--active', isActive);
+      tabs[i].setAttribute('aria-selected', isActive ? 'true' : 'false');
+    }
+  }
 
-    tab.addEventListener('keydown', function (e) {
-      var next;
-      if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
-      if (e.key === 'ArrowLeft') next = tabs[i - 1] || tabs[tabs.length - 1];
-      if (next) {
-        next.focus();
-        next.click();
+  function showPanel(root, type) {
+    var panels = root.querySelectorAll('[data-search-panel]');
+    for (var i = 0; i < panels.length; i++) {
+      var panelType = panels[i].getAttribute('data-search-panel');
+      var shouldShow = type === 'all' || panelType === type;
+      panels[i].hidden = !shouldShow;
+    }
+  }
+
+  // Reloads the page with updated query params so full-text search
+  // and sorting stay server-driven (matches how the section's liquid
+  // reads search.types / search.sort_by). Passing a null value removes
+  // the param instead of setting it to the string "null".
+  function syncUrl(root, params) {
+    var url = new URL(window.location.href);
+
+    Object.keys(params).forEach(function (key) {
+      var value = params[key];
+      if (value === null || value === undefined || value === '') {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, value);
       }
     });
-  });
 
-  /* ══════════════════════════════════════════════════════════
-     Sort select (desktop)
-  ══════════════════════════════════════════════════════════ */
-  if (sortSelect) {
-    sortSelect.addEventListener('change', function () {
-      fetchAndSwap(buildUrl(page.dataset.activeType, sortSelect.value), true);
-    });
+    // Changing type or sort should reset pagination.
+    url.searchParams.delete('page');
+
+    window.location.href = url.toString();
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Mobile sort sheet — built lazily, mirrors the desktop
-     #SortBy select so there's a single source of truth.
-  ══════════════════════════════════════════════════════════ */
-  var mobileSortBtn = document.querySelector('[data-mobile-sort-toggle]');
-  var backdrop = document.querySelector('.search-mobile-backdrop');
-
-  if (mobileSortBtn) {
-    var sortSheet = null;
-
-    function buildSortSheet() {
-      var sheet = document.createElement('div');
-      sheet.className = 'mobile-sort-sheet';
-      sheet.setAttribute('role', 'dialog');
-      sheet.setAttribute('aria-modal', 'true');
-      sheet.setAttribute('aria-label', 'Sort options');
-
-      var inner = '<div class="mobile-sort-sheet__inner">';
-      inner += '<div class="mobile-sort-sheet__handle"></div>';
-      inner += '<p class="mobile-sort-sheet__heading">Sort by</p>';
-      inner += '<ul class="mobile-sort-sheet__list">';
-
-      var desktopSort = document.getElementById('SortBy');
-      if (desktopSort) {
-        Array.from(desktopSort.options).forEach(function (opt) {
-          var active = opt.selected ? ' mobile-sort-sheet__option--active' : '';
-          inner +=
-            '<li><button class="mobile-sort-sheet__option' + active + '" type="button" ' +
-            'data-sort-value="' + opt.value + '">' + opt.text + '</button></li>';
-        });
-      }
-
-      inner += '</ul></div>';
-      sheet.innerHTML = inner;
-
-      sheet.querySelectorAll('[data-sort-value]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          closeSortSheet();
-          fetchAndSwap(buildUrl(page.dataset.activeType, btn.dataset.sortValue), true);
-        });
-      });
-
-      document.body.appendChild(sheet);
-      return sheet;
-    }
-
-    function openSortSheet() {
-      // Rebuild every time so it reflects whatever the active tab's
-      // sort options currently are (they differ between product/article).
-      if (sortSheet) sortSheet.remove();
-      sortSheet = buildSortSheet();
-      sortSheet.getBoundingClientRect(); // force reflow before transition
-      sortSheet.classList.add('is-open');
-      mobileSortBtn.setAttribute('aria-expanded', 'true');
-      document.body.style.overflow = 'hidden';
-      if (backdrop) backdrop.classList.add('is-visible');
-    }
-
-    function closeSortSheet() {
-      if (!sortSheet) return;
-      sortSheet.classList.remove('is-open');
-      mobileSortBtn.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
-      if (backdrop) backdrop.classList.remove('is-visible');
-    }
-
-    mobileSortBtn.addEventListener('click', function () {
-      sortSheet && sortSheet.classList.contains('is-open')
-        ? closeSortSheet()
-        : openSortSheet();
-    });
-
-    if (backdrop) {
-      backdrop.addEventListener('click', closeSortSheet);
-    }
-  }
-
-  /* ══════════════════════════════════════════════════════════
-     Back/forward support
-  ══════════════════════════════════════════════════════════ */
-  window.addEventListener('popstate', function (e) {
-    var url = new URL(window.location.href);
-    var type = (e.state && e.state.type) || url.searchParams.get('type') || 'product';
-    fetchAndSwap(buildUrl(type, url.searchParams.get('sort_by')), false);
+  document.addEventListener('DOMContentLoaded', function () {
+    var root = document.querySelector('[data-main-search]');
+    if (root) initMainSearch(root);
   });
-
 })();
