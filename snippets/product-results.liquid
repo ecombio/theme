@@ -21,22 +21,6 @@
   as extra params. absolute_index uses paginate.current_offset, not
   forloop.index alone, so a block positioned at e.g. slot 20 renders
   once overall instead of on every page.
-
-  OBJECT_TYPE FIX (2026-07): search.results is only actually scoped
-  to products when the request that generated the page carries
-  `type=product`. This snippet used to trust that unconditionally and
-  render EVERY item in search.results through 'product-card' -- fine
-  when the tab links/pagination links (which always append &type=
-  product) drive the request, but not when a shopper lands here from
-  a generic header search box that doesn't set `type=`, in which case
-  search.results comes back with a mix of products/articles/pages and
-  this loop was rendering article/page objects through product-card
-  (wrong titles, fake "Add to cart" buttons on blog posts, etc). Now
-  filters defensively by result.object_type regardless of how the
-  request got here, and tracks rendered_count separately from
-  forloop's own count since forloop doesn't know about items this
-  loop skips -- the old `{%- else -%}` on the for loop only fires for
-  a truly empty search.results, not for "nothing here was a product."
 {%- endcomment -%}
 
 {%- comment -%}
@@ -58,13 +42,7 @@
     class="search-results-grid"
     style="--columns: {{ section.settings.columns | default: 4 }};"
   >
-    {%- assign rendered_count = 0 -%}
     {%- for result in search.results -%}
-      {%- if result.object_type != 'product' -%}
-        {%- continue -%}
-      {%- endif -%}
-
-      {%- assign rendered_count = rendered_count | plus: 1 -%}
       {%- assign absolute_index = paginate.current_offset | plus: forloop.index -%}
 
       {%- for banner in banner_blocks -%}
@@ -83,11 +61,9 @@
 
       {%- render 'product-card', product: result -%}
 
-    {%- endfor -%}
-
-    {%- if rendered_count == 0 -%}
+    {%- else -%}
       <p class="search-empty">No products found for &ldquo;{{ search_terms }}&rdquo;.</p>
-    {%- endif -%}
+    {%- endfor -%}
 
     {%- unless paginate.next -%}
       {%- for banner in banner_blocks -%}
