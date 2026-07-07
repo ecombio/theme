@@ -79,7 +79,12 @@
         </a>
         {% for tag in custom_tags %}
           {%- assign tag = tag | strip -%}
-          {%- assign display_tag = tag | replace: '-', ' ' | capitalize -%}
+          {%- assign display_tag = '' -%}
+          {%- assign display_words = tag | replace: '-', ' ' | split: ' ' -%}
+          {%- for word in display_words -%}
+            {%- assign display_tag = display_tag | append: word | capitalize | append: ' ' -%}
+          {%- endfor -%}
+          {%- assign display_tag = display_tag | strip -%}
           <a href="{{ target_blog.url }}/tagged/{{ tag | handle }}"
              class="blog-posts__tag-pill {% if target_blog.current_tags contains tag %}is-active{% endif %}">
             {{ display_tag }}
