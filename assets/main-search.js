@@ -1,50 +1,70 @@
 /* assets/main-search.js
    Owned by sections/main-search.liquid.
 
-   This file was previously retired (its only behavior, the sort
-   <select>, moved to search-toolbar.js) but is now revived as the
-   home for the filter-drawer and live-filtering logic that used to
-   live in assets/search-filter.js (snippets/search-filter.liquid was
-   inlined into sections/main-search.liquid, and this merge does the
-   same for its script — one fewer file to load, one fewer script tag
-   in the section markup).
+   This file was previously retired, then briefly revived to hold the
+   filter-drawer/live-filtering logic merged in from assets/search-
+   filter.js. This merge folds in a second, previously separate file,
+   assets/search-toolbar.js (was owned by snippets/search-toolbar.
+   liquid), so this is now the single script for the whole search
+   page. It's laid out as two independent IIFEs below rather than one
+   combined block, because the filter IIFE bails out early whenever
+   `#search-filter` isn't on the page (filters disabled) — merging
+   everything into one function would have made the sort-select and
+   tab-nav logic incorrectly depend on the filter drawer existing.
 
-   Two responsibilities:
+   Responsibilities:
 
-   1. Opening/closing the filter drawer: the toggle buttons live in
-      the section toolbar/mobile bar, the backdrop element lives in
-      the section markup too — this script owns all of that behavior
-      since it's all "does the filter drawer show or not."
+   1. Filter drawer + live filtering (formerly search-filter.js):
+      - Opening/closing the drawer: the toggle buttons live in the
+        section toolbar/mobile bar, the backdrop element lives in the
+        section markup too — this owns all of that behavior since
+        it's all "does the filter drawer show or not."
+      - Live filtering (AJAX via the Section Rendering API): checking
+        a filter or editing a price field re-fetches just the
+        main-search section's HTML with the new query params and
+        swaps in the updated product grid, filter form, pagination,
+        and result count — no full page reload. Ported from
+        main-collection's collection-filter.js, which does the same
+        thing for the collection page's product-filter form; see that
+        file for the original. Differences here:
+          - This form already carries `q` and `type` as hidden inputs
+            (collection's form didn't need either, since
+            collection.url is already scoped to one collection), so
+            FormData picks them up for free — no separate "preserve
+            q/type" step.
+          - Filters only ever render on the Products tab (Shopify has
+            no faceted search for articles), so this bails out early
+            if the filter <form> isn't present at all — no
+            live-filtering setup needed on the Articles tab.
+          - Tab switching itself is NOT live here (unlike
+            collection's tab switching, which collection-feed.js does
+            intercept) — search's tabs are deliberately plain links
+            to ?type=product|article, per the note below and in
+            search-results.js. This only makes the FILTER FORM's
+            fields live; it never touches tab navigation.
+          - Also swaps the hero's result count ("N results for
+            'query'") since that changes as filters narrow the
+            results, which collection's hero text doesn't have an
+            equivalent of.
 
-   2. Live filtering (AJAX via the Section Rendering API): checking a
-      filter or editing a price field re-fetches just the main-search
-      section's HTML with the new query params and swaps in the
-      updated product grid, filter form, pagination, and result
-      count — no full page reload. Ported from main-collection's
-      collection-filter.js, which does the same thing for the
-      collection page's product-filter form; see that file for the
-      original. Differences here:
-        - This form already carries `q` and `type` as hidden inputs
-          (collection's form didn't need either, since collection.url
-          is already scoped to one collection), so FormData picks
-          them up for free — no separate "preserve q/type" step.
-        - Filters only ever render on the Products tab (Shopify has
-          no faceted search for articles), so this bails out early if
-          the filter <form> isn't present at all — no live-filtering
-          setup needed on the Articles tab.
-        - Tab switching itself is NOT live here (unlike collection's
-          tab switching, which collection-feed.js does intercept) —
-          search's tabs are deliberately plain links to
-          ?type=product|article, per the note in search-results.js.
-          This script only makes the FILTER FORM's fields live; it
-          never touches tab navigation.
-        - Also swaps the hero's result count ("N results for
-          ‘query’") since that changes as filters narrow the results,
-          which collection's hero text doesn't have an equivalent of.
+   2. Sort <select> + tab keyboard navigation (formerly
+      search-toolbar.js): the sort <select> redirects with an updated
+      sort_by param, and arrow-key navigation between the Products/
+      Articles tabs follows the WAI-ARIA "Tabs" pattern (Left/Right/
+      Home/End move focus + roving tabindex). Deliberately does NOT
+      intercept the tab links' click/Enter navigation itself — each
+      tab is a real link to ?type=product|article, which is the
+      simplest, most reliable way to hand off to Shopify's own
+      pagination/filter state for that result type. This only
+      enhances keyboard travel between the two tabs; it never blocks
+      the default navigation.
+
+   Grid scroll-restore lives in product-results.js / article-
+   results.js.
 */
 (function () {
-  if (window.__mainSearchLoaded) return;
-  window.__mainSearchLoaded = true;
+  if (window.__searchFilterLoaded) return;
+  window.__searchFilterLoaded = true;
 
   var filterAside = document.getElementById('search-filter');
   if (!filterAside) return;
@@ -242,5 +262,50 @@
   // document, so this listener isn't even alive to hear it).
   window.addEventListener('popstate', function () {
     applyFiltersLive(false);
+  });
+})();
+
+(function () {
+  if (window.__searchToolbarLoaded) return;
+  window.__searchToolbarLoaded = true;
+
+  var sortSelect = document.querySelector('[data-sort]');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', function () {
+      var url = new URL(window.location.href);
+      url.searchParams.set('sort_by', sortSelect.value);
+      window.location.href = url.toString();
+    });
+  }
+
+  document.addEventListener('keydown', function (event) {
+    var tab = event.target.closest('[role="tab"]');
+    if (!tab) return;
+
+    var tablist = tab.closest('[role="tablist"]');
+    if (!tablist) return;
+
+    var tabs = Array.prototype.slice.call(tablist.querySelectorAll('[role="tab"]'));
+    var index = tabs.indexOf(tab);
+    if (index === -1) return;
+
+    var nextIndex = null;
+    if (event.key === 'ArrowRight') {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1;
+    }
+
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    tabs.forEach(function (t, i) {
+      t.tabIndex = i === nextIndex ? 0 : -1;
+    });
+    tabs[nextIndex].focus();
   });
 })();
