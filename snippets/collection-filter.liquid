@@ -1,11 +1,29 @@
 {%- comment -%}
   snippets/collection-filter.liquid
   Self-contained filter sidebar. Owns its own markup, styles, and JS.
-  Rendered into the left column of the collection two-column shell.
+  Rendered into the left column of the collection two-column shell —
+  and, as of the main-search integration, into the same slot on
+  sections/main-search.liquid.
 
   Expects section.settings:
     show_sort   {Boolean}
     show_filters {Boolean}
+
+  CONTEXT (collection vs. search):
+    This snippet originally assumed it only ever runs on the collection
+    template and read straight from the global `collection` object. It's
+    now rendered from two templates, so it branches on `template.name`:
+      - collection: unchanged behavior, still backed by `collection.*`.
+      - search: backed by `search.*` instead. Two knock-on differences,
+        both scoped to the `is_search` branches below:
+          1. `search` has no `sort_options` array (unlike `collection`),
+             so a fixed fallback list of Shopify's supported search
+             sort values is used instead.
+          2. FilterForm posts via plain GET, which replaces the entire
+             querystring — on search that would silently drop `q` (and
+             the results-type tab param main-search.liquid maintains),
+             so hidden inputs re-assert them. Collection has no
+             equivalent param to preserve, so this is a no-op there.
 
   Communicates outward via events:
     No direct DOM coupling to product-feed or collection.liquid.
@@ -22,6 +40,21 @@
 
 {{ 'collection-filter.css' | asset_url | stylesheet_tag }}
 
+{%- liquid
+  assign is_search = false
+  if template.name == 'search'
+    assign is_search = true
+  endif
+
+  if is_search
+    assign filter_source = search
+    assign filter_url    = routes.search_url
+  else
+    assign filter_source = collection
+    assign filter_url    = collection.url
+  endif
+-%}
+
 {%- if section.settings.show_filters -%}
   <aside
     class="collection-filter"
@@ -35,19 +68,43 @@
       <div class="collection-filter__sort">
         <label for="SortBy">Sort</label>
         <select id="SortBy" data-sort>
-          {%- for option in collection.sort_options -%}
-            <option
-              value="{{ option.value }}"
-              {%- if option.value == collection.sort_by %} selected{%- endif %}
-            >{{ option.name }}</option>
-          {%- endfor -%}
+          {%- if is_search -%}
+            {%- comment -%}
+              search has no .sort_options; these are Shopify's documented
+              valid values for search.sort_by.
+            {%- endcomment -%}
+            <option value="relevance" {% if filter_source.sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
+            <option value="best-selling" {% if filter_source.sort_by == 'best-selling' %}selected{% endif %}>Best selling</option>
+            <option value="price-ascending" {% if filter_source.sort_by == 'price-ascending' %}selected{% endif %}>Price: low to high</option>
+            <option value="price-descending" {% if filter_source.sort_by == 'price-descending' %}selected{% endif %}>Price: high to low</option>
+          {%- else -%}
+            {%- for option in collection.sort_options -%}
+              <option
+                value="{{ option.value }}"
+                {%- if option.value == collection.sort_by %} selected{%- endif %}
+              >{{ option.name }}</option>
+            {%- endfor -%}
+          {%- endif -%}
         </select>
       </div>
     {%- endif -%}
 
-    <form method="get" action="{{ collection.url }}" id="FilterForm">
+    <form method="get" action="{{ filter_url }}" id="FilterForm">
 
-      {%- for filter in collection.filters -%}
+      {%- if is_search -%}
+        {%- comment -%}
+          Native GET form submission replaces the whole querystring, so
+          without these the filter form would drop the search term and
+          the products/pages/articles tab main-search.liquid tracks.
+        {%- endcomment -%}
+        <input type="hidden" name="q" value="{{ search.terms | escape }}">
+        {%- assign current_result_type = request.query_parameters['type'] | default: 'all' -%}
+        {%- unless current_result_type == 'all' -%}
+          <input type="hidden" name="type" value="{{ current_result_type }}">
+        {%- endunless -%}
+      {%- endif -%}
+
+      {%- for filter in filter_source.filters -%}
         <details
           class="collection-filter__group"
           {%- if filter.active_values.size > 0 %} open{%- endif %}
@@ -104,20 +161,24 @@
 
       {%- comment -%} Active filter pills {%- endcomment -%}
       {%- assign active_count = 0 -%}
-      {%- for filter in collection.filters -%}
+      {%- for filter in filter_source.filters -%}
         {%- assign active_count = active_count | plus: filter.active_values.size -%}
       {%- endfor -%}
 
       {%- if active_count > 0 -%}
         <div class="collection-filter__active">
-          {%- for filter in collection.filters -%}
+          {%- for filter in filter_source.filters -%}
             {%- for value in filter.active_values -%}
               <a href="{{ value.url_to_remove }}" class="collection-filter__pill">
                 {{ value.label }} &times;
               </a>
             {%- endfor -%}
           {%- endfor -%}
-          <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+          {%- if is_search -%}
+            <a href="{{ routes.search_url }}?q={{ search.terms | url_encode }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+          {%- else -%}
+            <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+          {%- endif -%}
         </div>
       {%- endif -%}
 
