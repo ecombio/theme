@@ -8,8 +8,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     pills.forEach(pill => {
       pill.addEventListener('click', function (e) {
+        // Multi-tag selection is handled server-side via ?tags=a,b,c
+        // (native link behavior — fastest, no JS needed for filtering itself)
         // You can add loading state or analytics here later
-        // Currently using native link behavior (fastest)
       });
     });
   }
