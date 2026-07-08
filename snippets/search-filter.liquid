@@ -1,59 +1,42 @@
 {%- comment -%}
   snippets/search-filter.liquid
+  -----------------------------------------------------
+  The product-filter drawer, extracted from sections/main-search.liquid.
+  Filters only apply to product search -- Shopify doesn't support faceted
+  filters on article results -- so the filter <form> only renders when
+  active_type is 'product'. On the Articles tab the drawer still renders
+  with a placeholder message instead of the form, so the sidebar's
+  presence/width stays consistent across both tabs instead of
+  disappearing and reflowing the results grid.
 
-  Renders the filter drawer for the search results page's Products
-  tab: filter groups (list + price range types), inline active-filter
-  pills, and the Apply button.
+  PRICE FILTER (2026-07): the price_range group below renders the full
+  histogram + dual-thumb slider + quick-pick bracket UI. Styling lives in
+  main-search.css, interactivity in main-search.js's initPriceFilters().
 
-  Search-only counterpart to snippets/collection-filter.liquid --
-  deliberately NOT shared with it. Differences that make sharing the
-  wrong call:
-    - IDs are scoped to search (#search-filter, #SearchFilterForm)
-      so they never collide with collection's (#collection-filter,
-      #FilterForm) if both snippets somehow end up in the DOM at once.
-    - Loads search-filter.css / search-filter.js, not
-      collection-filter.css / .js -- those target #main-collection,
-      .product-feed__grid, #collection-active-filters, none of which
-      exist on the search page. search-filter.js targets #main-search,
-      #search-results-grid, #search-result-count, #panel-products
-      instead. See search-filter.js's header for the full list of
-      behavioral differences from collection-filter.js.
-    - Active-filter pills render inline inside this snippet (in the
-      .search-filter__active row below), not in a separate toolbar
-      strip -- search has no equivalent of collection's toolbar.
-    - Always carries q/type as hidden inputs, since routes.search_url
-      isn't scoped to anything on its own the way collection.url is.
-
-  Usage:
-    {%- render 'search-filter', search_terms: search.terms, result_type: 'product' -%}
+  Expected params (passed in from sections/main-search.liquid):
+    - active_type   : 'product' or 'article'
+    - search_terms  : the raw search query string
+    - show_filters  : boolean, whether the drawer should render expanded/visible
 {%- endcomment -%}
-
-{{ 'search-filter.css' | asset_url | stylesheet_tag }}
-
-{%- assign has_active_filters = false -%}
-{%- for filter in search.filters -%}
-  {%- if filter.active_values.size > 0 -%}
-    {%- assign has_active_filters = true -%}
-  {%- endif -%}
-{%- endfor -%}
 
 <aside
   class="search-filter"
   id="search-filter"
   aria-label="Product filters"
-  hidden
+  data-search-filter
+  {%- unless show_filters %} hidden{%- endunless %}
 >
+
   <div class="search-filter__close">
     <span class="search-filter__close-label">Filters</span>
-    <button class="search-filter__close-btn" type="button" data-filter-close aria-label="Close filters">&times;</button>
+    <button class="search-filter__close-btn" type="button" aria-label="Close filters" data-filter-close>&times;</button>
   </div>
 
-  <form method="get" action="{{ routes.search_url }}" id="SearchFilterForm">
+  {%- if active_type == 'product' -%}
+    <form method="get" action="{{ routes.search_url }}" id="SearchFilterForm">
+      <input type="hidden" name="q" value="{{ search_terms }}">
+      <input type="hidden" name="type" value="product">
 
-    <input type="hidden" name="q" value="{{ search_terms }}">
-    <input type="hidden" name="type" value="{{ result_type }}">
-
-    {%- if search.filters.size > 0 -%}
       {%- for filter in search.filters -%}
         <details class="search-filter__group" open>
           <summary class="search-filter__group-label">
@@ -67,7 +50,9 @@
             {%- case filter.type -%}
               {%- when 'list' -%}
                 {%- for value in filter.values -%}
-                  <label class="search-filter__option{% if value.count == 0 and value.active == false %} search-filter__option--disabled{% endif %}">
+                  <label class="search-filter__option
+                    {%- if value.active %} search-filter__option--active{%- endif %}
+                    {%- if value.count == 0 and value.active == false %} search-filter__option--disabled{%- endif %}">
                     <input
                       type="checkbox"
                       name="{{ value.param_name }}"
@@ -88,27 +73,26 @@
                       value="{{ filter.min_value.value }}"
                       min="0"
                       max="{{ filter.range_max }}"
-                      placeholder="min."
+                      placeholder="0"
                       data-price-input="min"
                     >
-                    <span>–</span>
+                    <span>&ndash;</span>
                     <input
                       type="number"
                       name="{{ filter.max_value.param_name }}"
                       value="{{ filter.max_value.value }}"
                       min="0"
                       max="{{ filter.range_max }}"
-                      placeholder="max."
+                      placeholder="{{ filter.range_max }}"
                       data-price-input="max"
                     >
                   </div>
 
                   {%- comment -%}
-                    Decorative distribution bars only -- Shopify's
-                    price_range filter doesn't expose per-bucket
-                    counts (see collection-filter.liquid, which has
-                    the same caveat). Swap for real bucket heights if
-                    that data ever becomes available.
+                    Decorative distribution bars only -- Shopify's price_range
+                    filter doesn't expose per-bucket counts. Swap for real
+                    bucket heights if that data ever becomes available (e.g.
+                    a metafield driven price histogram).
                   {%- endcomment -%}
                   <div class="search-filter__histogram" aria-hidden="true">
                     {%- assign bar_count = 16 -%}
@@ -173,24 +157,46 @@
             {%- endcase -%}
           </div>
         </details>
+      {%- else -%}
+        <p class="search-filter__empty">No filters are configured for this search.</p>
       {%- endfor -%}
-    {%- else -%}
-      <p class="search-filter__empty">No filters available.</p>
-    {%- endif -%}
 
-    {%- if has_active_filters -%}
-      <div class="search-filter__active">
-        {%- for filter in search.filters -%}
-          {%- for value in filter.active_values -%}
-            <a href="{{ value.url_to_remove }}" class="search-filter__pill">{{ value.label }} &times;</a>
+      {%- assign active_count = 0 -%}
+      {%- for filter in search.filters -%}
+        {%- assign active_count = active_count | plus: filter.active_values.size -%}
+      {%- endfor -%}
+
+      {%- if active_count > 0 -%}
+        <div class="search-filter__active">
+          {%- for filter in search.filters -%}
+            {%- for value in filter.active_values -%}
+              <a href="{{ value.url_to_remove }}&type=product" class="search-filter__pill">
+                {{ value.label }} &times;
+              </a>
+            {%- endfor -%}
           {%- endfor -%}
-        {%- endfor -%}
-        <a href="{{ routes.search_url }}?q={{ search_terms }}&amp;type={{ result_type }}" class="search-filter__pill search-filter__pill--clear">Clear all</a>
-      </div>
-    {%- endif -%}
+          <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__pill search-filter__pill--clear">Clear all</a>
+        </div>
+      {%- endif -%}
 
-    <button type="submit" class="search-filter__submit">Apply</button>
-  </form>
+      <button type="submit" class="search-filter__submit">Apply</button>
+    </form>
+  {%- else -%}
+    {%- comment -%}
+      ARTICLES-TAB PLACEHOLDER (2026-07): kept as a block-level placeholder
+      (not the form) so .search-filter's width stays exactly the same as
+      it is on the Products tab; only the CONTENTS differ -- same
+      "no layout shift" reasoning as the width fix documented in
+      main-search.css.
+    {%- endcomment -%}
+    <div class="search-filter__placeholder">
+      <svg class="search-filter__placeholder-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 4h16v2.586a1 1 0 0 1-.293.707l-5.414 5.414a1 1 0 0 0-.293.707V19l-4 2v-7.586a1 1 0 0 0-.293-.707L4.293 7.293A1 1 0 0 1 4 6.586V4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <p class="search-filter__placeholder-title">No filters for articles</p>
+      <p class="search-filter__placeholder-text">Filters only apply to product results. Switch tabs to narrow products down by price, type, and more.</p>
+      <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__placeholder-btn">Switch to Products</a>
+    </div>
+  {%- endif -%}
+
 </aside>
-
-<script src="{{ 'search-filter.js' | asset_url }}" defer></script>
