@@ -182,6 +182,12 @@
 
 /* ============================================
    BUTTONS
+   All three variants (primary / secondary / outline) share the
+   same hover treatment: a simple, uniform dim + press effect via
+   opacity/transform. No hover color-swapping (no red, no
+   black<->white inversion), so behavior stays consistent and
+   predictable across variants and across whatever theme colors a
+   merchant sets for --content-bg / --content-text.
    ============================================ */
 .content-section__buttons {
   display: flex;
@@ -200,12 +206,17 @@
   padding: 13px 28px;
   border-radius: var(--radius-base);
   text-decoration: none;
-  transition: background-color var(--transition-base), color var(--transition-base), border-color var(--transition-base), transform var(--transition-fast);
   cursor: pointer;
   border: 1px solid transparent;
+  transition: opacity var(--transition-base), transform var(--transition-fast);
+}
+
+.content-section .button:hover {
+  opacity: 0.8;
 }
 
 .content-section .button:active {
+  opacity: 1;
   transform: scale(0.98);
 }
 
@@ -214,23 +225,15 @@
   color: var(--color-accent-text);
 }
 
-.content-section .button--primary:hover {
-  background-color: var(--color-red);
-}
-
 .content-section .button--secondary {
   background-color: var(--color-pill-bg);
   color: var(--color-pill-text);
 }
 
-.content-section .button--secondary:hover {
-  background-color: var(--color-red);
-  color: var(--color-accent-text);
-}
-
-.content-section .button--outline:hover {
-  background-color: var(--content-text, var(--color-foreground));
-  color: var(--content-bg, var(--color-background));
+.content-section .button--outline {
+  background-color: transparent;
+  color: var(--content-text, var(--color-foreground));
+  border-color: currentColor;
 }
 
 /* ============================================
