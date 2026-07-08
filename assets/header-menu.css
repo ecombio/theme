@@ -49,6 +49,21 @@
    setting/class (--menu-bar-tablet-visible, min-width:640/max-width:1023),
    separate from mobile's (--menu-bar-mobile-visible, max-width:639 only)
    — see the "MOBILE / TABLET" block below.
+
+   UPDATED: .menu-bar__list's horizontal overflow scrollbar is now
+   hidden cross-browser (scrollbar-width / -ms-overflow-style /
+   ::-webkit-scrollbar) while still allowing touch/trackpad scroll —
+   matches the same hide-scrollbar treatment already used on the
+   mobile .menu-bar rule further down this file.
+
+   NOTE: .menu-bar__list's overflow-x: auto forces overflow-y to also
+   compute as auto per the CSS spec (an element can't scroll-clip one
+   axis while leaving the other fully visible). When the mega-menu
+   trigger is open this would otherwise clip the mega-menu dropdown
+   panel, since it's a DOM descendant of .menu-bar__list positioned
+   below it. That's handled in assets/mega-menu.css, which temporarily
+   sets .menu-bar__list to overflow: visible while a mega-menu is open
+   — see the changelog note in that file.
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
@@ -159,6 +174,13 @@
   padding: 0;
   margin: 0;
   position: relative;
+  overflow-x: auto;
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* IE/Edge */
+}
+
+.menu-bar__list::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
 }
 
 .menu-bar__item {
