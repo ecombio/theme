@@ -105,29 +105,34 @@
 }
 
 /* ── Mobile only (<640px) — horizontally scrollable single row,
-   since there usually isn't room to wrap nav items at this width. ── */
+   since there usually isn't room to wrap nav items at this width.
+   SCROLLBAR IS NOW FULLY HIDDEN across all browsers. ── */
 @media (max-width: 639px) {
   .main-header--menu-bar-mobile-visible .menu-bar {
     display: flex;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    scrollbar-width: none;           /* Firefox */
+    -ms-overflow-style: none;        /* IE + Edge */
     flex-wrap: nowrap;
     padding: 0;
   }
   .main-header--menu-bar-mobile-visible .menu-bar::-webkit-scrollbar {
-    display: none;
+    display: none;                   /* Chrome, Safari, Opera */
   }
+
   .main-header--menu-bar-mobile-visible .menu-bar .menu-bar__container {
     width: max-content;
     max-width: unset;
     min-width: 100%;
     padding: 0 16px;
   }
+
   .main-header--menu-bar-mobile-visible .menu-bar__list {
     flex-wrap: nowrap;
     width: max-content;
+    overflow-x: visible;             /* ← prevents nested scrollbar on the list */
   }
 }
 
@@ -142,7 +147,7 @@
 }
 
 .menu-bar {
-/*border-top: 1px solid #e5e7eb;*/
+  /* border-top: 1px solid #e5e7eb; */
   background: #ffffff;
   position: relative;
   z-index: 100;
