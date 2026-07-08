@@ -38,8 +38,11 @@
     }
   }
 
+  var userSelectedTab = false;
+
   tabTriggers.forEach(function (trigger) {
     trigger.addEventListener('click', function () {
+      userSelectedTab = true;
       activateTab(trigger.getAttribute('data-tab-trigger'), true);
     });
   });
@@ -115,6 +118,7 @@
   // Load both tabs' authoritative results on page load.
   Promise.all([fetchPanel('product', 1), fetchPanel('article', 1)]).then(function (results) {
     if (initialTab) return; // URL already told us which tab to show
+    if (userSelectedTab) return; // the person already clicked a tab — don't override them
 
     var productResult = results[0];
     var articleResult = results[1];
