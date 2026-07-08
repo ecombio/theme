@@ -229,7 +229,15 @@
                       {%- elsif c_collection != blank and c_collection.featured_image != blank -%}
                         <img src="{{ c_collection.featured_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
                       {%- else -%}
-                        {{ 'collection-' | append: i | placeholder_svg_tag: 'showcase-menu__card-placeholder' }}
+                        {%- comment -%}
+                          Shopify's built-in placeholder_svg_tag only ships
+                          collection-1 through collection-6 — there is no
+                          collection-7/8. Wrap i (1-8) back into 1-6 so slots
+                          7 and 8 reuse an earlier placeholder instead of
+                          requesting a name that doesn't exist.
+                        {%- endcomment -%}
+                        {%- assign placeholder_index = i | modulo: 6 | plus: 1 -%}
+                        {{ 'collection-' | append: placeholder_index | placeholder_svg_tag: 'showcase-menu__card-placeholder' }}
                       {%- endif -%}
                     </span>
                     <span class="showcase-menu__card-label">{{ card_label }}</span>
