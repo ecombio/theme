@@ -26,6 +26,15 @@
       - The dimming backdrop is a MOBILE-ONLY drawer affordance (see
         isMobileViewport() below) — it no longer appears on desktop,
         where the filter aside is just a normal in-flow sidebar.
+      - Price filter UI (2026-07): the price_range group now renders
+        a histogram + dual-thumb slider + quick-pick brackets
+        (initPriceFilters(), below), not just two plain number
+        inputs. The number inputs stay the source of truth for what
+        gets submitted; the slider/radios just write into them and
+        dispatch 'change', which the live-filtering listeners already
+        handle. Needs re-running after every AJAX swap since the
+        form's innerHTML (and therefore these elements) gets
+        replaced.
       - Live filtering (AJAX via the Section Rendering API): checking
         a filter or editing a price field re-fetches just the
         main-search section's HTML with the new query params and
@@ -53,6 +62,12 @@
             'query'") since that changes as filters narrow the
             results, which collection's hero text doesn't have an
             equivalent of.
+          - The price_bracket radios are UI-only (they just write
+            into the min./max. number fields, see initPriceFilters)
+            and are explicitly excluded from the submitted query
+            params in buildFilterUrl — submitting a `price_bracket`
+            param wouldn't mean anything to the storefront filter
+            engine.
 
    2. Sort <select> + tab keyboard navigation (formerly
       search-toolbar.js): the sort <select> redirects with an updated
@@ -150,6 +165,100 @@
     }
   });
 
+  /* ── Price: dual-range slider + quick-pick brackets ──────────
+     Keeps the min./max. number inputs, the two-thumb <input type=
+     "range"> slider, and the bracket radios all in sync. The number
+     inputs stay the source of truth for what actually gets
+     submitted — the slider and radios just write into them and then
+     dispatch a 'change' event, which bindFilterFieldListeners()
+     below already wires up to applyFiltersLive(). Needs re-running
+     after every AJAX swap since the form's innerHTML (and therefore
+     these elements) gets replaced. ─────────────────────────────── */
+  function initPriceFilters(scope) {
+    var wraps = (scope || document).querySelectorAll('[data-price-filter]');
+
+    wraps.forEach(function (wrap) {
+      var minInput    = wrap.querySelector('[data-price-input="min"]');
+      var maxInput    = wrap.querySelector('[data-price-input="max"]');
+      var minThumb    = wrap.querySelector('[data-range-thumb="min"]');
+      var maxThumb    = wrap.querySelector('[data-range-thumb="max"]');
+      var activeTrack = wrap.querySelector('[data-range-active]');
+      var brackets    = wrap.querySelectorAll('[data-price-bracket]');
+
+      if (!minInput || !maxInput || !minThumb || !maxThumb) return;
+
+      var rangeMax = parseFloat(maxThumb.max) || 0;
+
+      function paintTrack() {
+        if (!activeTrack || !rangeMax) return;
+        var lo = parseFloat(minThumb.value) || 0;
+        var hi = parseFloat(maxThumb.value) || rangeMax;
+        activeTrack.style.left  = (lo / rangeMax * 100) + '%';
+        activeTrack.style.right = (100 - (hi / rangeMax * 100)) + '%';
+      }
+
+      // Number inputs -> slider (typing in min./max. moves the thumbs)
+      function fieldsToSlider() {
+        var lo = minInput.value === '' ? 0 : parseFloat(minInput.value);
+        var hi = maxInput.value === '' ? rangeMax : parseFloat(maxInput.value);
+        minThumb.value = lo;
+        maxThumb.value = hi;
+        paintTrack();
+      }
+
+      // Slider -> number inputs (dragging a thumb updates min./max.)
+      function sliderToFields(commit) {
+        var lo = parseFloat(minThumb.value);
+        var hi = parseFloat(maxThumb.value);
+
+        // Don't let the two thumbs cross each other.
+        if (lo > hi) {
+          if (document.activeElement === maxThumb) { lo = hi; minThumb.value = lo; }
+          else { hi = lo; maxThumb.value = hi; }
+        }
+
+        minInput.value = lo;
+        maxInput.value = hi;
+        paintTrack();
+
+        if (commit) {
+          minInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+
+      // Live-update the track while dragging, only fire the AJAX
+      // request once the drag ends ('change' fires on mouseup/release).
+      minThumb.addEventListener('input', function () { sliderToFields(false); });
+      maxThumb.addEventListener('input', function () { sliderToFields(false); });
+      minThumb.addEventListener('change', function () { sliderToFields(true); });
+      maxThumb.addEventListener('change', function () { sliderToFields(true); });
+
+      // Bring whichever thumb the user grabs to the front so two
+      // thumbs sitting at (or near) the same value can both be dragged.
+      [minThumb, maxThumb].forEach(function (thumb) {
+        thumb.addEventListener('pointerdown', function () {
+          minThumb.classList.remove('is-active-top');
+          maxThumb.classList.remove('is-active-top');
+          thumb.classList.add('is-active-top');
+        });
+      });
+
+      minInput.addEventListener('input', fieldsToSlider);
+      maxInput.addEventListener('input', fieldsToSlider);
+
+      brackets.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          minInput.value = radio.dataset.min || 0;
+          maxInput.value = radio.dataset.max || '';
+          fieldsToSlider();
+          minInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      });
+
+      paintTrack();
+    });
+  }
+
   /* ── Live filtering (AJAX via Section Rendering API) ──────────
      Checking/unchecking a filter (or changing a price field)
      re-fetches just this section's HTML with the new query params
@@ -183,8 +292,11 @@
       // Skip blank values (e.g. an untouched price field) — an empty
       // filter.v.price.gte/lte param can cause the storefront to
       // treat the range as effectively zero, filtering out products
-      // that should still match.
-      if (val === '') return;
+      // that should still match. Also skip price_bracket — it's a
+      // UI-only radio group that writes into the min./max. number
+      // fields (see initPriceFilters); it was never meant to be
+      // submitted as a real filter param itself.
+      if (val === '' || key === 'price_bracket') return;
       url.searchParams.append(key, val);
     });
 
@@ -203,126 +315,6 @@
     });
     filterForm.querySelectorAll('input[type="number"]').forEach(function (input) {
       input.addEventListener('change', function () {
-        applyFiltersLive(true);
-      });
-    });
-    bindPriceSlider();
-    bindPriceBuckets();
-  }
-
-  /* Price range slider (2026-07)
-     Two overlapping <input type="range"> elements (see the CSS notes
-     in .search-filter__price-range) kept in sync with the existing
-     min/max NUMBER fields, which stay the source of truth for what
-     actually gets submitted — the sliders just mirror them visually.
-     Dragging a handle updates its number field live on 'input' (every
-     frame of the drag, cheap: just DOM writes, no fetch), but only
-     fires applyFiltersLive on 'change' (drag released / arrow-key
-     committed), matching how the number inputs already behave a few
-     lines up — so dragging doesn't spam a fetch per pixel. */
-  function bindPriceSlider() {
-    var slider = filterForm.querySelector('[data-price-slider]');
-    if (!slider) return; // no price_range filter configured
-
-    var minRange = slider.querySelector('[data-price-range="min"]');
-    var maxRange = slider.querySelector('[data-price-range="max"]');
-    var fill = slider.querySelector('.search-filter__price-fill');
-    var minInput = filterForm.querySelector('[data-price-input="min"]');
-    var maxInput = filterForm.querySelector('[data-price-input="max"]');
-    if (!minRange || !maxRange || !fill || !minInput || !maxInput) return;
-
-    var rangeMin = parseFloat(minRange.min);
-    var rangeMax = parseFloat(minRange.max);
-
-    function updateFill() {
-      var span = rangeMax - rangeMin;
-      // Guard against a 0-width range (rangeMin === rangeMax, e.g. a
-      // collection where every matching product is the same price) —
-      // avoids a divide-by-zero producing NaN% and collapsing the fill.
-      if (span <= 0) {
-        fill.style.left = '0%';
-        fill.style.right = '0%';
-        return;
-      }
-      var minPct = ((parseFloat(minRange.value) - rangeMin) / span) * 100;
-      var maxPct = ((parseFloat(maxRange.value) - rangeMin) / span) * 100;
-      fill.style.left = minPct + '%';
-      fill.style.right = (100 - maxPct) + '%';
-    }
-
-    function raise(range) {
-      minRange.classList.remove('search-filter__price-range--top');
-      maxRange.classList.remove('search-filter__price-range--top');
-      range.classList.add('search-filter__price-range--top');
-    }
-
-    minRange.addEventListener('pointerdown', function () { raise(minRange); });
-    maxRange.addEventListener('pointerdown', function () { raise(maxRange); });
-
-    minRange.addEventListener('input', function () {
-      if (parseFloat(minRange.value) > parseFloat(maxRange.value)) {
-        minRange.value = maxRange.value; // don't let handles cross
-      }
-      minInput.value = minRange.value;
-      updateFill();
-    });
-    maxRange.addEventListener('input', function () {
-      if (parseFloat(maxRange.value) < parseFloat(minRange.value)) {
-        maxRange.value = minRange.value;
-      }
-      maxInput.value = maxRange.value;
-      updateFill();
-    });
-
-    minRange.addEventListener('change', function () { applyFiltersLive(true); });
-    maxRange.addEventListener('change', function () { applyFiltersLive(true); });
-
-    // Typing directly in a number field moves its matching handle too.
-    minInput.addEventListener('input', function () {
-      minRange.value = minInput.value === '' ? rangeMin : minInput.value;
-      updateFill();
-    });
-    maxInput.addEventListener('input', function () {
-      maxRange.value = maxInput.value === '' ? rangeMax : maxInput.value;
-      updateFill();
-    });
-
-    // Exposed so bindPriceBuckets() (below) can move both handles at
-    // once and refresh the fill bar without duplicating this math.
-    slider._updateFill = updateFill;
-
-    updateFill();
-  }
-
-  /* Price quick-pick buckets (2026-07)
-     Radio buttons for the quartile ranges computed in Liquid from the
-     real filter.range_max (see main-search.liquid) — unlike the
-     histogram above, these thresholds are real data, not a mock. */
-  function bindPriceBuckets() {
-    var bucketWrap = filterForm.querySelector('[data-price-buckets]');
-    var slider = filterForm.querySelector('[data-price-slider]');
-    var minInput = filterForm.querySelector('[data-price-input="min"]');
-    var maxInput = filterForm.querySelector('[data-price-input="max"]');
-    if (!bucketWrap || !slider || !minInput || !maxInput) return;
-
-    var minRange = slider.querySelector('[data-price-range="min"]');
-    var maxRange = slider.querySelector('[data-price-range="max"]');
-
-    bucketWrap.querySelectorAll('input[type="radio"]').forEach(function (radio) {
-      radio.addEventListener('change', function () {
-        var min = radio.dataset.bucketMin;
-        // "More than $X" bucket has no data-bucket-max — leave the max
-        // field blank rather than clamping to range_max, same as
-        // buildFilterUrl() already treats a blank field as "no upper
-        // bound" (see the note there).
-        var max = radio.dataset.bucketMax || '';
-
-        minInput.value = min;
-        maxInput.value = max;
-        if (minRange) minRange.value = min;
-        if (maxRange) maxRange.value = max === '' ? maxRange.max : max;
-        if (typeof slider._updateFill === 'function') slider._updateFill();
-
         applyFiltersLive(true);
       });
     });
@@ -381,10 +373,12 @@
         var newFilterForm = doc.getElementById('SearchFilterForm');
         if (newFilterForm) {
           // Swap in the refreshed filter markup (updated counts,
-          // active pills, disabled options) and rebind listeners,
-          // since the old input elements were just replaced.
+          // active pills, disabled options, price slider bounds) and
+          // rebind listeners, since the old input elements were just
+          // replaced.
           filterForm.innerHTML = newFilterForm.innerHTML;
           bindFilterFieldListeners();
+          initPriceFilters(filterForm);
         }
 
         var productsPanel = document.getElementById('panel-products');
@@ -411,6 +405,7 @@
   }
 
   bindFilterFieldListeners();
+  initPriceFilters(filterForm);
 
   // Keep the Apply button / Enter-key submit working (e.g. after
   // typing in a price field and pressing Enter), routed through the

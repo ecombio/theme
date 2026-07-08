@@ -30,6 +30,12 @@
    palette just by redefining --color-accent / --color-accent-
    secondary / --color-text etc. at a higher scope (e.g. on
    `[data-theme-preset]`) — no changes needed here when that lands.
+
+   PRICE FILTER (2026-07): the price_range group now renders a
+   histogram + dual-thumb slider + quick-pick brackets, not just the
+   two plain number inputs. Its rules live in their own subsection
+   below, right after .search-filter__price, following the same
+   var(--token, brand-fallback) convention as the rest of the file.
 */
 
 .main-search {
@@ -349,173 +355,158 @@
   font-size: 0.9rem;
 }
 
+.search-filter__option--active {
+  font-weight: 600;
+}
+
 .search-filter__option--disabled {
   opacity: 0.4;
 }
 
-/* Dual-handle price slider (2026-07)
-   Two native <input type="range"> elements stacked on top of each
-   other, both spanning the full track width. Each one's own track
-   is made invisible so only the shared .search-filter__price-track/
-   -fill underneath is seen. pointer-events is off on the inputs
-   themselves and re-enabled only on their thumbs, so clicking the
-   empty track doesn't get "claimed" by whichever input happens to
-   sit on top in the DOM — only grabbing an actual handle does.
-
-   COLORS (2026-07): sampled directly from the reference mock
-   (#D9A404 handles/fill, #F2D98A histogram bars) per explicit
-   request to match it exactly — this is a deliberate one-off
-   exception to the file's usual --color-accent token, scoped only
-   to this component via --price-accent/-light so it can still be
-   overridden without touching the rest of the section's palette. */
-
-.search-filter__price {
+.search-filter__price-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  --price-accent: #D9A404;
-  --price-accent-light: #F2D98A;
+  gap: 1rem;
 }
 
-.search-filter__price-inputs {
+.search-filter__price {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.search-filter__price-inputs input {
+.search-filter__price input {
   width: 5rem;
   padding: 0.4rem;
   border: 1px solid var(--color-border, #e2e2e2);
   border-radius: 4px;
 }
 
-/* PLACEHOLDER HISTOGRAM (2026-07): purely decorative bars, see the
-   long comment in main-search.liquid where the heights are set —
-   not driven by real product-price counts. */
-.search-filter__price-histogram {
+/* ---------- Price histogram (decorative distribution) ---------- */
+
+.search-filter__histogram {
   display: flex;
   align-items: flex-end;
   gap: 2px;
-  height: 2.5rem;
+  height: 46px;
 }
 
-.search-filter__price-bar {
-  flex: 1;
-  min-width: 2px;
-  background: var(--price-accent-light, #F2D98A);
-  border-radius: 1px 1px 0 0;
+.search-filter__histogram-bar {
+  flex: 1 1 0;
+  min-height: 3px;
+  background: var(--color-accent-muted, #f2c9d3);
+  border-radius: 2px 2px 0 0;
 }
 
-.search-filter__price-slider {
+/* ---------- Price: dual-thumb range slider ---------- */
+
+.search-filter__range-slider {
   position: relative;
-  height: 1.25rem;
+  height: 20px;
+  margin: 0 2px;
 }
 
-.search-filter__price-track {
+.search-filter__range-track,
+.search-filter__range-track-active {
   position: absolute;
   top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.search-filter__range-track {
   left: 0;
   right: 0;
-  height: 3px;
-  transform: translateY(-50%);
-  background: var(--color-border, #e2e2e2);
-  border-radius: 999px;
+  background: var(--color-border, #d4d4d4);
 }
 
-.search-filter__price-fill {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--price-accent, #D9A404);
-  border-radius: 999px;
+.search-filter__range-track-active {
+  background: var(--color-accent, #B31942);
 }
 
-.search-filter__price-range {
+.search-filter__range-input {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 20px;
   margin: 0;
   background: transparent;
-  appearance: none;
-  -webkit-appearance: none;
   pointer-events: none;
-}
-
-.search-filter__price-range:focus-visible {
-  outline: none;
-}
-
-.search-filter__price-range::-webkit-slider-runnable-track {
-  background: transparent;
-}
-
-.search-filter__price-range::-moz-range-track {
-  background: transparent;
-}
-
-.search-filter__price-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  pointer-events: auto;
-  width: 1rem;
-  height: 1rem;
-  margin-top: -0.4375rem; /* centers the 16px thumb on the 3px track */
-  background: var(--price-accent, #D9A404);
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  cursor: pointer;
+  appearance: none;
 }
 
-.search-filter__price-range::-moz-range-thumb {
-  pointer-events: auto;
-  width: 1rem;
-  height: 1rem;
-  background: var(--price-accent, #D9A404);
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-}
-
-.search-filter__price-range:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid var(--color-accent-secondary, #0A3161);
-  outline-offset: 2px;
-}
-
-.search-filter__price-range:focus-visible::-moz-range-thumb {
-  outline: 2px solid var(--color-accent-secondary, #0A3161);
-  outline-offset: 2px;
-}
-
-/* Whichever handle was interacted with last gets raised above the
-   other, so two thumbs that are close together (or equal) can still
-   each be grabbed individually instead of the lower one being stuck
-   under the upper one — toggled in main-search.js on pointerdown. */
-.search-filter__price-range--top {
+.search-filter__range-input--min {
   z-index: 2;
 }
 
-.search-filter__price-buckets {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--color-border, #e2e2e2);
+.search-filter__range-input--max {
+  z-index: 3;
 }
 
-.search-filter__price-bucket {
+.search-filter__range-input.is-active-top {
+  z-index: 4;
+}
+
+.search-filter__range-input::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.search-filter__range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--color-accent, #B31942);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  margin-top: 0;
+}
+
+.search-filter__range-input::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.search-filter__range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--color-accent, #B31942);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+/* ---------- Price: quick-pick brackets ---------- */
+
+.search-filter__price-brackets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.search-filter__price-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   font-size: 0.9rem;
   cursor: pointer;
 }
 
-.search-filter__price-bucket input[type="radio"] {
-  accent-color: var(--price-accent, #D9A404);
+.search-filter__price-option input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--color-accent, #B31942);
+  cursor: pointer;
 }
 
 .search-filter__active {
