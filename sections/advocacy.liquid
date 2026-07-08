@@ -18,11 +18,17 @@
   .section-{{ section.id }} {
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
-    {%- if section.settings.background_color != blank -%}
+    {%- if section.settings.background_type == 'image' and section.settings.background_image != blank -%}
+      --advocacy-bg-image: url({{ section.settings.background_image | image_url: width: 2000 }});
+      --advocacy-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};
+      --advocacy-bg: #111111;
+    {%- elsif section.settings.background_color != blank -%}
       --advocacy-bg: {{ section.settings.background_color }};
     {%- endif -%}
     {%- if section.settings.text_color != blank -%}
       --advocacy-text: {{ section.settings.text_color }};
+    {%- elsif section.settings.background_type == 'image' -%}
+      --advocacy-text: #ffffff;
     {%- endif -%}
   }
   @media screen and (max-width: 749px) {
@@ -34,7 +40,7 @@
 {%- endstyle -%}
 
 <div
-  class="advocacy section-{{ section.id }} advocacy--{{ section.settings.layout }}"
+  class="advocacy section-{{ section.id }} advocacy--{{ section.settings.layout }}{% if section.settings.background_type == 'image' and section.settings.background_image != blank %} advocacy--has-image{% endif %}"
   data-section-id="{{ section.id }}"
   data-section-type="advocacy"
   data-layout="{{ section.settings.layout }}"
@@ -189,16 +195,45 @@
       "content": "Section styling"
     },
     {
+      "type": "select",
+      "id": "background_type",
+      "label": "Background",
+      "options": [
+        { "value": "color", "label": "Color" },
+        { "value": "image", "label": "Image" }
+      ],
+      "default": "color"
+    },
+    {
       "type": "color",
       "id": "background_color",
       "label": "Background color",
-      "info": "Leave blank to inherit the theme's default background."
+      "info": "Leave blank to inherit the theme's default background.",
+      "visible_if": "{{ section.settings.background_type == 'color' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Image overlay darkness",
+      "min": 0,
+      "max": 80,
+      "step": 5,
+      "unit": "%",
+      "default": 30,
+      "info": "Darkens the image so text stays legible.",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
     },
     {
       "type": "color",
       "id": "text_color",
       "label": "Text color",
-      "info": "Leave blank to inherit the theme's default text color."
+      "info": "Leave blank to inherit the theme's default text color. With an image background, white or another light color usually works best."
     },
     {
       "type": "header",
