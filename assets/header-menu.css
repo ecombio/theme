@@ -49,6 +49,15 @@
    setting/class (--menu-bar-tablet-visible, min-width:640/max-width:1023),
    separate from mobile's (--menu-bar-mobile-visible, max-width:639 only)
    — see the "MOBILE / TABLET" block below.
+
+   ADDED: horizontally-scrollable menu bar with hidden scrollbar +
+   left/right edge-fade "shadows" (like Back Market's header nav), for
+   when there are more nav links than fit in the available width on
+   desktop. The row itself (.menu-bar) still centers/pads as before;
+   .menu-bar__container is now the actual scrolling element, and two
+   .menu-bar__edge-fade overlays sit on top of it, pinned to the left/
+   right edges, faded in/out by assets/header-menu.js based on scroll
+   position (see .has-scroll-left / .has-scroll-right below).
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
@@ -85,6 +94,62 @@
     position: relative;
     z-index: 100;
   }
+
+  /* Scroll container — this is what actually scrolls, not .menu-bar
+     itself. Keeping the scrolling element separate from .menu-bar lets
+     the edge-fade overlays below stay pinned to the visual edges of the
+     bar instead of scrolling away with the links. */
+  .menu-bar__container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* old Edge/IE */
+    -webkit-overflow-scrolling: touch;
+  }
+  .menu-bar__container::-webkit-scrollbar {
+    display: none;               /* Chrome/Safari */
+  }
+
+  .menu-bar__list {
+    flex-wrap: nowrap;
+    width: max-content;
+  }
+
+  /* Edge fade overlays — absolutely positioned on top of .menu-bar,
+     pinned left/right regardless of scroll position. Hidden (opacity: 0)
+     until assets/header-menu.js adds .has-scroll-left / .has-scroll-right
+     to .menu-bar based on how far the container has been scrolled. */
+  .menu-bar__edge-fade {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 56px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .menu-bar__edge-fade--left {
+    left: 0;
+    background: linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+  }
+  .menu-bar__edge-fade--right {
+    right: 0;
+    background: linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  .menu-bar.has-scroll-left .menu-bar__edge-fade--left,
+  .menu-bar.has-scroll-right .menu-bar__edge-fade--right {
+    opacity: 1;
+  }
+}
+
+/* Edge fades are desktop-only — mobile/tablet already have their own
+   overflow handling further down this file and don't render the fade
+   markup functionally (kept hidden here as a safe default either way). */
+.menu-bar__edge-fade {
+  display: none;
 }
 
 /* =============================================================================
@@ -212,6 +277,9 @@
   .icon-caret-down {
     transition: none !important;
     animation: none !important;
+  }
+  .menu-bar__edge-fade {
+    transition: none !important;
   }
 }
 
