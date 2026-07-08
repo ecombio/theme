@@ -3,9 +3,13 @@
   File: snippets/link-list.liquid
 
   Renders a top-level nav link that opens a compact dropdown panel
-  built from a link_list: top-level links render as the dropdown's
-  rows, and any child links (a second nesting level) render as an
-  indented sub-list beneath their parent row.
+  built from a link_list: top-level links render as bold group
+  headers, their child links render as the dropdown's rows, and any
+  grandchild links (a third nesting level — Shopify's menu editor
+  doesn't support more than that) render as a further-indented,
+  smaller sub-list beneath their parent row. Same 3-level shape as
+  mega-menu.liquid's columns, just in a single narrow scrolling list
+  instead of side-by-side columns.
 
   Unlike mega-menu.liquid, this is NOT full-width — it's a narrow,
   left-aligned dropdown sized to its content (same idea as the
@@ -17,7 +21,9 @@
   panel's `top`/`left` against the trigger's own live position on
   open/resize/scroll (not the header's bottom edge like mega-menu,
   since this panel hangs directly under its own link, not the full
-  header width).
+  header width), and caps its height to whatever space is left below
+  the trigger — a large menu scrolls inside the panel rather than
+  spilling past the bottom of the screen.
 
   Desktop (≥1024px) only — see assets/link-list.css.
 
@@ -71,7 +77,16 @@
             {%- if top_link.links.size > 0 -%}
               <ul class="link-list__sublist">
                 {%- for sub_link in top_link.links -%}
-                  <li><a href="{{ sub_link.url }}" class="link-list__sublink">{{ sub_link.title }}</a></li>
+                  <li class="link-list__subitem{% if sub_link.links.size > 0 %} link-list__subitem--has-sub{% endif %}">
+                    <a href="{{ sub_link.url }}" class="link-list__sublink">{{ sub_link.title }}</a>
+                    {%- if sub_link.links.size > 0 -%}
+                      <ul class="link-list__subsublist">
+                        {%- for grandchild_link in sub_link.links -%}
+                          <li><a href="{{ grandchild_link.url }}" class="link-list__subsublink">{{ grandchild_link.title }}</a></li>
+                        {%- endfor -%}
+                      </ul>
+                    {%- endif -%}
+                  </li>
                 {%- endfor -%}
               </ul>
             {%- endif -%}

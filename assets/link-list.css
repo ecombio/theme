@@ -39,14 +39,16 @@
     position: fixed;
     top: 0;    /* overwritten inline by link-list.js */
     left: 0;   /* overwritten inline by link-list.js */
-    min-width: 200px;
-    max-width: 280px;
+    min-width: 220px;
+    max-width: 320px;
     /* Hard cap so a large link_list (e.g. someone assigns the full
        main menu here instead of a short curated list) can never grow
        past the bottom of the viewport and overlap page content below
        the header. `top` is set inline by link-list.js to the
        trigger's live bottom edge, so the cap is computed the same
-       way: leave a 16px gap to the bottom of the screen. */
+       way: leave a 16px gap to the bottom of the screen. link-list.js
+       also sets an exact inline max-height based on the trigger's
+       actual position — this is just the CSS fallback. */
     max-height: calc(100vh - 16px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -119,6 +121,35 @@
 
   .link-list__item--has-sub > .link-list__link {
     font-weight: 700;
+  }
+
+  /* ── Grandchild list (3rd nesting level) ──
+     Same role as mega-menu's .mega-menu__subcolumn-list: a further-
+     indented, smaller, more muted tier beneath a 2nd-level link that
+     itself has children (e.g. "From the News Room" → "Latest News"). */
+  .link-list__subitem--has-sub > .link-list__sublink {
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .link-list__subsublist {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 4px;
+  }
+
+  .link-list__subsublink {
+    display: block;
+    padding: 6px 16px 6px 40px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #8a8a8a;
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .link-list__subsublink:hover {
+    background: #f5f5f5;
+    color: var(--hdr-accent);
   }
 }
 
