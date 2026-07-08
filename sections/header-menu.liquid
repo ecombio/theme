@@ -3,20 +3,14 @@
   File: snippets/header-menu.liquid
 
   Renders the desktop nav bar (.menu-bar), built from this section's
-  blocks (single-link, link-list, mega-menu, menu-item, highlight,
-  flyout, @app).
+  blocks (single-link, link-list, mega-menu, highlight, flyout, @app).
   Hidden below 1024px via CSS — mobile/tablet use the separate drawer
   in snippets/header-hamburger.liquid instead.
 
   Loads its own CSS (header-menu.css) plus the CSS/JS for each block
   type that can appear in this bar, but only when that block type is
   actually present in section.blocks — so a store with no mega-menu
-  or menu-item block never pays for that CSS/JS.
-
-  mega-menu.js is shared by both mega-menu and menu-item blocks: both
-  use the same data-mega-menu / data-mega-menu-trigger / data-mega-
-  menu-panel attributes, so one script drives open/close and panel
-  positioning for either block type. It's loaded if either is present.
+  block never pays for mega-menu.css/js.
 
   Also loads header-menu.js, which toggles .has-scroll-left /
   .has-scroll-right on the <nav> based on scroll position, so
@@ -33,27 +27,15 @@
 
 {%- liquid
   assign has_mega_menu = false
-  assign has_menu_item = false
   for block in blocks
     if block.type == 'mega-menu'
       assign has_mega_menu = true
     endif
-    if block.type == 'menu-item'
-      assign has_menu_item = true
-    endif
   endfor
-
-  assign needs_mega_menu_js = false
-  if has_mega_menu or has_menu_item
-    assign needs_mega_menu_js = true
-  endif
 -%}
 
 {%- if has_mega_menu -%}
   {{ 'mega-menu.css' | asset_url | stylesheet_tag }}
-{%- endif -%}
-{%- if has_menu_item -%}
-  {{ 'menu-item.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 
 {%- if blocks.size > 0 -%}
@@ -74,9 +56,6 @@
             {%- when 'mega-menu' -%}
               {%- render 'mega-menu', block: block -%}
 
-            {%- when 'menu-item' -%}
-              {%- render 'menu-item', block: block -%}
-
           {%- endcase -%}
         {%- endfor -%}
       </ul>
@@ -84,7 +63,7 @@
   </nav>
 
   <script src="{{ 'header-menu.js' | asset_url }}" defer></script>
-  {%- if needs_mega_menu_js -%}
+  {%- if has_mega_menu -%}
     <script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
   {%- endif -%}
 {%- endif -%}
