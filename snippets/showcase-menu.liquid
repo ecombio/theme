@@ -1,0 +1,246 @@
+{% comment %}
+  Showcase Menu - Header Menu
+  File: snippets/showcase-menu.liquid
+
+  Renders a top-level nav link that opens a full-width dropdown panel
+  built from fixed "slot" settings on the block itself (NOT a link_list,
+  unlike mega-menu.liquid) — a left-hand "Good to know" sidebar of up to
+  3 tips, plus a right-hand grid of up to 8 image category cards.
+
+  Slots use fixed numbered fields (cat_1_*, cat_2_*, ... tip_1_*, ...)
+  rather than a repeatable list, because a category card needs its own
+  image/collection reference and a Shopify link_list link has nowhere
+  to attach either of those — the source has to live on the block.
+  A slot with a blank label AND blank link AND blank image is skipped
+  entirely, so stores don't have to fill all 8/3 slots.
+
+  Image resolution order per category, cheapest/most-specific first:
+    1. cat_N_image (image_picker) — if set, always wins
+    2. cat_N_collection's featured_image — if a collection is linked
+       and has one
+    3. Shopify's built-in placeholder_svg_tag — guarantees a card never
+       renders with a missing/broken image
+
+  Panel is position:fixed for the same reason as mega-menu.liquid: the
+  scrolling .menu-bar__container (overflow-x: auto) would clip an
+  absolutely-positioned panel. assets/showcase-menu.js repositions it
+  against the header's live bottom edge, mirroring mega-menu.js exactly
+  but kept in its own file/data-attribute namespace (data-showcase-menu*
+  vs data-mega-menu*) so the two never share open/close state.
+
+  Desktop (≥1024px) only — see assets/showcase-menu.css.
+
+  Params:
+    block — the showcase-menu block from section.blocks
+{% endcomment %}
+
+{%- liquid
+  assign panel_id = 'ShowcaseMenuPanel-' | append: block.id
+
+  assign tips = ''
+  assign has_tips = false
+  if block.settings.show_sidebar
+    for i in (1..3)
+      case i
+        when 1
+          assign heading = block.settings.tip_1_heading
+        when 2
+          assign heading = block.settings.tip_2_heading
+        when 3
+          assign heading = block.settings.tip_3_heading
+      endcase
+      if heading != blank
+        assign has_tips = true
+      endif
+    endfor
+  endif
+
+  assign has_categories = false
+  for i in (1..8)
+    case i
+      when 1
+        assign c_label = block.settings.cat_1_label
+        assign c_link = block.settings.cat_1_link
+        assign c_image = block.settings.cat_1_image
+      when 2
+        assign c_label = block.settings.cat_2_label
+        assign c_link = block.settings.cat_2_link
+        assign c_image = block.settings.cat_2_image
+      when 3
+        assign c_label = block.settings.cat_3_label
+        assign c_link = block.settings.cat_3_link
+        assign c_image = block.settings.cat_3_image
+      when 4
+        assign c_label = block.settings.cat_4_label
+        assign c_link = block.settings.cat_4_link
+        assign c_image = block.settings.cat_4_image
+      when 5
+        assign c_label = block.settings.cat_5_label
+        assign c_link = block.settings.cat_5_link
+        assign c_image = block.settings.cat_5_image
+      when 6
+        assign c_label = block.settings.cat_6_label
+        assign c_link = block.settings.cat_6_link
+        assign c_image = block.settings.cat_6_image
+      when 7
+        assign c_label = block.settings.cat_7_label
+        assign c_link = block.settings.cat_7_link
+        assign c_image = block.settings.cat_7_image
+      when 8
+        assign c_label = block.settings.cat_8_label
+        assign c_link = block.settings.cat_8_link
+        assign c_image = block.settings.cat_8_image
+    endcase
+    if c_label != blank or c_link != blank or c_image != blank
+      assign has_categories = true
+    endif
+  endfor
+
+  assign has_panel = false
+  if has_tips or has_categories
+    assign has_panel = true
+  endif
+-%}
+
+<li class="menu-bar__item{% if has_panel %} menu-bar__item--showcase-menu{% endif %}" {% if has_panel %}data-showcase-menu{% endif %} {{ block.shopify_attributes }}>
+  <a
+    href="{{ block.settings.link | default: '#' }}"
+    class="menu-bar__link{% if has_panel %} menu-bar__link--showcase-menu{% endif %}"
+    {%- if has_panel %}
+    aria-haspopup="true"
+    aria-expanded="false"
+    aria-controls="{{ panel_id }}"
+    data-showcase-menu-trigger
+    {% endif -%}
+  >
+    {%- if block.settings.icon != blank -%}
+      <span class="menu-bar__icon">{%- render 'menu-icon', icon: block.settings.icon -%}</span>
+    {%- endif -%}
+    {{ block.settings.label | default: 'Shop by category' }}
+    {%- if has_panel -%}
+      <svg class="icon-caret-down" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    {%- endif -%}
+  </a>
+
+  {%- if has_panel -%}
+    <div class="showcase-menu__panel" id="{{ panel_id }}" data-showcase-menu-panel>
+      <div class="showcase-menu__panel-inner page-width--header">
+
+        {%- if has_tips -%}
+          <div class="showcase-menu__sidebar">
+            <p class="showcase-menu__sidebar-heading">{{ block.settings.sidebar_heading | default: 'Good to know' }}</p>
+            <ul class="showcase-menu__tips">
+              {%- for i in (1..3) -%}
+                {%- case i -%}
+                  {%- when 1 -%}
+                    {%- assign t_icon = block.settings.tip_1_icon -%}
+                    {%- assign t_heading = block.settings.tip_1_heading -%}
+                    {%- assign t_body = block.settings.tip_1_body -%}
+                  {%- when 2 -%}
+                    {%- assign t_icon = block.settings.tip_2_icon -%}
+                    {%- assign t_heading = block.settings.tip_2_heading -%}
+                    {%- assign t_body = block.settings.tip_2_body -%}
+                  {%- when 3 -%}
+                    {%- assign t_icon = block.settings.tip_3_icon -%}
+                    {%- assign t_heading = block.settings.tip_3_heading -%}
+                    {%- assign t_body = block.settings.tip_3_body -%}
+                {%- endcase -%}
+                {%- if t_heading != blank -%}
+                  <li class="showcase-menu__tip">
+                    {%- if t_icon != blank -%}
+                      <span class="showcase-menu__tip-icon">{%- render 'menu-icon', icon: t_icon -%}</span>
+                    {%- endif -%}
+                    <span class="showcase-menu__tip-text">
+                      <strong>{{ t_heading }}</strong>
+                      {%- if t_body != blank %} {{ t_body }}{% endif -%}
+                    </span>
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          </div>
+        {%- endif -%}
+
+        {%- if has_categories -%}
+          <div class="showcase-menu__main">
+            <div class="showcase-menu__main-header">
+              <p class="showcase-menu__main-heading">Categories</p>
+              {%- if block.settings.see_all_link != blank -%}
+                <a href="{{ block.settings.see_all_link }}" class="showcase-menu__see-all">{{ block.settings.see_all_label | default: 'See all' }}</a>
+              {%- endif -%}
+            </div>
+
+            <div class="showcase-menu__grid">
+              {%- for i in (1..8) -%}
+                {%- case i -%}
+                  {%- when 1 -%}
+                    {%- assign c_label = block.settings.cat_1_label -%}
+                    {%- assign c_link = block.settings.cat_1_link -%}
+                    {%- assign c_image = block.settings.cat_1_image -%}
+                    {%- assign c_collection = block.settings.cat_1_collection -%}
+                  {%- when 2 -%}
+                    {%- assign c_label = block.settings.cat_2_label -%}
+                    {%- assign c_link = block.settings.cat_2_link -%}
+                    {%- assign c_image = block.settings.cat_2_image -%}
+                    {%- assign c_collection = block.settings.cat_2_collection -%}
+                  {%- when 3 -%}
+                    {%- assign c_label = block.settings.cat_3_label -%}
+                    {%- assign c_link = block.settings.cat_3_link -%}
+                    {%- assign c_image = block.settings.cat_3_image -%}
+                    {%- assign c_collection = block.settings.cat_3_collection -%}
+                  {%- when 4 -%}
+                    {%- assign c_label = block.settings.cat_4_label -%}
+                    {%- assign c_link = block.settings.cat_4_link -%}
+                    {%- assign c_image = block.settings.cat_4_image -%}
+                    {%- assign c_collection = block.settings.cat_4_collection -%}
+                  {%- when 5 -%}
+                    {%- assign c_label = block.settings.cat_5_label -%}
+                    {%- assign c_link = block.settings.cat_5_link -%}
+                    {%- assign c_image = block.settings.cat_5_image -%}
+                    {%- assign c_collection = block.settings.cat_5_collection -%}
+                  {%- when 6 -%}
+                    {%- assign c_label = block.settings.cat_6_label -%}
+                    {%- assign c_link = block.settings.cat_6_link -%}
+                    {%- assign c_image = block.settings.cat_6_image -%}
+                    {%- assign c_collection = block.settings.cat_6_collection -%}
+                  {%- when 7 -%}
+                    {%- assign c_label = block.settings.cat_7_label -%}
+                    {%- assign c_link = block.settings.cat_7_link -%}
+                    {%- assign c_image = block.settings.cat_7_image -%}
+                    {%- assign c_collection = block.settings.cat_7_collection -%}
+                  {%- when 8 -%}
+                    {%- assign c_label = block.settings.cat_8_label -%}
+                    {%- assign c_link = block.settings.cat_8_link -%}
+                    {%- assign c_image = block.settings.cat_8_image -%}
+                    {%- assign c_collection = block.settings.cat_8_collection -%}
+                {%- endcase -%}
+
+                {%- if c_label != blank or c_link != blank or c_image != blank -%}
+                  {%- liquid
+                    assign card_href = c_link | default: c_collection.url | default: '#'
+                    assign card_label = c_label | default: c_collection.title
+                  -%}
+                  <a href="{{ card_href }}" class="showcase-menu__card">
+                    <span class="showcase-menu__card-image">
+                      {%- if c_image != blank -%}
+                        <img src="{{ c_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
+                      {%- elsif c_collection != blank and c_collection.featured_image != blank -%}
+                        <img src="{{ c_collection.featured_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
+                      {%- else -%}
+                        {{ 'collection-' | append: i | placeholder_svg_tag: 'showcase-menu__card-placeholder' }}
+                      {%- endif -%}
+                    </span>
+                    <span class="showcase-menu__card-label">{{ card_label }}</span>
+                  </a>
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+
+      </div>
+    </div>
+  {%- endif -%}
+</li>
