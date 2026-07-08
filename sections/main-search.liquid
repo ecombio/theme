@@ -258,24 +258,144 @@
                             {%- endfor -%}
 
                           {%- when 'price_range' -%}
+                            {%- assign price_range_min = filter.range_min | default: 0 -%}
+                            {%- assign price_slider_min = filter.min_value.value | default: price_range_min -%}
+                            {%- assign price_slider_max = filter.max_value.value | default: filter.range_max -%}
+
+                            {%- comment -%}
+                              Quartile buckets computed from the real
+                              filter.range_max — these thresholds are
+                              actual data, not placeholders.
+                            {%- endcomment -%}
+                            {%- assign bucket_1 = filter.range_max | times: 0.25 | round -%}
+                            {%- assign bucket_2 = filter.range_max | times: 0.5 | round -%}
+                            {%- assign bucket_3 = filter.range_max | times: 0.75 | round -%}
+                            {%- assign current_min = filter.min_value.value | default: price_range_min -%}
+                            {%- assign current_max = filter.max_value.value | default: filter.range_max -%}
+
                             <div class="search-filter__price">
-                              <input
-                                type="number"
-                                name="{{ filter.min_value.param_name }}"
-                                value="{{ filter.min_value.value }}"
-                                min="0"
-                                max="{{ filter.range_max }}"
-                                placeholder="0"
-                              >
-                              <span>&ndash;</span>
-                              <input
-                                type="number"
-                                name="{{ filter.max_value.param_name }}"
-                                value="{{ filter.max_value.value }}"
-                                min="0"
-                                max="{{ filter.range_max }}"
-                                placeholder="{{ filter.range_max }}"
-                              >
+                              <div class="search-filter__price-inputs">
+                                <input
+                                  type="number"
+                                  name="{{ filter.min_value.param_name }}"
+                                  value="{{ filter.min_value.value }}"
+                                  min="{{ price_range_min }}"
+                                  max="{{ filter.range_max }}"
+                                  placeholder="{{ price_range_min }}"
+                                  data-price-input="min"
+                                >
+                                <span>&ndash;</span>
+                                <input
+                                  type="number"
+                                  name="{{ filter.max_value.param_name }}"
+                                  value="{{ filter.max_value.value }}"
+                                  min="{{ price_range_min }}"
+                                  max="{{ filter.range_max }}"
+                                  placeholder="{{ filter.range_max }}"
+                                  data-price-input="max"
+                                >
+                              </div>
+
+                              {%- comment -%}
+                                PLACEHOLDER HISTOGRAM (2026-07): these 20
+                                bar heights are a fixed, hardcoded curve —
+                                NOT real per-price product counts. This
+                                filter object has no bucket-count data to
+                                draw a real histogram from. Added anyway
+                                per explicit request to match the mock
+                                visually; swap the values in
+                                data-histogram-heights (or better, loop
+                                over real bucket counts here in Liquid)
+                                before relying on this for anything
+                                other than decoration. Flagging clearly
+                                so this doesn't get mistaken for real
+                                data later.
+                              {%- endcomment -%}
+                              <div class="search-filter__price-histogram" aria-hidden="true">
+                                {%- assign histogram_heights = "29,29,38,48,57,71,76,86,95,100,95,86,81,71,62,52,48,33,29,24" | split: "," -%}
+                                {%- for height in histogram_heights -%}
+                                  <span class="search-filter__price-bar" style="height: {{ height }}%;"></span>
+                                {%- endfor -%}
+                              </div>
+
+                              <div class="search-filter__price-slider" data-price-slider>
+                                <div class="search-filter__price-track">
+                                  <div class="search-filter__price-fill"></div>
+                                </div>
+                                <input
+                                  type="range"
+                                  class="search-filter__price-range search-filter__price-range--min"
+                                  min="{{ price_range_min }}"
+                                  max="{{ filter.range_max }}"
+                                  value="{{ price_slider_min }}"
+                                  step="1"
+                                  aria-label="Minimum price"
+                                  data-price-range="min"
+                                >
+                                <input
+                                  type="range"
+                                  class="search-filter__price-range search-filter__price-range--max"
+                                  min="{{ price_range_min }}"
+                                  max="{{ filter.range_max }}"
+                                  value="{{ price_slider_max }}"
+                                  step="1"
+                                  aria-label="Maximum price"
+                                  data-price-range="max"
+                                >
+                              </div>
+
+                              <div class="search-filter__price-buckets" data-price-buckets>
+                                <label class="search-filter__price-bucket">
+                                  <input
+                                    type="radio"
+                                    name="price_bucket"
+                                    data-bucket-min="{{ price_range_min }}"
+                                    data-bucket-max="{{ bucket_1 }}"
+                                    {%- if current_min == price_range_min and current_max == bucket_1 %} checked{%- endif %}
+                                  >
+                                  Less than ${{ bucket_1 }}
+                                </label>
+                                <label class="search-filter__price-bucket">
+                                  <input
+                                    type="radio"
+                                    name="price_bucket"
+                                    data-bucket-min="{{ bucket_1 }}"
+                                    data-bucket-max="{{ bucket_2 }}"
+                                    {%- if current_min == bucket_1 and current_max == bucket_2 %} checked{%- endif %}
+                                  >
+                                  ${{ bucket_1 }} to ${{ bucket_2 }}
+                                </label>
+                                <label class="search-filter__price-bucket">
+                                  <input
+                                    type="radio"
+                                    name="price_bucket"
+                                    data-bucket-min="{{ bucket_2 }}"
+                                    data-bucket-max="{{ bucket_3 }}"
+                                    {%- if current_min == bucket_2 and current_max == bucket_3 %} checked{%- endif %}
+                                  >
+                                  ${{ bucket_2 }} to ${{ bucket_3 }}
+                                </label>
+                                <label class="search-filter__price-bucket">
+                                  <input
+                                    type="radio"
+                                    name="price_bucket"
+                                    data-bucket-min="{{ bucket_3 }}"
+                                    data-bucket-max="{{ filter.range_max }}"
+                                    {%- if current_min == bucket_3 and current_max == filter.range_max %} checked{%- endif %}
+                                  >
+                                  ${{ bucket_3 }} to ${{ filter.range_max }}
+                                </label>
+                                <label class="search-filter__price-bucket">
+                                  <input
+                                    type="radio"
+                                    name="price_bucket"
+                                    data-bucket-min="{{ filter.range_max }}"
+                                    data-bucket-max=""
+                                    {%- if current_min == filter.range_max and current_max == blank %} checked{%- endif %}
+                                  >
+                                  More than ${{ filter.range_max }}
+                                </label>
+                              </div>
                             </div>
                         {%- endcase -%}
                       </div>

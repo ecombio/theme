@@ -206,6 +206,126 @@
         applyFiltersLive(true);
       });
     });
+    bindPriceSlider();
+    bindPriceBuckets();
+  }
+
+  /* Price range slider (2026-07)
+     Two overlapping <input type="range"> elements (see the CSS notes
+     in .search-filter__price-range) kept in sync with the existing
+     min/max NUMBER fields, which stay the source of truth for what
+     actually gets submitted — the sliders just mirror them visually.
+     Dragging a handle updates its number field live on 'input' (every
+     frame of the drag, cheap: just DOM writes, no fetch), but only
+     fires applyFiltersLive on 'change' (drag released / arrow-key
+     committed), matching how the number inputs already behave a few
+     lines up — so dragging doesn't spam a fetch per pixel. */
+  function bindPriceSlider() {
+    var slider = filterForm.querySelector('[data-price-slider]');
+    if (!slider) return; // no price_range filter configured
+
+    var minRange = slider.querySelector('[data-price-range="min"]');
+    var maxRange = slider.querySelector('[data-price-range="max"]');
+    var fill = slider.querySelector('.search-filter__price-fill');
+    var minInput = filterForm.querySelector('[data-price-input="min"]');
+    var maxInput = filterForm.querySelector('[data-price-input="max"]');
+    if (!minRange || !maxRange || !fill || !minInput || !maxInput) return;
+
+    var rangeMin = parseFloat(minRange.min);
+    var rangeMax = parseFloat(minRange.max);
+
+    function updateFill() {
+      var span = rangeMax - rangeMin;
+      // Guard against a 0-width range (rangeMin === rangeMax, e.g. a
+      // collection where every matching product is the same price) —
+      // avoids a divide-by-zero producing NaN% and collapsing the fill.
+      if (span <= 0) {
+        fill.style.left = '0%';
+        fill.style.right = '0%';
+        return;
+      }
+      var minPct = ((parseFloat(minRange.value) - rangeMin) / span) * 100;
+      var maxPct = ((parseFloat(maxRange.value) - rangeMin) / span) * 100;
+      fill.style.left = minPct + '%';
+      fill.style.right = (100 - maxPct) + '%';
+    }
+
+    function raise(range) {
+      minRange.classList.remove('search-filter__price-range--top');
+      maxRange.classList.remove('search-filter__price-range--top');
+      range.classList.add('search-filter__price-range--top');
+    }
+
+    minRange.addEventListener('pointerdown', function () { raise(minRange); });
+    maxRange.addEventListener('pointerdown', function () { raise(maxRange); });
+
+    minRange.addEventListener('input', function () {
+      if (parseFloat(minRange.value) > parseFloat(maxRange.value)) {
+        minRange.value = maxRange.value; // don't let handles cross
+      }
+      minInput.value = minRange.value;
+      updateFill();
+    });
+    maxRange.addEventListener('input', function () {
+      if (parseFloat(maxRange.value) < parseFloat(minRange.value)) {
+        maxRange.value = minRange.value;
+      }
+      maxInput.value = maxRange.value;
+      updateFill();
+    });
+
+    minRange.addEventListener('change', function () { applyFiltersLive(true); });
+    maxRange.addEventListener('change', function () { applyFiltersLive(true); });
+
+    // Typing directly in a number field moves its matching handle too.
+    minInput.addEventListener('input', function () {
+      minRange.value = minInput.value === '' ? rangeMin : minInput.value;
+      updateFill();
+    });
+    maxInput.addEventListener('input', function () {
+      maxRange.value = maxInput.value === '' ? rangeMax : maxInput.value;
+      updateFill();
+    });
+
+    // Exposed so bindPriceBuckets() (below) can move both handles at
+    // once and refresh the fill bar without duplicating this math.
+    slider._updateFill = updateFill;
+
+    updateFill();
+  }
+
+  /* Price quick-pick buckets (2026-07)
+     Radio buttons for the quartile ranges computed in Liquid from the
+     real filter.range_max (see main-search.liquid) — unlike the
+     histogram above, these thresholds are real data, not a mock. */
+  function bindPriceBuckets() {
+    var bucketWrap = filterForm.querySelector('[data-price-buckets]');
+    var slider = filterForm.querySelector('[data-price-slider]');
+    var minInput = filterForm.querySelector('[data-price-input="min"]');
+    var maxInput = filterForm.querySelector('[data-price-input="max"]');
+    if (!bucketWrap || !slider || !minInput || !maxInput) return;
+
+    var minRange = slider.querySelector('[data-price-range="min"]');
+    var maxRange = slider.querySelector('[data-price-range="max"]');
+
+    bucketWrap.querySelectorAll('input[type="radio"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        var min = radio.dataset.bucketMin;
+        // "More than $X" bucket has no data-bucket-max — leave the max
+        // field blank rather than clamping to range_max, same as
+        // buildFilterUrl() already treats a blank field as "no upper
+        // bound" (see the note there).
+        var max = radio.dataset.bucketMax || '';
+
+        minInput.value = min;
+        maxInput.value = max;
+        if (minRange) minRange.value = min;
+        if (maxRange) maxRange.value = max === '' ? maxRange.max : max;
+        if (typeof slider._updateFill === 'function') slider._updateFill();
+
+        applyFiltersLive(true);
+      });
+    });
   }
 
   function applyFiltersLive(pushHistory) {

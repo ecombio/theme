@@ -353,17 +353,169 @@
   opacity: 0.4;
 }
 
+/* Dual-handle price slider (2026-07)
+   Two native <input type="range"> elements stacked on top of each
+   other, both spanning the full track width. Each one's own track
+   is made invisible so only the shared .search-filter__price-track/
+   -fill underneath is seen. pointer-events is off on the inputs
+   themselves and re-enabled only on their thumbs, so clicking the
+   empty track doesn't get "claimed" by whichever input happens to
+   sit on top in the DOM — only grabbing an actual handle does.
+
+   COLORS (2026-07): sampled directly from the reference mock
+   (#D9A404 handles/fill, #F2D98A histogram bars) per explicit
+   request to match it exactly — this is a deliberate one-off
+   exception to the file's usual --color-accent token, scoped only
+   to this component via --price-accent/-light so it can still be
+   overridden without touching the rest of the section's palette. */
+
 .search-filter__price {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  --price-accent: #D9A404;
+  --price-accent-light: #F2D98A;
+}
+
+.search-filter__price-inputs {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.search-filter__price input {
+.search-filter__price-inputs input {
   width: 5rem;
   padding: 0.4rem;
   border: 1px solid var(--color-border, #e2e2e2);
   border-radius: 4px;
+}
+
+/* PLACEHOLDER HISTOGRAM (2026-07): purely decorative bars, see the
+   long comment in main-search.liquid where the heights are set —
+   not driven by real product-price counts. */
+.search-filter__price-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 2.5rem;
+}
+
+.search-filter__price-bar {
+  flex: 1;
+  min-width: 2px;
+  background: var(--price-accent-light, #F2D98A);
+  border-radius: 1px 1px 0 0;
+}
+
+.search-filter__price-slider {
+  position: relative;
+  height: 1.25rem;
+}
+
+.search-filter__price-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: var(--color-border, #e2e2e2);
+  border-radius: 999px;
+}
+
+.search-filter__price-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--price-accent, #D9A404);
+  border-radius: 999px;
+}
+
+.search-filter__price-range {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: none;
+}
+
+.search-filter__price-range:focus-visible {
+  outline: none;
+}
+
+.search-filter__price-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.search-filter__price-range::-moz-range-track {
+  background: transparent;
+}
+
+.search-filter__price-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.4375rem; /* centers the 16px thumb on the 3px track */
+  background: var(--price-accent, #D9A404);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.search-filter__price-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 1rem;
+  height: 1rem;
+  background: var(--price-accent, #D9A404);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.search-filter__price-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-accent-secondary, #0A3161);
+  outline-offset: 2px;
+}
+
+.search-filter__price-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-accent-secondary, #0A3161);
+  outline-offset: 2px;
+}
+
+/* Whichever handle was interacted with last gets raised above the
+   other, so two thumbs that are close together (or equal) can still
+   each be grabbed individually instead of the lower one being stuck
+   under the upper one — toggled in main-search.js on pointerdown. */
+.search-filter__price-range--top {
+  z-index: 2;
+}
+
+.search-filter__price-buckets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--color-border, #e2e2e2);
+}
+
+.search-filter__price-bucket {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.search-filter__price-bucket input[type="radio"] {
+  accent-color: var(--price-accent, #D9A404);
 }
 
 .search-filter__active {
