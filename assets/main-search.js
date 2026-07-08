@@ -40,22 +40,28 @@
   // panel actually has results, then to "products" as the default.
   (function setInitialTab() {
     var params = new URLSearchParams(window.location.search);
-    var typeParam = params.get('type');
-
-    if (typeParam === 'article') {
-      activateTab('articles', false);
-      return;
-    }
-    if (typeParam === 'product') {
-      activateTab('products', false);
-      return;
-    }
+    var typeParam = (params.get('type') || '').split(',').map(function (t) { return t.trim(); });
+    var wantsProducts = typeParam.indexOf('product') !== -1;
+    var wantsArticles = typeParam.indexOf('article') !== -1;
 
     var productsPanel = root.querySelector('[data-tab-panel="products"]');
     var articlesPanel = root.querySelector('[data-tab-panel="articles"]');
-    var productsHaveResults = productsPanel && productsPanel.querySelector('.search-feed__grid');
-    var articlesHaveResults = articlesPanel && articlesPanel.querySelector('.search-feed__grid');
+    var productsHaveResults = !!(productsPanel && productsPanel.querySelector('.search-feed__grid'));
+    var articlesHaveResults = !!(articlesPanel && articlesPanel.querySelector('.search-feed__grid'));
 
+    // If the URL explicitly requests only one type, honor it.
+    if (wantsProducts && !wantsArticles) {
+      activateTab('products', false);
+      return;
+    }
+    if (wantsArticles && !wantsProducts) {
+      activateTab('articles', false);
+      return;
+    }
+
+    // Otherwise (both types requested, or no type param at all): prefer
+    // whichever tab actually has content, defaulting to products if both
+    // or neither have results.
     if (!productsHaveResults && articlesHaveResults) {
       activateTab('articles', false);
     } else {
