@@ -64,6 +64,20 @@
    below it. That's handled in assets/mega-menu.css, which temporarily
    sets .menu-bar__list to overflow: visible while a mega-menu is open
    — see the changelog note in that file.
+
+   FIXED (overflow-past-viewport bug): .menu-bar__container and
+   .menu-bar__list previously had no explicit width/min-width, so as
+   flex items they defaulted to min-width: auto — meaning they grew to
+   fit however many nav links/blocks were configured instead of being
+   clamped to .menu-bar's own max-width. With enough blocks (e.g. six
+   "Support" links) the whole bar pushed past the browser viewport
+   instead of scrolling horizontally within it, even though
+   overflow-x: auto was already set. Added width: 100% + min-width: 0
+   to both so they're properly constrained and the existing
+   overflow-x: auto actually has a fixed box to clip/scroll against.
+   Also added a right-edge fade mask on .menu-bar__list so there's a
+   visual cue that more items are scrollable, since the scrollbar
+   itself is hidden cross-browser.
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
@@ -165,6 +179,8 @@
 
 .menu-bar__container {
   position: relative;
+  width: 100%;
+  min-width: 0;
 }
 
 .menu-bar__list {
@@ -174,9 +190,13 @@
   padding: 0;
   margin: 0;
   position: relative;
+  width: 100%;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;      /* Firefox */
   -ms-overflow-style: none;   /* IE/Edge */
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
 }
 
 .menu-bar__list::-webkit-scrollbar {
