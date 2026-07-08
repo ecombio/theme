@@ -4,9 +4,11 @@
 
   Renders a top-level nav link that opens a full-width dropdown panel
   built from a link_list: top-level links become columns, their child
-  links become the column's link list. Optionally shows up to 3
-  "trending" products pulled from the first collection link found
-  anywhere in the menu (top level or nested one level).
+  links become the column's link list, and any grandchild links (a
+  third nesting level) render as an indented sub-list beneath their
+  parent link. Optionally shows up to 3 "trending" products pulled
+  from the first collection link found anywhere in the menu (top
+  level or nested one level).
 
   The panel is position:fixed rather than absolutely positioned inside
   .menu-bar__container, because that container has overflow-x:auto for
@@ -89,7 +91,16 @@
               {%- if top_link.links.size > 0 -%}
                 <ul class="mega-menu__column-list">
                   {%- for sub_link in top_link.links -%}
-                    <li><a href="{{ sub_link.url }}" class="mega-menu__column-link">{{ sub_link.title }}</a></li>
+                    <li>
+                      <a href="{{ sub_link.url }}" class="mega-menu__column-link{% if sub_link.links.size > 0 %} mega-menu__column-link--parent{% endif %}">{{ sub_link.title }}</a>
+                      {%- if sub_link.links.size > 0 -%}
+                        <ul class="mega-menu__subcolumn-list">
+                          {%- for grandchild_link in sub_link.links -%}
+                            <li><a href="{{ grandchild_link.url }}" class="mega-menu__subcolumn-link">{{ grandchild_link.title }}</a></li>
+                          {%- endfor -%}
+                        </ul>
+                      {%- endif -%}
+                    </li>
                   {%- endfor -%}
                 </ul>
               {%- endif -%}
