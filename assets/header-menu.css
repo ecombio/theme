@@ -124,19 +124,33 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 56px;
+    width: 64px;
     pointer-events: none;
     z-index: 2;
     opacity: 0;
     transition: opacity 0.2s ease;
   }
+  /* Multi-stop gradient instead of a flat two-stop one — reads as a
+     softer, more natural shadow instead of a hard-edged overlay. */
   .menu-bar__edge-fade--left {
     left: 0;
-    background: linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0.85) 30%,
+      rgba(255, 255, 255, 0.4) 65%,
+      rgba(255, 255, 255, 0) 100%
+    );
   }
   .menu-bar__edge-fade--right {
     right: 0;
-    background: linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(
+      to left,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0.85) 30%,
+      rgba(255, 255, 255, 0.4) 65%,
+      rgba(255, 255, 255, 0) 100%
+    );
   }
 
   .menu-bar.has-scroll-left .menu-bar__edge-fade--left,
@@ -145,11 +159,16 @@
   }
 }
 
-/* Edge fades are desktop-only — mobile/tablet already have their own
-   overflow handling further down this file and don't render the fade
-   markup functionally (kept hidden here as a safe default either way). */
-.menu-bar__edge-fade {
-  display: none;
+/* Edge fades are desktop-only. IMPORTANT: this must be scoped inside
+   a max-width query — a bare, unscoped `.menu-bar__edge-fade { display:
+   none; }` placed here would have the same specificity as the
+   `display: block` set inside the desktop media query above, and being
+   later in the file, would win the cascade and hide the fades even on
+   desktop. Scoping it to <1024px avoids that trap entirely. */
+@media (max-width: 1023px) {
+  .menu-bar__edge-fade {
+    display: none;
+  }
 }
 
 /* =============================================================================
