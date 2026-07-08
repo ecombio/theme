@@ -78,20 +78,6 @@
    Also added a right-edge fade mask on .menu-bar__list so there's a
    visual cue that more items are scrollable, since the scrollbar
    itself is hidden cross-browser.
-
-   FIXED (mask clipping the open mega-menu): mask-image doesn't just
-   fade an element's own background — like the clip-path bug described
-   above for .main-header, it visually clips/fades EVERYTHING rendered
-   within the element's box, including descendants currently
-   overflowing it. mega-menu.css already flips .menu-bar__list to
-   overflow: visible while a mega-menu is open/hovered/focused (see the
-   NOTE further up), specifically so the dropdown panel isn't clipped.
-   The fade mask wasn't included in that override, so the instant a
-   mega-menu opened, its panel got caught in the same right-edge
-   fade-to-transparent as the nav links behind it. Added a matching
-   :has() override directly below that turns mask-image off under the
-   exact same condition, so the fade only ever applies to the plain
-   nav bar — never while a mega-menu's dropdown is being displayed.
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
@@ -215,17 +201,6 @@
 
 .menu-bar__list::-webkit-scrollbar {
   display: none;               /* Chrome/Safari */
-}
-
-/* Same :has() condition mega-menu.css uses to switch overflow to
-   visible while a mega-menu is open/hovered/focused — mirrored here
-   to also switch the fade mask off at the same moment, so the open
-   dropdown panel never gets faded/clipped by it. */
-.menu-bar__list:has(> .menu-bar__item--has-mega:hover),
-.menu-bar__list:has(> .menu-bar__item--has-mega.is-open),
-.menu-bar__list:has(> .menu-bar__item--has-mega:focus-within) {
-  mask-image: none;
-  -webkit-mask-image: none;
 }
 
 .menu-bar__item {
