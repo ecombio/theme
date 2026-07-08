@@ -1,0 +1,301 @@
+{{ 'main-search.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  Product and article results are fetched independently by JS (via the
+  Section Rendering API) so that each tab has its own accurate count and
+  its own pagination, rather than sharing one paginated set where a large
+  product catalog can crowd articles off the first page (or vice versa).
+
+  This same Liquid renders two ways:
+  1. The initial full-page load — search.results may contain a mix of
+     types depending on what the header search form requested. This is
+     just a best-effort first paint / no-JS fallback.
+  2. A background fetch scoped to a single type (?type=product or
+     ?type=article&section_id={{ section.id }}) — in that case
+     search.results and search.results_count are 100% accurate for that
+     type alone, and this is what JS uses to correct the page after load.
+{%- endcomment -%}
+
+<div
+  class="search-results page-width"
+  data-search-results
+  data-search-url="{{ routes.search_url }}"
+  data-search-term="{{ search.terms | escape }}"
+  data-section-id="{{ section.id }}"
+>
+
+  <div class="search-results__header">
+    <h1 class="search-results__heading">Search Results</h1>
+    {% if search.performed %}
+      <p class="search-results__meta" data-search-meta>
+        {% if search.results_count > 0 %}
+          {{ search.results_count }} result{% if search.results_count != 1 %}s{% endif %} for
+          <span class="search-results__term">&ldquo;{{ search.terms }}&rdquo;</span>
+        {% else %}
+          No results found for <span class="search-results__term">&ldquo;{{ search.terms }}&rdquo;</span>
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+
+  {% if search.performed %}
+    {% paginate search.results by section.settings.results_per_page %}
+
+      {% assign product_results = search.results | where: "object_type", "product" %}
+      {% assign article_results = search.results | where: "object_type", "article" %}
+
+      <div class="search-results__body">
+
+        <aside class="search-filter" data-search-filter>
+          <div class="search-filter__header">
+            <h2 class="search-filter__heading">Filter</h2>
+            <button type="button" class="search-filter__close" data-search-filter-close aria-label="Close filters">
+              &times;
+            </button>
+          </div>
+
+          {% if search.filters.size > 0 %}
+            <form
+              method="get"
+              action="{{ routes.search_url }}"
+              class="search-filter__form"
+              data-search-filter-form
+            >
+              <input type="hidden" name="q" value="{{ search.terms | escape }}">
+              <input type="hidden" name="type" value="product,article">
+
+              {% for filter in search.filters %}
+                <div class="search-filter__group">
+                  <h3 class="search-filter__group-heading">{{ filter.label }}</h3>
+
+                  {% case filter.type %}
+
+                    {% when 'list' %}
+                      <ul class="search-filter__list">
+                        {% for value in filter.values %}
+                          {% if value.count > 0 or value.active %}
+                            <li class="search-filter__list-item">
+                              <label class="search-filter__checkbox">
+                                <input
+                                  type="checkbox"
+                                  name="{{ value.param_name }}"
+                                  value="{{ value.value }}"
+                                  {% if value.active %}checked{% endif %}
+                                  data-search-filter-input
+                                >
+                                <span>{{ value.label }}</span>
+                                <span class="search-filter__count">({{ value.count }})</span>
+                              </label>
+                            </li>
+                          {% endif %}
+                        {% endfor %}
+                      </ul>
+
+                    {% when 'boolean' %}
+                      {% for value in filter.values %}
+                        <label class="search-filter__checkbox">
+                          <input
+                            type="checkbox"
+                            name="{{ value.param_name }}"
+                            value="{{ value.value }}"
+                            {% if value.active %}checked{% endif %}
+                            data-search-filter-input
+                          >
+                          <span>{{ value.label }}</span>
+                          <span class="search-filter__count">({{ value.count }})</span>
+                        </label>
+                      {% endfor %}
+
+                    {% when 'price_range' %}
+                      <div class="search-filter__price">
+                        <label class="search-filter__price-field">
+                          <span>Min</span>
+                          <input
+                            type="number"
+                            name="{{ filter.min_value.param_name }}"
+                            value="{{ filter.min_value.value }}"
+                            placeholder="{{ filter.range_min | money_without_currency }}"
+                            min="0"
+                          >
+                        </label>
+                        <label class="search-filter__price-field">
+                          <span>Max</span>
+                          <input
+                            type="number"
+                            name="{{ filter.max_value.param_name }}"
+                            value="{{ filter.max_value.value }}"
+                            placeholder="{{ filter.range_max | money_without_currency }}"
+                            min="0"
+                          >
+                        </label>
+                        <button type="submit" class="search-filter__price-apply">Apply</button>
+                      </div>
+
+                  {% endcase %}
+                </div>
+              {% endfor %}
+
+              <button type="submit" class="search-filter__submit">Apply Filters</button>
+            </form>
+
+            {% assign has_active_filters = false %}
+            {% for filter in search.filters %}
+              {% for value in filter.values %}
+                {% if value.active %}
+                  {% assign has_active_filters = true %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+
+            {% if has_active_filters %}
+              <div class="search-filter__active">
+                <span class="search-filter__active-label">Active:</span>
+                <ul class="search-filter__active-list">
+                  {% for filter in search.filters %}
+                    {% for value in filter.values %}
+                      {% if value.active %}
+                        <li>
+                          <a href="{{ value.url_to_remove }}" class="search-filter__tag">
+                            {{ value.label }} <span aria-hidden="true">&times;</span>
+                          </a>
+                        </li>
+                      {% endif %}
+                    {% endfor %}
+                  {% endfor %}
+                </ul>
+                <a href="{{ routes.search_url }}?q={{ search.terms | url_encode }}&type=product,article" class="search-filter__clear">
+                  Clear all
+                </a>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <p class="search-filter__empty">No filters available.</p>
+          {% endif %}
+        </aside>
+
+        <div class="search-results__content">
+
+          <div class="search-toolbar" role="tablist" aria-label="Search result type" data-search-toolbar>
+            <button
+              type="button"
+              class="search-toolbar__tab"
+              role="tab"
+              data-tab-trigger="products"
+              aria-selected="true"
+              aria-controls="search-panel-products"
+              id="search-tab-products"
+            >
+              Products <span class="search-toolbar__count" data-tab-count="products">({{ product_results.size }})</span>
+            </button>
+            <button
+              type="button"
+              class="search-toolbar__tab"
+              role="tab"
+              data-tab-trigger="articles"
+              aria-selected="false"
+              aria-controls="search-panel-articles"
+              id="search-tab-articles"
+            >
+              Articles <span class="search-toolbar__count" data-tab-count="articles">({{ article_results.size }})</span>
+            </button>
+
+            {% if search.filters.size > 0 %}
+              <button type="button" class="search-toolbar__filter-toggle" data-search-filter-open>
+                Filter
+              </button>
+            {% endif %}
+
+            {% if search.sort_options.size > 0 %}
+              <label class="search-toolbar__sort">
+                <span class="visually-hidden">Sort by</span>
+                <select name="sort_by" form="" data-search-sort-select>
+                  {% for option in search.sort_options %}
+                    <option value="{{ option.value }}" {% if option.value == search.sort_by %}selected{% endif %}>
+                      {{ option.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+            {% endif %}
+          </div>
+
+          {%- comment -%}
+            data-type tells JS which single-type fetch should populate this
+            panel. data-panel-body is the atomic chunk JS swaps in/out — it
+            contains both the grid (or empty state) and this panel's own
+            pagination, so a single innerHTML replacement keeps them in sync.
+          {%- endcomment -%}
+          <div class="search-feed" id="search-panel-products" role="tabpanel" aria-labelledby="search-tab-products" data-tab-panel="products" data-type="product">
+            <div data-panel-body>
+              {% if product_results.size > 0 %}
+                <div class="search-feed__grid">
+                  {% for product in product_results %}
+                    {% render 'product-card', product: product %}
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="search-feed__empty">
+                  <p>No products found{% if search.terms != blank %} for &ldquo;{{ search.terms }}&rdquo;{% endif %}.</p>
+                </div>
+              {% endif %}
+
+              {% if paginate.pages > 1 %}
+                <nav class="search-results__pagination" aria-label="Products pagination" data-panel-pagination>
+                  {{ paginate | default_pagination }}
+                </nav>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="search-feed" id="search-panel-articles" role="tabpanel" aria-labelledby="search-tab-articles" data-tab-panel="articles" data-type="article" hidden>
+            <div data-panel-body>
+              {% if article_results.size > 0 %}
+                <div class="search-feed__grid">
+                  {% for article in article_results %}
+                    {% render 'article-card', article: article %}
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="search-feed__empty">
+                  <p>No articles found{% if search.terms != blank %} for &ldquo;{{ search.terms }}&rdquo;{% endif %}.</p>
+                </div>
+              {% endif %}
+
+              {% if paginate.pages > 1 %}
+                <nav class="search-results__pagination" aria-label="Articles pagination" data-panel-pagination>
+                  {{ paginate | default_pagination }}
+                </nav>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    {% endpaginate %}
+  {% else %}
+    <div class="search-results__empty">
+      <p>Start typing in the search bar above to find products and articles.</p>
+    </div>
+  {% endif %}
+</div>
+
+<script src="{{ 'main-search.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Search results",
+  "settings": [
+    {
+      "type": "range",
+      "id": "results_per_page",
+      "label": "Results per page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    }
+  ]
+}
+{% endschema %}
