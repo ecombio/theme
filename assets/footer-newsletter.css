@@ -41,13 +41,27 @@
       design call to make, not an accidental mismatch — flag it and
       this can be split back out.
 
-   4. CONTAINER: .footer-newsletter__inner.footer-width still
-      redefines the same max-width/padding values as
-      main-footer.css's .footer-width, rather than assuming that
-      class is guaranteed loaded (Shopify sections should be
-      self-sufficient). Values now double-checked against
-      main-footer.css: 1184px / 24px / 12px under 640px — matches.
-      Keep these two in sync if either changes.
+   4. CONTAINER — REPLACED BY THE "SECTION LAYOUT" WIDTH VARIANTS
+      BELOW (default-width / full-width / custom-width), per the
+      example-width-section.liquid pattern now wired into
+      footer-newsletter.liquid. The section is no longer coupled to
+      main-footer.css's .footer-width class or any global
+      --page-margin/--page-width variables — it now owns its own
+      width + side padding via section settings.
+      .footer-newsletter__default-width intentionally hardcodes the
+      old 1184px max-width so existing storefronts don't visually
+      shift on upgrade; it's a local constant, not read from a global
+      token, since this section no longer assumes one is guaranteed
+      to exist.
+      Side padding used to be responsive (24px, 12px under 640px).
+      The new --section-padding var is a single value at every
+      breakpoint by design (see example-width-section.liquid's own
+      comment on this). Default is 28px via the section_padding
+      schema setting — close to but not identical to the old 24px,
+      and it no longer steps down on narrow screens. If that
+      responsive step-down matters here, that's a per-section call to
+      layer back in (see the @media override left commented below)
+      rather than something this pattern forces on you.
 
    5. STATUS COLORS: success/error colors (green/red) were repeated
       as raw hex across 3+ rules. Consolidated into --fn-success /
@@ -68,21 +82,40 @@
   padding-bottom: var(--fn-padding-bottom, 40px);
 }
 
+/* --- Section layout: width variants (see note 4 above) ---
+   Scoped to this section (no shared global width utilities exist in
+   this theme yet), matching the approach video-carousel.liquid uses. */
+
+.footer-newsletter__default-width {
+  max-width: 1184px;
+  margin-inline: auto;
+  padding-inline: var(--section-padding);
+}
+
+.footer-newsletter__full-width {
+  max-width: none;
+  padding-inline: var(--section-padding);
+}
+
+.footer-newsletter__custom-width {
+  max-width: var(--custom-width);
+  margin-inline: auto;
+  padding-inline: var(--section-padding);
+}
+
+/* Uncomment if you want side padding to step down on small screens
+   again, instead of the single flat --section-padding value:
+@media (max-width: 639px) {
+  .footer-newsletter__default-width,
+  .footer-newsletter__full-width,
+  .footer-newsletter__custom-width {
+    padding-inline: 12px;
+  }
+}
+*/
+
 .footer-newsletter__inner {
   width: 100%;
-}
-
-/* Mirrors the header/footer container exactly — see note 4 above. */
-.footer-newsletter__inner.footer-width {
-  max-width: 1184px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-@media (max-width: 639px) {
-  .footer-newsletter__inner.footer-width {
-    padding: 0 12px;
-  }
 }
 
 .footer-newsletter__content {
