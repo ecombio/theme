@@ -1,228 +1,128 @@
-/* =============================================================================
-   Link List (dropdown-style block) Styles  |  assets/link-list.css
-   Pairs with snippets/link-list.liquid + assets/link-list.js
-   Renders the top-level dropdown panel plus a one-level flyout sub-panel.
-   Uses header design tokens (--hdr-accent, etc.) defined in header.css.
-   ============================================================================= */
+/* =============================================================
+   Link List Dropdown
+   File: assets/link-list.css
+   Loaded by: snippets/header-menu.liquid (only when a link-list
+   block is present in section.blocks)
 
-.menu-bar__item--has-link-list {
-  position: relative;
-}
+   Scope: the link-list trigger's caret + the compact dropdown panel
+   (single column of rows, with an optional one-level indented
+   sub-list per row — no mega-menu-style multi-column layout, no
+   trending-products rail).
 
-/* ── Trigger ── */
+   Panel is position:fixed for the same overflow-clipping reason
+   documented in mega-menu.liquid/css — `top`/`left` are set inline by
+   assets/link-list.js against the trigger's own rect; this file only
+   owns width/visual styling. Deliberately narrow (min/max-width) and
+   left-aligned under its trigger, unlike mega-menu's full-width panel.
 
-.link-list-trigger[aria-expanded="true"] .icon-caret-down {
-  transform: rotate(180deg);
-}
+   Desktop (≥1024px) only, same as the rest of .menu-bar — mobile/
+   tablet use the drawer instead.
+   ============================================================= */
 
-.link-list-trigger:focus-visible {
-  outline: 2px solid var(--hdr-accent);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
+@media (min-width: 1024px) {
 
-.icon-caret-down {
-  transition: transform 0.15s ease;
-}
+  .menu-bar__link--link-list {
+    cursor: pointer;
+  }
 
-/* ── Top-level panel ── */
+  .menu-bar__item--link-list:hover > .menu-bar__link--link-list .icon-caret-down,
+  .menu-bar__item--link-list:focus-within > .menu-bar__link--link-list .icon-caret-down {
+    transform: rotate(180deg);
+  }
 
-.link-list-panel {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 400;
-  min-width: 216px;
-  padding-top: 6px;
-}
+  /* ── Panel shell ──
+     Same direct-child hover/focus-within note as mega-menu.css: fixed
+     positioning moves the panel's rendered box, not its place in the
+     DOM/accessibility tree, so hovering into the panel still counts
+     as hovering the parent <li> and keeps it open. */
+  .link-list__panel {
+    position: fixed;
+    top: 0;    /* overwritten inline by link-list.js */
+    left: 0;   /* overwritten inline by link-list.js */
+    min-width: 200px;
+    max-width: 280px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+    z-index: 300;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px);
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+  }
 
-.menu-bar__item--has-link-list.is-open > .link-list-panel {
-  display: block;
-}
+  .menu-bar__item--link-list:hover > .link-list__panel,
+  .menu-bar__item--link-list:focus-within > .link-list__panel,
+  .link-list__panel.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+  }
 
-/* Hover-to-open only on devices that actually support hover, to avoid
-   sticky-hover panels getting stuck open on touch devices */
-@media (hover: hover) and (pointer: fine) {
-  .menu-bar__item--has-link-list:hover > .link-list-panel {
+  .link-list__list {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+  }
+
+  .link-list__item {
+    padding: 0;
+  }
+
+  .link-list__link {
     display: block;
+    padding: 9px 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .link-list__link:hover {
+    background: #f5f5f5;
+    color: var(--hdr-accent);
+  }
+
+  /* ── Sub-list (2nd nesting level) ── */
+  .link-list__sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 4px;
+  }
+
+  .link-list__sublink {
+    display: block;
+    padding: 7px 16px 7px 28px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #6b6b6b;
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .link-list__sublink:hover {
+    background: #f5f5f5;
+    color: var(--hdr-accent);
+  }
+
+  .link-list__item--has-sub > .link-list__link {
+    font-weight: 700;
   }
 }
 
-/* NOTE: no overflow: hidden here. The flyout sub-panel (.link-list-panel__sub)
-   is positioned outside this box (left: 100%) so it can appear as a second
-   column — overflow: hidden on the container would clip it invisible.
-   Rounded corners on hover backgrounds are handled per-row below instead. */
-.link-list-panel__container {
-  background: var(--hdr-panel-bg, #ffffff);
-  border-radius: var(--hdr-panel-radius, 14px);
-  box-shadow: var(--hdr-panel-shadow, 0 16px 48px rgba(0, 0, 0, 0.10));
-  border: 1px solid var(--hdr-panel-border, #e5e7eb);
-  padding: 6px 0;
-}
-
-.link-list-panel__nav {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* Round the hover/focus background on the first and last row so the
-   panel still reads as a clean rounded card without relying on
-   overflow: hidden on the container */
-.link-list-panel__nav > li:first-child .link-list-panel__link {
-  border-radius: calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px) 0 0;
-}
-
-.link-list-panel__nav > li:last-child .link-list-panel__link {
-  border-radius: 0 0 calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px);
-}
-
-/* ── Top-level panel links ── */
-
-.link-list-panel__item {
-  position: relative;
-}
-
-.link-list-panel__link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  color: var(--hdr-panel-text, #374151);
-  text-decoration: none;
-  font-size: 13.5px;
-  transition: background-color 0.12s ease, color 0.12s ease;
-  white-space: nowrap;
-}
-
-.link-list-panel__link:hover,
-.link-list-panel__link:focus-visible {
-  background-color: var(--hdr-panel-hover-bg, #f9fafb);
-  color: var(--hdr-accent);
-}
-
-.link-list-panel__link:focus-visible {
-  outline: 2px solid var(--hdr-accent);
-  outline-offset: -2px;
-}
-
-/* ── Flyout toggle (items with children) ── */
-
-.link-list-panel__item--has-sub {
-  display: flex;
-  align-items: center;
-}
-
-.link-list-panel__item--has-sub .link-list-panel__link {
-  flex: 1;
-}
-
-.link-list-panel__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-right: 6px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #9ca3af;
-  cursor: pointer;
-}
-
-.link-list-panel__toggle svg {
-  width: 16px;
-  height: 16px;
-  transition: transform 0.12s ease, color 0.12s ease;
-}
-
-.link-list-panel__toggle:hover,
-.link-list-panel__toggle[aria-expanded="true"] {
-  color: var(--hdr-accent);
-}
-
-.link-list-panel__toggle:focus-visible {
-  outline: 2px solid var(--hdr-accent);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-
-/* ── Flyout sub-panel (second level) ── */
-
-.link-list-panel__sub {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 100%;
-  margin-left: 4px;
-  z-index: 500;
-  min-width: 200px;
-  background: var(--hdr-panel-bg, #ffffff);
-  border-radius: var(--hdr-panel-radius, 14px);
-  box-shadow: var(--hdr-panel-shadow, 0 16px 48px rgba(0, 0, 0, 0.10));
-  border: 1px solid var(--hdr-panel-border, #e5e7eb);
-  padding: 6px 0;
-  list-style: none;
-  margin-block: 0;
-}
-
-/* JS-driven open state — works for click, touch, and keyboard */
-.link-list-panel__item.is-open > .link-list-panel__sub {
-  display: block;
-}
-
-/* Hover/focus-within fallback, hover-capable devices only */
-@media (hover: hover) and (pointer: fine) {
-  .link-list-panel__item:hover > .link-list-panel__sub {
-    display: block;
+/* Link-list dropdown is desktop-only; the mobile drawer handles nav below 1024px */
+@media (max-width: 1023px) {
+  .link-list__panel {
+    display: none !important;
   }
-}
-
-.link-list-panel__item:focus-within > .link-list-panel__sub {
-  display: block;
-}
-
-.link-list-panel__sublink {
-  display: block;
-  padding: 9px 18px;
-  color: var(--hdr-panel-text, #374151);
-  text-decoration: none;
-  font-size: 13.5px;
-  transition: background-color 0.12s ease, color 0.12s ease;
-  white-space: nowrap;
-}
-
-.link-list-panel__sublink:hover,
-.link-list-panel__sublink:focus-visible {
-  background-color: var(--hdr-panel-hover-bg, #f9fafb);
-  color: var(--hdr-accent);
-}
-
-.link-list-panel__sublink:focus-visible {
-  outline: 2px solid var(--hdr-accent);
-  outline-offset: -2px;
-}
-
-.link-list-panel__sub > li:first-child .link-list-panel__sublink {
-  border-radius: calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px) 0 0;
-}
-
-.link-list-panel__sub > li:last-child .link-list-panel__sublink {
-  border-radius: 0 0 calc(var(--hdr-panel-radius, 14px) - 6px) calc(var(--hdr-panel-radius, 14px) - 6px);
-}
-
-/* ── Arrow indicator on items with children ── */
-
-.link-list-panel__toggle[aria-expanded="true"] svg {
-  transform: rotate(90deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .link-list-trigger .icon-caret-down,
-  .link-list-panel__toggle svg {
+  .link-list__panel,
+  .menu-bar__item--link-list .icon-caret-down {
     transition: none !important;
   }
 }
