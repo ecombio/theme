@@ -25,18 +25,6 @@
 
 <div class="search-toolbar" id="search-toolbar" role="navigation" aria-label="Search results navigation">
 
-  {%- if section.settings.show_filters -%}
-    {%- comment -%}
-      Filter toggle is enabled on both tabs now -- the sidebar itself
-      stays visible on Articles (search-filter.liquid shows a
-      placeholder message there instead of disappearing), so there's
-      no longer a reason to disable this button when active_type is
-      'article'.
-    {%- endcomment -%}
-
-
-  {%- endif -%}
-
   <div class="tab-switcher" role="tablist" aria-label="Search result type">
     <a
       href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product"
@@ -60,6 +48,26 @@
       tabindex="{% if active_type == 'article' %}0{% else %}-1{% endif %}"
     >{{ tab_articles_label }}</a>
   </div>
+
+  {%- if active_type == 'product' -%}
+    {%- assign active_count = 0 -%}
+    {%- for filter in search.filters -%}
+      {%- assign active_count = active_count | plus: filter.active_values.size -%}
+    {%- endfor -%}
+
+    {%- if active_count > 0 -%}
+      <div class="search-filter__active search-toolbar__active">
+        {%- for filter in search.filters -%}
+          {%- for value in filter.active_values -%}
+            <a href="{{ value.url_to_remove }}&type=product" class="search-filter__pill">
+              {{ value.label }} &times;
+            </a>
+          {%- endfor -%}
+        {%- endfor -%}
+        <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__pill search-filter__pill--clear">Clear all</a>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
 
   {%- if section.settings.show_sort -%}
     <div class="search-toolbar__sort"{% if active_type != 'product' %} style="display:none;"{% endif %}>

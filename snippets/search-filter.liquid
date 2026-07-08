@@ -13,6 +13,10 @@
   histogram + dual-thumb slider + quick-pick bracket UI. Styling lives in
   main-search.css, interactivity in main-search.js's initPriceFilters().
 
+  ACTIVE-FILTER PILLS (2026-07): moved to snippets/search-toolbar.liquid,
+  displayed to the right of the Products/Articles tabs, so they're
+  visible without opening the drawer. Not duplicated here.
+
   Expected params (passed in from sections/main-search.liquid):
     - active_type   : 'product' or 'article'
     - search_terms  : the raw search query string
@@ -160,24 +164,6 @@
       {%- else -%}
         <p class="search-filter__empty">No filters are configured for this search.</p>
       {%- endfor -%}
-
-      {%- assign active_count = 0 -%}
-      {%- for filter in search.filters -%}
-        {%- assign active_count = active_count | plus: filter.active_values.size -%}
-      {%- endfor -%}
-
-      {%- if active_count > 0 -%}
-        <div class="search-filter__active">
-          {%- for filter in search.filters -%}
-            {%- for value in filter.active_values -%}
-              <a href="{{ value.url_to_remove }}&type=product" class="search-filter__pill">
-                {{ value.label }} &times;
-              </a>
-            {%- endfor -%}
-          {%- endfor -%}
-          <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__pill search-filter__pill--clear">Clear all</a>
-        </div>
-      {%- endif -%}
 
       <button type="submit" class="search-filter__submit">Apply</button>
     </form>
