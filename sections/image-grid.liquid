@@ -13,12 +13,12 @@
   downloads/parses it once.
 
   SECTION LAYOUT:
-  The outer div below follows the same independent "Section width" +
-  "Side padding" pattern as sections/example-width-section.liquid —
-  its own local --section-padding / --custom-width variables, set
-  only from this section's own settings, never from the global
-  --page-margin / --page-width. See that file's header comment for
-  the full rationale.
+  Background and width constraint live on two different elements so
+  the color always paints edge-to-edge, and only the content
+  (heading + cards) is constrained/centered by the "Section width"
+  setting. This mirrors sections/example-width-section.liquid's
+  independent --section-padding / --custom-width variables, but with
+  the background pulled out a level so it never gets letterboxed.
 {%- endcomment -%}
 
 {{ 'image-grid.css' | asset_url | stylesheet_tag }}
@@ -33,18 +33,16 @@
 -%}
 
 <div
-  class="{{ width_class }}"
-  style="
-    --section-padding: {{ section.settings.section_padding }}px;
-    {%- if width_type == 'custom-width' %}
-      --custom-width: {{ section.settings.custom_width }}rem;
-    {%- endif %}
-  "
+  class="image-grid-wrap"
+  style="--image-grid-bg: {{ section.settings.bg_color }};"
 >
   <div
-    class="image-grid-wrap"
+    class="image-grid-inner {{ width_class }}"
     style="
-      --image-grid-bg: {{ section.settings.bg_color }};
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
       --image-grid-gap: {{ section.settings.card_gap | default: 16 }}px;
       --image-grid-cols-mobile: {{ section.settings.cards_mobile | default: 2 }};
       --image-grid-cols-tablet: {{ section.settings.cards_tablet | default: 3 }};
