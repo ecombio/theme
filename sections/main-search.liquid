@@ -258,66 +258,24 @@
                             {%- endfor -%}
 
                           {%- when 'price_range' -%}
-                            {%- assign price_range_min = filter.range_min | default: 0 -%}
-                            {%- assign price_slider_min = filter.min_value.value | default: price_range_min -%}
-                            {%- assign price_slider_max = filter.max_value.value | default: filter.range_max -%}
                             <div class="search-filter__price">
-                              <div class="search-filter__price-inputs">
-                                <input
-                                  type="number"
-                                  name="{{ filter.min_value.param_name }}"
-                                  value="{{ filter.min_value.value }}"
-                                  min="{{ price_range_min }}"
-                                  max="{{ filter.range_max }}"
-                                  placeholder="{{ price_range_min }}"
-                                  data-price-input="min"
-                                >
-                                <span>&ndash;</span>
-                                <input
-                                  type="number"
-                                  name="{{ filter.max_value.param_name }}"
-                                  value="{{ filter.max_value.value }}"
-                                  min="{{ price_range_min }}"
-                                  max="{{ filter.range_max }}"
-                                  placeholder="{{ filter.range_max }}"
-                                  data-price-input="max"
-                                >
-                              </div>
-
-                              {%- comment -%}
-                                Dual-handle slider, synced with the number
-                                fields above by main-search.js. No
-                                histogram here — that needs a real
-                                per-bucket count (e.g. from an app or
-                                metafield) that this filter object doesn't
-                                expose; see the note in main-search.js if
-                                one becomes available.
-                              {%- endcomment -%}
-                              <div class="search-filter__price-slider" data-price-slider>
-                                <div class="search-filter__price-track">
-                                  <div class="search-filter__price-fill"></div>
-                                </div>
-                                <input
-                                  type="range"
-                                  class="search-filter__price-range search-filter__price-range--min"
-                                  min="{{ price_range_min }}"
-                                  max="{{ filter.range_max }}"
-                                  value="{{ price_slider_min }}"
-                                  step="1"
-                                  aria-label="Minimum price"
-                                  data-price-range="min"
-                                >
-                                <input
-                                  type="range"
-                                  class="search-filter__price-range search-filter__price-range--max"
-                                  min="{{ price_range_min }}"
-                                  max="{{ filter.range_max }}"
-                                  value="{{ price_slider_max }}"
-                                  step="1"
-                                  aria-label="Maximum price"
-                                  data-price-range="max"
-                                >
-                              </div>
+                              <input
+                                type="number"
+                                name="{{ filter.min_value.param_name }}"
+                                value="{{ filter.min_value.value }}"
+                                min="0"
+                                max="{{ filter.range_max }}"
+                                placeholder="0"
+                              >
+                              <span>&ndash;</span>
+                              <input
+                                type="number"
+                                name="{{ filter.max_value.param_name }}"
+                                value="{{ filter.max_value.value }}"
+                                min="0"
+                                max="{{ filter.range_max }}"
+                                placeholder="{{ filter.range_max }}"
+                              >
                             </div>
                         {%- endcase -%}
                       </div>
