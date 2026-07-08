@@ -7,12 +7,18 @@
  * CSS (:hover / :focus-within) drives the actual open/close visuals.
  * This file exists for what CSS can't do on its own:
  *   1. Position the fixed panel's `top` against the header's live
- *      bottom edge (recalculated on open, resize, scroll, and any
- *      header height change — covers both sticky and non-sticky).
+ *      bottom edge (recalculated on open and resize — covers both
+ *      sticky and non-sticky).
  *   2. Escape close: closes the open panel and returns focus to its
  *      trigger.
  *   3. Click-outside close.
- *   4. Touch support: touch devices have no hover, so the first tap
+ *   4. Scroll close: closes the open panel as soon as the page
+ *      scrolls, rather than following it around — a mega-menu panel
+ *      chasing the header up/down the viewport reads as broken, and
+ *      once the header itself moves (sticky engaging/disengaging,
+ *      the "menu bar" toggle collapsing) the panel's `top` position
+ *      is stale anyway.
+ *   5. Touch support: touch devices have no hover, so the first tap
  *      on a trigger opens the panel instead of navigating; a second
  *      tap (now that it's open) navigates through normally.
  */
@@ -103,10 +109,14 @@
     resizeTimer = setTimeout(positionAll, 100);
   });
 
+  /* Close, don't chase — see file header comment #4. */
   window.addEventListener('scroll', function () {
-    if (openItem) positionPanel(getPanel(openItem));
+    if (openItem) closeMenu(openItem);
   }, { passive: true });
 
+  /* Catches header height changes that aren't a window resize or a
+     scroll — e.g. the sticky hamburger toggling .menu-bar open/closed
+     while the panel is open. */
   if (header && 'ResizeObserver' in window) {
     var ro = new ResizeObserver(function () {
       if (openItem) positionPanel(getPanel(openItem));
