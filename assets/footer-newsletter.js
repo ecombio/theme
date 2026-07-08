@@ -10,6 +10,10 @@
  *   - Disables the button and shows a loading state while submitting
  *   - Moves focus to success/error messages rendered by Liquid after redirect
  * Works with Shopify's native {% form 'customer' %} (full page submit).
+ *
+ * STYLE NOTE: restyled to the var/IIFE pattern used by
+ * main-header.js and header-hamburger.js (this file previously used
+ * const/let) — no functional changes from the original version.
  */
 
 (function () {

@@ -1,28 +1,12 @@
 {{ 'footer-newsletter.css' | asset_url | stylesheet_tag }}
 
-{%- liquid
-  assign width_type = section.settings.section_width
-  if width_type == blank
-    assign width_class = 'footer-newsletter__default-width'
-  else
-    assign width_class = 'footer-newsletter__' | append: width_type
-  endif
--%}
-
 <section
-  class="footer-newsletter color-{{ section.settings.color_scheme }} {{ width_class }}"
-  style="
-    --fn-padding-top: {{ section.settings.padding_top }}px;
-    --fn-padding-bottom: {{ section.settings.padding_bottom }}px;
-    --section-padding: {{ section.settings.section_padding }}px;
-    {%- if width_type == 'custom-width' %}
-      --custom-width: {{ section.settings.custom_width }}rem;
-    {%- endif %}
-  "
+  class="footer-newsletter color-{{ section.settings.color_scheme }}"
+  style="--fn-padding-top: {{ section.settings.padding_top }}px; --fn-padding-bottom: {{ section.settings.padding_bottom }}px;"
   data-section-id="{{ section.id }}"
   data-section-type="footer-newsletter"
 >
-  <div class="footer-newsletter__inner">
+  <div class="footer-newsletter__inner footer-width">
     <div class="footer-newsletter__content footer-newsletter__content--{{ section.settings.layout }}">
 
       <div class="footer-newsletter__text">
@@ -212,42 +196,6 @@
       "id": "consent_label",
       "label": "Consent label",
       "default": "I agree to receive marketing emails."
-    },
-    {
-      "type": "header",
-      "content": "Section layout"
-    },
-    {
-      "type": "select",
-      "id": "section_width",
-      "label": "Section width",
-      "options": [
-        { "value": "", "label": "Default" },
-        { "value": "full-width", "label": "Full width" },
-        { "value": "custom-width", "label": "Custom width" }
-      ],
-      "default": ""
-    },
-    {
-      "type": "range",
-      "id": "custom_width",
-      "label": "Custom width",
-      "min": 30,
-      "max": 120,
-      "step": 1,
-      "unit": "rem",
-      "default": 74,
-      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
-    },
-    {
-      "type": "range",
-      "id": "section_padding",
-      "label": "Side padding",
-      "min": 0,
-      "max": 80,
-      "step": 4,
-      "unit": "px",
-      "default": 24
     },
     {
       "type": "header",

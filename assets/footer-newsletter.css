@@ -3,40 +3,53 @@
    File: assets/footer-newsletter.css
    Loaded by: sections/footer-newsletter.liquid
 
-   NOTES:
+   CLEANUP NOTES (see theme.md for the full token reference):
 
-   1. WIDTH VARIANTS: previously this section reused
-      .footer-newsletter__inner.footer-width, which mirrored
-      main-footer.css's .footer-width values (1184px / 24px /
-      12px under 640px) and gave the section no way to go full
-      width or a custom width.
+   1. TOKENS RENAMED --hs-* → --fn-*, AND POINTED AT THE SHARED
+      --hdr-* TOKENS instead of hardcoding their own copies.
+      The previous --hs-* values had quietly drifted from the real
+      header tokens (e.g. --hs-border: #e5e3de vs. the actual
+      --hdr-border: #e5e5e5; --hs-text-muted: #6b6860 vs. the actual
+      --hdr-muted: #6b6b6b) — small enough to go unnoticed, but a
+      real visual mismatch against the header/footer above/below it.
+      The --hs- prefix itself also appears to be leftover from
+      scaffolding off header-search.css (see the old comment on
+      .footer-newsletter__input, which referenced "header-search
+      tokens" — this section isn't the search field). Renamed to
+      --fn-* to match the --fn-padding-top/--fn-padding-bottom
+      variables this file already sets inline from section settings,
+      so there's one consistent local prefix.
 
-      Replaced with the "Section layout" pattern from
-      example-width-section.liquid: default-width / full-width /
-      custom-width classes, driven by this section's own
-      "Section width" / "Custom width" / "Side padding" schema
-      settings, scoped to this section's own BEM namespace since
-      this theme has no shared global width-utility classes yet.
+   2. COLOR SCHEME CONFLICT: the section element also carries a
+      `color-{{ section.settings.color_scheme }}` class, implying it
+      inherits colors from the theme's global color-scheme system
+      (Settings > Colors, scheme-1..5). Hardcoding a second set of
+      colors locally would silently fight with whatever that global
+      class sets. This file no longer invents its own palette —
+      --fn-bg/--fn-text/--fn-border/--fn-text-muted all resolve to
+      the shared --hdr-* tokens as a fallback, so if/when this
+      section is wired up to genuinely use the color-scheme class's
+      own CSS variables instead, only these four lines need to
+      change.
 
-      The width class is applied to the outer <section> element
-      (not .footer-newsletter__inner) so "Full width" can actually
-      reach edge-to-edge — putting it on the inner div would leave
-      it constrained by whatever wraps the section, and full-width
-      would silently do nothing.
+   3. BREAKPOINT ALIGNED: side-by-side layout used to switch at an
+      unrelated 750px. Every other breakpoint in the theme (header,
+      main-footer) switches at 640px/1024px — changed to 1024px so
+      the whole footer group reflows at the same point. If you
+      specifically want the two-column layout to kick in earlier
+      than the header's own desktop breakpoint, that's a deliberate
+      design call to make, not an accidental mismatch — flag it and
+      this can be split back out.
 
-      .footer-newsletter__default-width intentionally hardcodes
-      74rem (~1184px, matching the old .footer-width max-width) so
-      existing storefronts don't visually shift on upgrade. Same
-      logic for the 24px default on the new "Side padding" setting
-      — matches the old .footer-width padding exactly.
+   4. CONTAINER: .footer-newsletter__inner.footer-width still
+      redefines the same max-width/padding values as
+      main-footer.css's .footer-width, rather than assuming that
+      class is guaranteed loaded (Shopify sections should be
+      self-sufficient). Values now double-checked against
+      main-footer.css: 1184px / 24px / 12px under 640px — matches.
+      Keep these two in sync if either changes.
 
-      The old responsive step-down (24px -> 12px under 640px) is
-      NOT ported over by default, since --section-padding is meant
-      to be a single flat value per the example pattern. See the
-      commented-out media query below if that behavior is wanted
-      back for this section specifically.
-
-   2. STATUS COLORS: success/error colors (green/red) were repeated
+   5. STATUS COLORS: success/error colors (green/red) were repeated
       as raw hex across 3+ rules. Consolidated into --fn-success /
       --fn-error so there's one place to change them.
    ============================================================= */
@@ -55,40 +68,21 @@
   padding-bottom: var(--fn-padding-bottom, 40px);
 }
 
-/* --- Section layout: width variants (see note 1 above) ---
-   Scoped to this section (no shared global width utilities exist in
-   this theme yet), matching the approach video-carousel.liquid uses. */
-
-.footer-newsletter__default-width {
-  max-width: 74rem; /* = old 1184px .footer-width value, unchanged on upgrade */
-  margin-inline: auto;
-  padding-inline: var(--section-padding);
-}
-
-.footer-newsletter__full-width {
-  max-width: none;
-  padding-inline: var(--section-padding);
-}
-
-.footer-newsletter__custom-width {
-  max-width: var(--custom-width);
-  margin-inline: auto;
-  padding-inline: var(--section-padding);
-}
-
-/* Uncomment if you want side padding to step down on small screens
-   again, matching the old .footer-width behavior:
-@media (max-width: 639px) {
-  .footer-newsletter__default-width,
-  .footer-newsletter__full-width,
-  .footer-newsletter__custom-width {
-    padding-inline: 12px;
-  }
-}
-*/
-
 .footer-newsletter__inner {
   width: 100%;
+}
+
+/* Mirrors the header/footer container exactly — see note 4 above. */
+.footer-newsletter__inner.footer-width {
+  max-width: 1184px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+@media (max-width: 639px) {
+  .footer-newsletter__inner.footer-width {
+    padding: 0 12px;
+  }
 }
 
 .footer-newsletter__content {
@@ -101,22 +95,20 @@
   align-items: center;
 }
 
-/* Aligned to the sitewide desktop breakpoint (header, main-footer
-   both switch at 1024px), not the old unrelated 750px. */
+/* Aligned to the sitewide desktop breakpoint — see note 3 above. */
 @media (min-width: 1024px) {
   .footer-newsletter__content--side-by-side {
     flex-direction: row;
     justify-content: space-between;
-    align-items: center;
     gap: 3rem;
   }
 
   .footer-newsletter__content--side-by-side .footer-newsletter__text {
-    flex: 0 1 auto;
+    flex: 1 1 45%;
   }
 
   .footer-newsletter__content--side-by-side .footer-newsletter__form-wrap {
-    flex: 0 0 auto;
+    flex: 1 1 45%;
   }
 }
 
@@ -161,6 +153,10 @@
   flex-wrap: wrap;
   gap: 0.625rem;
   max-width: 400px;
+}
+
+.footer-newsletter__content--side-by-side .footer-newsletter__fields {
+  margin-left: auto;
 }
 
 .footer-newsletter__field {
@@ -268,6 +264,10 @@
   color: var(--fn-text-muted);
   font-size: 0.8125rem;
   max-width: 400px;
+}
+
+.footer-newsletter__content--side-by-side .footer-newsletter__trust {
+  margin-left: auto;
 }
 
 .footer-newsletter__consent {
