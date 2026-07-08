@@ -1,20 +1,17 @@
 {%- comment -%}
   snippets/search-feed.liquid
 
-  Search version of collection-feed.liquid — repurposed for global search results.
-  Reuses the exact same HTML structure, classes, IDs, and most logic so
-  collection-feed.js + all the card/promo CSS/JS continue to work without changes.
+  Search version of collection-feed.liquid
 
-  Key differences from collection version:
-  - Accepts `search` instead of `collection`
-  - Products come from `search.results | where: 'object_type', 'product'`
-  - Articles come from `search.results | where: 'object_type', 'article'`
-  - No collection.metafields.custom.posts — articles are live search results
-  - Sub-collections render is kept but will be empty on search pages (safe)
-  - Pagination only on products panel (matches original behavior)
-  - Same position-based promo banner/carousel insertion logic
+  IMPORTANT FIX: Shopify does NOT allow {% paginate %} on a filtered array (search.results | where ...).
+  This version solves it properly:
 
-  Talks to search-toolbar.liquid the same way (via ?tab= param + collection:tabchange event)
+  - We paginate the RAW search.results (the only thing paginate accepts)
+  - Inside products panel we use a manual counter (visual_index) that only counts product results
+  - Promo banners & carousels are still inserted at the exact visual position the merchant set
+  - Articles panel shows all matching articles with no pagination (same behavior as your original collection articles)
+
+  Everything else (IDs, classes, JS, CSS, CustomEvents) is untouched so your existing assets keep working.
 {%- endcomment -%}
 
 {{ 'collection-feed.css' | asset_url | stylesheet_tag }}
@@ -38,58 +35,61 @@
     {%- liquid
       assign banner_blocks   = section.blocks | where: 'type', 'promo_banner'
       assign carousel_blocks = section.blocks | where: 'type', 'promo_carousel'
-      assign product_results = search.results | where: 'object_type', 'product'
     -%}
 
-    {%- paginate product_results by section.settings.products_per_page -%}
+    {%- paginate search.results by section.settings.products_per_page -%}
 
       <div id="product-feed" class="product-feed" style="--columns: {{ section.settings.columns | default: 4 }};">
 
-        {%- comment -%} Sub-collections are collection-specific; safe to leave here (renders nothing on search) {%- endcomment -%}
+        {%- comment -%} Sub-collections are collection-specific — this line is safe on search pages {%- endcomment -%}
         {%- render 'sub-collection', collection: collection -%}
 
         <div class="product-feed__grid">
+          {%- assign visual_index = 0 -%}
 
-          {%- for result in product_results -%}
+          {%- for result in paginate.items -%}
+            {%- if result.object_type == 'product' -%}
+              {%- assign visual_index = visual_index | plus: 1 -%}
 
-            {%- comment -%} Insert promo banners at exact positions {%- endcomment -%}
-            {%- for banner in banner_blocks -%}
-              {%- assign banner_position = banner.settings.position | default: 0 -%}
-              {%- if banner_position > 0 and banner_position == forloop.parentloop.index -%}
-                {%- render 'promo-banner', block: banner -%}
-              {%- endif -%}
-            {%- endfor -%}
+              {%- comment -%} Insert promo banners before the Nth *product* {%- endcomment -%}
+              {%- for banner in banner_blocks -%}
+                {%- assign banner_position = banner.settings.position | default: 0 -%}
+                {%- if banner_position > 0 and banner_position == visual_index -%}
+                  {%- render 'promo-banner', block: banner -%}
+                {%- endif -%}
+              {%- endfor -%}
 
-            {%- comment -%} Insert promo carousels at exact positions {%- endcomment -%}
-            {%- for carousel in carousel_blocks -%}
-              {%- assign carousel_position = carousel.settings.position | default: 0 -%}
-              {%- if carousel_position > 0 and carousel_position == forloop.parentloop.index -%}
-                {%- render 'promo-carousel', block: carousel -%}
-              {%- endif -%}
-            {%- endfor -%}
+              {%- comment -%} Insert promo carousels before the Nth *product* {%- endcomment -%}
+              {%- for carousel in carousel_blocks -%}
+                {%- assign carousel_position = carousel.settings.position | default: 0 -%}
+                {%- if carousel_position > 0 and carousel_position == visual_index -%}
+                  {%- render 'promo-carousel', block: carousel -%}
+                {%- endif -%}
+              {%- endfor -%}
 
-            {%- render 'product-card', product: result -%}
+              {%- render 'product-card', product: result -%}
 
-          {%- else -%}
-            <p class="collection-empty">No products found for your search.</p>
+            {%- endif -%}
           {%- endfor -%}
 
-          {%- assign product_count = product_results.size -%}
-
-          {%- comment -%} Banners/carousels positioned after the last product {%- endcomment -%}
+          {%- comment -%} Banners/carousels placed after the last product on this page {%- endcomment -%}
           {%- for banner in banner_blocks -%}
             {%- assign banner_position = banner.settings.position | default: 0 -%}
-            {%- if banner_position > product_count and banner_position > 0 -%}
+            {%- if banner_position > visual_index and banner_position > 0 -%}
               {%- render 'promo-banner', block: banner -%}
             {%- endif -%}
           {%- endfor -%}
 
           {%- for carousel in carousel_blocks -%}
             {%- assign carousel_position = carousel.settings.position | default: 0 -%}
-            {%- if carousel_position > product_count and carousel_position > 0 -%}
+            {%- if carousel_position > visual_index and carousel_position > 0 -%}
               {%- render 'promo-carousel', block: carousel -%}
             {%- endif -%}
           {%- endfor -%}
+
+          {%- if visual_index == 0 -%}
+            <p class="collection-empty">No products found for your search.</p>
+          {%- endif -%}
 
         </div>
       </div>
@@ -115,7 +115,7 @@
     {%- endpaginate -%}
   </div>
 
-  <!-- ARTICLES PANEL -->
+  <!-- ARTICLES PANEL (no pagination to match your original collection articles behavior) -->
   <div
     id="panel-articles"
     class="collection-feed__panel"
