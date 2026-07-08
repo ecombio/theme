@@ -1,92 +1,81 @@
 {{ 'faq.css' | asset_url | stylesheet_tag }}
 
-<div class="faq-section" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }}; color: {{ section.settings.text_color }};">
-  <div class="faq-section__inner page-width faq-layout--{{ section.settings.layout }}">
+{%- liquid
+  assign heading_size = section.settings.heading_size
+  assign layout = section.settings.layout
+  assign one_at_a_time = section.settings.one_at_a_time
+-%}
 
-    <div class="faq-section__header">
-      {%- if section.settings.heading != blank -%}
-        <h2 class="faq-section__heading">{{ section.settings.heading }}</h2>
-      {%- endif -%}
-      {%- if section.settings.subheading != blank -%}
-        <p class="faq-section__subheading">{{ section.settings.subheading }}</p>
-      {%- endif -%}
+<section
+  class="faq faq--{{ layout }}"
+  id="faq-{{ section.id }}"
+  data-faq
+  data-one-at-a-time="{{ one_at_a_time }}"
+  style="
+    --faq-bg: {{ section.settings.background_color }};
+    --faq-text: {{ section.settings.text_color }};
+    --faq-border: {{ section.settings.border_color }};
+    --faq-accent: {{ section.settings.accent_color }};
+    --faq-max-width: {{ section.settings.container_width }}px;
+    padding-top: {{ section.settings.padding_top }}px;
+    padding-bottom: {{ section.settings.padding_bottom }}px;
+  "
+>
+  <div class="faq__container">
+    {%- if section.settings.heading != blank or section.settings.subheading != blank -%}
+      <div class="faq__header">
+        {%- if section.settings.eyebrow != blank -%}
+          <p class="faq__eyebrow">{{ section.settings.eyebrow }}</p>
+        {%- endif -%}
+        {%- if section.settings.heading != blank -%}
+          <h2 class="faq__heading faq__heading--{{ heading_size }}">{{ section.settings.heading }}</h2>
+        {%- endif -%}
+        {%- if section.settings.subheading != blank -%}
+          <div class="faq__subheading">{{ section.settings.subheading }}</div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
 
-      {%- if section.settings.layout == 'split' and section.settings.contact_heading != blank or section.settings.contact_text != blank or section.settings.contact_button_label != blank -%}
-        <div class="faq-section__contact">
-          {%- if section.settings.contact_heading != blank -%}
-            <h3 class="faq-section__contact-heading">{{ section.settings.contact_heading }}</h3>
-          {%- endif -%}
-          {%- if section.settings.contact_text != blank -%}
-            <p class="faq-section__contact-text">{{ section.settings.contact_text }}</p>
-          {%- endif -%}
-          {%- if section.settings.contact_button_label != blank -%}
-            <a href="{{ section.settings.contact_button_link | default: '#' }}" class="faq-section__contact-button">
-              {{ section.settings.contact_button_label }}
-            </a>
-          {%- endif -%}
-        </div>
-      {%- endif -%}
-    </div>
-
-    <div class="faq-section__items" data-faq-items data-allow-multiple="{{ section.settings.allow_multiple_open }}">
+    <div class="faq__list">
       {%- for block in section.blocks -%}
-        {%- liquid
-          assign question = block.settings.question | default: 'Question goes here'
-          assign answer = block.settings.answer | default: 'Answer goes here. Add your content in the section blocks.'
-        -%}
-
-        {%- if section.settings.layout == 'grid' -%}
-          <div class="faq-card" {{ block.shopify_attributes }}>
-            <h3 class="faq-card__question">{{ question }}</h3>
-            <div class="faq-card__answer rte">{{ answer }}</div>
-          </div>
-        {%- else -%}
-          <div class="faq-item" data-faq-item {{ block.shopify_attributes }}>
-            <button type="button" class="faq-item__trigger" data-faq-trigger aria-expanded="{{ block.settings.open_by_default }}">
-              <span class="faq-item__question">{{ question }}</span>
-              <span class="faq-item__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                  <polyline points="6 9 12 15 18 9"></polyline>
+        {%- if block.type == 'question' -%}
+          <details
+            class="faq__item"
+            {% if forloop.first and section.settings.open_first %}open{% endif %}
+            {{ block.shopify_attributes }}
+          >
+            <summary class="faq__summary" aria-expanded="{% if forloop.first and section.settings.open_first %}true{% else %}false{% endif %}">
+              <span class="faq__question">{{ block.settings.question }}</span>
+              <span class="faq__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 9l-7 7-7-7" />
                 </svg>
               </span>
-            </button>
-            <div class="faq-item__panel" data-faq-panel {% unless block.settings.open_by_default %}hidden{% endunless %}>
-              <div class="faq-item__answer rte">{{ answer }}</div>
+            </summary>
+            <div class="faq__answer">
+              {{ block.settings.answer }}
             </div>
-          </div>
+          </details>
         {%- endif -%}
       {%- else -%}
-        {%- for i in (1..4) -%}
-          {%- if section.settings.layout == 'grid' -%}
-            <div class="faq-card">
-              <h3 class="faq-card__question">Question goes here</h3>
-              <div class="faq-card__answer rte">
-                <p>Answer goes here. Add FAQ blocks in the section settings to customize this content.</p>
-              </div>
-            </div>
-          {%- else -%}
-            <div class="faq-item" data-faq-item>
-              <button type="button" class="faq-item__trigger" data-faq-trigger aria-expanded="false">
-                <span class="faq-item__question">Question goes here</span>
-                <span class="faq-item__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </span>
-              </button>
-              <div class="faq-item__panel" data-faq-panel hidden>
-                <div class="faq-item__answer rte">
-                  <p>Answer goes here. Add FAQ blocks in the section settings to customize this content.</p>
-                </div>
-              </div>
-            </div>
-          {%- endif -%}
-        {%- endfor -%}
+        <div class="faq__empty">
+          {{ 'Add a question block to get started.' }}
+        </div>
       {%- endfor -%}
     </div>
 
+    {%- if section.settings.cta_label != blank -%}
+      <div class="faq__cta">
+        <p class="faq__cta-text">{{ section.settings.cta_text }}</p>
+        {%- if section.settings.cta_url != blank -%}
+          <a href="{{ section.settings.cta_url }}" class="faq__cta-button">{{ section.settings.cta_label }}</a>
+        {%- else -%}
+          <span class="faq__cta-button faq__cta-button--disabled">{{ section.settings.cta_label }}</span>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
   </div>
-</div>
+</section>
 
 <script src="{{ 'faq.js' | asset_url }}" defer="defer"></script>
 
@@ -94,8 +83,18 @@
 {
   "name": "FAQ",
   "tag": "section",
-  "class": "section",
+  "class": "shopify-section--faq",
   "settings": [
+    {
+      "type": "header",
+      "content": "Header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "Support"
+    },
     {
       "type": "text",
       "id": "heading",
@@ -103,55 +102,57 @@
       "default": "Frequently asked questions"
     },
     {
-      "type": "text",
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "richtext",
       "id": "subheading",
-      "label": "Subheading"
+      "label": "Subheading",
+      "default": "<p>Can't find the answer you're looking for? Reach out to our support team.</p>"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
     },
     {
       "type": "select",
       "id": "layout",
-      "label": "Layout style",
+      "label": "Layout",
       "options": [
-        { "value": "accordion", "label": "Accordion (centered)" },
-        { "value": "two-column", "label": "Accordion (two columns on desktop)" },
-        { "value": "split", "label": "Accordion with side panel" },
-        { "value": "grid", "label": "Grid cards (always open)" },
-        { "value": "minimal", "label": "Minimal list with dividers" }
+        { "value": "stacked", "label": "Stacked (heading above list)" },
+        { "value": "split", "label": "Split (heading beside list)" }
       ],
-      "default": "accordion"
+      "default": "stacked"
+    },
+    {
+      "type": "range",
+      "id": "container_width",
+      "label": "Content width",
+      "min": 640,
+      "max": 1200,
+      "step": 20,
+      "unit": "px",
+      "default": 860
     },
     {
       "type": "checkbox",
-      "id": "allow_multiple_open",
-      "label": "Allow multiple items open at once",
-      "default": false
+      "id": "open_first",
+      "label": "Open first question by default",
+      "default": true
     },
     {
-      "type": "header",
-      "content": "Side panel (used with \"Accordion with side panel\")"
-    },
-    {
-      "type": "text",
-      "id": "contact_heading",
-      "label": "Heading",
-      "default": "Still have questions?"
-    },
-    {
-      "type": "textarea",
-      "id": "contact_text",
-      "label": "Text",
-      "default": "Our team is happy to help with anything not covered here."
-    },
-    {
-      "type": "text",
-      "id": "contact_button_label",
-      "label": "Button label",
-      "default": "Contact us"
-    },
-    {
-      "type": "url",
-      "id": "contact_button_link",
-      "label": "Button link"
+      "type": "checkbox",
+      "id": "one_at_a_time",
+      "label": "Only allow one question open at a time",
+      "default": true
     },
     {
       "type": "header",
@@ -159,39 +160,71 @@
     },
     {
       "type": "color",
-      "id": "bg_color",
-      "label": "Background color",
+      "id": "background_color",
+      "label": "Background",
       "default": "#ffffff"
     },
     {
       "type": "color",
       "id": "text_color",
-      "label": "Text color",
-      "default": "#121212"
+      "label": "Text",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Divider",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent",
+      "default": "#1a1a1a"
     },
     {
       "type": "header",
-      "content": "Section padding"
+      "content": "Bottom call to action"
+    },
+    {
+      "type": "text",
+      "id": "cta_text",
+      "label": "Text",
+      "default": "Still have questions?"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "Button link"
+    },
+    {
+      "type": "header",
+      "content": "Section spacing"
     },
     {
       "type": "range",
       "id": "padding_top",
+      "label": "Top padding",
       "min": 0,
-      "max": 100,
+      "max": 160,
       "step": 4,
       "unit": "px",
-      "label": "Top padding",
-      "default": 48
+      "default": 80
     },
     {
       "type": "range",
       "id": "padding_bottom",
+      "label": "Bottom padding",
       "min": 0,
-      "max": 100,
+      "max": 160,
       "step": 4,
       "unit": "px",
-      "label": "Bottom padding",
-      "default": 48
+      "default": 80
     }
   ],
   "blocks": [
@@ -203,20 +236,13 @@
           "type": "text",
           "id": "question",
           "label": "Question",
-          "default": "How long does shipping take?"
+          "default": "What is your return policy?"
         },
         {
           "type": "richtext",
           "id": "answer",
           "label": "Answer",
-          "default": "<p>Share details about your shipping policy here.</p>"
-        },
-        {
-          "type": "checkbox",
-          "id": "open_by_default",
-          "label": "Open by default",
-          "default": false,
-          "info": "Ignored for the grid layout, which is always expanded"
+          "default": "<p>Share the details customers need to know here.</p>"
         }
       ]
     }
@@ -225,7 +251,6 @@
     {
       "name": "FAQ",
       "blocks": [
-        { "type": "question" },
         { "type": "question" },
         { "type": "question" },
         { "type": "question" }
