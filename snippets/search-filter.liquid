@@ -1,41 +1,59 @@
 {%- comment -%}
   snippets/search-filter.liquid
-  ------------------------------------------------------------------
-  The product-filter drawer. Filters only apply to product search —
-  Shopify doesn't support faceted filters on article results — so the
-  filter <form> only renders when active_type is 'product'. On the
-  Articles tab the drawer still renders (whenever the merchant has
-  filters enabled) with a short placeholder message instead of the
-  form, so the sidebar's presence/width stays consistent across both
-  tabs instead of disappearing and reflowing the results grid.
 
-  Expects:
-    - search_terms (string)  the current search query
-    - active_type   (string)  'product' or 'article'
-    - show_filters  (boolean) whether the drawer starts expanded
-                              (false means it starts hidden, e.g. on
-                              mobile until the shopper opens it)
+  Renders the filter drawer for the search results page's Products
+  tab: filter groups (list + price range types), inline active-filter
+  pills, and the Apply button.
+
+  Search-only counterpart to snippets/collection-filter.liquid --
+  deliberately NOT shared with it. Differences that make sharing the
+  wrong call:
+    - IDs are scoped to search (#search-filter, #SearchFilterForm)
+      so they never collide with collection's (#collection-filter,
+      #FilterForm) if both snippets somehow end up in the DOM at once.
+    - Loads search-filter.css / search-filter.js, not
+      collection-filter.css / .js -- those target #main-collection,
+      .product-feed__grid, #collection-active-filters, none of which
+      exist on the search page. search-filter.js targets #main-search,
+      #search-results-grid, #search-result-count, #panel-products
+      instead. See search-filter.js's header for the full list of
+      behavioral differences from collection-filter.js.
+    - Active-filter pills render inline inside this snippet (in the
+      .search-filter__active row below), not in a separate toolbar
+      strip -- search has no equivalent of collection's toolbar.
+    - Always carries q/type as hidden inputs, since routes.search_url
+      isn't scoped to anything on its own the way collection.url is.
+
+  Usage:
+    {%- render 'search-filter', search_terms: search.terms, result_type: 'product' -%}
 {%- endcomment -%}
+
 {{ 'search-filter.css' | asset_url | stylesheet_tag }}
+
+{%- assign has_active_filters = false -%}
+{%- for filter in search.filters -%}
+  {%- if filter.active_values.size > 0 -%}
+    {%- assign has_active_filters = true -%}
+  {%- endif -%}
+{%- endfor -%}
 
 <aside
   class="search-filter"
   id="search-filter"
   aria-label="Product filters"
-  data-search-filter
-  {%- unless show_filters %} hidden{%- endunless %}
+  hidden
 >
-
   <div class="search-filter__close">
     <span class="search-filter__close-label">Filters</span>
-    <button class="search-filter__close-btn" type="button" aria-label="Close filters" data-filter-close>&times;</button>
+    <button class="search-filter__close-btn" type="button" data-filter-close aria-label="Close filters">&times;</button>
   </div>
 
-  {%- if active_type == 'product' -%}
-    <form method="get" action="{{ routes.search_url }}" id="SearchFilterForm">
-      <input type="hidden" name="q" value="{{ search_terms }}">
-      <input type="hidden" name="type" value="product">
+  <form method="get" action="{{ routes.search_url }}" id="SearchFilterForm">
 
+    <input type="hidden" name="q" value="{{ search_terms }}">
+    <input type="hidden" name="type" value="{{ result_type }}">
+
+    {%- if search.filters.size > 0 -%}
       {%- for filter in search.filters -%}
         <details class="search-filter__group" open>
           <summary class="search-filter__group-label">
@@ -49,9 +67,7 @@
             {%- case filter.type -%}
               {%- when 'list' -%}
                 {%- for value in filter.values -%}
-                  <label class="search-filter__option
-                    {%- if value.active %} search-filter__option--active{%- endif %}
-                    {%- if value.count == 0 and value.active == false %} search-filter__option--disabled{%- endif %}">
+                  <label class="search-filter__option{% if value.count == 0 and value.active == false %} search-filter__option--disabled{% endif %}">
                     <input
                       type="checkbox"
                       name="{{ value.param_name }}"
@@ -64,56 +80,117 @@
                 {%- endfor -%}
 
               {%- when 'price_range' -%}
-                <div class="search-filter__price">
-                  <input
-                    type="number"
-                    name="{{ filter.min_value.param_name }}"
-                    value="{{ filter.min_value.value }}"
-                    min="0"
-                    max="{{ filter.range_max }}"
-                    placeholder="0"
-                  >
-                  <span>&ndash;</span>
-                  <input
-                    type="number"
-                    name="{{ filter.max_value.param_name }}"
-                    value="{{ filter.max_value.value }}"
-                    min="0"
-                    max="{{ filter.range_max }}"
-                    placeholder="{{ filter.range_max }}"
-                  >
+                <div class="search-filter__price-wrap" data-price-filter>
+                  <div class="search-filter__price">
+                    <input
+                      type="number"
+                      name="{{ filter.min_value.param_name }}"
+                      value="{{ filter.min_value.value }}"
+                      min="0"
+                      max="{{ filter.range_max }}"
+                      placeholder="min."
+                      data-price-input="min"
+                    >
+                    <span>–</span>
+                    <input
+                      type="number"
+                      name="{{ filter.max_value.param_name }}"
+                      value="{{ filter.max_value.value }}"
+                      min="0"
+                      max="{{ filter.range_max }}"
+                      placeholder="max."
+                      data-price-input="max"
+                    >
+                  </div>
+
+                  {%- comment -%}
+                    Decorative distribution bars only -- Shopify's
+                    price_range filter doesn't expose per-bucket
+                    counts (see collection-filter.liquid, which has
+                    the same caveat). Swap for real bucket heights if
+                    that data ever becomes available.
+                  {%- endcomment -%}
+                  <div class="search-filter__histogram" aria-hidden="true">
+                    {%- assign bar_count = 16 -%}
+                    {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
+                    {%- for i in (1..bar_count) -%}
+                      {%- assign dist = i | minus: mid | abs -%}
+                      {%- assign bar_height = bar_count | minus: dist | times: 6 -%}
+                      <span class="search-filter__histogram-bar" style="height: {{ bar_height }}%"></span>
+                    {%- endfor -%}
+                  </div>
+
+                  <div class="search-filter__range-slider" data-range-slider>
+                    <div class="search-filter__range-track"></div>
+                    <div class="search-filter__range-track-active" data-range-active></div>
+                    <input
+                      type="range"
+                      class="search-filter__range-input search-filter__range-input--min"
+                      min="0"
+                      max="{{ filter.range_max }}"
+                      value="{{ filter.min_value.value | default: 0 }}"
+                      data-range-thumb="min"
+                      aria-label="Minimum price"
+                    >
+                    <input
+                      type="range"
+                      class="search-filter__range-input search-filter__range-input--max"
+                      min="0"
+                      max="{{ filter.range_max }}"
+                      value="{{ filter.max_value.value | default: filter.range_max }}"
+                      data-range-thumb="max"
+                      aria-label="Maximum price"
+                    >
+                  </div>
+
+                  {%- assign quarter = filter.range_max | divided_by: 4.0 -%}
+                  {%- assign b1 = quarter | round -%}
+                  {%- assign b2 = quarter | times: 2 | round -%}
+                  {%- assign b3 = quarter | times: 3 | round -%}
+                  <div class="search-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
+                    <label class="search-filter__price-option">
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
+                      Less than ${{ b1 }}
+                    </label>
+                    <label class="search-filter__price-option">
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}">
+                      ${{ b1 }} to ${{ b2 }}
+                    </label>
+                    <label class="search-filter__price-option">
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}">
+                      ${{ b2 }} to ${{ b3 }}
+                    </label>
+                    <label class="search-filter__price-option">
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}">
+                      ${{ b3 }} to ${{ filter.range_max }}
+                    </label>
+                    <label class="search-filter__price-option">
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max="">
+                      More than ${{ filter.range_max }}
+                    </label>
+                  </div>
                 </div>
             {%- endcase -%}
           </div>
         </details>
-      {%- else -%}
-        <p class="search-filter__empty">No filters are configured for this search.</p>
       {%- endfor -%}
+    {%- else -%}
+      <p class="search-filter__empty">No filters available.</p>
+    {%- endif -%}
 
-      {%- assign active_count = 0 -%}
-      {%- for filter in search.filters -%}
-        {%- assign active_count = active_count | plus: filter.active_values.size -%}
-      {%- endfor -%}
-
-      {%- if active_count > 0 -%}
-        <div class="search-filter__active">
-          {%- for filter in search.filters -%}
-            {%- for value in filter.active_values -%}
-              <a href="{{ value.url_to_remove }}&type=product" class="search-filter__pill">
-                {{ value.label }} &times;
-              </a>
-            {%- endfor -%}
+    {%- if has_active_filters -%}
+      <div class="search-filter__active">
+        {%- for filter in search.filters -%}
+          {%- for value in filter.active_values -%}
+            <a href="{{ value.url_to_remove }}" class="search-filter__pill">{{ value.label }} &times;</a>
           {%- endfor -%}
-          <a href="{{ routes.search_url }}?q={{ search_terms | url_param_escape }}&type=product" class="search-filter__pill search-filter__pill--clear">Clear all</a>
-        </div>
-      {%- endif -%}
+        {%- endfor -%}
+        <a href="{{ routes.search_url }}?q={{ search_terms }}&amp;type={{ result_type }}" class="search-filter__pill search-filter__pill--clear">Clear all</a>
+      </div>
+    {%- endif -%}
 
-      <button type="submit" class="search-filter__submit">Apply</button>
-    </form>
-  {%- else -%}
-    <p class="search-filter__empty">Filters aren&rsquo;t available for articles &mdash; switch to the Products tab to filter results.</p>
-  {%- endif -%}
-
+    <button type="submit" class="search-filter__submit">Apply</button>
+  </form>
 </aside>
 
 <script src="{{ 'search-filter.js' | asset_url }}" defer></script>
