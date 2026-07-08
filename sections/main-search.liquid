@@ -1,53 +1,53 @@
-{%- comment -%} sections/main-search.liquid {%- endcomment -%}
-{{ 'main-search.css' | asset_url | stylesheet_tag }}
-{{ 'promo-banner.css' | asset_url | stylesheet_tag }}
-{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  sections/main-search.liquid
+
+  Repurposed thin shell from main-collection.liquid for the search results page.
+  Keeps 100% identical inner class names (collection-hero, collection-page, collection-body, etc.)
+  so we can reuse main-collection.css + main-collection.js with ZERO changes to start.
+
+  HOW TO USE:
+  1. Drop this file in your theme's `sections/` folder.
+  2. Copy your 3 snippets → create:
+       snippets/search-toolbar.liquid
+       snippets/search-filter.liquid
+       snippets/search-feed.liquid
+     (Start by duplicating the collection versions, then update variable names + data sources inside search-feed.liquid)
+  3. In search-feed.liquid you will switch from `collection` to `search` object:
+     - Products tab → filter search.results where object_type == 'product'
+     - Articles tab → filter search.results where object_type == 'article'
+  4. (Optional) If you want search-specific tweaks later, duplicate assets/main-collection.css → main-search.css
+     and same for .js, then update the includes below + any hardcoded #main-collection selectors in JS.
+
+  The active_tab query param (?tab=products or ?tab=articles) works exactly the same.
+  Promo banners & carousels blocks are kept because they work great inside search result grids.
+{%- endcomment -%}
+
+{{ 'main-collection.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
-  # Use search.types as primary source of truth (most reliable)
-  assign active_type = 'product'
-  if search.types contains 'article'
-    assign active_type = 'article'
-  endif
+  assign active_tab = request.query_parameters['tab'] | default: 'products'
+  unless active_tab == 'products' or active_tab == 'articles'
+    assign active_tab = 'products'
+  endunless
 
-  # Safety fallback from URL param
-  assign type_from_url = request.query_parameters['type'] | default: ''
-  if type_from_url == 'article'
-    assign active_type = 'article'
-  endif
-
-  assign search_terms = search.terms
-  assign results_count = search.results_count | default: 0
-
-  # Whether the filter sidebar is enabled at all. Previously this was
-  # also gated on active_type == 'product' (Shopify has no faceted
-  # filtering for articles), which hid the whole sidebar -- and
-  # collapsed the feed to full width -- the moment you switched to
-  # the Articles tab. Now the sidebar stays put on both tabs
-  # (search-filter.liquid shows a placeholder message on Articles
-  # instead of disappearing), so this only reflects the merchant's
-  # setting.
-  assign show_filters = false
-  if section.settings.show_filters
-    assign show_filters = true
-  endif
+  assign active_filter_count = 0
+  # search object doesn't expose .filters the same way collection does.
+  # Leave at 0 for now. You can enhance search-filter.liquid later with custom facets or JS filtering.
 
   assign width_type = section.settings.section_width
   if width_type == blank
-    assign width_class = 'search-page__default-width'
+    assign width_class = 'collection-page__default-width'
   elsif width_type == 'full-width'
-    assign width_class = 'search-page__full-width'
+    assign width_class = 'collection-page__custom-width'
   else
-    assign width_class = 'search-page__custom-width'
+    assign width_class = 'collection-page__custom-width'
   endif
 -%}
 
-<div class="main-search" id="main-search" data-section-id="{{ section.id }}">
+<div class="main-collection main-search" id="main-collection" data-section-id="{{ section.id }}">
 
   <div
-    class="search-page {{ width_class }}"
-    data-search-page
-    data-active-type="{{ active_type }}"
+    class="collection-page {{ width_class }}"
     style="
       --section-padding: {{ section.settings.section_padding }}px;
       {%- if width_type == 'custom-width' %}
@@ -56,59 +56,51 @@
     "
   >
 
-    <div class="search-hero" id="search-hero">
-      {%- if search.performed -%}
-        <h1 class="search-title">Search results</h1>
-        {%- if search_terms != blank -%}
-          <p class="search-result-count" id="search-result-count">
-            {{ results_count }} result{% if results_count != 1 %}s{% endif %} for &ldquo;{{ search_terms }}&rdquo;
-          </p>
+    <div class="collection-hero" id="collection-hero">
+      <h1 class="collection-title">
+        Search results
+        {%- if search.terms != blank -%}
+          for &ldquo;{{ search.terms }}&rdquo;
         {%- endif -%}
-      {%- else -%}
-        <h1 class="search-title">Search</h1>
-      {%- endif -%}
+      </h1>
     </div>
 
-    {%- if search.performed -%}
+    <section class="collection-section">
 
-      <section class="search-section">
+      {%- render 'search-toolbar',
+        section: section,
+        search: search,
+        active_tab: active_tab,
+        active_filter_count: active_filter_count
+      -%}
 
-        {%- render 'search-toolbar', search_terms: search_terms, active_type: active_type, show_filters: show_filters, section: section -%}
+      <div class="collection-body{% unless section.settings.show_filters %} collection-body--filters-hidden{% endunless %}">
 
-        <div class="search-body{% unless show_filters %} search-body--filters-hidden{% endunless %}" data-search-body>
+        {%- if section.settings.show_filters -%}
+          {%- render 'search-filter', search: search -%}
+        {%- endif -%}
 
-          {%- if section.settings.show_filters -%}
-            {%- render 'search-filter', search_terms: search_terms, active_type: active_type, show_filters: show_filters -%}
-          {%- endif -%}
-
-          <div class="search-body__feed">
-            {%- render 'search-results', search_terms: search_terms, active_type: active_type, section: section -%}
-          </div>
-
+        <div class="collection-body__feed">
+          {%- render 'search-feed',
+            search: search,
+            section: section,
+            active_tab: active_tab
+          -%}
         </div>
 
-      </section>
-
-    {%- else -%}
-
-      <div class="search-hero__prompt">
-        <p>Enter a search term above to get started.</p>
       </div>
 
-    {%- endif -%}
+    </section>
+
+    {# after-items metafield block removed — not applicable to global search #}
 
   </div>
 
-  <div class="search-mobile-backdrop" aria-hidden="true"></div>
+  <div class="collection-mobile-backdrop" aria-hidden="true"></div>
 
 </div>
 
-{%- comment -%}
-  main-search.js has been retired: its only behavior (the sort
-  <select>) now lives in search-toolbar.js.
-{%- endcomment -%}
-<script src="{{ 'main-search.js' | asset_url }}" defer></script>
-<script src="{{ 'promo-carousel.js' | asset_url }}" defer></script>
+<script src="{{ 'main-collection.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -139,7 +131,7 @@
     },
     {
       "type": "range",
-      "id": "results_per_page",
+      "id": "products_per_page",
       "label": "Results per page",
       "min": 4,
       "max": 48,
@@ -149,13 +141,14 @@
     {
       "type": "checkbox",
       "id": "show_filters",
-      "label": "Show filters (Products tab only)",
-      "default": true
+      "label": "Show filters sidebar",
+      "default": false,
+      "info": "Search has limited native filters. Keep disabled until you add custom filtering (JS or app)."
     },
     {
       "type": "checkbox",
       "id": "show_sort",
-      "label": "Show sort (Products tab only)",
+      "label": "Show sort",
       "default": true
     },
     {
@@ -196,19 +189,11 @@
     },
     {
       "type": "header",
-      "content": "In-feed banners"
+      "content": "In-feed banners & promo carousels"
     },
     {
       "type": "paragraph",
-      "content": "Add 'In-feed banner' blocks below to place promotional banners inside the product results grid. Each banner has its own position number and size — set both per block. Products-tab only; banners are not shown in article results."
-    },
-    {
-      "type": "header",
-      "content": "Promo carousels"
-    },
-    {
-      "type": "paragraph",
-      "content": "Add a 'Promo carousel' block to insert a product carousel into the product results grid. Set its collection directly on the block. Products-tab only; carousels are not shown in article results."
+      "content": "Add Promo Banner or Promo Carousel blocks below. They insert into the results grid at the position you set — perfect for merchandizing on search pages."
     }
   ],
   "blocks": [
@@ -220,7 +205,7 @@
           "type": "number",
           "id": "position",
           "label": "Position in results grid",
-          "info": "Banner appears before the Nth product result (counted across the whole result set, not per page). A number larger than the total result count places it at the end of the last page. Leave blank or 0 to hide."
+          "info": "Banner appears before the Nth result on the current page. Leave blank or 0 to hide."
         },
         {
           "type": "image_picker",
@@ -315,7 +300,7 @@
           "type": "number",
           "id": "position",
           "label": "Position in results grid",
-          "info": "Carousel appears before the Nth product result (counted across the whole result set, not per page). A number larger than the total result count places it at the end of the last page. Leave blank or 0 to hide."
+          "info": "Carousel appears before the Nth result on this page. Leave blank or 0 to hide."
         },
         {
           "type": "text",
@@ -329,12 +314,12 @@
         },
         {
           "type": "header",
-          "content": "Products"
+          "content": "Products in carousel"
         },
         {
           "type": "collection",
           "id": "collection",
-          "label": "Collection"
+          "label": "Collection to show"
         },
         {
           "type": "range",
@@ -397,7 +382,7 @@
         },
         {
           "type": "header",
-          "content": "Banner"
+          "content": "Side banner (optional)"
         },
         {
           "type": "checkbox",
@@ -420,7 +405,8 @@
   ],
   "presets": [
     {
-      "name": "Main search"
+      "name": "Main search",
+      "blocks": []
     }
   ]
 }
