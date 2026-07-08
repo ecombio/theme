@@ -15,24 +15,6 @@
 
   Params:
     blocks — section.blocks from sections/main-header.liquid
-
-  UPDATED: mega-menu panels used to render inside their trigger's <li>,
-  i.e. as descendants of .menu-bar__list. .menu-bar__list needs
-  overflow-x: auto for horizontal scroll on crowded nav bars, and per
-  the CSS spec that forces overflow-y to compute as auto too — which
-  silently clipped the dropdown panel sitting below it. A prior fix
-  toggled the list to overflow: visible while a panel was open, but
-  overflow-x/overflow-y are coupled: forcing one axis to visible forces
-  the other to visible as well, so that also un-clipped the horizontal
-  scroll, revealing every overflowed nav item at once.
-  Fixed properly here: mega-menu panels now render AFTER </ul>, as
-  siblings of .menu-bar__list rather than descendants of it (still
-  inside .menu-bar__container, which is what the panel positions itself
-  against — see mega-menu.css). .menu-bar__list's overflow/mask never
-  need to change state now, since the panel was never really "inside"
-  the thing that scrolls. Each panel is matched back to its trigger via
-  a shared data-mega-index (see snippets/mega-menu.liquid and
-  assets/mega-menu.css), not DOM nesting.
 {% endcomment %}
 
 {{ 'header-menu.css' | asset_url | stylesheet_tag }}
@@ -54,7 +36,7 @@
               {%- render 'link-list', block: block -%}
 
             {%- when 'mega-menu' -%}
-              {%- render 'mega-menu', block: block, mode: 'trigger', mega_index: forloop.index -%}
+              {%- render 'mega-menu', block: block -%}
 
             {%- when 'highlight' -%}
               {%- render 'highlight', block: block -%}
@@ -65,21 +47,6 @@
           {%- endcase -%}
         {%- endfor -%}
       </ul>
-
-      {%- comment -%}
-        Mega-menu panels, rendered as siblings of .menu-bar__list — see
-        the UPDATED note above. data-mega-index is the block's position
-        in `blocks`, which is identical in both loops since we iterate
-        the same collection each time (forloop.index still increments
-        for skipped blocks even when the {% if %} guard below skips
-        rendering them, so the numbering stays in sync with the trigger
-        loop above without needing a separate counter).
-      {%- endcomment -%}
-      {%- for block in blocks -%}
-        {%- if block.type == 'mega-menu' -%}
-          {%- render 'mega-menu', block: block, mode: 'panel', mega_index: forloop.index -%}
-        {%- endif -%}
-      {%- endfor -%}
     </div>
   </nav>
 {%- endif -%}

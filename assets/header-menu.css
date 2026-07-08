@@ -49,35 +49,6 @@
    setting/class (--menu-bar-tablet-visible, min-width:640/max-width:1023),
    separate from mobile's (--menu-bar-mobile-visible, max-width:639 only)
    — see the "MOBILE / TABLET" block below.
-
-   UPDATED: .menu-bar__list's horizontal overflow scrollbar is now
-   hidden cross-browser (scrollbar-width / -ms-overflow-style /
-   ::-webkit-scrollbar) while still allowing touch/trackpad scroll —
-   matches the same hide-scrollbar treatment already used on the
-   mobile .menu-bar rule further down this file.
-
-   NOTE: .menu-bar__list's overflow-x: auto forces overflow-y to also
-   compute as auto per the CSS spec (an element can't scroll-clip one
-   axis while leaving the other fully visible). When the mega-menu
-   trigger is open this would otherwise clip the mega-menu dropdown
-   panel, since it's a DOM descendant of .menu-bar__list positioned
-   below it. That's handled in assets/mega-menu.css, which temporarily
-   sets .menu-bar__list to overflow: visible while a mega-menu is open
-   — see the changelog note in that file.
-
-   FIXED (overflow-past-viewport bug): .menu-bar__container and
-   .menu-bar__list previously had no explicit width/min-width, so as
-   flex items they defaulted to min-width: auto — meaning they grew to
-   fit however many nav links/blocks were configured instead of being
-   clamped to .menu-bar's own max-width. With enough blocks (e.g. six
-   "Support" links) the whole bar pushed past the browser viewport
-   instead of scrolling horizontally within it, even though
-   overflow-x: auto was already set. Added width: 100% + min-width: 0
-   to both so they're properly constrained and the existing
-   overflow-x: auto actually has a fixed box to clip/scroll against.
-   Also added a right-edge fade mask on .menu-bar__list so there's a
-   visual cue that more items are scrollable, since the scrollbar
-   itself is hidden cross-browser.
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
@@ -179,8 +150,6 @@
 
 .menu-bar__container {
   position: relative;
-  width: 100%;
-  min-width: 0;
 }
 
 .menu-bar__list {
@@ -190,17 +159,6 @@
   padding: 0;
   margin: 0;
   position: relative;
-  width: 100%;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* IE/Edge */
-  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
-}
-
-.menu-bar__list::-webkit-scrollbar {
-  display: none;               /* Chrome/Safari */
 }
 
 .menu-bar__item {
