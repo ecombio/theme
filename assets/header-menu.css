@@ -3,16 +3,12 @@
    File: assets/header-menu.css
    Loaded by: snippets/header-menu.liquid
 
-   Scope: Desktop nav bar (.menu-bar) — links, icons, carets,
-   mega-menu/flyout triggers, and sticky show/hide behavior.
-
-   Desktop only (≥1024px) by default.
-   Mobile/tablet use the drawer unless "Show Menu Bar" is enabled
-   via .main-header--menu-bar-mobile-visible or
-   .main-header--menu-bar-tablet-visible.
+   Desktop nav bar (.menu-bar) with mega-menu/flyout support.
+   Mega menus require that .menu-bar__list does NOT have overflow-x: auto
+   on desktop, otherwise absolutely positioned dropdowns get clipped.
    ============================================================= */
 
-/* Desktop nav bar hides while sticky (until hamburger opens it) */
+/* Desktop nav bar collapses while sticky */
 .main-header--sticky-enabled.is-sticky .menu-bar {
   display: none;
 }
@@ -85,23 +81,16 @@
   }
 }
 
-/* ── Tablet only (640–1023px) — wraps, scrollbar hidden ── */
+/* ── Tablet only (640–1023px) — wraps normally ── */
 @media (min-width: 640px) and (max-width: 1023px) {
   .main-header--menu-bar-tablet-visible .menu-bar {
     display: flex;
     flex-wrap: wrap;
   }
-  .main-header--menu-bar-tablet-visible .menu-bar__list {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .main-header--menu-bar-tablet-visible .menu-bar__list::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 /* =============================================================================
-   BASE STYLES (apply everywhere)
+   BASE STYLES
 ============================================================================= */
 
 .menu-bar {
@@ -114,7 +103,7 @@
   position: relative;
 }
 
-/* === MENU LIST — SCROLLBAR HIDDEN IN ALL CASES === */
+/* IMPORTANT: No overflow-x:auto here — mega menus need clean positioning */
 .menu-bar__list {
   display: flex;
   align-items: stretch;
@@ -122,23 +111,6 @@
   padding: 0;
   margin: 0;
   position: relative;
-  overflow-x: auto;
-  scrollbar-width: none;           /* Firefox */
-  -ms-overflow-style: none;        /* IE + Edge */
-}
-
-.menu-bar__list::-webkit-scrollbar {
-  display: none;                   /* Chrome, Safari, Opera */
-}
-
-/* Extra protection when inside .menu-bar */
-.menu-bar .menu-bar__list {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.menu-bar .menu-bar__list::-webkit-scrollbar {
-  display: none;
 }
 
 .menu-bar__item {
