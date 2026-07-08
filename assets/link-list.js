@@ -1,121 +1,118 @@
-/* =============================================================================
-   Link List (dropdown block) Behavior  |  assets/link-list.js
-   Pairs with snippets/link-list.liquid + assets/link-list.css
-
-   Two independent levels, same pattern at each:
-     - Top-level panel:  .menu-bar__item--has-link-list  (trigger: .link-list-trigger)
-     - Flyout sub-panel: .link-list-panel__item--has-sub (trigger: .link-list-panel__toggle)
-
-   Hover-capable devices get both levels via CSS :hover (see link-list.css).
-   This script adds what CSS can't cover:
-     - Click / Enter / Space toggling for keyboard and touch users, at both levels
-     - Escape closes the nearest open level and returns focus to its trigger
-     - Clicking outside closes everything
-     - Opening one item at a level closes its siblings at that level
-   ============================================================================= */
-
+/**
+ * Mega Menu
+ * File: assets/mega-menu.js
+ * Loaded by: snippets/header-menu.liquid (only when a mega-menu block
+ * is present)
+ *
+ * CSS (:hover / :focus-within) drives the actual open/close visuals.
+ * This file exists for what CSS can't do on its own:
+ *   1. Position the fixed panel's `top` against the header's live
+ *      bottom edge (recalculated on open, resize, scroll, and any
+ *      header height change — covers both sticky and non-sticky).
+ *   2. Escape close: closes the open panel and returns focus to its
+ *      trigger.
+ *   3. Click-outside close.
+ *   4. Touch support: touch devices have no hover, so the first tap
+ *      on a trigger opens the panel instead of navigating; a second
+ *      tap (now that it's open) navigates through normally.
+ */
 (function () {
-  var OPEN_CLASS = 'is-open';
+  'use strict';
 
-  var TOP_ITEM_SELECTOR = '.menu-bar__item--has-link-list';
-  var TOP_TRIGGER_SELECTOR = '.link-list-trigger';
-  var SUB_ITEM_SELECTOR = '.link-list-panel__item--has-sub';
-  var SUB_TOGGLE_SELECTOR = '.link-list-panel__toggle';
+  var items = document.querySelectorAll('[data-mega-menu]');
+  if (!items.length) return;
 
-  function all(selector, root) {
-    return Array.prototype.slice.call((root || document).querySelectorAll(selector));
+  var header = document.getElementById('main-header');
+  var openItem = null;
+
+  function getPanel(item) {
+    return item.querySelector('[data-mega-menu-panel]');
+  }
+  function getTrigger(item) {
+    return item.querySelector('[data-mega-menu-trigger]');
   }
 
-  /* ── Generic open/close for either level ── */
+  function positionPanel(panel) {
+    if (!header || !panel) return;
+    panel.style.top = header.getBoundingClientRect().bottom + 'px';
+  }
 
-  function closeItem(item, itemSelector, triggerSelector) {
-    if (!item) return;
-    item.classList.remove(OPEN_CLASS);
-    var trigger = item.querySelector(triggerSelector);
-    if (trigger) trigger.setAttribute('aria-expanded', 'false');
-    // Closing a level also closes anything open beneath it
-    all(SUB_ITEM_SELECTOR + '.' + OPEN_CLASS, item).forEach(function (subItem) {
-      closeItem(subItem, SUB_ITEM_SELECTOR, SUB_TOGGLE_SELECTOR);
+  function positionAll() {
+    items.forEach(function (item) {
+      positionPanel(getPanel(item));
     });
   }
 
-  function closeAll(itemSelector, triggerSelector, except) {
-    all(itemSelector).forEach(function (item) {
-      if (item !== except) closeItem(item, itemSelector, triggerSelector);
-    });
-  }
+  function openMenu(item) {
+    if (openItem === item) return;
+    if (openItem) closeMenu(openItem);
 
-  function openItem(item, itemSelector, triggerSelector) {
-    closeAll(itemSelector, triggerSelector, item);
-    item.classList.add(OPEN_CLASS);
-    var trigger = item.querySelector(triggerSelector);
+    var panel = getPanel(item);
+    var trigger = getTrigger(item);
+    positionPanel(panel);
+    panel.classList.add('is-open');
     if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    openItem = item;
   }
 
-  function toggleItem(item, itemSelector, triggerSelector) {
-    if (item.classList.contains(OPEN_CLASS)) {
-      closeItem(item, itemSelector, triggerSelector);
-    } else {
-      openItem(item, itemSelector, triggerSelector);
-    }
+  function closeMenu(item) {
+    var panel = getPanel(item);
+    var trigger = getTrigger(item);
+    if (panel) panel.classList.remove('is-open');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    if (openItem === item) openItem = null;
   }
 
-  function closeEverything() {
-    closeAll(TOP_ITEM_SELECTOR, TOP_TRIGGER_SELECTOR);
-  }
+  items.forEach(function (item) {
+    var trigger = getTrigger(item);
+    var panel = getPanel(item);
+    if (!trigger || !panel) return;
 
-  /* ── Click handling ── */
+    /* Reposition right as hover begins — CSS shows the panel, this
+       just makes sure `top` is current before it becomes visible. */
+    item.addEventListener('mouseenter', function () {
+      positionPanel(panel);
+    });
+
+    item.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' || event.key === 'Esc') {
+        closeMenu(item);
+        trigger.focus();
+      }
+    });
+
+    /* Touch devices: first tap opens instead of navigating. */
+    trigger.addEventListener('click', function (event) {
+      var isOpen = panel.classList.contains('is-open');
+      if (!isOpen && window.matchMedia('(hover: none)').matches) {
+        event.preventDefault();
+        openMenu(item);
+      }
+    });
+  });
 
   document.addEventListener('click', function (event) {
-    var subToggle = event.target.closest(SUB_TOGGLE_SELECTOR);
-    if (subToggle) {
-      var subItem = subToggle.closest(SUB_ITEM_SELECTOR);
-      if (subItem) {
-        event.preventDefault();
-        toggleItem(subItem, SUB_ITEM_SELECTOR, SUB_TOGGLE_SELECTOR);
-      }
-      return;
-    }
-
-    var topTrigger = event.target.closest(TOP_TRIGGER_SELECTOR);
-    var topItem = event.target.closest(TOP_ITEM_SELECTOR);
-
-    if (topTrigger && topItem) {
-      // Only intercept when there's actually a panel to toggle;
-      // otherwise let the link navigate normally (e.g. no menu assigned).
-      var panel = topItem.querySelector('.link-list-panel');
-      if (panel) {
-        event.preventDefault();
-        toggleItem(topItem, TOP_ITEM_SELECTOR, TOP_TRIGGER_SELECTOR);
-      }
-      return;
-    }
-
-    // Click on a real nav link (top-level or sublink) or outside entirely:
-    // in both cases, nothing should stay open behind it.
-    if (!event.target.closest(TOP_ITEM_SELECTOR)) {
-      closeEverything();
+    if (openItem && !openItem.contains(event.target)) {
+      closeMenu(openItem);
     }
   });
 
-  /* ── Escape: close the nearest open level first, then refocus its trigger ── */
-
-  document.addEventListener('keydown', function (event) {
-    if (event.key !== 'Escape') return;
-
-    var openSub = document.querySelector(SUB_ITEM_SELECTOR + '.' + OPEN_CLASS);
-    if (openSub) {
-      var subToggleEl = openSub.querySelector(SUB_TOGGLE_SELECTOR);
-      closeItem(openSub, SUB_ITEM_SELECTOR, SUB_TOGGLE_SELECTOR);
-      if (subToggleEl) subToggleEl.focus();
-      return;
-    }
-
-    var openTop = document.querySelector(TOP_ITEM_SELECTOR + '.' + OPEN_CLASS);
-    if (openTop) {
-      var topTriggerEl = openTop.querySelector(TOP_TRIGGER_SELECTOR);
-      closeItem(openTop, TOP_ITEM_SELECTOR, TOP_TRIGGER_SELECTOR);
-      if (topTriggerEl) topTriggerEl.focus();
-    }
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(positionAll, 100);
   });
+
+  window.addEventListener('scroll', function () {
+    if (openItem) positionPanel(getPanel(openItem));
+  }, { passive: true });
+
+  if (header && 'ResizeObserver' in window) {
+    var ro = new ResizeObserver(function () {
+      if (openItem) positionPanel(getPanel(openItem));
+    });
+    ro.observe(header);
+  }
+
+  positionAll();
 })();
