@@ -23,6 +23,13 @@
   - assets/section-newsletter.js only handles client-side UX (honeypot
     check, loading state, inline aria-invalid validation) — it never
     intercepts or fetches the form.
+  - Background: either/or, driven by `background_type` (color/image).
+    "Color" keeps the existing color-scheme-driven background exactly
+    as before. "Image" swaps in a cover-sized background image plus a
+    dark overlay (opacity configurable) and forces light text, since
+    an arbitrary photo can't be guaranteed to contrast with whatever
+    color-scheme text color was chosen. See section-newsletter.css
+    note 6.
 {%- endcomment -%}
 
 {%- liquid
@@ -34,16 +41,26 @@
   else
     assign width_class = 'newsletter__custom-width'
   endif
+
+  assign bg_type = section.settings.background_type | default: 'color'
+  assign has_image = false
+  if bg_type == 'image' and section.settings.background_image != blank
+    assign has_image = true
+  endif
 -%}
 
 {{ 'section-newsletter.css' | asset_url | stylesheet_tag }}
 
 <div
-  class="newsletter color-{{ section.settings.color_scheme }} {{ width_class }}"
+  class="newsletter color-{{ section.settings.color_scheme }} {{ width_class }}{% if has_image %} newsletter--has-image{% endif %}"
   style="
     --section-padding: {{ section.settings.section_padding }}px;
     {%- if width_type == 'custom-width' %}
       --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+    {%- if has_image %}
+      --nl-bg-image: url('{{ section.settings.background_image | image_url: width: 1920 }}');
+      --nl-overlay-opacity: {{ section.settings.background_overlay_opacity | default: 30 | divided_by: 100.0 }};
     {%- endif %}
   "
   id="Newsletter-{{ section.id }}"
@@ -178,6 +195,39 @@
       "id": "success_message",
       "label": "Success message",
       "default": "Thanks for signing up!"
+    },
+    {
+      "type": "header",
+      "content": "Background"
+    },
+    {
+      "type": "select",
+      "id": "background_type",
+      "label": "Background type",
+      "options": [
+        { "value": "color", "label": "Color" },
+        { "value": "image", "label": "Image" }
+      ],
+      "default": "color",
+      "info": "Color uses the color scheme below. Image overrides it with a photo and forces light text."
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "range",
+      "id": "background_overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 30,
+      "info": "Darkens the image so the heading and form stay readable.",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
     },
     {
       "type": "header",
