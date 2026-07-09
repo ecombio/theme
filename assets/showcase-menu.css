@@ -26,6 +26,22 @@
    unwanted wrap to a second row. grid-auto-flow: column always creates
    exactly one equal-width column per rendered card, so the row stays a
    single row and always fills the full panel width.
+
+   UPDATED: .showcase-menu__panel-inner width + padding.
+   Previously relied on a shared "page-width--header" class that isn't
+   defined anywhere in this theme, so the panel had no max-width at all
+   and stretched full viewport width regardless of the header's own
+   width — and side padding was a fixed 24px baked into the rule.
+
+   Now follows the same independent "Section Layout" pattern as
+   main-header.css / example-width-section.liquid: --panel-padding and
+   --panel-custom-width are LOCAL vars, set inline per-block from the
+   showcase-menu block's own "Panel layout" schema settings (see
+   snippets/showcase-menu.liquid). --panel-inner--default-width mirrors
+   main-header--default-width's 1184px max-width so the panel lines up
+   with the header by default; full-width and custom-width variants are
+   selectable per-block, independent of the global --page-margin /
+   --page-width vars and independent of any other section.
    ============================================================= */
 
 @media (min-width: 1024px) {
@@ -78,7 +94,22 @@
     align-items: flex-start;
     gap: 40px;
     margin: 0 auto;
-    padding: 32px 24px 40px;
+    padding: 32px var(--panel-padding, 24px) 40px;
+  }
+
+  /* ── Panel width variants (independent Section Layout pattern) ── */
+  .showcase-menu__panel-inner--default-width {
+    max-width: 1184px; /* matches main-header--default-width, so the
+                           panel lines up with the header content by
+                           default instead of stretching full-bleed */
+  }
+
+  .showcase-menu__panel-inner--full-width {
+    max-width: none;
+  }
+
+  .showcase-menu__panel-inner--custom-width {
+    max-width: var(--panel-custom-width);
   }
 
   /* ── Sidebar ── fixed width so the grid's column count stays

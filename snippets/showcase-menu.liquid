@@ -28,6 +28,23 @@
   but kept in its own file/data-attribute namespace (data-showcase-menu*
   vs data-mega-menu*) so the two never share open/close state.
 
+  PANEL LAYOUT (width + padding):
+  Follows the same independent "Section Layout" pattern as
+  sections/example-width-section.liquid / sections/main-header.liquid —
+  --panel-padding and --panel-custom-width are LOCAL vars, set inline
+  per-block from this block's own "Panel layout" schema settings below.
+  They never read from the global --page-margin / --page-width vars, so
+  changing a showcase-menu block's width/padding can't affect any other
+  section, and vice versa.
+
+  The previous markup used a shared "page-width--header" class that
+  isn't defined anywhere in this theme, so the panel had no max-width at
+  all and stretched edge-to-edge regardless of the header's own width.
+  Default now resolves to showcase-menu__panel-inner--default-width,
+  which matches main-header--default-width's 1184px max-width, so the
+  panel lines up with the header content out of the box. Full width and
+  custom width remain available per-block, same as the header itself.
+
   Desktop (≥1024px) only — see assets/showcase-menu.css.
 
   Params:
@@ -36,6 +53,15 @@
 
 {%- liquid
   assign panel_id = 'ShowcaseMenuPanel-' | append: block.id
+
+  assign panel_width_type = block.settings.panel_width
+  if panel_width_type == blank
+    assign panel_width_class = 'showcase-menu__panel-inner--default-width'
+  elsif panel_width_type == 'full-width'
+    assign panel_width_class = 'showcase-menu__panel-inner--full-width'
+  else
+    assign panel_width_class = 'showcase-menu__panel-inner--custom-width'
+  endif
 
   assign tips = ''
   assign has_tips = false
@@ -126,7 +152,15 @@
 
   {%- if has_panel -%}
     <div class="showcase-menu__panel" id="{{ panel_id }}" data-showcase-menu-panel>
-      <div class="showcase-menu__panel-inner page-width--header">
+      <div
+        class="showcase-menu__panel-inner {{ panel_width_class }}"
+        style="
+          --panel-padding: {{ block.settings.panel_padding | default: 24 }}px;
+          {%- if panel_width_type == 'custom-width' %}
+            --panel-custom-width: {{ block.settings.panel_custom_width | default: 80 }}rem;
+          {%- endif %}
+        "
+      >
 
         {%- if has_tips -%}
           <div class="showcase-menu__sidebar">
