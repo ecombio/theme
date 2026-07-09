@@ -1,0 +1,229 @@
+/* =============================================================
+   Showcase Menu
+   File: assets/showcase-menu.css
+   Loaded by: snippets/header-menu.liquid (only when a showcase-menu
+   block is present in section.blocks)
+
+   Scope: the showcase-menu's trigger caret + the full-width dropdown
+   panel (optional "Good to know" sidebar + image category grid).
+
+   Sibling to mega-menu.css/mega-menu.liquid, NOT a variant of it —
+   deliberately namespaced .showcase-menu__* throughout so nothing here
+   ever collides with .mega-menu__* selectors, even though the two
+   panels share the same open/close mechanism (hover + focus-within,
+   fixed panel synced to header's bottom edge via JS). See
+   showcase-menu.js for why that JS is a separate file rather than
+   extending mega-menu.js.
+
+   Desktop (≥1024px) only, same as mega-menu and the rest of .menu-bar.
+
+   UPDATED: .showcase-menu__grid now uses grid-auto-flow: column +
+   grid-auto-columns: 1fr instead of repeat(auto-fill, minmax(...)).
+   Card count varies per store (1-8, blank slots skipped in the liquid
+   loop), and auto-fill/minmax was computing how many fixed-width
+   columns could fit and then leaving a partial/uneven last row when
+   the count didn't divide evenly — dead space on the right, or an
+   unwanted wrap to a second row. grid-auto-flow: column always creates
+   exactly one equal-width column per rendered card, so the row stays a
+   single row and always fills the full panel width.
+   ============================================================= */
+
+@media (min-width: 1024px) {
+
+  .menu-bar__link--showcase-menu {
+    cursor: pointer;
+  }
+
+  .menu-bar__item--showcase-menu:hover > .menu-bar__link--showcase-menu .icon-caret-down,
+  .menu-bar__item--showcase-menu:focus-within > .menu-bar__link--showcase-menu .icon-caret-down {
+    transform: rotate(180deg);
+  }
+
+  /* ── Panel shell ── same direct-child hover/focus-within reasoning
+     as mega-menu.css: fixed positioning moves the box, not its place
+     in the DOM, so hovering the panel itself still counts as hovering
+     the parent <li>. */
+  .showcase-menu__panel {
+    position: fixed;
+    top: 0; /* overwritten inline by showcase-menu.js */
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.10);
+    z-index: 300;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+  }
+
+  .menu-bar__item--showcase-menu:hover > .showcase-menu__panel,
+  .menu-bar__item--showcase-menu:focus-within > .showcase-menu__panel,
+  .showcase-menu__panel.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .showcase-menu__panel-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    margin: 0 auto;
+    padding: 32px 24px 40px;
+  }
+
+  /* ── Sidebar ── fixed width so the grid's column count stays
+     predictable regardless of tip copy length. */
+  .showcase-menu__sidebar {
+    flex: 0 0 220px;
+    background: #f7f7fa;
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .showcase-menu__sidebar-heading {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 14px;
+  }
+
+  .showcase-menu__tips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .showcase-menu__tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .showcase-menu__tip-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #e8e8f5;
+    color: #1a1a1a;
+  }
+  .showcase-menu__tip-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .showcase-menu__tip-text {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+  }
+  .showcase-menu__tip-text strong {
+    display: block;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+  }
+
+  /* ── Main / grid column ── */
+  .showcase-menu__main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .showcase-menu__main-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .showcase-menu__main-heading {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  .showcase-menu__see-all {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-decoration: underline;
+  }
+  .showcase-menu__see-all:hover {
+    color: var(--hdr-accent);
+  }
+
+  /* One row, always full-width: grid-auto-flow: column + 1fr auto-columns
+     creates exactly as many equal-width columns as there are rendered
+     cards (1-8, since blank slots are skipped in the liquid loop), so
+     the row never wraps and never leaves trailing empty space the way
+     auto-fill/minmax could when the card count didn't evenly fill a
+     row. */
+  .showcase-menu__grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 20px;
+  }
+
+  .showcase-menu__card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0; /* let cards shrink below content size instead of overflowing the row */
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .showcase-menu__card-image {
+    display: block;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+  .showcase-menu__card-image img,
+  .showcase-menu__card-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .showcase-menu__card-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.3;
+  }
+
+  .showcase-menu__card:hover .showcase-menu__card-label {
+    color: var(--hdr-accent);
+  }
+}
+
+/* Showcase menu is desktop-only; the mobile drawer handles nav below 1024px */
+@media (max-width: 1023px) {
+  .showcase-menu__panel {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase-menu__panel,
+  .menu-bar__item--showcase-menu .icon-caret-down {
+    transition: none !important;
+  }
+}
