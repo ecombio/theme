@@ -18,14 +18,9 @@
    Desktop (≥1024px) only, same as mega-menu and the rest of .menu-bar.
 
    UPDATED: .showcase-menu__grid now uses grid-auto-flow: column +
-   grid-auto-columns: 1fr instead of repeat(auto-fill, minmax(...)).
-   Card count varies per store (1-8, blank slots skipped in the liquid
-   loop), and auto-fill/minmax was computing how many fixed-width
-   columns could fit and then leaving a partial/uneven last row when
-   the count didn't divide evenly — dead space on the right, or an
-   unwanted wrap to a second row. grid-auto-flow: column always creates
-   exactly one equal-width column per rendered card, so the row stays a
-   single row and always fills the full panel width.
+   grid-auto-columns: minmax(...) to keep card sizes consistent
+   regardless of how many categories are shown (fixes oversized
+   scooter cards).
    ============================================================= */
 
 @media (min-width: 1024px) {
@@ -39,13 +34,10 @@
     transform: rotate(180deg);
   }
 
-  /* ── Panel shell ── same direct-child hover/focus-within reasoning
-     as mega-menu.css: fixed positioning moves the box, not its place
-     in the DOM, so hovering the panel itself still counts as hovering
-     the parent <li>. */
+  /* ── Panel shell ── */
   .showcase-menu__panel {
     position: fixed;
-    top: var(--main-header-bottom, 0px); /* kept in sync centrally by assets/main-header.js */
+    top: var(--main-header-bottom, 0px);
     left: 0;
     width: 100%;
     background: #fff;
@@ -54,11 +46,6 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    /* Closed/exit state lifts up rather than just nudging — mirrors the
-       header's own upward scroll-away before it re-enters as sticky
-       (see .main-header--sticky-enabled.is-sticky's slide-in keyframes
-       in main-header.css), so the panel disappearing reads as part of
-       the same motion language instead of a smaller, unrelated fade. */
     transform: translateY(-16px);
     transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
   }
@@ -81,8 +68,7 @@
     padding: 32px 24px 40px;
   }
 
-  /* ── Sidebar ── fixed width so the grid's column count stays
-     predictable regardless of tip copy length. */
+  /* ── Sidebar ── */
   .showcase-menu__sidebar {
     flex: 0 0 220px;
     background: #f7f7fa;
@@ -169,24 +155,20 @@
     color: var(--hdr-accent);
   }
 
-  /* One row, always full-width: grid-auto-flow: column + 1fr auto-columns
-     creates exactly as many equal-width columns as there are rendered
-     cards (1-8, since blank slots are skipped in the liquid loop), so
-     the row never wraps, never leaves trailing empty space, and always
-     reaches the panel's full width regardless of how many categories
-     are filled in. */
+  /* ── Grid ── */
   .showcase-menu__grid {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: 1fr;
+    grid-auto-columns: minmax(158px, 198px);
     gap: 20px;
+    justify-content: center; /* centers the cards when fewer items are present */
   }
 
   .showcase-menu__card {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: 0; /* let cards shrink below content size instead of overflowing the row */
+    min-width: 0;
     text-decoration: none;
     color: inherit;
   }
