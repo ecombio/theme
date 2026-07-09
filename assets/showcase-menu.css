@@ -165,17 +165,16 @@
     color: var(--hdr-accent);
   }
 
-  /* One row, no wrap, no overstretching: grid-auto-flow: column keeps
-     everything on a single row and grid-auto-columns caps each card at
-     minmax(140px, 200px) — cards grow a bit to use extra space but stop
-     at 200px instead of stretching edge-to-edge when there are only a
-     few categories. justify-content: start keeps the row left-aligned
-     so it doesn't force-spread short rows across the full panel width. */
+  /* One row, always full-width: grid-auto-flow: column + 1fr auto-columns
+     creates exactly as many equal-width columns as there are rendered
+     cards (1-8, since blank slots are skipped in the liquid loop), so
+     the row never wraps, never leaves trailing empty space, and always
+     reaches the panel's full width regardless of how many categories
+     are filled in. */
   .showcase-menu__grid {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(140px, 200px);
-    justify-content: start;
+    grid-auto-columns: 1fr;
     gap: 20px;
   }
 
