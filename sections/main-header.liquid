@@ -76,6 +76,8 @@
           {%- endif %}
         ">
 
+  {%- render 'utility-bar', settings: section.settings -%}
+
   <div class="main-header__bar">
     <div class="main-header__inner">
 
@@ -229,6 +231,121 @@
       ],
       "default": "standard",
       "visible_if": "{{ section.settings.enable_sticky_header }}"
+    },
+
+    { "type": "header", "content": "Utility Bar" },
+    {
+      "type": "paragraph",
+      "content": "Slim strip rendered above the main header row. Previously its own section; now built into this one via snippets/utility-bar.liquid (see that file — assets/utility-bar.css/.js load themselves, no separate section needed)."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_bar",
+      "label": "Enable utility bar",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "bar_style",
+      "label": "Bar style",
+      "default": "hyper",
+      "options": [
+        { "value": "hyper", "label": "Hyper (white)" },
+        { "value": "focus", "label": "Focus (warm grey)" }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency",
+      "label": "Show currency selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale",
+      "label": "Show language selector",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "utility_bar_section_width",
+      "label": "Utility bar width",
+      "info": "Independent of the header row's own Section width setting above.",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "utility_bar_custom_width",
+      "label": "Utility bar custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.utility_bar_section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "utility_bar_section_padding",
+      "label": "Utility bar side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "image_picker",
+      "id": "link_1_icon",
+      "label": "Link 1 icon (optional)"
+    },
+    {
+      "type": "text",
+      "id": "link_1_label",
+      "label": "Link 1 label",
+      "default": "Track Order"
+    },
+    {
+      "type": "url",
+      "id": "link_1_url",
+      "label": "Link 1 URL"
+    },
+    {
+      "type": "image_picker",
+      "id": "link_2_icon",
+      "label": "Link 2 icon (optional)"
+    },
+    {
+      "type": "text",
+      "id": "link_2_label",
+      "label": "Link 2 label",
+      "default": "Store Locator"
+    },
+    {
+      "type": "url",
+      "id": "link_2_url",
+      "label": "Link 2 URL"
+    },
+    {
+      "type": "image_picker",
+      "id": "link_3_icon",
+      "label": "Link 3 icon (optional)"
+    },
+    {
+      "type": "text",
+      "id": "link_3_label",
+      "label": "Link 3 label",
+      "default": "Track Order"
+    },
+    {
+      "type": "url",
+      "id": "link_3_url",
+      "label": "Link 3 URL"
     },
 
     { "type": "header", "content": "Search (all breakpoints)" },
@@ -542,7 +659,14 @@
   "presets": [
     {
       "name": "Main Header",
-      "settings": {},
+      "settings": {
+        "link_1_label": "Track Order",
+        "link_1_url": "/apps/track",
+        "link_2_label": "Store Locator",
+        "link_2_url": "/pages/stores",
+        "link_3_label": "Track Order",
+        "link_3_url": "/apps/track"
+      },
       "blocks": [
         { "type": "single-link", "settings": { "label": "Single link", "link": "/collections/all" } },
         { "type": "link-list", "settings": { "label": "Link list" } },

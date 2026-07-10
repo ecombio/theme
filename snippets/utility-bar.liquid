@@ -1,0 +1,113 @@
+{% comment %}
+  Utility Bar
+  File: snippets/utility-bar.liquid
+
+  A slim 32px bar rendered as the first thing inside <header class="main-header">
+  (see sections/main-header.liquid, rendered right before .main-header__bar).
+  Used to be its own top-level section (sections/utility-bar.liquid, rendered
+  above the header via the theme layout) — converted to a snippet so it lives
+  inside the header markup itself. See the "STICKY INTERACTION" note below for
+  the one behavioral consequence of that move.
+
+  SELF-CONTAINED: this snippet still loads its own CSS/JS exactly as the
+  section did — assets/utility-bar.css and assets/utility-bar.js — so it
+  works as a drop-in include with no dependency on main-header.liquid/css/js
+  beyond the settings passed to it and the sticky-hide hook noted below.
+  Matches the pattern already used by header-menu.liquid and
+  header-search.liquid, which likewise own and load their own assets rather
+  than relying on main-header.css/js to do it for them.
+
+  Componentized into further snippets (unchanged from before):
+    snippets/utility-links.liquid     — left-hand utility links (fixed settings slots, not blocks)
+    snippets/currency-selector.liquid — currency form
+    snippets/locale-selector.liquid   — language form
+    snippets/region-picker.liquid     — region trigger + dropdown (teleported to body by JS)
+
+  Params:
+    settings — section.settings from sections/main-header.liquid. Snippets
+      can't declare their own {% schema %}, so all the settings this bar
+      needs (enable_bar, bar_style, show_currency, show_locale, the
+      utility_bar_* width/padding controls, and link_1/2/3_*) now live in
+      main-header's schema instead of a standalone section schema. Two of
+      the old section's setting ids (section_width / section_padding /
+      custom_width) collided with main-header's OWN section-layout settings
+      of the same name, so those three are namespaced utility_bar_section_width
+      / utility_bar_custom_width / utility_bar_section_padding in the merged
+      schema — everything else keeps its original id.
+
+  STICKY INTERACTION:
+    The old section lived above <header> in normal document flow and simply
+    scrolled away on its own; the (separate) sticky header would then pin
+    below it. Now that this bar is rendered INSIDE <header>, if the header
+    goes sticky (position: fixed on the whole element — see
+    assets/main-header.css's sticky block, and main-header.js which toggles
+    .is-sticky), this bar would get pulled into that fixed position and stay
+    on-screen indefinitely instead of scrolling away like before. To keep
+    the original feel, assets/utility-bar.css hides `.utility-bar` outright
+    once `.main-header--sticky-enabled.is-sticky` is present on the header —
+    applies to both the Standard and Auto-hide sticky styles. If you'd
+    rather the utility bar stay pinned alongside the rest of the header
+    instead, remove that rule from utility-bar.css.
+
+  LINK ICONS:
+  Each utility link has an optional image_picker (link_1_icon / link_2_icon /
+  link_3_icon). These are passed through to snippets/utility-links.liquid via
+  the `settings: settings` argument — the snippet must be updated separately
+  to actually render an <img> before the label when an icon is present. This
+  file only forwards the schema fields.
+{% endcomment %}
+
+{%- if settings.enable_bar -%}
+  {{ 'utility-bar.css' | asset_url | stylesheet_tag }}
+
+  {%- liquid
+    assign bar_style = settings.bar_style | default: 'hyper'
+    assign show_curr  = settings.show_currency
+    assign show_loc   = settings.show_locale
+
+    assign width_type = settings.utility_bar_section_width
+    if width_type == blank
+      assign width_class = 'utility-bar__default-width'
+    elsif width_type == 'full-width'
+      assign width_class = 'utility-bar__full-width'
+    else
+      assign width_class = 'utility-bar__custom-width'
+    endif
+  -%}
+
+  <div class="utility-bar utility-bar--{{ bar_style }} {{ width_class }}"
+       role="navigation"
+       aria-label="Utility bar"
+       id="utility-bar"
+       style="
+         --section-padding: {{ settings.utility_bar_section_padding }}px;
+         {%- if width_type == 'custom-width' %}
+           --custom-width: {{ settings.utility_bar_custom_width }}rem;
+         {%- endif %}
+       ">
+
+    <div class="utility-bar__inner">
+
+      <div class="utility-bar__col utility-bar__col--left">
+        {%- render 'utility-links', settings: settings, count: 3 -%}
+      </div>
+
+      <div class="utility-bar__col utility-bar__col--right">
+        <div class="utility-bar__switchers">
+          {%- if show_curr -%}
+            {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
+          {%- endif -%}
+
+          {%- if show_loc -%}
+            {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
+          {%- endif -%}
+
+          {%- render 'region-picker' -%}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
+{%- endif -%}
