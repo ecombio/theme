@@ -15,11 +15,21 @@
    <header> by sections/main-header.liquid. See the override rule
    inside the "MOBILE / TABLET" block below.
 
-   Two selectors here reference classes this file doesn't own:
+   Four selectors here reference classes this file doesn't own:
      .main-header--sticky-enabled.is-sticky — added/removed by
        assets/main-header.js's scroll handler.
      .menu-bar.is-visible — added/removed by assets/header-hamburger.js
-       when the sticky hamburger is clicked.
+       when the sticky hamburger is clicked. Only relevant to the
+       Standard sticky style — see the auto-hide entry just below.
+     .main-header--sticky-autohide.is-sticky — the Auto-hide sticky
+       style modifier (from the "Sticky header style" section setting,
+       added by sections/main-header.liquid) combined with .is-sticky.
+       Auto-hide has no toggle button at all (the whole header hides/
+       reveals as one unit — see main-header.css's "STICKY — AUTO-HIDE
+       VARIANT" block), so instead of waiting on an .is-visible class
+       from a click, the menu bar just always reveals itself whenever
+       the header is sticky in this mode. DESKTOP ONLY, same scope as
+       the .is-visible reveal — see that rule for why.
      .main-header--menu-bar-mobile-visible / --menu-bar-tablet-visible —
        added/removed by sections/main-header.liquid based on the
        "Show Menu Bar" checkboxes in the Mobile and Tablet Division
@@ -27,7 +37,7 @@
        show_menu_bar_tablet). These are two SEPARATE settings/classes —
        each only takes effect within its own breakpoint, so mobile and
        tablet can show or hide the bar independently of each other.
-   All three are kept here (rather than in main-header.css) since
+   All four are kept here (rather than in main-header.css) since
    they're fundamentally about what .menu-bar looks like — the trigger
    classes just happen to come from elsewhere.
 
@@ -50,6 +60,10 @@
    separate from mobile's (--menu-bar-mobile-visible, max-width:639 only)
    — see the "MOBILE / TABLET" block below.
 
+   UPDATED: added the auto-hide sticky style's always-reveal rule for
+   .menu-bar (see the .main-header--sticky-autohide entry above and the
+   rule itself just below the existing .is-visible reveal).
+
    ADDED: horizontally-scrollable menu bar with hidden scrollbar +
    left/right edge-fade "shadows" (like Back Market's header nav), for
    when there are more nav links than fit in the available width on
@@ -70,9 +84,31 @@
    mobile/tablet "display: none" rule for .menu-bar defined under
    @media (max-width: 1023px) further down this file. The `.is-visible`
    class itself is added/removed by header-hamburger.js; this file only
-   owns what that class does to .menu-bar's display. */
+   owns what that class does to .menu-bar's display. Standard sticky
+   style only — auto-hide has no toggle button, see the rule below
+   instead. */
 @media (min-width: 1024px) {
   .main-header--sticky-enabled.is-sticky .menu-bar.is-visible {
+    display: flex;
+  }
+}
+
+/* ... or, for the auto-hide sticky style, reappears automatically the
+   moment the header goes sticky — no toggle click required, since
+   auto-hide mode has no toggle button at all (the whole header hides/
+   reveals together on scroll direction instead; see main-header.css's
+   "STICKY — AUTO-HIDE VARIANT" block and main-header.js's scroll
+   handler). Same specificity as the .is-visible rule above; wins
+   because it's declared later and the two modifiers
+   (--sticky-enabled / --sticky-autohide) always co-occur on the same
+   <header> when auto-hide is selected, so there's never a real
+   conflict between them to worry about.
+   DESKTOP ONLY, matching the .is-visible reveal's scope — mobile/
+   tablet sticky menu-bar visibility remains its own separate concern,
+   gated purely by .main-header--menu-bar-mobile-visible / --tablet-
+   visible, untouched by either sticky style. */
+@media (min-width: 1024px) {
+  .main-header--sticky-autohide.is-sticky .menu-bar {
     display: flex;
   }
 }
