@@ -11,9 +11,7 @@
    deliberately namespaced .showcase-menu__* throughout so nothing here
    ever collides with .mega-menu__* selectors, even though the two
    panels share the same open/close mechanism (hover + focus-within,
-   fixed panel synced to header's bottom edge via JS). See
-   showcase-menu.js for why that JS is a separate file rather than
-   extending mega-menu.js.
+   fixed panel synced to the header's bottom edge).
 
    Desktop (≥1024px) only, same as mega-menu and the rest of .menu-bar.
 
@@ -42,6 +40,19 @@
    with the header by default; full-width and custom-width variants are
    selectable per-block, independent of the global --page-margin /
    --page-width vars and independent of any other section.
+
+   UPDATED: .showcase-menu__panel positioning.
+   Previously read top: var(--main-header-bottom, 0px) — a variable
+   published only by assets/main-header.js, and only when the header
+   had sticky mode enabled. Any store with sticky header off never got
+   the variable set, fell through to the 0px fallback, and the panel
+   rendered pinned to the very top of the viewport, covering the whole
+   header. showcase-menu.js now measures its own nav bar
+   (#main-header-menu-bar) directly and publishes a local
+   --showcase-menu-bottom variable, so this component no longer depends
+   on another component's internal state. --main-header-bottom is kept
+   as a secondary fallback only, in case it's present and JS hasn't run
+   yet for some reason.
    ============================================================= */
 
 @media (min-width: 1024px) {
@@ -61,7 +72,7 @@
      the parent <li>. */
   .showcase-menu__panel {
     position: fixed;
-    top: var(--main-header-bottom, 0px); /* kept in sync centrally by assets/main-header.js */
+    top: var(--showcase-menu-bottom, var(--main-header-bottom, 0px));
     left: 0;
     width: 100%;
     background: #fff;
