@@ -12,20 +12,31 @@
   SELF-CONTAINED CSS (2026-07): this snippet loads its own stylesheet
   (assets/search-filter.css) directly below -- it doesn't rely on
   sections/main-search.liquid to load it, or on assets/main-search.css
-  to contain its rules. That means this snippet keeps its styling even
-  if it's ever rendered from a different section, or if main-search's
-  own stylesheet_tag gets reordered/removed. Don't add a second
-  stylesheet_tag for 'search-filter.css' anywhere else (e.g.
-  main-search.liquid) -- it would load the file twice.
+  to contain its rules. Don't add a second stylesheet_tag for
+  'search-filter.css' anywhere else (e.g. main-search.liquid) -- it
+  would load the file twice.
+
+  BRAND MATCH / ACCORDION (2026-07): reskinned to mirror
+  assets/collection-filters.css's look. The native <details>/<summary>
+  accordion was replaced with a <button aria-expanded> + chevron, since
+  matching collection-filters' toggle style needed that behavior, not
+  just its colors. The accordion's open/close JS is a small inline
+  <script> at the bottom of this file -- kept self-contained here
+  rather than added to main-search.js, the same reasoning as the CSS.
+  Each filter group gets a unique id via forloop.index so
+  aria-controls/id pairs don't collide when multiple groups render.
 
   NOT included in search-filter.css: .search-filter__active /
   .search-filter__pill. Despite the class prefix, those pills render
   inside snippets/search-toolbar.liquid's markup, not this snippet's
   -- so their CSS stays in assets/main-search.css alongside the rest
-  of the toolbar styling.
+  of the toolbar styling. Same reasoning for the missing "Clear all"
+  link in the header below -- that already lives with the toolbar's
+  pills, so it isn't duplicated here.
 
   PRICE FILTER (2026-07): the price_range group below renders the full
-  histogram + dual-thumb slider + quick-pick bracket UI. Styling is in
+  histogram + dual-thumb slider + quick-pick bracket UI, plus the
+  bracketed $-prefixed min/max fields. Styling is in
   assets/search-filter.css; interactivity is in main-search.js's
   initPriceFilters().
 
@@ -49,8 +60,8 @@
   {%- unless show_filters %} hidden{%- endunless %}
 >
 
-  <div class="search-filter__close">
-    <span class="search-filter__close-label">Filters</span>
+  <div class="search-filter__header">
+    <span class="search-filter__heading">Filters</span>
     <button class="search-filter__close-btn" type="button" aria-label="Close filters" data-filter-close>&times;</button>
   </div>
 
@@ -60,15 +71,27 @@
       <input type="hidden" name="type" value="product">
 
       {%- for filter in search.filters -%}
-        <details class="search-filter__group" open>
-          <summary class="search-filter__group-label">
-            {{ filter.label }}
-            {%- if filter.active_values.size > 0 -%}
-              <span class="search-filter__group-badge">{{ filter.active_values.size }}</span>
-            {%- endif -%}
-          </summary>
+        {%- assign group_body_id = 'SearchFilterGroupBody-' | append: forloop.index -%}
+        <div class="search-filter__group" data-filter-group>
+          <button
+            type="button"
+            class="search-filter__group-toggle"
+            aria-expanded="true"
+            aria-controls="{{ group_body_id }}"
+            data-filter-toggle
+          >
+            <span class="search-filter__group-label">
+              {{ filter.label }}
+              {%- if filter.active_values.size > 0 -%}
+                <span class="search-filter__group-badge">{{ filter.active_values.size }}</span>
+              {%- endif -%}
+            </span>
+            <svg class="search-filter__group-chevron" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+              <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
 
-          <div class="search-filter__group-body">
+          <div class="search-filter__group-body" id="{{ group_body_id }}" data-filter-body>
             {%- case filter.type -%}
               {%- when 'list' -%}
                 {%- for value in filter.values -%}
@@ -77,37 +100,56 @@
                     {%- if value.count == 0 and value.active == false %} search-filter__option--disabled{%- endif %}">
                     <input
                       type="checkbox"
+                      class="search-filter__option-checkbox"
                       name="{{ value.param_name }}"
                       value="{{ value.value }}"
                       {%- if value.active %} checked{%- endif %}
                       {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
                     >
-                    {{ value.label }} <span>({{ value.count }})</span>
+                    <span>{{ value.label }} <span class="search-filter__option-count">({{ value.count }})</span></span>
                   </label>
                 {%- endfor -%}
 
               {%- when 'price_range' -%}
                 <div class="search-filter__price-wrap" data-price-filter>
-                  <div class="search-filter__price">
-                    <input
-                      type="number"
-                      name="{{ filter.min_value.param_name }}"
-                      value="{{ filter.min_value.value }}"
-                      min="0"
-                      max="{{ filter.range_max }}"
-                      placeholder="0"
-                      data-price-input="min"
-                    >
-                    <span>&ndash;</span>
-                    <input
-                      type="number"
-                      name="{{ filter.max_value.param_name }}"
-                      value="{{ filter.max_value.value }}"
-                      min="0"
-                      max="{{ filter.range_max }}"
-                      placeholder="{{ filter.range_max }}"
-                      data-price-input="max"
-                    >
+                  <div class="search-filter__price-fields">
+                    <div class="search-filter__price-field">
+                      <label class="search-filter__price-label" for="SearchFilterPriceMin-{{ forloop.index }}">Min</label>
+                      <div class="search-filter__price-input-wrap">
+                        <span class="search-filter__price-symbol">$</span>
+                        <input
+                          type="number"
+                          class="search-filter__price-input"
+                          id="SearchFilterPriceMin-{{ forloop.index }}"
+                          name="{{ filter.min_value.param_name }}"
+                          value="{{ filter.min_value.value }}"
+                          min="0"
+                          max="{{ filter.range_max }}"
+                          placeholder="0"
+                          data-price-input="min"
+                        >
+                      </div>
+                    </div>
+
+                    <span class="search-filter__price-sep">&ndash;</span>
+
+                    <div class="search-filter__price-field">
+                      <label class="search-filter__price-label" for="SearchFilterPriceMax-{{ forloop.index }}">Max</label>
+                      <div class="search-filter__price-input-wrap">
+                        <span class="search-filter__price-symbol">$</span>
+                        <input
+                          type="number"
+                          class="search-filter__price-input"
+                          id="SearchFilterPriceMax-{{ forloop.index }}"
+                          name="{{ filter.max_value.param_name }}"
+                          value="{{ filter.max_value.value }}"
+                          min="0"
+                          max="{{ filter.range_max }}"
+                          placeholder="{{ filter.range_max }}"
+                          data-price-input="max"
+                        >
+                      </div>
+                    </div>
                   </div>
 
                   {%- comment -%}
@@ -178,7 +220,7 @@
                 </div>
             {%- endcase -%}
           </div>
-        </details>
+        </div>
       {%- else -%}
         <p class="search-filter__empty">No filters are configured for this search.</p>
       {%- endfor -%}
@@ -203,3 +245,28 @@
   {%- endif -%}
 
 </aside>
+
+<script>
+  (function () {
+    // Chevron/aria-expanded accordion for the .search-filter groups.
+    // Self-contained here (not main-search.js) for the same reason
+    // search-filter.css is loaded directly by this snippet -- the
+    // drawer's interactivity shouldn't depend on another file.
+    var aside = document.getElementById('search-filter');
+    if (!aside || aside.dataset.filterAccordionInit) return;
+    aside.dataset.filterAccordionInit = 'true';
+
+    aside.addEventListener('click', function (event) {
+      var toggle = event.target.closest('[data-filter-toggle]');
+      if (!toggle || !aside.contains(toggle)) return;
+
+      var expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+
+      var body = document.getElementById(toggle.getAttribute('aria-controls'));
+      if (body) {
+        body.hidden = expanded;
+      }
+    });
+  })();
+</script>
