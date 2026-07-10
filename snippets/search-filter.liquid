@@ -9,9 +9,25 @@
   presence/width stays consistent across both tabs instead of
   disappearing and reflowing the results grid.
 
+  SELF-CONTAINED CSS (2026-07): this snippet loads its own stylesheet
+  (assets/search-filter.css) directly below -- it doesn't rely on
+  sections/main-search.liquid to load it, or on assets/main-search.css
+  to contain its rules. That means this snippet keeps its styling even
+  if it's ever rendered from a different section, or if main-search's
+  own stylesheet_tag gets reordered/removed. Don't add a second
+  stylesheet_tag for 'search-filter.css' anywhere else (e.g.
+  main-search.liquid) -- it would load the file twice.
+
+  NOT included in search-filter.css: .search-filter__active /
+  .search-filter__pill. Despite the class prefix, those pills render
+  inside snippets/search-toolbar.liquid's markup, not this snippet's
+  -- so their CSS stays in assets/main-search.css alongside the rest
+  of the toolbar styling.
+
   PRICE FILTER (2026-07): the price_range group below renders the full
-  histogram + dual-thumb slider + quick-pick bracket UI. Styling lives in
-  main-search.css, interactivity in main-search.js's initPriceFilters().
+  histogram + dual-thumb slider + quick-pick bracket UI. Styling is in
+  assets/search-filter.css; interactivity is in main-search.js's
+  initPriceFilters().
 
   ACTIVE-FILTER PILLS (2026-07): moved to snippets/search-toolbar.liquid,
   displayed to the right of the Products/Articles tabs, so they're
@@ -22,6 +38,8 @@
     - search_terms  : the raw search query string
     - show_filters  : boolean, whether the drawer should render expanded/visible
 {%- endcomment -%}
+
+{{ 'search-filter.css' | asset_url | stylesheet_tag }}
 
 <aside
   class="search-filter"
@@ -172,8 +190,7 @@
       ARTICLES-TAB PLACEHOLDER (2026-07): kept as a block-level placeholder
       (not the form) so .search-filter's width stays exactly the same as
       it is on the Products tab; only the CONTENTS differ -- same
-      "no layout shift" reasoning as the width fix documented in
-      main-search.css.
+      "no layout shift" reasoning as the width fix documented above.
     {%- endcomment -%}
     <div class="search-filter__placeholder">
       <svg class="search-filter__placeholder-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
