@@ -1,123 +1,152 @@
-/**
- * Main Header — Sticky Behavior
- * File: assets/main-header-sticky.js
- *
- * Uses position:fixed (see main-header-sticky.css header comment for why
- * position:sticky doesn't work in this theme's section-wrapper structure).
- *
- * Also syncs two CSS custom properties to :root so other sticky elements
- * on the page can position themselves relative to the header without
- * guessing at fixed pixel values:
- *
- *   --sticky-header-height   Real, current rendered height of #main-header.
- *                             Changes with breakpoint, and with whether the
- *                             desktop menu bar is currently open (toggled
- *                             via the sticky hamburger) while sticky.
- *
- *   --sticky-toolbar-height  Real, current rendered height of
- *                             .collection-toolbar (including its bottom
- *                             margin), when present on the page. Lets
- *                             .collection-filter clear BOTH the header
- *                             and the toolbar without a hardcoded guess.
- *                             NOTE: offsetHeight/getBoundingClientRect()
- *                             do NOT include margin, so margin-bottom is
- *                             measured separately and added on — otherwise
- *                             the filter sticks ~32px too high and gets
- *                             visually covered by the toolbar.
- *
- * Both are recalculated on load, on resize, and via ResizeObserver so they
- * stay correct through toggle interactions and responsive layout shifts,
- * not just viewport-width changes.
- */
-
 (function () {
   'use strict';
 
-  var header          = document.getElementById('main-header');
-  var stickyHamburger  = document.querySelector('.main-header-sticky__hamburger');
-  var menuBar          = document.querySelector('.menu-bar');
-  var toolbar          = document.querySelector('.collection-toolbar');
+  const header = document.getElementById('main-header');
+  const toolbar = document.querySelector('.collection-toolbar');
 
-  /* Only run if sticky header is enabled via theme setting */
   if (!header || !header.classList.contains('main-header--sticky-enabled')) return;
 
-  var STICKY_THRESHOLD = 60;
-  var root = document.documentElement;
+  const STICKY_THRESHOLD = 60;
+  const AUTOHIDE_DELTA = 10;
+  const isAutohide = header.classList.contains('main-header--sticky-autohide');
 
-  /* ---------------------------------------------------------------------
-     CSS custom property sync
-     --------------------------------------------------------------------- */
-  function setHeaderHeightVar() {
-    root.style.setProperty('--sticky-header-height', header.offsetHeight + 'px');
-  }
+  // ADDED: when a showcase-menu/mega-menu panel is open (hovered or
+  // focused), showcase-menu.js adds this class to <header>. While it's
+  // present, autohide must not slide the header away — otherwise the
+  // panel (position: fixed, positioned against the header's bottom
+  // edge) ends up floating over content with no header above it, or
+  // gets visually reparented to the top of the viewport when the
+  // header's translateY transform creates a new fixed-position
+  // containing block. See handleStickyScroll below.
+  const PIN_CLASS = 'main-header--menu-panel-open';
 
-  function setToolbarHeightVar() {
+  const root = document.documentElement;
+  let scrollAnchorY = window.scrollY;
+  let bottomRafId = null;
+  let stickyRafId = null;
+  let resizeTimer = null;
+
+  // FIXED: this used to always read header.offsetHeight, which is a
+  // pure layout measurement — it never changes when the autohide
+  // effect slides the header away, because that effect works via
+  // `transform: translateY(-100%)`, and transforms never affect
+  // layout/box size. That meant --sticky-header-height stayed pinned
+  // at the header's full height even while the header was completely
+  // off-screen, so anything positioned with `top: var(--sticky-header-
+  // height)` (e.g. .collection-toolbar) kept reserving a gap for a
+  // header that wasn't visually there anymore.
+  //
+  // Now explicitly collapses to 0 whenever the header is hidden via
+  // autohide, and is called from every place that toggles .is-hidden
+  // (see handleStickyScroll below) instead of only on resize/
+  // ResizeObserver, which never fire for a transform-only change.
+  const setHeaderHeightVar = () => {
+    const isHidden = isAutohide && header.classList.contains('is-hidden');
+    const height = isHidden ? 0 : header.offsetHeight;
+    root.style.setProperty('--sticky-header-height', height + 'px');
+  };
+
+  const setToolbarHeightVar = () => {
     if (!toolbar) return;
-    var rect = toolbar.getBoundingClientRect();
-    var marginBottom = parseFloat(getComputedStyle(toolbar).marginBottom) || 0;
+    const rect = toolbar.getBoundingClientRect();
+    const marginBottom = parseFloat(getComputedStyle(toolbar).marginBottom) || 0;
     root.style.setProperty('--sticky-toolbar-height', (rect.height + marginBottom) + 'px');
-  }
+  };
 
-  /* Debounce resize so we're not writing custom properties on every pixel
-     of a drag-resize */
-  var resizeTimer;
-  function handleResize() {
+  const setHeaderBottomVar = () => {
+    if (header.classList.contains('is-sticky')) {
+      root.style.setProperty('--main-header-bottom', '0px');
+    } else {
+      root.style.setProperty('--main-header-bottom', header.getBoundingClientRect().bottom + 'px');
+    }
+  };
+
+  const scheduleHeaderBottomUpdate = () => {
+    if (bottomRafId !== null) return;
+    bottomRafId = requestAnimationFrame(() => {
+      bottomRafId = null;
+      setHeaderBottomVar();
+    });
+  };
+
+  const handleResize = () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
+    resizeTimer = setTimeout(() => {
       setHeaderHeightVar();
       setToolbarHeightVar();
-    }, 100);
-  }
+      setHeaderBottomVar();
+    }, 80);
+  };
 
-  function handleScroll() {
-    if (window.scrollY > STICKY_THRESHOLD) {
-      header.classList.add('is-sticky');
-      header.classList.add('is-scrolled');
-    } else {
-      header.classList.remove('is-sticky');
-      header.classList.remove('is-scrolled');
+  const handleStickyScroll = () => {
+    setHeaderBottomVar();
 
-      /* Collapse the nav and reset the hamburger once we leave sticky mode */
-      if (menuBar) menuBar.classList.remove('is-visible');
-      if (stickyHamburger) {
-        stickyHamburger.classList.remove('is-active');
-        stickyHamburger.setAttribute('aria-expanded', 'false');
+    const currentScrollY = window.scrollY;
+    const wasSticky = header.classList.contains('is-sticky');
+
+    if (currentScrollY > STICKY_THRESHOLD) {
+      header.classList.add('is-sticky', 'is-scrolled');
+
+      if (isAutohide) {
+        // ADDED: while a menu panel is open, keep the header pinned
+        // visible and don't advance the scroll anchor — so the moment
+        // the panel closes, autohide resumes cleanly from the current
+        // scroll position instead of instantly registering a huge
+        // "delta" and immediately hiding the header.
+        if (header.classList.contains(PIN_CLASS)) {
+          header.classList.remove('is-hidden');
+          scrollAnchorY = currentScrollY;
+          setHeaderHeightVar(); // FIXED: header just became visible again
+        } else if (!wasSticky) {
+          scrollAnchorY = currentScrollY;
+        } else {
+          const delta = currentScrollY - scrollAnchorY;
+          if (delta > AUTOHIDE_DELTA) {
+            header.classList.add('is-hidden');
+            scrollAnchorY = currentScrollY;
+            setHeaderHeightVar(); // FIXED: header just slid off-screen
+          } else if (delta < -AUTOHIDE_DELTA) {
+            header.classList.remove('is-hidden');
+            scrollAnchorY = currentScrollY;
+            setHeaderHeightVar(); // FIXED: header just slid back into view
+          }
+        }
       }
+    } else {
+      header.classList.remove('is-sticky', 'is-scrolled', 'is-hidden');
+      scrollAnchorY = currentScrollY;
+      setHeaderHeightVar(); // FIXED: header is back in normal flow at full height
+      header.dispatchEvent(new CustomEvent('main-header:unstick'));
     }
-  }
+  };
 
-  /* Initial measurement, before first paint of dependent consumers */
+  const scheduleStickyUpdate = () => {
+    if (stickyRafId !== null) return;
+    stickyRafId = requestAnimationFrame(() => {
+      stickyRafId = null;
+      handleStickyScroll();
+    });
+  };
+
+  // Init
   setHeaderHeightVar();
   setToolbarHeightVar();
+  setHeaderBottomVar();
 
-  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('scroll', scheduleStickyUpdate, { passive: true });
   window.addEventListener('resize', handleResize);
-  handleScroll();
+  handleStickyScroll();
 
-  /* ResizeObserver catches height changes resize alone won't — e.g. the
-     menu bar expanding when the sticky hamburger is toggled open (this is
-     what pushes the sticky header from ~64px to ~111px), the mobile search
-     row toggling, or font/zoom-driven reflow. Observing the elements
-     directly means we don't have to manually recalculate on every state
-     change that might affect their height. */
   if ('ResizeObserver' in window) {
-    var headerRO = new ResizeObserver(setHeaderHeightVar);
+    const headerRO = new ResizeObserver(() => {
+      setHeaderHeightVar();
+      scheduleHeaderBottomUpdate();
+    });
     headerRO.observe(header);
 
     if (toolbar) {
-      var toolbarRO = new ResizeObserver(setToolbarHeightVar);
+      const toolbarRO = new ResizeObserver(setToolbarHeightVar);
       toolbarRO.observe(toolbar);
     }
-  }
-
-  /* Hamburger <-> X toggle, only reachable while sticky (button is hidden otherwise) */
-  if (stickyHamburger && menuBar) {
-    stickyHamburger.addEventListener('click', function () {
-      var isOpen = menuBar.classList.toggle('is-visible');
-      stickyHamburger.classList.toggle('is-active', isOpen);
-      stickyHamburger.setAttribute('aria-expanded', String(isOpen));
-      /* Height change from the menu bar opening/closing is caught by the
-         ResizeObserver above — no manual recalculation needed here. */
-    });
   }
 })();
