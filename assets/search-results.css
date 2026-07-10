@@ -1,18 +1,72 @@
 /* assets/search-results.css
-   Owned by snippets/search-results.liquid.
-   Covers the panel wrapper and the pagination / empty-state markup
-   that's identical in both product-results.liquid and
-   article-results.liquid (kept here, in their shared parent, instead
-   of duplicated in each). Tab-switcher styling has moved to
-   search-toolbar.css now that the toolbar is the only snippet that
-   renders that markup (it used to be rendered here too, duplicating
-   ids on the page).
+   Owned by snippets/search-results.liquid, loaded via that snippet's
+   own stylesheet_tag (self-contained, same pattern as
+   assets/search-filter.css / snippets/search-filter.liquid) rather
+   than by the parent section. Re-split out of main-search.css
+   (2026-07) now that product-results.liquid and article-results.liquid
+   have been merged directly into search-results.liquid instead of
+   staying separate snippets -- the file boundary moved with the
+   markup rather than disappearing.
+
+   Card-level styling stays OUT of this file: product-card.css and
+   article-card.css are still owned by product-card.liquid /
+   article-card.liquid respectively. This file only owns the panel
+   wrapper, pagination/empty-state, and the two result grids.
+
+   ID FIX (2026-07): the product/article grid-container rules below
+   were previously scoped to #product-results / #article-results,
+   which don't exist anywhere in the markup (search-results.liquid
+   uses #panel-products / #panel-articles for the panel wrappers, and
+   #search-results-grid / .article-feed for the grids themselves) --
+   so `display: contents` on those ids was never actually applying.
+   Rescoped to the real panel ids so the panel wrapper doesn't add an
+   extra box around the grid.
+
+   BRAND TOKENS: same --hs-* variables as main-search.css, always as
+   a var(--token, fallback) read -- see main-search.css's BRAND TOKENS
+   note for why.
 */
 
 .search-feed {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* Tab-switch loading state
+   Tabs are still plain links that do a full page navigation (see the
+   note in main-search.js) -- this class just gets added the instant a
+   tab is clicked, for immediate feedback while that navigation is in
+   flight, rather than the previous results sitting there looking
+   fully idle until the new page arrives. */
+.search-feed.is-loading {
+  position: relative;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.search-feed.is-loading::after {
+  content: '';
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: -0.875rem;
+  border: 3px solid var(--hs-accent-secondary, #4338CA);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: search-feed-spin 0.6s linear infinite;
+}
+
+/* Distinct from search-filter.css's own spin keyframe -- the two
+   files don't share an animation name, so neither depends on the
+   other loading first. */
+@keyframes search-feed-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .search-feed__panel[hidden] {
@@ -22,7 +76,7 @@
 .search-empty {
   padding: 3rem 1rem;
   text-align: center;
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
 }
 
 .pagination {
@@ -35,19 +89,86 @@
 
 .pagination__link {
   padding: 0.5rem 0.85rem;
-  border: 1px solid var(--color-border, #e2e2e2);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 4px;
   font-size: 0.9rem;
-  color: var(--color-text, #111);
+  color: var(--hs-text, #1a1a1a);
   text-decoration: none;
 }
 
 .pagination__link:hover {
-  border-color: var(--color-accent, #111);
+  border-color: var(--hs-accent, #4F46E5);
 }
 
 .pagination__link--current {
-  background: var(--color-accent, #111);
-  border-color: var(--color-accent, #111);
-  color: var(--color-accent-contrast, #fff);
+  background: var(--hs-accent, #4F46E5);
+  border-color: var(--hs-accent, #4F46E5);
+  color: var(--hs-accent-contrast, #fff);
+}
+
+/* ------------------------------------------------------------------
+   Products panel grid
+   Card-level styling lives in product-card.css -- this only owns the
+   grid container arranging those cards, plus the panel wrapper it
+   sits inside. Breakpoints mirror main-collection.css's grid (1 col
+   <=480px, 2 col <768px, 3 col <1024px) so this stays visually
+   consistent with the rest of the site, per the note in
+   product-card.liquid's IMAGE SIZES FIX.
+   ------------------------------------------------------------------ */
+
+#panel-products {
+  display: contents;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 4), minmax(0, 1fr));
+  gap: 1.5rem 1rem;
+}
+
+@media (max-width: 1024px) {
+  .search-results-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .search-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .search-results-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Articles panel grid
+   Card-level styling lives in article-card.css -- this only owns the
+   grid container arranging those cards, plus the panel wrapper it
+   sits inside.
+   ------------------------------------------------------------------ */
+
+#panel-articles {
+  display: contents;
+}
+
+.article-feed {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .article-feed {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .article-feed {
+    grid-template-columns: 1fr;
+  }
 }
