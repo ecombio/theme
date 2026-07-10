@@ -39,6 +39,22 @@
     width: 100%;
     background: #fff;
     box-shadow: 0 16px 32px rgba(0, 0, 0, 0.10);
+    /* FIXED (backdrop rendering over panel content): this z-index only
+       ranks the panel against other z-indexed children *inside*
+       #main-header's own stacking context (.main-header has
+       position: relative; z-index: 200, which makes it a stacking-
+       context root). Being position: fixed changes where the panel
+       paints on screen, but it does NOT pull the panel out of that
+       ancestor stacking context — so 300 here never gets compared
+       directly against .showcase-menu-backdrop's z-index, only against
+       siblings within the header. The backdrop (appended to <body>)
+       stacks in the root context instead, competing against
+       #main-header's z-index: 200 as a whole. For the panel to reliably
+       paint above the backdrop, the backdrop's z-index must stay below
+       200 — see the comment on .showcase-menu-backdrop below. Don't
+       "fix" a backdrop-over-panel bug by raising this number instead;
+       it won't help, since the comparison it needs to win happens one
+       level up. */
     z-index: 300;
     opacity: 0;
     visibility: hidden;
@@ -75,9 +91,20 @@
      reference (header + panel stay crisp, only the page content below
      is dimmed/blurred).
 
-     z-index sits below the panel (300) but above ordinary page content,
-     and pointer-events are only enabled once visible so it doesn't
-     block clicks anywhere while hidden. */
+     z-index: because this element lives on <body> (not nested inside
+     #main-header like the panel does), it stacks in the ROOT context
+     against #main-header as a whole — not against the panel's own
+     z-index: 300 directly. #main-header itself is z-index: 200
+     (position: relative), so this MUST stay below 200 for the header
+     and its nested panel to reliably paint above it. It previously sat
+     at 250, which beat the header's 200 and therefore painted over the
+     panel's content too, despite the panel claiming a "higher" 300 —
+     that 300 only ever mattered inside the header's own stacking
+     context, never against this element. Keep this below 200; raising
+     the panel's z-index will not fix a recurrence of that bug. Still
+     comfortably above ordinary in-page content (z-index: 0/auto), and
+     pointer-events are only enabled once visible so it doesn't block
+     clicks anywhere while hidden. */
   .showcase-menu-backdrop {
     position: fixed;
     top: var(--showcase-menu-bottom, var(--main-header-bottom, 0px));
@@ -87,7 +114,7 @@
     background: rgba(20, 20, 20, 0.4);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    z-index: 250;
+    z-index: 150;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
