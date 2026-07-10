@@ -1,48 +1,33 @@
-/**
- * Main Header Controller
- * File: assets/main-header.js
- * Loaded by: sections/main-header.liquid (defer)
- *
- * Handles sticky + auto-hide behavior + CSS var syncing for dropdowns.
- */
 (function () {
   'use strict';
 
-  var header = document.getElementById('main-header');
-  var toolbar = document.querySelector('.collection-toolbar');
+  const header = document.getElementById('main-header');
+  const toolbar = document.querySelector('.collection-toolbar');
 
-  if (!header || !header.classList.contains('main-header--sticky-enabled')) {
-    return;
-  }
+  if (!header || !header.classList.contains('main-header--sticky-enabled')) return;
 
-  var STICKY_THRESHOLD = 60;
-  var AUTOHIDE_DELTA = 10; // slightly higher = fewer unnecessary toggles
-  var isAutohide = header.classList.contains('main-header--sticky-autohide');
+  const STICKY_THRESHOLD = 60;
+  const AUTOHIDE_DELTA = 10;
+  const isAutohide = header.classList.contains('main-header--sticky-autohide');
 
-  var root = document.documentElement;
-  var scrollAnchorY = window.scrollY;
+  const root = document.documentElement;
+  let scrollAnchorY = window.scrollY;
+  let bottomRafId = null;
+  let stickyRafId = null;
+  let resizeTimer = null;
 
-  var bottomRafId = null;
-  var stickyRafId = null;
-  var resizeTimer = null;
-
-  /* ───────────────────────────────────────────────────────────────────── */
-  /* CSS Custom Properties */
-  /* ───────────────────────────────────────────────────────────────────── */
-
-  var setHeaderHeightVar = function () {
+  const setHeaderHeightVar = () => {
     root.style.setProperty('--sticky-header-height', header.offsetHeight + 'px');
   };
 
-  var setToolbarHeightVar = function () {
+  const setToolbarHeightVar = () => {
     if (!toolbar) return;
-    var rect = toolbar.getBoundingClientRect();
-    var marginBottom = parseFloat(getComputedStyle(toolbar).marginBottom) || 0;
+    const rect = toolbar.getBoundingClientRect();
+    const marginBottom = parseFloat(getComputedStyle(toolbar).marginBottom) || 0;
     root.style.setProperty('--sticky-toolbar-height', (rect.height + marginBottom) + 'px');
   };
 
-  var setHeaderBottomVar = function () {
-    // When sticky, bottom is always 0 (fixed at top)
+  const setHeaderBottomVar = () => {
     if (header.classList.contains('is-sticky')) {
       root.style.setProperty('--main-header-bottom', '0px');
     } else {
@@ -50,36 +35,28 @@
     }
   };
 
-  var scheduleHeaderBottomUpdate = function () {
+  const scheduleHeaderBottomUpdate = () => {
     if (bottomRafId !== null) return;
-    bottomRafId = window.requestAnimationFrame(function () {
+    bottomRafId = requestAnimationFrame(() => {
       bottomRafId = null;
       setHeaderBottomVar();
     });
   };
 
-  /* ───────────────────────────────────────────────────────────────────── */
-  /* Resize handling */
-  /* ───────────────────────────────────────────────────────────────────── */
-
-  var handleResize = function () {
+  const handleResize = () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
+    resizeTimer = setTimeout(() => {
       setHeaderHeightVar();
       setToolbarHeightVar();
       setHeaderBottomVar();
     }, 80);
   };
 
-  /* ───────────────────────────────────────────────────────────────────── */
-  /* Core scroll handler (rAF throttled) */
-  /* ───────────────────────────────────────────────────────────────────── */
-
-  var handleStickyScroll = function () {
+  const handleStickyScroll = () => {
     setHeaderBottomVar();
 
-    var currentScrollY = window.scrollY;
-    var wasSticky = header.classList.contains('is-sticky');
+    const currentScrollY = window.scrollY;
+    const wasSticky = header.classList.contains('is-sticky');
 
     if (currentScrollY > STICKY_THRESHOLD) {
       header.classList.add('is-sticky', 'is-scrolled');
@@ -88,8 +65,7 @@
         if (!wasSticky) {
           scrollAnchorY = currentScrollY;
         } else {
-          var delta = currentScrollY - scrollAnchorY;
-
+          const delta = currentScrollY - scrollAnchorY;
           if (delta > AUTOHIDE_DELTA) {
             header.classList.add('is-hidden');
             scrollAnchorY = currentScrollY;
@@ -106,18 +82,15 @@
     }
   };
 
-  var scheduleStickyUpdate = function () {
+  const scheduleStickyUpdate = () => {
     if (stickyRafId !== null) return;
-    stickyRafId = window.requestAnimationFrame(function () {
+    stickyRafId = requestAnimationFrame(() => {
       stickyRafId = null;
       handleStickyScroll();
     });
   };
 
-  /* ───────────────────────────────────────────────────────────────────── */
-  /* Initialization */
-  /* ───────────────────────────────────────────────────────────────────── */
-
+  // Init
   setHeaderHeightVar();
   setToolbarHeightVar();
   setHeaderBottomVar();
@@ -126,16 +99,15 @@
   window.addEventListener('resize', handleResize);
   handleStickyScroll();
 
-  /* ResizeObserver for dynamic height changes */
   if ('ResizeObserver' in window) {
-    var headerRO = new ResizeObserver(function () {
+    const headerRO = new ResizeObserver(() => {
       setHeaderHeightVar();
       scheduleHeaderBottomUpdate();
     });
     headerRO.observe(header);
 
     if (toolbar) {
-      var toolbarRO = new ResizeObserver(setToolbarHeightVar);
+      const toolbarRO = new ResizeObserver(setToolbarHeightVar);
       toolbarRO.observe(toolbar);
     }
   }
