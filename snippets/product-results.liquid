@@ -21,6 +21,10 @@
   as extra params. absolute_index uses paginate.current_offset, not
   forloop.index alone, so a block positioned at e.g. slot 20 renders
   once overall instead of on every page.
+
+  Pagination nav is shared with article-results.liquid via
+  search-pagination.liquid (2026-07) — see that snippet for the
+  &type= param contract.
 {%- endcomment -%}
 
 {%- comment -%}
@@ -81,22 +85,6 @@
     {%- endunless -%}
   </div>
 
-  {%- if paginate.pages > 1 -%}
-    <nav class="pagination" aria-label="Pagination">
-      {%- if paginate.previous -%}
-        <a href="{{ paginate.previous.url }}&type=product" class="pagination__link">&larr; Previous</a>
-      {%- endif -%}
-      {%- for part in paginate.parts -%}
-        {%- if part.is_link -%}
-          <a href="{{ part.url }}&type=product" class="pagination__link">{{ part.title }}</a>
-        {%- else -%}
-          <span class="pagination__link pagination__link--current" aria-current="page">{{ part.title }}</span>
-        {%- endif -%}
-      {%- endfor -%}
-      {%- if paginate.next -%}
-        <a href="{{ paginate.next.url }}&type=product" class="pagination__link">Next &rarr;</a>
-      {%- endif -%}
-    </nav>
-  {%- endif -%}
+  {%- render 'search-pagination', paginate: paginate, type: 'product' -%}
 
 {%- endpaginate -%}
