@@ -11,26 +11,40 @@
  * the two panels' open/close state can never cross-contaminate each
  * other even if both appear in the same menu bar.
  *
- * Positioning: this file used to measure the header itself (its own
- * scroll/resize/ResizeObserver listeners writing panel.style.top
- * directly). That's gone now — assets/main-header.js is the single
- * place that measures the header's live bottom edge and keeps it in
- * --main-header-bottom, and showcase-menu.css just reads that variable
- * (`top: var(--main-header-bottom)`).
+ * Positioning: measures #main-header-menu-bar (the <nav> this file's
+ * companion snippet, header-menu.liquid, renders) directly via
+ * getBoundingClientRect() and publishes its bottom edge as
+ * --showcase-menu-bottom. showcase-menu.css reads that variable for
+ * the panel's `top`.
+ *
+ * This used to depend on assets/main-header.js publishing a shared
+ * --main-header-bottom variable instead. That variable was only ever
+ * set when the header had sticky mode enabled (main-header.js returns
+ * early otherwise), so any store with sticky header turned off got an
+ * unset variable, a 0px fallback, and a showcase-menu panel pinned to
+ * the very top of the viewport, covering the header entirely.
+ * Measuring the nav bar locally removes that cross-component
+ * dependency so this component can't be broken by an unrelated
+ * header setting again. showcase-menu.css still falls back to
+ * --main-header-bottom as a last resort if it's present.
  *
  * Scroll-to-close: the header's sticky transition (assets/main-header.css,
  * .main-header--sticky-enabled.is-sticky) animates itself into place over
- * ~0.28s, but --main-header-bottom updates to the new value immediately.
- * Trying to keep an open panel visually glued to the header through that
- * animation isn't worth chasing — simplest fix is to just close the panel
- * as soon as scrolling starts, same as most mega-menus already behave.
+ * ~0.28s. Trying to keep an open panel visually glued to the header
+ * through that animation isn't worth chasing — simplest fix is to just
+ * close the panel as soon as scrolling starts, same as most mega-menus
+ * already behave.
  *
- * This file's remaining jobs:
- *   1. Escape close: closes the open panel and returns focus to its
+ * This file's jobs:
+ *   1. Measure + publish --showcase-menu-bottom (on load, on
+ *      hover/focus of a trigger, right before a panel opens, and on
+ *      resize/nav-bar-resize) so the panel is always positioned
+ *      against the nav bar's current bottom edge.
+ *   2. Escape close: closes the open panel and returns focus to its
  *      trigger.
- *   2. Click-outside close.
- *   3. Scroll close: closes the open panel as soon as the page scrolls.
- *   4. Touch support: first tap opens instead of navigating.
+ *   3. Click-outside close.
+ *   4. Scroll close: closes the open panel as soon as the page scrolls.
+ *   5. Touch support: first tap opens instead of navigating.
  */
 (function () {
   'use strict';
@@ -38,7 +52,23 @@
   var items = document.querySelectorAll('[data-showcase-menu]');
   if (!items.length) return;
 
+  var navBar = document.getElementById('main-header-menu-bar');
+  var root = document.documentElement;
   var openItem = null;
+  var rafId = null;
+
+  function updateBottomVar() {
+    if (!navBar) return;
+    root.style.setProperty('--showcase-menu-bottom', navBar.getBoundingClientRect().bottom + 'px');
+  }
+
+  function scheduleUpdate() {
+    if (rafId !== null) return;
+    rafId = requestAnimationFrame(function () {
+      rafId = null;
+      updateBottomVar();
+    });
+  }
 
   function getPanel(item) {
     return item.querySelector('[data-showcase-menu-panel]');
@@ -50,6 +80,8 @@
   function openMenu(item) {
     if (openItem === item) return;
     if (openItem) closeMenu(openItem);
+
+    updateBottomVar(); // measure fresh at the moment the panel opens
 
     var panel = getPanel(item);
     var trigger = getTrigger(item);
@@ -71,6 +103,10 @@
     var panel = getPanel(item);
     if (!trigger || !panel) return;
 
+    item.addEventListener('mouseenter', function () {
+      updateBottomVar();
+    });
+
     item.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' || event.key === 'Esc') {
         closeMenu(item);
@@ -85,6 +121,10 @@
         openMenu(item);
       }
     });
+
+    trigger.addEventListener('focus', function () {
+      updateBottomVar();
+    });
   });
 
   document.addEventListener('click', function (event) {
@@ -98,4 +138,14 @@
   window.addEventListener('scroll', function () {
     if (openItem) closeMenu(openItem);
   }, { passive: true });
+
+  window.addEventListener('resize', scheduleUpdate);
+
+  if (navBar && 'ResizeObserver' in window) {
+    new ResizeObserver(scheduleUpdate).observe(navBar);
+  }
+
+  // Set an initial value on load so the var is never unset before the
+  // first hover/focus/open.
+  updateBottomVar();
 })();
