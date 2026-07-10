@@ -13,29 +13,20 @@
    search-results.liquid, remove that stylesheet_tag to avoid loading
    these rules twice.
 
-   Color fallbacks for the toolbar match collection-toolbar.css so
-   the search and collection toolbars stay visually consistent.
+   BRAND TOKENS (2026-07): switched from the old --color-* variable
+   names to the --hs-* names main-collection.css already reads, so
+   both sections pull from the same global tokens and fall back to
+   the same palette when a store hasn't defined those variables yet.
+   Every color in this file is still a `var(--token, fallback)` read,
+   never a bare hex value, so a future preset system can swap the
+   whole section's palette by redefining the --hs-* tokens at a
+   higher scope — no changes needed here when that lands.
 
-   BRAND COLORS (2026-07): --color-accent / --color-accent-secondary
-   are expected to be set globally by the theme (they're read with a
-   fallback everywhere in this file, never hardcoded), but the
-   fallbacks here have been set to the brand palette — Old Glory Red
-   #B31942 as the primary accent, Old Glory Blue #0A3161 as the
-   secondary — so this section still looks on-brand even on a store
-   that hasn't defined those variables yet.
-
-   PRESET-READY: every color in this file is a `var(--token, fallback)`
-   read, never a bare hex value, specifically so a future preset
-   system (e.g. "hyper" / "focus") can swap the whole section's
-   palette just by redefining --color-accent / --color-accent-
-   secondary / --color-text etc. at a higher scope (e.g. on
-   `[data-theme-preset]`) — no changes needed here when that lands.
-
-   PRICE FILTER (2026-07): the price_range group now renders a
-   histogram + dual-thumb slider + quick-pick brackets, not just the
-   two plain number inputs. Its rules live in their own subsection
-   below, right after .search-filter__price, following the same
-   var(--token, brand-fallback) convention as the rest of the file.
+   PRICE FILTER (2026-07): the price_range group renders a
+   histogram + dual-thumb slider + quick-pick brackets, not just two
+   plain number inputs. Its rules live in their own subsection below,
+   right after .search-filter__price, following the same
+   var(--token, fallback) convention as the rest of the file.
 */
 
 .main-search {
@@ -48,7 +39,7 @@
 }
 
 .search-page__default-width {
-  max-width: 90rem;
+  max-width: 1184px;
 }
 
 .search-page__custom-width {
@@ -89,7 +80,7 @@
 
 .search-result-count {
   margin: 0.5rem 0 0;
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
 }
 
 @media (max-width: 640px) {
@@ -101,7 +92,7 @@
 .search-hero__prompt {
   padding-block: 4rem;
   text-align: center;
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
 }
 
 /* Toolbar
@@ -112,7 +103,7 @@
 .tab-switcher {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 1px solid var(--color-border, #e5e5e5);
+  border-bottom: 1px solid var(--hs-border, #e5e5e5);
 }
 
 .tab-switcher__tab {
@@ -120,23 +111,23 @@
   margin-bottom: -1px;
   font-size: 0.95rem;
   font-weight: 500;
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
   text-decoration: none;
   border-bottom: 2px solid transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .tab-switcher__tab:hover {
-  color: var(--color-text, #1a1a1a);
+  color: var(--hs-text, #1a1a1a);
 }
 
 .tab-switcher__tab--active {
-  color: var(--color-text, #1a1a1a);
-  border-bottom-color: var(--color-accent, #B31942);
+  color: var(--hs-text, #1a1a1a);
+  border-bottom-color: var(--hs-accent, #4F46E5);
 }
 
 .tab-switcher__tab:focus-visible {
-  outline: 2px solid var(--color-accent, #B31942);
+  outline: 2px solid var(--hs-accent, #4F46E5);
   outline-offset: 2px;
 }
 
@@ -145,7 +136,7 @@
   align-items: center;
   gap: 1rem;
   padding-block: 1rem;
-  border-bottom: 1px solid var(--color-border, #e5e5e5);
+  border-bottom: 1px solid var(--hs-border, #e5e5e5);
 }
 
 .search-toolbar__filter-toggle {
@@ -153,7 +144,7 @@
   align-items: center;
   gap: 0.4rem;
   background: none;
-  border: 1px solid var(--color-border, #e5e5e5);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 4px;
   padding: 0.5rem 0.85rem;
   font-size: 0.9rem;
@@ -171,7 +162,7 @@
 
 .search-toolbar__sort select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, #e5e5e5);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 4px;
   font-size: 0.9rem;
 }
@@ -182,7 +173,7 @@
   display: none;
   gap: 0.75rem;
   padding-block: 0.75rem;
-  border-bottom: 1px solid var(--color-border, #e5e5e5);
+  border-bottom: 1px solid var(--hs-border, #e5e5e5);
 }
 
 .search-mobile-bar__btn {
@@ -190,7 +181,7 @@
   align-items: center;
   gap: 0.4rem;
   background: none;
-  border: 1px solid var(--color-border, #e5e5e5);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 4px;
   padding: 0.5rem 0.85rem;
   font-size: 0.9rem;
@@ -254,7 +245,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 40;
+  z-index: 199;
 }
 
 /* BACKDROP FIX (2026-07): scoped to the same breakpoint the drawer
@@ -284,13 +275,20 @@
      16rem desktop width came entirely from the old grid track. Now
      that .search-body is flexbox, there's no grid track to borrow a
      width from, so it's set explicitly here. flex-shrink: 0 keeps it
-     from being squeezed by the feed's flex: 1 growth. */
-  width: 16rem;
+     from being squeezed by the feed's flex: 1 growth. Width matches
+     .collection-body's 260px sidebar track. */
+  width: 260px;
   flex-shrink: 0;
-  border: 1px solid var(--color-border, #e2e2e2);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 6px;
   padding: 1rem;
-  width: 280px;
+}
+
+@media (max-width: 1024px) {
+  .search-filter {
+    /* mirrors .collection-body's 1024px sidebar tightening */
+    width: 220px;
+  }
 }
 
 .search-filter[hidden] {
@@ -317,7 +315,7 @@
 }
 
 .search-filter__group {
-  border-bottom: 1px solid var(--color-border, #e2e2e2);
+  border-bottom: 1px solid var(--hs-border, #e5e5e5);
   padding-block: 0.75rem;
 }
 
@@ -335,8 +333,8 @@
 }
 
 .search-filter__group-badge {
-  background: var(--color-accent, #B31942);
-  color: var(--color-accent-contrast, #fff);
+  background: var(--hs-accent, #4F46E5);
+  color: var(--hs-accent-contrast, #fff);
   border-radius: 999px;
   font-size: 0.75rem;
   padding: 0.1rem 0.5rem;
@@ -379,7 +377,7 @@
 .search-filter__price input {
   width: 5rem;
   padding: 0.4rem;
-  border: 1px solid var(--color-border, #e2e2e2);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 4px;
 }
 
@@ -395,7 +393,7 @@
 .search-filter__histogram-bar {
   flex: 1 1 0;
   min-height: 3px;
-  background: var(--color-accent-muted, #f2c9d3);
+  background: var(--hs-accent-muted, #E0E1F9);
   border-radius: 2px 2px 0 0;
 }
 
@@ -420,11 +418,11 @@
 .search-filter__range-track {
   left: 0;
   right: 0;
-  background: var(--color-border, #d4d4d4);
+  background: var(--hs-border, #d4d4d4);
 }
 
 .search-filter__range-track-active {
-  background: var(--color-accent, #B31942);
+  background: var(--hs-accent, #4F46E5);
 }
 
 .search-filter__range-input {
@@ -464,7 +462,7 @@
   height: 18px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid var(--color-accent, #B31942);
+  border: 2px solid var(--hs-accent, #4F46E5);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   cursor: pointer;
   margin-top: 0;
@@ -481,7 +479,7 @@
   height: 14px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid var(--color-accent, #B31942);
+  border: 2px solid var(--hs-accent, #4F46E5);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   cursor: pointer;
 }
@@ -506,7 +504,7 @@
   width: 15px;
   height: 15px;
   margin: 0;
-  accent-color: var(--color-accent, #B31942);
+  accent-color: var(--hs-accent, #4F46E5);
   cursor: pointer;
 }
 
@@ -520,30 +518,30 @@
 .search-filter__pill {
   font-size: 0.8rem;
   padding: 0.3rem 0.6rem;
-  border: 1px solid var(--color-border, #e2e2e2);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 999px;
   text-decoration: none;
-  color: var(--color-text, #111);
+  color: var(--hs-text, #1a1a1a);
 }
 
 .search-filter__pill--clear {
-  border-color: var(--color-accent, #B31942);
-  color: var(--color-accent, #B31942);
+  border-color: var(--hs-accent, #4F46E5);
+  color: var(--hs-accent, #4F46E5);
 }
 
 .search-filter__submit {
   margin-top: 1rem;
   width: 100%;
   padding: 0.6rem;
-  background: var(--color-accent, #B31942);
-  color: var(--color-accent-contrast, #fff);
+  background: var(--hs-accent, #4F46E5);
+  color: var(--hs-accent-contrast, #fff);
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .search-filter__empty {
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
   font-size: 0.9rem;
 }
 
@@ -565,7 +563,7 @@
 }
 
 .search-filter__placeholder-icon {
-  color: var(--color-accent-secondary, #0A3161);
+  color: var(--hs-accent-secondary, #4338CA);
   margin-bottom: 0.25rem;
 }
 
@@ -573,14 +571,14 @@
   margin: 0;
   font-weight: 600;
   font-size: 0.95rem;
-  color: var(--color-text, #1a1a1a);
+  color: var(--hs-text, #1a1a1a);
 }
 
 .search-filter__placeholder-text {
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.45;
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
 }
 
 .search-filter__placeholder-btn {
@@ -589,8 +587,8 @@
   align-items: center;
   justify-content: center;
   padding: 0.6rem 1.15rem;
-  background: var(--color-accent, #B31942);
-  color: var(--color-accent-contrast, #fff);
+  background: var(--hs-accent, #4F46E5);
+  color: var(--hs-accent-contrast, #fff);
   border-radius: 4px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -603,7 +601,7 @@
 }
 
 .search-filter__placeholder-btn:focus-visible {
-  outline: 2px solid var(--color-accent-secondary, #0A3161);
+  outline: 2px solid var(--hs-accent-secondary, #4338CA);
   outline-offset: 2px;
 }
 
@@ -630,7 +628,7 @@
   right: 0;
   width: 1.1rem;
   height: 1.1rem;
-  border: 2px solid var(--color-accent-secondary, #0A3161);
+  border: 2px solid var(--hs-accent-secondary, #4338CA);
   border-top-color: transparent;
   border-radius: 50%;
   animation: search-filter-spin 0.6s linear infinite;
@@ -692,7 +690,7 @@
   width: 1.75rem;
   height: 1.75rem;
   margin-left: -0.875rem;
-  border: 3px solid var(--color-accent-secondary, #0A3161);
+  border: 3px solid var(--hs-accent-secondary, #4338CA);
   border-top-color: transparent;
   border-radius: 50%;
   animation: search-filter-spin 0.6s linear infinite;
@@ -705,7 +703,7 @@
 .search-empty {
   padding: 3rem 1rem;
   text-align: center;
-  color: var(--color-text-muted, #6b6b6b);
+  color: var(--hs-text-muted, #6b6b6b);
 }
 
 .pagination {
@@ -718,21 +716,21 @@
 
 .pagination__link {
   padding: 0.5rem 0.85rem;
-  border: 1px solid var(--color-border, #e2e2e2);
+  border: 1px solid var(--hs-border, #e5e5e5);
   border-radius: 4px;
   font-size: 0.9rem;
-  color: var(--color-text, #111);
+  color: var(--hs-text, #1a1a1a);
   text-decoration: none;
 }
 
 .pagination__link:hover {
-  border-color: var(--color-accent, #111);
+  border-color: var(--hs-accent, #4F46E5);
 }
 
 .pagination__link--current {
-  background: var(--color-accent, #B31942);
-  border-color: var(--color-accent, #B31942);
-  color: var(--color-accent-contrast, #fff);
+  background: var(--hs-accent, #4F46E5);
+  border-color: var(--hs-accent, #4F46E5);
+  color: var(--hs-accent-contrast, #fff);
 }
 
 /* ------------------------------------------------------------------
