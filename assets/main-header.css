@@ -30,6 +30,20 @@
    which is why they all appeared to get cut off at the same point.
    Replaced with a ::after pseudo-element that carries the shadow
    instead, so nothing inside .main-header gets clipped anymore.
+
+   STICKY STYLES: there are now two sticky variants, chosen in the
+   theme editor via "Sticky header style":
+     - Standard   → .main-header--sticky-enabled only. Header pins and
+                    stays fully visible; the sticky hamburger/X toggle
+                    (rendered by header-hamburger.liquid, styled in
+                    header-hamburger.css) reveals/hides the menu bar.
+     - Auto-hide  → .main-header--sticky-enabled PLUS the
+                    .main-header--sticky-autohide modifier. Reuses the
+                    same position:fixed plumbing, but main-header.js
+                    also toggles .is-hidden based on scroll direction,
+                    and the header translates fully off-screen instead
+                    of showing a toggle button. See the "STICKY — AUTO-
+                    HIDE VARIANT" block below for the CSS side of this.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -397,6 +411,45 @@
 }
 .main-header-sticky__spacer.is-active {
   display: block;
+}
+
+/* ─────────────────────────────────────────────
+   STICKY — AUTO-HIDE VARIANT
+   Only applies when .main-header--sticky-autohide sits alongside
+   .main-header--sticky-enabled (i.e. "Sticky header style" is set to
+   Auto-hide in the theme editor). Reuses the exact same position:fixed
+   plumbing above — .is-sticky still does the pinning and the entry
+   animation. The only new behavior is main-header.js also toggling
+   .is-hidden based on scroll direction, which this block translates
+   into a slide-away/slide-back transform.
+
+   Once .is-sticky is present, main-header-slide-in has already
+   finished (it's a one-shot 0.28s animation with no `forwards` fill,
+   so it reverts to computed `transform: none` on completion) — this
+   transition then takes over for every subsequent .is-hidden toggle.
+
+   There is no menu-bar / hamburger-toggle button in this mode: the
+   whole header hides and reveals as a single unit on scroll direction,
+   so there's nothing separate to toggle open. The sticky hamburger's
+   own "X" toggle (rendered by header-hamburger.liquid, styled in
+   header-hamburger.css, class .main-header-sticky__hamburger) is
+   explicitly hidden below so it can never appear in this mode.
+   ───────────────────────────────────────────── */
+.main-header--sticky-autohide.is-sticky {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+  will-change: transform;
+}
+
+.main-header--sticky-autohide.is-sticky.is-hidden {
+  transform: translateY(-100%);
+  /* Suppress the shadow while off-screen so it doesn't flash at the
+     top edge mid-transition. */
+  box-shadow: none;
+}
+
+/* No toggle button in auto-hide mode — see comment block above. */
+.main-header--sticky-autohide .main-header-sticky__hamburger {
+  display: none !important;
 }
 
 /* =============================================================================
@@ -1006,6 +1059,10 @@
   .main-header--sticky-enabled {
     transition: none !important;
     animation: none !important;
+  }
+
+  .main-header--sticky-autohide.is-sticky {
+    transition: none !important;
   }
   /* .main-header-sticky__hamburger's reduced-motion rule now lives in
      header-hamburger.css alongside the element itself. */
