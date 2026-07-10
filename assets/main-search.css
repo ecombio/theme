@@ -1,39 +1,41 @@
 /* assets/main-search.css
    Owned by sections/main-search.liquid.
    Covers the hero, the section-level body layout (filter aside +
-   feed), the toolbar (filter toggle, tab switcher, sort select) plus
-   its condensed mobile-bar counterpart, and the results feed (panel
-   wrapper, pagination/empty state, and the product/article result
-   grids). search-toolbar.css and search-results.css have both been
-   merged into this file -- the toolbar and results markup are
-   inlined into main-search.liquid / search-results.liquid rather
-   than being separate owned snippets, so all of this section's
-   styling now lives in one asset. If search-results.css is still
-   being loaded directly by search-results.liquid, remove that
-   stylesheet_tag to avoid loading these rules twice.
+   feed), and the toolbar (filter toggle, tab switcher, sort select)
+   plus its condensed mobile-bar counterpart.
 
-   FILTER DRAWER CSS MOVED OUT (2026-07): everything styling the
-   .search-filter drawer itself (the <aside> and its contents --
-   groups, price_range histogram/slider/brackets, submit button,
-   placeholder, mobile positioning, etc.) now lives in
-   assets/search-filter.css, loaded directly by
-   snippets/search-filter.liquid via its own stylesheet_tag. That
-   snippet is meant to be self-contained, so its styling doesn't
-   depend on this file. The one exception: .search-filter__active and
-   .search-filter__pill* below are NOT in search-filter.css, because
-   despite the class prefix they render inside
+   RESULTS FEED SPLIT BACK OUT (2026-07): the results-feed styling
+   (panel wrapper, pagination/empty-state, product/article grids) has
+   moved to assets/search-results.css, loaded directly by
+   snippets/search-results.liquid via its own stylesheet_tag -- same
+   self-contained pattern as search-filter.liquid/.css. This reverses
+   the earlier merge documented in this file's prior revision, now
+   that product-results.liquid / article-results.liquid have been
+   inlined into search-results.liquid rather than staying separate
+   snippets: the CSS boundary now matches the current snippet
+   boundary again instead of sitting one level up from it.
+
+   FILTER DRAWER CSS: everything styling the .search-filter drawer
+   itself (the <aside> and its contents -- groups, price_range
+   histogram/slider/brackets, submit button, placeholder, mobile
+   positioning, etc.) lives in assets/search-filter.css, loaded
+   directly by snippets/search-filter.liquid via its own
+   stylesheet_tag. That snippet is self-contained, so its styling
+   doesn't depend on this file. The one exception: .search-filter__active
+   and .search-filter__pill* below are NOT in search-filter.css,
+   because despite the class prefix they render inside
    snippets/search-toolbar.liquid's markup (the active-filter pills
    next to the Products/Articles tabs), not inside search-filter's
    <aside> -- so they stay here with the rest of the toolbar styling.
 
-   BRAND TOKENS (2026-07): switched from the old --color-* variable
-   names to the --hs-* names main-collection.css already reads, so
-   both sections pull from the same global tokens and fall back to
-   the same palette when a store hasn't defined those variables yet.
-   Every color in this file is still a `var(--token, fallback)` read,
-   never a bare hex value, so a future preset system can swap the
-   whole section's palette by redefining the --hs-* tokens at a
-   higher scope -- no changes needed here when that lands.
+   BRAND TOKENS: uses the --hs-* variables main-collection.css already
+   reads, so both sections pull from the same global tokens and fall
+   back to the same palette when a store hasn't defined those
+   variables yet. Every color in this file is still a
+   var(--token, fallback) read, never a bare hex value, so a future
+   preset system can swap the whole section's palette by redefining
+   the --hs-* tokens at a higher scope -- no changes needed here when
+   that lands.
 */
 
 .main-search {
@@ -103,9 +105,8 @@
 }
 
 /* Toolbar
-   Merged in from assets/search-toolbar.css. Covers the desktop
-   toolbar (filter toggle, tab switcher, sort select) and its
-   condensed mobile-bar counterpart. */
+   Covers the desktop toolbar (filter toggle, tab switcher, sort
+   select) and its condensed mobile-bar counterpart. */
 
 .tab-switcher {
   display: flex;
@@ -142,7 +143,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding-block: 1rem;
+  /*padding-block: 1rem;*/
   border-bottom: 1px solid var(--hs-border, #e5e5e5);
 }
 
@@ -297,158 +298,3 @@
     display: block;
   }
 }
-
-/* Results feed
-   Merged in from assets/search-results.css. Covers the panel
-   wrapper and the pagination / empty-state markup that's identical
-   in both the product-results and article-results blocks (kept
-   here, in their shared parent, instead of duplicated per block). */
-
-.search-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-/* Tab-switch loading state (2026-07)
-   Tabs are still plain links that do a full page navigation (see the
-   note in main-search.js) — this class just gets added the instant a
-   tab is clicked, for immediate feedback while that navigation is in
-   flight, rather than the previous results sitting there looking
-   fully idle until the new page arrives. */
-.search-feed.is-loading {
-  position: relative;
-  opacity: 0.5;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-
-.search-feed.is-loading::after {
-  content: '';
-  position: absolute;
-  top: 2rem;
-  left: 50%;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-left: -0.875rem;
-  border: 3px solid var(--hs-accent-secondary, #4338CA);
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: search-feed-spin 0.6s linear infinite;
-}
-
-/* Renamed from the shared search-filter-spin keyframe -- that name
-   now lives only in assets/search-filter.css (which has its own
-   identical copy for its aria-busy spinner) so the two files don't
-   depend on each other for an animation definition. */
-@keyframes search-feed-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.search-feed__panel[hidden] {
-  display: none;
-}
-
-.search-empty {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: var(--hs-text-muted, #6b6b6b);
-}
-
-.pagination {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.pagination__link {
-  padding: 0.5rem 0.85rem;
-  border: 1px solid var(--hs-border, #e5e5e5);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: var(--hs-text, #1a1a1a);
-  text-decoration: none;
-}
-
-.pagination__link:hover {
-  border-color: var(--hs-accent, #4F46E5);
-}
-
-.pagination__link--current {
-  background: var(--hs-accent, #4F46E5);
-  border-color: var(--hs-accent, #4F46E5);
-  color: var(--hs-accent-contrast, #fff);
-}
-
-/* ------------------------------------------------------------------
-   snippet: product-results (formerly assets/product-results.css)
-   Card-level styling lives in product-card.css — this section only
-   owns the grid container that arranges those cards, plus the
-   #product-results wrapper it now sits inside. Breakpoints mirror
-   main-collection.css's grid (1 col <=480px, 2 col <768px, 3 col
-   <1024px) so this stays visually consistent with the rest of the
-   site, per the note in product-card.liquid's IMAGE SIZES FIX.
-   ------------------------------------------------------------------ */
-
-#product-results {
-  display: contents;
-}
-
-.search-results-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--columns, 4), minmax(0, 1fr));
-  gap: 1.5rem 1rem;
-}
-
-@media (max-width: 1024px) {
-  .search-results-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .search-results-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .search-results-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-/* /snippet: product-results */
-
-/* ------------------------------------------------------------------
-   snippet: article-results (formerly assets/article-results.css)
-   Card-level styling lives in article-card.css — this section only
-   owns the grid container that arranges those cards, plus the
-   #article-results wrapper it now sits inside.
-   ------------------------------------------------------------------ */
-
-#article-results {
-  display: contents;
-}
-
-.article-feed {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem 1.5rem;
-}
-
-@media (max-width: 1024px) {
-  .article-feed {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .article-feed {
-    grid-template-columns: 1fr;
-  }
-}
-/* /snippet: article-results */
