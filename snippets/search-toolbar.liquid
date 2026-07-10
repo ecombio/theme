@@ -136,4 +136,13 @@
   </div>
 {%- endif -%}
 
-<script src="{{ 'search-toolbar.js' | asset_url }}" defer></script>
+{%- comment -%}
+  No <script> tag here on purpose. search-toolbar.js's responsibilities
+  (sort <select> + tab keyboard nav) were merged into assets/main-search.js
+  in 2026-07 (see that file's header comment) -- but this snippet kept
+  loading the old file too, and both guarded their IIFEs with the same
+  window.__searchToolbarLoaded flag. Whichever script tag executed first
+  silently "won" and the other's setup never ran. main-search.js is
+  already loaded by sections/main-search.liquid and is the single owner
+  of this behavior now, so nothing needs to load from here.
+{%- endcomment -%}
