@@ -5,7 +5,8 @@
    block is present in section.blocks)
 
    Scope: the showcase-menu's trigger caret + the full-width dropdown
-   panel (optional "Good to know" sidebar + image category grid).
+   panel (optional "Good to know" sidebar + image category grid) + the
+   shared blurred backdrop behind the panel.
 
    Sibling to mega-menu.css/mega-menu.liquid, NOT a variant of it —
    deliberately namespaced .showcase-menu__* throughout so nothing here
@@ -14,45 +15,6 @@
    fixed panel synced to the header's bottom edge).
 
    Desktop (≥1024px) only, same as mega-menu and the rest of .menu-bar.
-
-   UPDATED: .showcase-menu__grid now uses grid-auto-flow: column +
-   grid-auto-columns: 1fr instead of repeat(auto-fill, minmax(...)).
-   Card count varies per store (1-8, blank slots skipped in the liquid
-   loop), and auto-fill/minmax was computing how many fixed-width
-   columns could fit and then leaving a partial/uneven last row when
-   the count didn't divide evenly — dead space on the right, or an
-   unwanted wrap to a second row. grid-auto-flow: column always creates
-   exactly one equal-width column per rendered card, so the row stays a
-   single row and always fills the full panel width.
-
-   UPDATED: .showcase-menu__panel-inner width + padding.
-   Previously relied on a shared "page-width--header" class that isn't
-   defined anywhere in this theme, so the panel had no max-width at all
-   and stretched full viewport width regardless of the header's own
-   width — and side padding was a fixed 24px baked into the rule.
-
-   Now follows the same independent "Section Layout" pattern as
-   main-header.css / example-width-section.liquid: --panel-padding and
-   --panel-custom-width are LOCAL vars, set inline per-block from the
-   showcase-menu block's own "Panel layout" schema settings (see
-   snippets/showcase-menu.liquid). --panel-inner--default-width mirrors
-   main-header--default-width's 1184px max-width so the panel lines up
-   with the header by default; full-width and custom-width variants are
-   selectable per-block, independent of the global --page-margin /
-   --page-width vars and independent of any other section.
-
-   UPDATED: .showcase-menu__panel positioning.
-   Previously read top: var(--main-header-bottom, 0px) — a variable
-   published only by assets/main-header.js, and only when the header
-   had sticky mode enabled. Any store with sticky header off never got
-   the variable set, fell through to the 0px fallback, and the panel
-   rendered pinned to the very top of the viewport, covering the whole
-   header. showcase-menu.js now measures its own nav bar
-   (#main-header-menu-bar) directly and publishes a local
-   --showcase-menu-bottom variable, so this component no longer depends
-   on another component's internal state. --main-header-bottom is kept
-   as a secondary fallback only, in case it's present and JS hasn't run
-   yet for some reason.
    ============================================================= */
 
 @media (min-width: 1024px) {
@@ -81,11 +43,6 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    /* Closed/exit state lifts up rather than just nudging — mirrors the
-       header's own upward scroll-away before it re-enters as sticky
-       (see .main-header--sticky-enabled.is-sticky's slide-in keyframes
-       in main-header.css), so the panel disappearing reads as part of
-       the same motion language instead of a smaller, unrelated fade. */
     transform: translateY(-16px);
     transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
   }
@@ -100,20 +57,48 @@
     transition: opacity 0.18s ease, transform 0.18s ease;
   }
 
-  /* Forced-closed state for scroll-to-close. :hover/:focus-within above
-     would otherwise keep the panel visible through a scroll close as
-     long as the cursor never actually leaves the menu item (e.g.
-     trackpad/wheel scrolling while hovering doesn't move the mouse).
-     !important guarantees this wins over the :hover rule regardless of
-     selector order or specificity. Cleared by showcase-menu.js only on
-     a fresh interaction (mouseleave+re-enter or trigger focus), not
-     just whenever scroll momentum happens to stop, so the panel can't
-     silently reopen mid-scroll. */
   .showcase-menu__panel.is-scroll-locked {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
     transition: none !important;
+  }
+
+  /* ── Backdrop ──
+     One shared element, injected once by showcase-menu.js and appended
+     to <body> (class="showcase-menu-backdrop"), toggled via .is-open
+     alongside the panel by the same hover/focus handlers.
+
+     Positioned using the same --showcase-menu-bottom variable as the
+     panel, so it always starts directly beneath the nav bar/panel —
+     never covering the header itself, matching the Back Market
+     reference (header + panel stay crisp, only the page content below
+     is dimmed/blurred).
+
+     z-index sits below the panel (300) but above ordinary page content,
+     and pointer-events are only enabled once visible so it doesn't
+     block clicks anywhere while hidden. */
+  .showcase-menu-backdrop {
+    position: fixed;
+    top: var(--showcase-menu-bottom, var(--main-header-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(20, 20, 20, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 250;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+
+  .showcase-menu-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.18s ease;
   }
 
   .showcase-menu__panel-inner {
@@ -124,11 +109,8 @@
     padding: 32px var(--panel-padding, 24px) 40px;
   }
 
-  /* ── Panel width variants (independent Section Layout pattern) ── */
   .showcase-menu__panel-inner--default-width {
-    max-width: 1184px; /* matches main-header--default-width, so the
-                           panel lines up with the header content by
-                           default instead of stretching full-bleed */
+    max-width: 1184px;
   }
 
   .showcase-menu__panel-inner--full-width {
@@ -139,8 +121,6 @@
     max-width: var(--panel-custom-width);
   }
 
-  /* ── Sidebar ── fixed width so the grid's column count stays
-     predictable regardless of tip copy length. */
   .showcase-menu__sidebar {
     flex: 0 0 220px;
     background: #f7f7fa;
@@ -197,7 +177,6 @@
     margin-bottom: 2px;
   }
 
-  /* ── Main / grid column ── */
   .showcase-menu__main {
     flex: 1;
     min-width: 0;
@@ -227,12 +206,6 @@
     color: var(--hdr-accent);
   }
 
-  /* One row, always full-width: grid-auto-flow: column + 1fr auto-columns
-     creates exactly as many equal-width columns as there are rendered
-     cards (1-8, since blank slots are skipped in the liquid loop), so
-     the row never wraps, never leaves trailing empty space, and always
-     reaches the panel's full width regardless of how many categories
-     are filled in. */
   .showcase-menu__grid {
     display: grid;
     grid-auto-flow: column;
@@ -244,7 +217,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: 0; /* let cards shrink below content size instead of overflowing the row */
+    min-width: 0;
     text-decoration: none;
     color: inherit;
   }
@@ -276,15 +249,16 @@
   }
 }
 
-/* Showcase menu is desktop-only; the mobile drawer handles nav below 1024px */
 @media (max-width: 1023px) {
-  .showcase-menu__panel {
+  .showcase-menu__panel,
+  .showcase-menu-backdrop {
     display: none !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .showcase-menu__panel,
+  .showcase-menu-backdrop,
   .menu-bar__item--showcase-menu .icon-caret-down {
     transition: none !important;
   }
