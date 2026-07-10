@@ -206,11 +206,13 @@
       // CSS :hover, not by openMenu(). That left scroll-close, escape,
       // and click-outside all silently doing nothing on desktop.
       openItem = item;
+      isHovered = true;
       pinHeaderAndShowBackdrop();
     });
 
     item.addEventListener('mouseleave', function () {
       clearScrollLock(item);
+      isHovered = false;
       if (openItem === item) {
         openItem = null;
         unpinHeaderAndHideBackdrop();
@@ -236,6 +238,7 @@
       clearScrollLock(item);
       updateBottomVar();
       openItem = item;
+      isHovered = true;
       pinHeaderAndShowBackdrop();
     });
 
@@ -245,6 +248,7 @@
     // would incorrectly unpin/close immediately.
     item.addEventListener('focusout', function (event) {
       if (!item.contains(event.relatedTarget)) {
+        isHovered = false;
         if (openItem === item) {
           openItem = null;
           unpinHeaderAndHideBackdrop();
@@ -266,16 +270,27 @@
     if (openItem) closeMenu(openItem);
   });
 
-  // Close on scroll rather than trying to track the header's sticky
-  // slide-in animation — see file header comment above. Uses
-  // scrollCloseMenu (not closeMenu) so the panel is forced closed even
-  // if the mouse is still hovering it. Note: while a panel is open,
-  // main-header.js's autohide handler keeps the header pinned (see
-  // main-header--menu-panel-open), so this mostly matters for the
-  // Standard sticky style / non-autohide scroll behavior now, and as a
-  // fallback safety net in general.
+  // Close on scroll — but ONLY if the panel isn't currently being
+  // hovered/focused. openItem gets set the instant a real hover/focus
+  // happens and cleared the instant it ends, so "openItem is set" and
+  // "the user is genuinely interacting with it right now" are the same
+  // condition. That means the old unconditional
+  // `if (openItem) scrollCloseMenu(openItem)` was closing the panel on
+  // the very first scroll tick even while the mouse never left it —
+  // directly fighting the "stay open / keep header pinned while
+  // hovering" behavior added above (a trackpad/wheel scroll doesn't
+  // move the mouse, so mouseleave never fires, but this listener would
+  // still slam the panel shut).
+  //
+  // isHovered tracks real pointer/focus presence separately from
+  // openItem's open/closed bookkeeping, so scroll-close only fires for
+  // the case it actually exists to handle: a stale/leftover open state
+  // with no live hover or focus behind it (e.g. touch-opened panels,
+  // or edge cases where focus moved outside the tracked handlers).
+  var isHovered = false;
+
   window.addEventListener('scroll', function () {
-    if (openItem) scrollCloseMenu(openItem);
+    if (openItem && !isHovered) scrollCloseMenu(openItem);
   }, { passive: true });
 
   window.addEventListener('resize', scheduleUpdate);
