@@ -100,6 +100,22 @@
     transition: opacity 0.18s ease, transform 0.18s ease;
   }
 
+  /* Forced-closed state for scroll-to-close. :hover/:focus-within above
+     would otherwise keep the panel visible through a scroll close as
+     long as the cursor never actually leaves the menu item (e.g.
+     trackpad/wheel scrolling while hovering doesn't move the mouse).
+     !important guarantees this wins over the :hover rule regardless of
+     selector order or specificity. Cleared by showcase-menu.js only on
+     a fresh interaction (mouseleave+re-enter or trigger focus), not
+     just whenever scroll momentum happens to stop, so the panel can't
+     silently reopen mid-scroll. */
+  .showcase-menu__panel.is-scroll-locked {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: none !important;
+  }
+
   .showcase-menu__panel-inner {
     display: flex;
     align-items: flex-start;
