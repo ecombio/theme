@@ -61,11 +61,32 @@
             intercept) — search's tabs are deliberately plain links
             to ?type=product|article, per responsibility #2 below.
             This only makes the FILTER FORM's fields live; it never
-            touches tab navigation.
+            touches tab navigation. IMPORTANT: because of this, the
+            filterForm/sectionId references below are captured once
+            at load and assumed to stay attached to the live DOM for
+            the rest of the page's life. If tab navigation is ever
+            made AJAX (replacing #main-search wholesale) without also
+            reworking this file to re-acquire those references after
+            the swap, live filtering will silently start writing into
+            detached, disconnected elements. Do not add AJAX tab
+            switching without addressing this.
           - Also swaps the hero's result count ("N results for
             'query'") since that changes as filters narrow the
             results, which collection's hero text doesn't have an
             equivalent of.
+          - Also swaps the toolbar's active-filter pills
+            (.search-toolbar__active, rendered by search-toolbar.liquid)
+            (2026-07 fix): this block previously only updated on a
+            full page reload, since applyFiltersLive's swap list never
+            included anything from search-toolbar.liquid's markup —
+            checking a filter would update the grid/count/form but
+            leave stale (or missing) pills in the toolbar until the
+            user manually refreshed. syncActivePills() below handles
+            all three cases a fetch can produce: pills existed and
+            still do (replace), pills didn't exist and now do (first
+            filter applied — insert after the tab switcher), and
+            pills existed but no longer do (last filter cleared —
+            remove).
           - The price_bracket radios are UI-only (they just write
             into the min./max. number fields, see initPriceFilters)
             and are explicitly excluded from the submitted query
@@ -84,6 +105,17 @@
       pagination/filter state for that result type. This only
       enhances keyboard travel between the two tabs; it never blocks
       the default navigation.
+
+      NOTE (2026-07): assets/search-toolbar.js still exists as a
+      separate file and snippets/search-toolbar.liquid still loads it
+      via its own <script> tag, even though its responsibilities were
+      merged into this IIFE. Both files guard with the same flag name
+      (window.__searchToolbarLoaded) — whichever script tag executes
+      first "wins" and the other's setup silently never runs. This
+      predates the pill-sync fix above and is a separate bug: resolve
+      by removing search-toolbar.liquid's <script> tag now that this
+      file is the single owner of that logic (see accompanying
+      search-toolbar.liquid change).
 */
 (function () {
   if (window.__searchFilterLoaded) return;
@@ -258,6 +290,35 @@
     });
   }
 
+  // 2026-07 fix: keeps the toolbar's active-filter pill strip
+  // (.search-toolbar__active, from search-toolbar.liquid) in sync
+  // with whatever the fetched section actually rendered. Handles all
+  // three cases: pills existed and still do (replace in place),
+  // pills didn't exist and now do (first filter just got checked —
+  // insert right after the tab switcher, matching where Liquid
+  // places it), and pills existed but no longer do (last filter just
+  // got cleared — remove).
+  function syncActivePills(doc) {
+    var toolbar = document.getElementById('search-toolbar');
+    if (!toolbar) return;
+
+    var newActive = doc.querySelector('.search-toolbar__active');
+    var currentActive = toolbar.querySelector('.search-toolbar__active');
+
+    if (newActive && currentActive) {
+      currentActive.replaceWith(newActive);
+    } else if (newActive && !currentActive) {
+      var tabSwitcher = toolbar.querySelector('.tab-switcher');
+      if (tabSwitcher) {
+        tabSwitcher.insertAdjacentElement('afterend', newActive);
+      } else {
+        toolbar.appendChild(newActive);
+      }
+    } else if (!newActive && currentActive) {
+      currentActive.remove();
+    }
+  }
+
   function applyFiltersLive(pushHistory) {
     var displayUrl = buildFilterUrl();
 
@@ -308,6 +369,8 @@
         var newCount = doc.getElementById('search-result-count');
         var currentCount = document.getElementById('search-result-count');
         if (newCount && currentCount) currentCount.replaceWith(newCount);
+
+        syncActivePills(doc);
 
         if (pushHistory) {
           history.pushState({}, '', displayUrl.toString());
