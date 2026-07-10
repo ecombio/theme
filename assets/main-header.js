@@ -28,7 +28,11 @@
   };
 
   const setHeaderBottomVar = () => {
-    root.style.setProperty('--main-header-bottom', header.getBoundingClientRect().bottom + 'px');
+    if (header.classList.contains('is-sticky')) {
+      root.style.setProperty('--main-header-bottom', '0px');
+    } else {
+      root.style.setProperty('--main-header-bottom', header.getBoundingClientRect().bottom + 'px');
+    }
   };
 
   const scheduleHeaderBottomUpdate = () => {
