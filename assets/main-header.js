@@ -16,21 +16,6 @@
   let stickyRafId = null;
   let resizeTimer = null;
 
-  // ── Spacer ───────────────────────────────────────────────────────
-  // main-header-sticky.css expects a sibling element with class
-  // "main-header-sticky__spacer" that gets its height set to match
-  // the header right before it goes position:fixed, so the page
-  // content doesn't jump upward when the header leaves the flow.
-  // That element was referenced in CSS but never created here —
-  // added below.
-  let spacer = document.querySelector('.main-header-sticky__spacer');
-  if (!spacer) {
-    spacer = document.createElement('div');
-    spacer.className = 'main-header-sticky__spacer';
-    spacer.setAttribute('aria-hidden', 'true');
-    header.insertAdjacentElement('afterend', spacer);
-  }
-
   const setHeaderHeightVar = () => {
     root.style.setProperty('--sticky-header-height', header.offsetHeight + 'px');
   };
@@ -50,13 +35,6 @@
     }
   };
 
-  // Keeps the spacer's height in sync with the header's own rendered
-  // height. Safe to call whether or not the header is currently fixed —
-  // offsetHeight reflects the element's own box size either way.
-  const updateSpacerHeight = () => {
-    spacer.style.height = header.offsetHeight + 'px';
-  };
-
   const scheduleHeaderBottomUpdate = () => {
     if (bottomRafId !== null) return;
     bottomRafId = requestAnimationFrame(() => {
@@ -71,9 +49,6 @@
       setHeaderHeightVar();
       setToolbarHeightVar();
       setHeaderBottomVar();
-      if (header.classList.contains('is-sticky')) {
-        updateSpacerHeight();
-      }
     }, 80);
   };
 
@@ -84,13 +59,6 @@
     const wasSticky = header.classList.contains('is-sticky');
 
     if (currentScrollY > STICKY_THRESHOLD) {
-      if (!wasSticky) {
-        // Capture the header's height right before it goes fixed,
-        // then activate the spacer so the page doesn't jump.
-        updateSpacerHeight();
-        spacer.classList.add('is-active');
-      }
-
       header.classList.add('is-sticky', 'is-scrolled');
 
       if (isAutohide) {
@@ -109,7 +77,6 @@
       }
     } else {
       header.classList.remove('is-sticky', 'is-scrolled', 'is-hidden');
-      spacer.classList.remove('is-active');
       scrollAnchorY = currentScrollY;
       header.dispatchEvent(new CustomEvent('main-header:unstick'));
     }
@@ -136,9 +103,6 @@
     const headerRO = new ResizeObserver(() => {
       setHeaderHeightVar();
       scheduleHeaderBottomUpdate();
-      if (header.classList.contains('is-sticky')) {
-        updateSpacerHeight();
-      }
     });
     headerRO.observe(header);
 
