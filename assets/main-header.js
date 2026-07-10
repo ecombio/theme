@@ -71,6 +71,32 @@
  * still being loaded as its own <script> tag anywhere, remove that tag —
  * otherwise you're back to two listeners fighting over .is-scrolled.
  *
+ * PERF FIX (scroll handler now rAF-throttled): handleStickyScroll used
+ * to run directly as the 'scroll' event listener, meaning it fired on
+ * every native scroll event — during momentum/trackpad scrolling that
+ * can be 50-100+ times per second, far more often than the browser
+ * actually repaints. Each call toggled .is-hidden directly, which drives
+ * a CSS `transition: transform` in main-header.css. Toggling that class
+ * multiple times within a single animation frame kept interrupting and
+ * restarting the transition before it could finish, which is what
+ * produced the "stalls partway through, then suddenly snaps into place"
+ * stutter on auto-hide. It also made the scroll-direction delta noisy,
+ * since it was being computed between two raw, sub-pixel-apart scroll
+ * events instead of a meaningful per-frame movement.
+ *
+ * Fixed the same way --main-header-bottom's measurement was already
+ * throttled (see scheduleHeaderBottomUpdate below, which predates this
+ * fix and was the correct pattern all along): the scroll listener now
+ * only *schedules* work via requestAnimationFrame, coalescing any burst
+ * of native scroll events down to at most one handleStickyScroll() call
+ * per frame. That's also why setHeaderBottomVar() is called directly
+ * inside handleStickyScroll now instead of going through its own nested
+ * rAF wrapper — handleStickyScroll itself is already frame-throttled, so
+ * a second layer of throttling on top just added a redundant frame of
+ * lag. scheduleHeaderBottomUpdate() is kept around as-is for the
+ * ResizeObserver callbacks further down, which fire outside the scroll
+ * path and still need their own throttling independently.
+ *
  * Cart button/badge behaviour is NOT handled here — that logic lives
  * entirely in assets/header-cart.js, which is the correct, complete
  * implementation (real selectors, badge pop animation, drawer-open/close
@@ -108,7 +134,12 @@
   /* Minimum scroll delta (px) between frames before we act on direction.
      Filters out sub-pixel jitter, momentum/rubber-band bounce at the top
      or bottom of the page, and trackpad noise, so the header doesn't
-     flicker hidden/shown on a nearly-stationary scroll position. */
+     flicker hidden/shown on a nearly-stationary scroll position. Now that
+     handleStickyScroll only runs once per animation frame (see rAF
+     throttle below) instead of once per raw scroll event, this delta is
+     measured between two real frames of movement rather than two
+     arbitrarily-close native events, so it reads as a much cleaner
+     signal than before. */
   var AUTOHIDE_DELTA = 5;
   var lastScrollY = window.scrollY;
 
@@ -127,15 +158,23 @@
   };
 
   /* The one place --main-header-bottom gets written. Kept cheap (a single
-     getBoundingClientRect + a single custom-property write) since it can
-     run on every scroll frame. */
+     getBoundingClientRect + a single custom-property write). Called
+     directly (not through the rAF scheduler below) from inside
+     handleStickyScroll, since that function is now itself already
+     rAF-throttled — see scheduleHeaderBottomUpdate's own doc comment
+     for why it still exists separately for the ResizeObserver path. */
   var setHeaderBottomVar = function () {
     root.style.setProperty('--main-header-bottom', header.getBoundingClientRect().bottom + 'px');
   };
 
   /* rAF-throttled wrapper for triggers that can fire faster than the
-     browser can paint (scroll being the main one) — coalesces any bursts
-     down to at most one measurement + write per frame. */
+     browser can paint. Used by the ResizeObserver callbacks further
+     down, which fire independently of scroll and still need their own
+     coalescing. The scroll path no longer routes through this — it has
+     its own top-level rAF throttle now (see scheduleStickyUpdate),
+     which already guarantees setHeaderBottomVar() runs at most once per
+     frame during scroll, so wrapping it a second time there would only
+     add a redundant frame of lag. */
   var scheduleHeaderBottomUpdate = function () {
     if (bottomRafId !== null) return;
     bottomRafId = window.requestAnimationFrame(function () {
@@ -160,8 +199,9 @@
     // Bottom edge can move on every scroll pixel pre-sticky (e.g. an
     // announcement bar above the header scrolling away), and can also
     // shift the moment .is-sticky toggles, so this runs regardless of
-    // which branch below fires.
-    scheduleHeaderBottomUpdate();
+    // which branch below fires. Called directly since this whole
+    // function is already rAF-throttled by scheduleStickyUpdate below.
+    setHeaderBottomVar();
 
     var currentScrollY = window.scrollY;
 
@@ -204,12 +244,27 @@
     lastScrollY = currentScrollY;
   };
 
+  /* Coalesces any burst of native 'scroll' events down to at most one
+     handleStickyScroll() call per animation frame. This is the actual
+     fix for the auto-hide stutter: previously handleStickyScroll ran
+     directly as the scroll listener (see PERF FIX note at the top of
+     this file for the full explanation of why that caused interrupted
+     mid-transition jank). */
+  var stickyRafId = null;
+  var scheduleStickyUpdate = function () {
+    if (stickyRafId !== null) return;
+    stickyRafId = window.requestAnimationFrame(function () {
+      stickyRafId = null;
+      handleStickyScroll();
+    });
+  };
+
   /* Initial measurement, before first paint of dependent consumers */
   setHeaderHeightVar();
   setToolbarHeightVar();
   setHeaderBottomVar();
 
-  window.addEventListener('scroll', handleStickyScroll, { passive: true });
+  window.addEventListener('scroll', scheduleStickyUpdate, { passive: true });
   window.addEventListener('resize', handleResize);
   handleStickyScroll();
 
