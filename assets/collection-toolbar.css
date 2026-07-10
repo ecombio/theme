@@ -1,0 +1,438 @@
+/* assets/collection-toolbar.css
+   Styles for snippets/collection-toolbar.liquid — tabs, active-filters
+   strip, sort dropdown, mobile bar, and mobile sort sheet (the sheet
+   markup itself is injected by collection-toolbar.js, but its styles
+   live here since it's conceptually part of the toolbar).
+
+   PARITY WITH search-toolbar.css: kept in sync with assets/
+   search-toolbar.css everywhere except the active-filters strip,
+   which intentionally stays richer here (scroll-nav arrows + edge
+   fade) than search's plain scrollable row — that's a deliberate
+   keep, not a gap. Two small parity fixes folded in below: the
+   mobile-bar button :disabled state search already had, and
+   margin-inline-start (logical property) on the sort wrapper to
+   match search's. */
+
+.collection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: var(--sticky-header-height, 0);
+  z-index: 50;
+  background: #fff;
+}
+
+/* Desktop filter-toggle button removed — on desktop the filter
+   sidebar (snippets/collection-filter.liquid) is always visible, so
+   there's nothing to toggle. The mobile equivalent lives in
+   .collection-mobile-bar below and keeps its own [data-filter-toggle]
+   button; assets/collection-filter.js's toggle-click handler still
+   works unchanged since it just queries all [data-filter-toggle]
+   elements, and only the mobile one remains in the DOM. */
+
+/* Width pinned to match the collection-filter sidebar (currently
+   247px, set here explicitly for now rather than reading the same
+   var, since the sidebar's width is driven by the grid-template-
+   columns track on .collection-body rather than a standalone
+   custom property). Revisit if that ever changes to a shared token. */
+.tab-switcher {
+  display: flex;
+  flex: 0 0 247px;
+  width: 247px;
+}
+
+/* ---------- Active filters ----------
+   Deliberately kept richer than search's plain version: scroll-nav
+   arrows + edge fade for when pills overflow. Not a gap to close. */
+
+.collection-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 0.5rem;
+}
+
+.collection-active-filters[hidden] {
+  display: none;
+}
+
+/* Scroll region: prev arrow + track + next arrow. Fading and 28px
+   arrow-inset math both live here, scoped to just this wrapper, so
+   Clear all (a sibling, outside this element) can never throw the
+   fade position off regardless of its own width. */
+.collection-active-filters__scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+}
+
+.collection-active-filters__track {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.collection-active-filters__track::-webkit-scrollbar {
+  display: none;
+}
+
+.collection-active-filters__track .collection-filter__pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---------- Edge fade (white shadow) over the scrollable track ----------
+   Sits between the nav buttons and the track, on top of whatever
+   pills are scrolled underneath it, so overflow reads as a soft fade
+   rather than a hard clip. Purely decorative (pointer-events: none)
+   so it never blocks clicks on the pills or nav buttons. Scoped to
+   __scroll, so it only ever measures against the prev/track/next
+   trio — never Clear all. */
+.collection-active-filters__scroll::before,
+.collection-active-filters__scroll::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.collection-active-filters__scroll::before {
+  left: 28px; /* sits just past the prev nav button */
+  background: linear-gradient(to right, var(--color-white), rgba(255, 255, 255, 0));
+}
+
+.collection-active-filters__scroll::after {
+  right: 28px; /* sits just before the next nav button */
+  background: linear-gradient(to left, var(--color-white), rgba(255, 255, 255, 0));
+}
+
+.collection-active-filters__nav {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-pill-bg);
+  color: var(--color-pill-text);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  z-index: 2;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.collection-active-filters__nav:hover {
+  background: var(--color-atc-soldout-bg);
+}
+
+.collection-active-filters__nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Clear all sits outside the scroll region entirely, so it needs its
+   own flex sizing rather than inheriting the track's overflow
+   behavior — it should never shrink or wrap. Visual styling (flat
+   text-link look) lives with the rest of the pill styles in
+   collection-filter.css, since it shares that base class. */
+.collection-active-filters .collection-filter__pill--clear {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---------- Sort (desktop) ---------- */
+
+.collection-toolbar__sort {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.collection-toolbar__sort select {
+  appearance: none;
+  padding: 0.55rem 2rem 0.55rem 0.9rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 5px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6b6b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.85rem center;
+  background-size: 10px 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.collection-toolbar__sort select:hover {
+  background-color: #f4f4f4;
+}
+
+.collection-toolbar__sort select:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Tabs ---------- */
+
+.tab-switcher__tab {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex: 1 1 0;
+  width: 100%;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.85rem 1.25rem;
+  color: #6b6b6b;
+  position: relative;
+  transition: color 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.tab-switcher__tab:hover {
+  color: #1a1a1a;
+}
+
+.tab-switcher__tab:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.tab-switcher__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.tab-switcher__tab--active {
+  color: #1a1a1a;
+}
+
+.tab-switcher__tab--active::after {
+  background: #1a1a1a;
+}
+
+/* ---------- Mobile bar ---------- */
+
+.collection-mobile-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border-top: 1px solid #e5e5e5;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.collection-mobile-bar__btn {
+  flex: 1 1 50%;
+  appearance: none;
+  background: none;
+  border: none;
+  border-right: 1px solid #e5e5e5;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  transition: background 0.15s ease;
+}
+
+.collection-mobile-bar__btn:last-child {
+  border-right: none;
+}
+
+.collection-mobile-bar__btn:hover,
+.collection-mobile-bar__btn:active {
+  background: #f4f4f4;
+}
+
+.collection-mobile-bar__btn[aria-expanded="true"] {
+  font-weight: 600;
+}
+
+.collection-mobile-bar__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- Mobile sort sheet (built by collection-toolbar.js) ---------- */
+
+.mobile-sort-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 210;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+  padding-bottom: env(safe-area-inset-bottom);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-sort-sheet.is-open {
+  transform: translateY(0);
+}
+
+.mobile-sort-sheet__inner {
+  padding: 1.25rem 1.5rem;
+}
+
+.mobile-sort-sheet__handle {
+  width: 36px;
+  height: 4px;
+  background: #d4d4d4;
+  border-radius: 999px;
+  margin: 0 auto 1rem;
+}
+
+.mobile-sort-sheet__heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b6b6b;
+  margin: 0 0 0.75rem;
+}
+
+.mobile-sort-sheet__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-sort-sheet__option {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  border-bottom: 1px solid #f0f0f0;
+  transition: color 0.15s ease;
+}
+
+.mobile-sort-sheet__option:last-child {
+  border-bottom: none;
+}
+
+.mobile-sort-sheet__option--active {
+  font-weight: 600;
+}
+
+.mobile-sort-sheet__option--active::after {
+  content: ' ✓';
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .collection-toolbar {
+    flex-wrap: wrap;
+    gap: 0;
+    margin-bottom: 1.25rem;
+  }
+
+  .collection-toolbar__sort {
+    display: none;
+  }
+
+  .tab-switcher {
+    flex: 1 1 100%;
+    width: auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .tab-switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-switcher__tab {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  /* On mobile the active-filters strip drops to its own full-width
+     row below the tabs — there isn't room to keep it inline, and the
+     "Filters" entry point here is the .collection-mobile-bar button
+     above (a fixed bottom bar), not a toolbar toggle. */
+  .collection-active-filters {
+    flex: 1 1 100%;
+    margin: 0.5rem 0 0;
+  }
+
+  .collection-mobile-bar {
+    display: flex;
+  }
+
+  .mobile-sort-sheet {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-switcher__tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-sort-sheet {
+    display: none;
+  }
+}
