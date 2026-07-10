@@ -14,7 +14,14 @@
     - show_filters  (boolean) whether the filter drawer starts expanded
     - section       (object)  the parent section, for settings:
                                show_filters, show_sort, tab_products_label,
-                               tab_articles_label
+                               tab_articles_label, ajax_navigation
+
+  data-ajax-navigation on the outer element mirrors
+  section.settings.ajax_navigation so search-toolbar.js can decide,
+  client-side, whether to intercept tab clicks or let them navigate
+  normally. Tabs stay real <a href> elements either way -- this is
+  read by JS as progressive enhancement, not a replacement for the
+  href, so search still works with JS disabled.
 {%- endcomment -%}
 {{ 'search-toolbar.css' | asset_url | stylesheet_tag }}
 
@@ -23,7 +30,13 @@
   assign tab_articles_label = section.settings.tab_articles_label | default: 'Articles'
 -%}
 
-<div class="search-toolbar" id="search-toolbar" role="navigation" aria-label="Search results navigation">
+<div
+  class="search-toolbar"
+  id="search-toolbar"
+  role="navigation"
+  aria-label="Search results navigation"
+  data-ajax-navigation="{{ section.settings.ajax_navigation }}"
+>
 
   <div class="tab-switcher" role="tablist" aria-label="Search result type">
     <a
