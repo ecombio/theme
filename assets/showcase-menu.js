@@ -59,6 +59,23 @@
  * so it always starts directly under the nav bar/panel rather than
  * covering the header itself.
  *
+ * FIXED (panel opening from theme-editor / programmatic focus): the
+ * trigger's `focus` listener used to fire on ANY focus event,
+ * including a synthetic focus() call — most notably the one the
+ * Shopify theme editor applies to a block's root/trigger element when
+ * that block is selected in the sidebar, purely to scroll/highlight
+ * it for editing. That synthetic focus was indistinguishable from a
+ * real keyboard tab-in, so simply selecting the showcase-menu block in
+ * the editor was enough to open the panel and show the full-page
+ * blurred backdrop with no actual hover or keyboard interaction. Real
+ * keyboard users tabbing to the trigger get :focus-visible; a
+ * programmatic focus() call generally does not (the browser's own
+ * heuristic — see https://developer.mozilla.org/en-US/docs/Web/CSS/:focus-visible).
+ * Both the trigger's focus handler and the item's focusout handler now
+ * check event.target.matches(':focus-visible') (feature-detected, so
+ * browsers without support just fall back to the old behavior) before
+ * treating the event as a real, intentional focus.
+ *
  * Scroll-to-close: the header's sticky transition (assets/main-header.css,
  * .main-header--sticky-enabled.is-sticky) animates itself into place over
  * ~0.28s. Trying to keep an open panel visually glued to the header
@@ -96,6 +113,26 @@
   var rafId = null;
 
   var PIN_CLASS = 'main-header--menu-panel-open';
+
+  // Feature-detect :focus-visible support once. If the browser doesn't
+  // support it, isFocusVisible() below just returns true always,
+  // preserving the old (pre-fix) behavior rather than breaking focus
+  // handling entirely on older browsers.
+  var supportsFocusVisible = true;
+  try {
+    document.querySelector(':focus-visible');
+  } catch (e) {
+    supportsFocusVisible = false;
+  }
+
+  function isFocusVisible(target) {
+    if (!supportsFocusVisible || !target || typeof target.matches !== 'function') return true;
+    try {
+      return target.matches(':focus-visible');
+    } catch (e) {
+      return true;
+    }
+  }
 
   // Shared backdrop element — one for the whole menu bar, reused by
   // every showcase-menu item (and safe to share with mega-menu.js too,
@@ -193,6 +230,8 @@
     }
   }
 
+  var isHovered = false;
+
   items.forEach(function (item) {
     var trigger = getTrigger(item);
     var panel = getPanel(item);
@@ -234,7 +273,13 @@
       }
     });
 
-    trigger.addEventListener('focus', function () {
+    // FIXED: only treat this as a real focus if it's keyboard-driven
+    // (:focus-visible). A programmatic focus() call — e.g. the Shopify
+    // theme editor focusing this trigger when its block is selected in
+    // the sidebar — does not count, so selecting the block no longer
+    // opens the panel/backdrop on its own.
+    trigger.addEventListener('focus', function (event) {
+      if (!isFocusVisible(event.target)) return;
       clearScrollLock(item);
       updateBottomVar();
       openItem = item;
@@ -287,8 +332,6 @@
   // the case it actually exists to handle: a stale/leftover open state
   // with no live hover or focus behind it (e.g. touch-opened panels,
   // or edge cases where focus moved outside the tracked handlers).
-  var isHovered = false;
-
   window.addEventListener('scroll', function () {
     if (openItem && !isHovered) scrollCloseMenu(openItem);
   }, { passive: true });
