@@ -1,15 +1,13 @@
 {%- comment -%}
   sections/main-search.liquid
 
-  Note: this section does NOT load 'search-filter.css' -- that
-  stylesheet is loaded directly by snippets/search-filter.liquid
-  itself, so the filter drawer stays self-contained. Adding
-  {{ 'search-filter.css' | asset_url | stylesheet_tag }} here as well
-  would load it twice.
+  Note: neither 'search-filter.css' nor 'search-results.css' are
+  loaded here -- both are loaded directly by their own snippets
+  (snippets/search-filter.liquid and snippets/search-results.liquid
+  respectively), so each stays self-contained. Adding either
+  stylesheet_tag here as well would load it twice.
 {%- endcomment -%}
 {{ 'main-search.css' | asset_url | stylesheet_tag }}
-{{ 'promo-banner.css' | asset_url | stylesheet_tag }}
-{{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   # Use search.types as primary source of truth (most reliable)
@@ -83,6 +81,15 @@
 
         {%- render 'search-toolbar', search_terms: search_terms, active_type: active_type, show_filters: show_filters, section: section -%}
 
+        {%- comment -%}
+          OPEN QUESTION (not yet verified): search-body--filters-hidden
+          has no matching rule in the cleaned main-search.css -- the
+          FLEXBOX FIX note there says a hidden flex sibling just stops
+          taking space, so this class may be a vestige of the old
+          grid-based fix. Before removing it, confirm nothing in
+          search-toolbar.js / main-search.js / search-filter.js reads
+          this class name.
+        {%- endcomment -%}
         <div class="search-body{% unless show_filters %} search-body--filters-hidden{% endunless %}" data-search-body>
 
           {%- if section.settings.show_filters -%}
@@ -112,8 +119,11 @@
 </div>
 
 {%- comment -%}
-  main-search.js has been retired: its only behavior (the sort
-  <select>) now lives in search-toolbar.js.
+  OPEN QUESTION (not yet verified): this comment says main-search.js
+  has been retired in favor of search-toolbar.js, but the script tag
+  below still loads it. Check assets/main-search.js directly -- if
+  it's empty/dead, delete the tag below; if it still does something,
+  fix this comment instead.
 {%- endcomment -%}
 <script src="{{ 'main-search.js' | asset_url }}" defer></script>
 <script src="{{ 'promo-carousel.js' | asset_url }}" defer></script>
