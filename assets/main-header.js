@@ -97,6 +97,27 @@
  * ResizeObserver callbacks further down, which fire outside the scroll
  * path and still need their own throttling independently.
  *
+ * FLICKER FIX (anchor-based hysteresis instead of frame-to-frame delta):
+ * the auto-hide direction check used to compare currentScrollY against
+ * lastScrollY, and lastScrollY was overwritten on every single frame
+ * regardless of whether anything happened. That meant two small opposite
+ * scroll wiggles in a row (trackpad jitter, rubber-band bounce, a mouse
+ * wheel's sub-pixel steps) were enough to re-trigger the toggle — a +6px
+ * nudge would cross the dead zone and hide the header, then a -6px
+ * wiggle right after would cross it back and show it again, restarting
+ * the transition each time. That's the "flickers on small wiggles"
+ * symptom.
+ *
+ * Fixed by turning the reference point into an anchor that only moves
+ * when the header actually commits to hiding or showing — see
+ * scrollAnchorY below. A wiggle that doesn't clear AUTOHIDE_DELTA no
+ * longer resets anything, so it can't accumulate into a flip the way
+ * repeated small deltas against a constantly-refreshed lastScrollY
+ * could. The anchor is also reset the moment the header enters sticky
+ * mode, so it doesn't judge direction against wherever the user
+ * happened to be scrolling before crossing STICKY_THRESHOLD (which
+ * could otherwise cause an instant hide-flash right as the header pins).
+ *
  * Cart button/badge behaviour is NOT handled here — that logic lives
  * entirely in assets/header-cart.js, which is the correct, complete
  * implementation (real selectors, badge pop animation, drawer-open/close
@@ -131,17 +152,16 @@
      needs to know or care about this beyond the block below. */
   var isAutohide = header.classList.contains('main-header--sticky-autohide');
 
-  /* Minimum scroll delta (px) between frames before we act on direction.
-     Filters out sub-pixel jitter, momentum/rubber-band bounce at the top
-     or bottom of the page, and trackpad noise, so the header doesn't
-     flicker hidden/shown on a nearly-stationary scroll position. Now that
-     handleStickyScroll only runs once per animation frame (see rAF
-     throttle below) instead of once per raw scroll event, this delta is
-     measured between two real frames of movement rather than two
-     arbitrarily-close native events, so it reads as a much cleaner
-     signal than before. */
-  var AUTOHIDE_DELTA = 5;
-  var lastScrollY = window.scrollY;
+  /* Minimum scroll distance (px) from the anchor point before we act on
+     direction. Filters out sub-pixel jitter, momentum/rubber-band bounce
+     at the top or bottom of the page, and trackpad noise, so the header
+     doesn't flicker hidden/shown on a nearly-stationary scroll position.
+     scrollAnchorY is NOT updated every frame — only when we actually
+     commit to hiding or showing (see handleStickyScroll) — so small
+     wiggles that stay inside this dead zone can't accumulate into a
+     flip the way comparing against a constantly-refreshed value could. */
+  var AUTOHIDE_DELTA = 8;
+  var scrollAnchorY = window.scrollY;
 
   var root = document.documentElement;
   var bottomRafId = null;
@@ -204,6 +224,7 @@
     setHeaderBottomVar();
 
     var currentScrollY = window.scrollY;
+    var wasSticky = header.classList.contains('is-sticky');
 
     if (currentScrollY > STICKY_THRESHOLD) {
       header.classList.add('is-sticky');
@@ -214,14 +235,28 @@
          .is-hidden has no visual effect anyway (see main-header.css,
          which only translates it while .is-sticky is also present). */
       if (isAutohide) {
-        var delta = currentScrollY - lastScrollY;
-        if (delta > AUTOHIDE_DELTA) {
-          header.classList.add('is-hidden');
-        } else if (delta < -AUTOHIDE_DELTA) {
-          header.classList.remove('is-hidden');
+        if (!wasSticky) {
+          /* Just crossed into sticky mode this frame — reset the anchor
+             to right here instead of judging direction against wherever
+             the user was scrolling before crossing STICKY_THRESHOLD.
+             Without this, a fast scroll down that crosses the threshold
+             could immediately register as a big delta and hide the
+             header the instant it appears. */
+          scrollAnchorY = currentScrollY;
+        } else {
+          var delta = currentScrollY - scrollAnchorY;
+          if (delta > AUTOHIDE_DELTA) {
+            header.classList.add('is-hidden');
+            scrollAnchorY = currentScrollY;
+          } else if (delta < -AUTOHIDE_DELTA) {
+            header.classList.remove('is-hidden');
+            scrollAnchorY = currentScrollY;
+          }
+          /* Deltas within the dead zone leave both .is-hidden and
+             scrollAnchorY exactly as they were — a wiggle that doesn't
+             clear the threshold can't nudge the anchor and therefore
+             can't accumulate into a flip on the next frame either. */
         }
-        /* deltas within the dead-zone leave .is-hidden exactly as it
-           was — no flicker on tiny/noisy scroll movement. */
       }
     } else {
       header.classList.remove('is-sticky');
@@ -234,14 +269,17 @@
         header.classList.remove('is-hidden');
       }
 
+      /* Reset the anchor too, so re-entering sticky mode later starts
+         fresh rather than carrying over a stale reference point from
+         this excursion out of sticky mode. */
+      scrollAnchorY = currentScrollY;
+
       /* Let header-hamburger.js know we've left sticky mode, so it can
          reset its own hamburger/.menu-bar state. See file header
          comment above for why this is an event rather than a direct
          DOM reset. */
       header.dispatchEvent(new CustomEvent('main-header:unstick'));
     }
-
-    lastScrollY = currentScrollY;
   };
 
   /* Coalesces any burst of native 'scroll' events down to at most one
