@@ -100,6 +100,37 @@
     transition: opacity 0.18s ease, transform 0.18s ease;
   }
 
+  /* ── Background overlay ── shared single element (created once by
+     showcase-menu.js, not per-panel) that dims + blurs the rest of the
+     page while a panel is open. Anchored to the same
+     --showcase-menu-bottom value as the panel itself, so it starts
+     right below the header instead of covering it — the header stays
+     sharp and fully visible above the blur, only the page content
+     behind/below the panel gets obscured. Sits just under the panel's
+     z-index so the panel always renders on top of it. */
+  .showcase-menu__overlay {
+    position: fixed;
+    top: var(--showcase-menu-bottom, var(--main-header-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(17, 17, 17, 0.25);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 250;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+
+  .showcase-menu__overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.18s ease;
+  }
+
   /* Forced-closed state for scroll-to-close. :hover/:focus-within above
      would otherwise keep the panel visible through a scroll close as
      long as the cursor never actually leaves the menu item (e.g.
@@ -278,13 +309,15 @@
 
 /* Showcase menu is desktop-only; the mobile drawer handles nav below 1024px */
 @media (max-width: 1023px) {
-  .showcase-menu__panel {
+  .showcase-menu__panel,
+  .showcase-menu__overlay {
     display: none !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .showcase-menu__panel,
+  .showcase-menu__overlay,
   .menu-bar__item--showcase-menu .icon-caret-down {
     transition: none !important;
   }
