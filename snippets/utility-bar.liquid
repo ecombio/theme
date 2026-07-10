@@ -26,14 +26,26 @@
   Params:
     settings — section.settings from sections/main-header.liquid. Snippets
       can't declare their own {% schema %}, so all the settings this bar
-      needs (enable_bar, bar_style, show_currency, show_locale, the
-      utility_bar_* width/padding controls, and link_1/2/3_*) now live in
-      main-header's schema instead of a standalone section schema. Two of
-      the old section's setting ids (section_width / section_padding /
-      custom_width) collided with main-header's OWN section-layout settings
-      of the same name, so those three are namespaced utility_bar_section_width
-      / utility_bar_custom_width / utility_bar_section_padding in the merged
-      schema — everything else keeps its original id.
+      needs (enable_bar, bar_style, show_currency, show_locale, and
+      link_1/2/3_*) live in main-header's schema instead of a standalone
+      section schema.
+
+  WIDTH / PADDING — NOW SHARED WITH THE HEADER ROW (CHANGED):
+    This bar used to read its own independent width/padding settings
+    (utility_bar_section_width / utility_bar_custom_width /
+    utility_bar_section_padding), separate from main-header's own
+    section_width / custom_width / section_padding. That let the two rows
+    drift out of alignment whenever only one set got configured in the
+    theme editor — the utility bar's right-hand content (language/region
+    picker) would end up narrower/offset relative to the logo/icon row
+    below it.
+
+    Fixed by having this snippet read main-header's OWN section_width /
+    custom_width / section_padding directly (via `settings.section_width`
+    etc., since `settings` here IS section.settings from main-header). The
+    utility bar's max-width and side padding now always match the header
+    row beneath it — there's no separate utility-bar-specific width
+    control anymore, and none is needed.
 
   STICKY INTERACTION:
     The old section lived above <header> in normal document flow and simply
@@ -65,7 +77,7 @@
     assign show_curr  = settings.show_currency
     assign show_loc   = settings.show_locale
 
-    assign width_type = settings.utility_bar_section_width
+    assign width_type = settings.section_width
     if width_type == blank
       assign width_class = 'utility-bar__default-width'
     elsif width_type == 'full-width'
@@ -80,9 +92,9 @@
        aria-label="Utility bar"
        id="utility-bar"
        style="
-         --section-padding: {{ settings.utility_bar_section_padding }}px;
+         --section-padding: {{ settings.section_padding }}px;
          {%- if width_type == 'custom-width' %}
-           --custom-width: {{ settings.utility_bar_custom_width }}rem;
+           --custom-width: {{ settings.custom_width }}rem;
          {%- endif %}
        ">
 
