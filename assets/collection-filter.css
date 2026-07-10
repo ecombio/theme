@@ -2,11 +2,17 @@
    Styles for snippets/collection-filter.liquid: the filter sidebar on
    desktop and the slide-in drawer on mobile (<= 768px).
 
+   BRAND MATCH (matches assets/search-filter.css's look): static
+   "Filters" header, button+chevron accordion (replacing the old
+   <details>/<summary> "+"/"-" marker), and labeled $-prefixed price
+   fields. Kept under the existing collection-filter__ class prefix
+   so nothing else on the page needs to change.
+
    Note: the active-filters strip ("Your Selections" pills) is NOT
-   styled here anymore — it now lives in the toolbar, next to the
-   tabs, so its rules moved to main-collection.css alongside the rest
-   of .collection-toolbar. Only the filter panel itself
-   (#collection-filter and its contents) is styled here. */
+   styled here -- it lives in the toolbar, next to the tabs, so its
+   rules stay in main-collection.css alongside .collection-toolbar.
+   Only the filter panel itself (#collection-filter and its contents)
+   is styled here. */
 
 .collection-filter {
   position: sticky;
@@ -19,35 +25,72 @@
   display: none;
 }
 
+/* ── Header: "Filters" + mobile close button ───────────────── */
+
+.collection-filter__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 2px solid #1a1a1a;
+}
+
+.collection-filter__heading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+}
+
+.collection-filter__close-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #1a1a1a;
+  padding: 0.25rem;
+}
+
+/* ── Filter group / accordion ──────────────────────────────── */
+
 .collection-filter__group {
   border-bottom: 1px solid #ececec;
   padding: 0.9rem 0;
 }
 
-.collection-filter__group-label {
+.collection-filter__group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
   cursor: pointer;
-  list-style: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  text-align: left;
+  gap: 0.5rem;
+}
+
+.collection-filter__group-toggle:hover {
+  color: #333;
+}
+
+.collection-filter__group-toggle:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.collection-filter__group-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.collection-filter__group-label::-webkit-details-marker {
-  display: none;
-}
-
-.collection-filter__group-label::before {
-  content: '+';
-  display: inline-block;
-  width: 1rem;
-  font-weight: 400;
-  color: #6b6b6b;
-}
-
-.collection-filter__group[open] > .collection-filter__group-label::before {
-  content: '–';
 }
 
 .collection-filter__group-badge {
@@ -59,11 +102,26 @@
   border-radius: 999px;
 }
 
+/* Chevron -- rotates when the toggle is expanded */
+.collection-filter__group-chevron {
+  flex-shrink: 0;
+  color: #6b6b6b;
+  transition: transform 0.2s ease;
+}
+
+.collection-filter__group-toggle[aria-expanded="true"] .collection-filter__group-chevron {
+  transform: rotate(180deg);
+}
+
 .collection-filter__group-body {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
   padding-top: 0.75rem;
+}
+
+.collection-filter__group-body[hidden] {
+  display: none;
 }
 
 .collection-filter__option {
@@ -93,25 +151,87 @@
   color: #cfcfcf;
 }
 
+/* ── Price range ────────────────────────────────────────────── */
+
 .collection-filter__price-wrap {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.collection-filter__price {
+.collection-filter__price-fields {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
 }
 
-.collection-filter__price input {
-  width: 100%;
-  min-width: 0;
-  padding: 0.5rem 0.6rem;
+.collection-filter__price-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.collection-filter__price-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b6b6b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.collection-filter__price-input-wrap {
+  display: flex;
+  align-items: center;
   border: 1px solid #d4d4d4;
   border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+
+.collection-filter__price-input-wrap:focus-within {
+  border-color: #1a1a1a;
+}
+
+.collection-filter__price-symbol {
+  padding: 0 0.4rem;
   font-size: 0.9rem;
+  color: #6b6b6b;
+  background: #f5f5f5;
+  border-right: 1px solid #ececec;
+  line-height: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.collection-filter__price-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0 0.5rem;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  height: 2rem;
+  width: 0; /* flex child: grows to fill */
+  background: transparent;
+}
+
+.collection-filter__price-input::-webkit-inner-spin-button,
+.collection-filter__price-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.collection-filter__price-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.collection-filter__price-sep {
+  font-size: 0.75rem;
+  color: #9a9a9a;
+  padding-bottom: 0.5rem;
+  flex-shrink: 0;
 }
 
 /* ---------- Histogram (decorative price distribution) ---------- */
@@ -246,7 +366,7 @@
    Flat fill using the theme's existing option-pill tokens (same
    ones the product-option pills already use), rather than a
    one-off outlined style, so this reads as the same design system.
-   Shared by every active-filter pill in the toolbar strip — see
+   Shared by every active-filter pill in the toolbar strip -- see
    main-collection.css for that strip's layout. */
 .collection-filter__pill {
   display: inline-flex;
@@ -267,9 +387,6 @@
   background: var(--color-atc-soldout-bg);
 }
 
-/* Clear all reads as a plain-text action (Old Glory Blue) rather
-   than another chip, so it's visually distinct from the removable
-   filter pills next to it. */
 .collection-filter__pill--clear {
   padding: 0.4rem 0;
   background: none;
@@ -322,48 +439,21 @@
     transform: translateX(0);
   }
 
-  .collection-filter__close {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .collection-filter__header {
     margin: 0 -1.25rem 1.25rem;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e5e5e5;
+    padding: 1rem 1.25rem 0.75rem;
     position: sticky;
     top: 0;
     background: #fff;
     z-index: 1;
-  }
-
-  .collection-filter__close-label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1a1a1a;
+    border-bottom: 1px solid #e5e5e5;
   }
 
   .collection-filter__close-btn {
-    appearance: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.25rem;
-    color: #6b6b6b;
-    font-size: 1.25rem;
-    line-height: 1;
-    transition: color 0.15s ease;
-  }
-
-  .collection-filter__close-btn:hover {
-    color: #1a1a1a;
+    display: block;
   }
 
   .collection-filter__group-body {
     gap: 0.7rem;
-  }
-}
-
-@media (min-width: 769px) {
-  .collection-filter__close {
-    display: none;
   }
 }

@@ -1,12 +1,19 @@
 /* assets/collection-filter.js
-   Filter drawer (mobile), desktop collapse toggle, and live AJAX
-   filtering for snippets/collection-filter.liquid.
+   Filter drawer (mobile), desktop collapse toggle, group accordions,
+   and live AJAX filtering for snippets/collection-filter.liquid.
 
    Depends on window.CollectionBackdrop, defined in main-collection.js
    (the shared mobile overlay used by both the filter drawer and the
    mobile sort sheet). This file must be loaded AFTER main-collection.js
    — it's referenced lazily inside click handlers below, but keeping the
-   load order correct removes any fragility around that. */
+   load order correct removes any fragility around that.
+
+   NOTE ON ATTRIBUTE NAMES: [data-filter-toggle] is the WHOLE-PANEL
+   open/close control (e.g. a "Filters" button elsewhere on the page,
+   such as in collection-toolbar.liquid) — see the click handler below.
+   Per-group accordion buttons in collection-filter.liquid intentionally
+   use a different attribute, [data-group-toggle], so the two behaviors
+   never collide. Don't rename either without checking both call sites. */
 
 (function () {
   'use strict';
@@ -16,19 +23,15 @@
 
   if (!filterPanel) return;
 
-  /* ── Inject mobile close bar ──────────────────────────────── */
-  if (!filterPanel.querySelector('.collection-filter__close')) {
-    var closeBar = document.createElement('div');
-    closeBar.className = 'collection-filter__close';
-    closeBar.innerHTML =
-      '<span class="collection-filter__close-label">Filters</span>' +
-      '<button class="collection-filter__close-btn" type="button" aria-label="Close filters">&times;</button>';
-    filterPanel.insertBefore(closeBar, filterPanel.firstChild);
-    closeBar.querySelector('.collection-filter__close-btn')
-      .addEventListener('click', closeFilter);
+  /* ── Header close button (static, rendered in the Liquid header) ──
+     Replaces the old runtime-injected close bar — the header now
+     always exists in the markup, so this just wires up its button. */
+  var headerCloseBtn = filterPanel.querySelector('[data-filter-close]');
+  if (headerCloseBtn) {
+    headerCloseBtn.addEventListener('click', closeFilter);
   }
 
-  /* ── Open / close ─────────────────────────────────────────── */
+  /* ── Open / close (whole panel — mobile drawer / desktop collapse) */
   function openFilter() {
     filterPanel.removeAttribute('hidden');
     requestAnimationFrame(function () {
@@ -63,7 +66,7 @@
     }
   }
 
-  /* ── Toggle buttons ───────────────────────────────────────── */
+  /* ── Whole-panel toggle buttons (e.g. toolbar "Filters" button) ── */
   filterToggles.forEach(function (toggle) {
     toggle.addEventListener('click', function () {
       var isMobile = window.innerWidth <= 768;
@@ -89,16 +92,37 @@
     });
   });
 
-  /* ── Live filtering (AJAX via Section Rendering API) ─────────
-     Checking/unchecking a filter (or changing a price field)
-     re-fetches just this section's HTML with the new query params
-     and swaps in the updated product grid + filter sidebar, with
-     no full page reload. Unchecking a filter is just another
-     change event, so it live-reverts the same way.
+  /* ── Per-group accordion (Availability / Price / Category / etc.) ──
+     Uses [data-group-toggle] / [data-group-body] — deliberately NOT
+     [data-filter-toggle], which is already claimed by the whole-panel
+     control above. Must be re-run after every AJAX swap, since the
+     filter form's innerHTML (and therefore these buttons) gets
+     replaced by applyFiltersLive() below. */
+  function initGroupAccordions(scope) {
+    var toggles = (scope || document).querySelectorAll('[data-group-toggle]');
 
-     Falls back to a normal full-page navigation if fetch fails,
-     or if JS never runs at all (the form's method="get" + inputs'
-     name attributes still work as plain query params). ─────── */
+    toggles.forEach(function (toggle) {
+      if (toggle.dataset.groupBound === 'true') return;
+      toggle.dataset.groupBound = 'true';
+
+      toggle.addEventListener('click', function () {
+        var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        var bodyId = toggle.getAttribute('aria-controls');
+        var body = bodyId ? document.getElementById(bodyId) : null;
+
+        toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+
+        if (body) {
+          if (isOpen) {
+            body.setAttribute('hidden', '');
+          } else {
+            body.removeAttribute('hidden');
+          }
+        }
+      });
+    });
+  }
+
   /* ── Active-filters strip: scroll nav ────────────────────────
      Rendered by snippets/collection-active-filters.liquid, above the
      product grid. Its prev/next buttons just scroll the track — the
@@ -330,6 +354,7 @@
           filterForm.innerHTML = newFilterForm.innerHTML;
           bindFilterFieldListeners();
           initPriceFilters(filterForm);
+          initGroupAccordions(filterForm);
         }
 
         var newPagination = doc.querySelector('.pagination');
@@ -355,6 +380,7 @@
 
   bindFilterFieldListeners();
   initPriceFilters(filterForm);
+  initGroupAccordions(filterForm);
   initActiveFiltersNav();
 
   if (filterForm) {
