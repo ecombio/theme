@@ -43,23 +43,8 @@
  *   2. Escape close: closes the open panel and returns focus to its
  *      trigger.
  *   3. Click-outside close.
- *   4. Scroll close: force-closes the open panel as soon as the page
- *      scrolls, even if the cursor is still hovering it (see
- *      scrollCloseMenu / is-scroll-locked below).
+ *   4. Scroll close: closes the open panel as soon as the page scrolls.
  *   5. Touch support: first tap opens instead of navigating.
- *   6. Dispatches 'showcase-menu:open' / 'showcase-menu:close' on
- *      document whenever a panel opens or closes (for any reason —
- *      hover, click, Escape, click-outside, or scroll). main-header.js
- *      listens for these to pause its scroll-autohide behavior while a
- *      panel is open, so the header doesn't slide away out from under
- *      an open dropdown, and to immediately un-hide itself the moment
- *      a panel opens if it happened to already be hidden.
- *   7. Background overlay: a single shared, dimmed/blurred scrim
- *      (.showcase-menu__overlay, created once here rather than per
- *      panel) shown behind the panel while it's open, anchored to the
- *      same --showcase-menu-bottom value so it starts below the header
- *      rather than covering it. Clicking the overlay closes the panel,
- *      same as clicking anywhere else outside it.
  */
 (function () {
   'use strict';
@@ -71,18 +56,6 @@
   var root = document.documentElement;
   var openItem = null;
   var rafId = null;
-
-  // Single shared overlay element, created once rather than per-panel.
-  // See .showcase-menu__overlay in showcase-menu.css for why it's
-  // anchored to the same --showcase-menu-bottom value as the panel.
-  var overlay = document.createElement('div');
-  overlay.className = 'showcase-menu__overlay';
-  overlay.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(overlay);
-
-  overlay.addEventListener('click', function () {
-    if (openItem) closeMenu(openItem);
-  });
 
   function updateBottomVar() {
     if (!navBar) return;
@@ -104,18 +77,6 @@
     return item.querySelector('[data-showcase-menu-trigger]');
   }
 
-  function setOpenItem(item) {
-    openItem = item;
-    overlay.classList.add('is-visible');
-    document.dispatchEvent(new CustomEvent('showcase-menu:open'));
-  }
-
-  function clearOpenItem() {
-    openItem = null;
-    overlay.classList.remove('is-visible');
-    document.dispatchEvent(new CustomEvent('showcase-menu:close'));
-  }
-
   function clearScrollLock(item) {
     var panel = getPanel(item);
     if (panel) panel.classList.remove('is-scroll-locked');
@@ -133,7 +94,7 @@
     var trigger = getTrigger(item);
     panel.classList.add('is-open');
     if (trigger) trigger.setAttribute('aria-expanded', 'true');
-    setOpenItem(item);
+    openItem = item;
   }
 
   function closeMenu(item) {
@@ -141,7 +102,7 @@
     var trigger = getTrigger(item);
     if (panel) panel.classList.remove('is-open');
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
-    if (openItem === item) clearOpenItem();
+    if (openItem === item) openItem = null;
   }
 
   // Scroll-close needs to override CSS's :hover/:focus-within rules,
@@ -161,7 +122,7 @@
       panel.classList.add('is-scroll-locked');
     }
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
-    if (openItem === item) clearOpenItem();
+    if (openItem === item) openItem = null;
   }
 
   items.forEach(function (item) {
