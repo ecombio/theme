@@ -1,104 +1,192 @@
 /* assets/search-toolbar.css
    Owned by snippets/search-toolbar.liquid.
-   Covers the desktop toolbar (filter toggle, tab switcher, sort
-   select) and its condensed mobile-bar counterpart. Moved out of
-   main-search.css so this UI travels with the snippet, per the asset
-   ownership rule. The tab-switcher styles below used to live in
-   search-results.css, back when search-results.liquid rendered its
-   own (duplicate) copy of the tab switcher; now that the toolbar is
-   the only snippet rendering that markup, its styling lives here too.
-
-   Color fallbacks match collection-toolbar.css so the search and
-   collection toolbars stay visually consistent.
-*/
-
-.tab-switcher {
-  display: flex;
-  border-bottom: 1px solid var(--color-border, #e5e5e5);
-  width: 280px;
-}
-
-.tab-switcher__tab {
-  padding: 0.75rem 1rem;
-  margin-bottom: -1px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--color-text-muted, #6b6b6b);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-  width: 140px;
-}
-
-.tab-switcher__tab:hover {
-  color: var(--color-text, #1a1a1a);
-}
-
-.tab-switcher__tab--active {
-  color: var(--color-text, #1a1a1a);
-  border-bottom-color: var(--color-accent, #1a1a1a);
-}
-
-.tab-switcher__tab:focus-visible {
-  outline: 2px solid var(--color-accent, #1a1a1a);
-  outline-offset: 2px;
-}
+   Rebuilt to match assets/collection-toolbar.css exactly — same
+   colors (hardcoded, not theme vars, to guarantee visual parity
+   regardless of --color-* overrides elsewhere), same sticky toolbar
+   behavior, same custom select, same fixed mobile bar. Class names
+   are kept as search-* so existing JS hooks in search-toolbar.js are
+   untouched; only the declarations changed. */
 
 .search-toolbar {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding-block: 1rem;
-  border-bottom: 1px solid var(--color-border, #e5e5e5);
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: var(--sticky-header-height, 0);
+  z-index: 50;
+  background: #fff;
 }
 
-.search-toolbar__filter-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+/* ---------- Tabs (shares .tab-switcher / .tab-switcher__tab class
+   names with collection-toolbar.liquid — width/mechanism now mirror
+   collection's exactly since both have exactly 2 tabs) ---------- */
+
+.tab-switcher {
+  display: flex;
+  flex: 0 0 247px;
+  width: 247px;
+}
+
+.tab-switcher__tab {
+  appearance: none;
   background: none;
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 4px;
-  padding: 0.5rem 0.85rem;
-  font-size: 0.9rem;
+  border: none;
   cursor: pointer;
+  flex: 1 1 0;
+  width: 100%;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.85rem 1.25rem;
+  color: #6b6b6b;
+  text-decoration: none;
+  position: relative;
+  transition: color 0.15s ease;
+  margin-bottom: -1px;
 }
 
-.search-toolbar__filter-toggle:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.tab-switcher__tab:hover {
+  color: #1a1a1a;
 }
+
+.tab-switcher__tab:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.tab-switcher__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.tab-switcher__tab--active {
+  color: #1a1a1a;
+}
+
+.tab-switcher__tab--active::after {
+  background: #1a1a1a;
+}
+
+/* ---------- Active filters ---------- */
+
+.search-toolbar__active {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 0.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.search-toolbar__active::-webkit-scrollbar {
+  display: none;
+}
+
+.search-filter__pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---------- Sort (desktop) — same custom select as collection ---------- */
 
 .search-toolbar__sort {
+  flex: 0 0 auto;
   margin-inline-start: auto;
 }
 
 .search-toolbar__sort select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 4px;
+  appearance: none;
+  padding: 0.55rem 2rem 0.55rem 0.9rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 5px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6b6b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.85rem center;
+  background-size: 10px 6px;
   font-size: 0.9rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-/* Mobile bar (hidden on desktop, shown under the toolbar breakpoint) */
+.search-toolbar__sort select:hover {
+  background-color: #f4f4f4;
+}
+
+.search-toolbar__sort select:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Mobile bar — now fixed to viewport bottom, 50/50 split,
+   matching collection-mobile-bar exactly ---------- */
 
 .search-mobile-bar {
   display: none;
-  gap: 0.75rem;
-  padding-block: 0.75rem;
-  border-bottom: 1px solid var(--color-border, #e5e5e5);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border-top: 1px solid #e5e5e5;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .search-mobile-bar__btn {
+  flex: 1 1 50%;
+  appearance: none;
+  background: none;
+  border: none;
+  border-right: 1px solid #e5e5e5;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  background: none;
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 4px;
-  padding: 0.5rem 0.85rem;
+  padding: 0.9rem 1rem;
   font-size: 0.9rem;
-  cursor: pointer;
+  font-weight: 500;
+  color: #1a1a1a;
+  transition: background 0.15s ease;
+}
+
+.search-mobile-bar__btn:last-child {
+  border-right: none;
+}
+
+.search-mobile-bar__btn:hover,
+.search-mobile-bar__btn:active {
+  background: #f4f4f4;
+}
+
+.search-mobile-bar__btn[aria-expanded="true"] {
+  font-weight: 600;
 }
 
 .search-mobile-bar__btn:disabled {
@@ -106,12 +194,135 @@
   cursor: not-allowed;
 }
 
+/* ---------- Mobile sort sheet — copied verbatim from
+   collection-toolbar.css so it's ready as soon as search-toolbar.js
+   builds the matching markup (see note below). ---------- */
+
+.mobile-sort-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 210;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+  padding-bottom: env(safe-area-inset-bottom);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-sort-sheet.is-open {
+  transform: translateY(0);
+}
+
+.mobile-sort-sheet__inner {
+  padding: 1.25rem 1.5rem;
+}
+
+.mobile-sort-sheet__handle {
+  width: 36px;
+  height: 4px;
+  background: #d4d4d4;
+  border-radius: 999px;
+  margin: 0 auto 1rem;
+}
+
+.mobile-sort-sheet__heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b6b6b;
+  margin: 0 0 0.75rem;
+}
+
+.mobile-sort-sheet__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-sort-sheet__option {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  border-bottom: 1px solid #f0f0f0;
+  transition: color 0.15s ease;
+}
+
+.mobile-sort-sheet__option:last-child {
+  border-bottom: none;
+}
+
+.mobile-sort-sheet__option--active {
+  font-weight: 600;
+}
+
+.mobile-sort-sheet__option--active::after {
+  content: ' ✓';
+}
+
+/* ---------- Responsive ---------- */
+
 @media (max-width: 768px) {
+  .search-toolbar {
+    flex-wrap: wrap;
+    gap: 0;
+    margin-bottom: 1.25rem;
+  }
+
   .search-toolbar__sort {
     display: none;
   }
 
+  .tab-switcher {
+    flex: 1 1 100%;
+    width: auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .tab-switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-switcher__tab {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .search-toolbar__active {
+    flex: 1 1 100%;
+    margin: 0.5rem 0 0;
+  }
+
   .search-mobile-bar {
     display: flex;
+  }
+
+  .mobile-sort-sheet {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-switcher__tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-sort-sheet {
+    display: none;
   }
 }
