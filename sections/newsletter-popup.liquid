@@ -7,8 +7,9 @@
 {%- if section.settings.enable_popup -%}
 <div
   id="newsletter-popup-{{ section.id }}"
-  class="newsletter-popup{% if section.settings.hide_on_mobile %} newsletter-popup--hide-mobile{% endif %}"
+  class="newsletter-popup newsletter-popup--{{ section.settings.popup_position | default: 'center' }}{% if section.settings.hide_on_mobile %} newsletter-popup--hide-mobile{% endif %}"
   data-delay="{{ section.settings.delay_seconds | default: 5 }}"
+  data-position="{{ section.settings.popup_position | default: 'center' }}"
   data-frequency="{{ section.settings.frequency }}"
   data-exit-intent="{{ section.settings.enable_exit_intent }}"
   data-cookie-name="newsletter_popup_{{ section.id }}_closed"
@@ -69,11 +70,11 @@
 </div>
 
 <style>
-  .newsletter-popup { position: fixed; inset: 0; z-index: 9999; }
-  .newsletter-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+  .newsletter-popup { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+  .newsletter-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); pointer-events: none; }
   .newsletter-popup__modal {
-    position: relative; max-width: 480px; width: 90%; margin: 8vh auto;
-    padding: 2.5rem; border-radius: 8px; text-align: center;
+    position: relative; padding: 2.5rem; border-radius: 8px; pointer-events: auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
   }
   .newsletter-popup__close {
     position: absolute; top: 12px; right: 16px; background: none; border: none;
@@ -83,7 +84,7 @@
   .newsletter-popup__image img { width: 100%; height: auto; border-radius: 6px; margin-bottom: 1.25rem; }
   .newsletter-popup__heading { margin: 0 0 0.75rem; font-size: 1.5rem; }
   .newsletter-popup__subtext { margin-bottom: 1.25rem; }
-  .newsletter-popup__field-row { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+  .newsletter-popup__field-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .newsletter-popup__input {
     flex: 1 1 200px; padding: 0.75rem 1rem; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
   }
@@ -92,8 +93,28 @@
   }
   .newsletter-popup__disclaimer { font-size: 0.75rem; opacity: 0.7; margin-top: 1rem; }
   .newsletter-popup__error { color: #d02e2e; font-size: 0.85rem; margin-top: 0.5rem; }
+
+  /* Center variant: full dimmed overlay, modal centered */
+  .newsletter-popup--center .newsletter-popup__overlay { pointer-events: auto; }
+  .newsletter-popup--center .newsletter-popup__modal {
+    max-width: 480px; width: 90%; margin: 8vh auto; text-align: center;
+  }
+  .newsletter-popup--center .newsletter-popup__field-row { justify-content: center; }
+
+  /* Corner variant: no dimming, small card anchored bottom-right */
+  .newsletter-popup--corner .newsletter-popup__overlay { display: none; }
+  .newsletter-popup--corner .newsletter-popup__modal {
+    position: fixed; bottom: 20px; right: 20px; left: auto; margin: 0;
+    max-width: 360px; width: min(360px, calc(100vw - 40px)); text-align: left;
+  }
+  .newsletter-popup--corner .newsletter-popup__field-row { flex-direction: column; }
+  .newsletter-popup--corner .newsletter-popup__button { width: 100%; }
+
   @media (max-width: 749px) {
     .newsletter-popup--hide-mobile { display: none !important; }
+    .newsletter-popup--corner .newsletter-popup__modal {
+      bottom: 12px; right: 12px; left: 12px; width: auto; max-width: none;
+    }
   }
 </style>
 
@@ -106,6 +127,7 @@
     var frequency = root.dataset.frequency; // "always" | "day" | "session"
     var delay = parseInt(root.dataset.delay, 10) * 1000;
     var exitIntent = root.dataset.exitIntent === 'true';
+    var position = root.dataset.position; // "center" | "corner"
 
     function getCookie(name) {
       var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -136,11 +158,15 @@
     function showPopup() {
       if (alreadyClosed()) return;
       root.style.display = 'block';
-      document.body.style.overflow = 'hidden';
+      if (position === 'center') {
+        document.body.style.overflow = 'hidden';
+      }
     }
     function hidePopup() {
       root.style.display = 'none';
-      document.body.style.overflow = '';
+      if (position === 'center') {
+        document.body.style.overflow = '';
+      }
       markClosed();
     }
 
@@ -180,6 +206,16 @@
       "id": "enable_popup",
       "label": "Enable popup",
       "default": true
+    },
+    {
+      "type": "select",
+      "id": "popup_position",
+      "label": "Popup position",
+      "options": [
+        { "value": "center", "label": "Center of screen (with dimmed background)" },
+        { "value": "corner", "label": "Bottom-right corner" }
+      ],
+      "default": "center"
     },
     {
       "type": "range",
