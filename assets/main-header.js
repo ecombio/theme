@@ -7,6 +7,15 @@
  * Responsibilities:
  *   1. Sticky scroll behavior (.is-sticky / .is-scrolled, CSS var sync)
  *      — merged in from assets/main-header-sticky.js
+ *   1b. Auto-hide sticky variant: when the header has the
+ *       .main-header--sticky-autohide modifier (set via the "Sticky
+ *       header style" theme setting), this also tracks scroll direction
+ *       once the header is sticky and toggles .is-hidden — hiding the
+ *       header on scroll-down, revealing it on scroll-up. The CSS side
+ *       (transform + transition) lives in main-header.css, in the
+ *       "STICKY — AUTO-HIDE VARIANT" block. Standard sticky headers
+ *       (no autohide modifier) never gain/lose .is-hidden, so this is
+ *       fully inert for them.
  *   2. Keeps --main-header-bottom in sync: the header's live bottom
  *      edge in viewport coordinates (header.getBoundingClientRect().bottom).
  *      This is the ONE place that measurement happens. Any fixed-position
@@ -20,6 +29,11 @@
  *      with the header (each one only updating on its own triggers, so a
  *      header-height change picked up by one panel's listener wouldn't
  *      necessarily fire another's on the same frame).
+ *
+ *      NOTE: when the header is hidden via the auto-hide variant, its
+ *      own bottom edge moves off-screen (goes negative) along with it,
+ *      so --main-header-bottom naturally reflects that too — no extra
+ *      handling needed here for that case.
  *
  *      NOTE: --sticky-header-height (below) is NOT the same value as
  *      --main-header-bottom, and isn't a substitute for it. Height is
@@ -35,6 +49,9 @@
  * hamburger's own click-to-toggle-.menu-bar behavior) all moved to
  * assets/header-hamburger.js, loaded by snippets/header-hamburger.liquid.
  * This file no longer touches any hamburger/drawer elements directly.
+ * The auto-hide variant intentionally has no hamburger/toggle button at
+ * all (see main-header.css), so there's nothing for that file to do in
+ * this mode either.
  *
  * Coordination with header-hamburger.js: when the scroll handler below
  * detects we've left sticky mode, it dispatches a `main-header:unstick`
@@ -82,6 +99,19 @@
   }
 
   var STICKY_THRESHOLD = 60;
+
+  /* Whether the "Sticky header style" theme setting is set to Auto-hide.
+     Set once from the class main-header.liquid renders — no other JS
+     needs to know or care about this beyond the block below. */
+  var isAutohide = header.classList.contains('main-header--sticky-autohide');
+
+  /* Minimum scroll delta (px) between frames before we act on direction.
+     Filters out sub-pixel jitter, momentum/rubber-band bounce at the top
+     or bottom of the page, and trackpad noise, so the header doesn't
+     flicker hidden/shown on a nearly-stationary scroll position. */
+  var AUTOHIDE_DELTA = 5;
+  var lastScrollY = window.scrollY;
+
   var root = document.documentElement;
   var bottomRafId = null;
 
@@ -133,12 +163,36 @@
     // which branch below fires.
     scheduleHeaderBottomUpdate();
 
-    if (window.scrollY > STICKY_THRESHOLD) {
+    var currentScrollY = window.scrollY;
+
+    if (currentScrollY > STICKY_THRESHOLD) {
       header.classList.add('is-sticky');
       header.classList.add('is-scrolled');
+
+      /* Auto-hide direction tracking only runs once we're actually
+         sticky — before that the header is still in normal flow and
+         .is-hidden has no visual effect anyway (see main-header.css,
+         which only translates it while .is-sticky is also present). */
+      if (isAutohide) {
+        var delta = currentScrollY - lastScrollY;
+        if (delta > AUTOHIDE_DELTA) {
+          header.classList.add('is-hidden');
+        } else if (delta < -AUTOHIDE_DELTA) {
+          header.classList.remove('is-hidden');
+        }
+        /* deltas within the dead-zone leave .is-hidden exactly as it
+           was — no flicker on tiny/noisy scroll movement. */
+      }
     } else {
       header.classList.remove('is-sticky');
       header.classList.remove('is-scrolled');
+
+      /* Reset hidden state whenever we drop out of sticky mode (e.g.
+         scrolled back up to the very top), so the header doesn't come
+         back already hidden the next time it re-enters sticky mode. */
+      if (isAutohide) {
+        header.classList.remove('is-hidden');
+      }
 
       /* Let header-hamburger.js know we've left sticky mode, so it can
          reset its own hamburger/.menu-bar state. See file header
@@ -146,6 +200,8 @@
          DOM reset. */
       header.dispatchEvent(new CustomEvent('main-header:unstick'));
     }
+
+    lastScrollY = currentScrollY;
   };
 
   /* Initial measurement, before first paint of dependent consumers */
