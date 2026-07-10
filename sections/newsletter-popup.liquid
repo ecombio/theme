@@ -1,0 +1,284 @@
+{%- comment -%}
+  Newsletter Popup Section
+  Add via: Theme Customizer > Add section > Newsletter Popup
+  Uses Shopify's native customer/newsletter form (no app required).
+{%- endcomment -%}
+
+{%- if section.settings.enable_popup -%}
+<div
+  id="newsletter-popup-{{ section.id }}"
+  class="newsletter-popup{% if section.settings.hide_on_mobile %} newsletter-popup--hide-mobile{% endif %}"
+  data-delay="{{ section.settings.delay_seconds | default: 5 }}"
+  data-frequency="{{ section.settings.frequency }}"
+  data-exit-intent="{{ section.settings.enable_exit_intent }}"
+  data-cookie-name="newsletter_popup_{{ section.id }}_closed"
+  style="display:none;"
+>
+  <div class="newsletter-popup__overlay" data-newsletter-close></div>
+
+  <div
+    class="newsletter-popup__modal"
+    style="background-color:{{ section.settings.bg_color }}; color:{{ section.settings.text_color }};"
+  >
+    <button type="button" class="newsletter-popup__close" data-newsletter-close aria-label="Close">&times;</button>
+
+    {%- if section.settings.image != blank -%}
+      <div class="newsletter-popup__image">
+        {{ section.settings.image | image_url: width: 600 | image_tag: loading: 'lazy', alt: section.settings.heading }}
+      </div>
+    {%- endif -%}
+
+    <div class="newsletter-popup__content">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="newsletter-popup__heading">{{ section.settings.heading }}</h2>
+      {%- endif -%}
+
+      {%- if section.settings.subtext != blank -%}
+        <div class="newsletter-popup__subtext">{{ section.settings.subtext }}</div>
+      {%- endif -%}
+
+      {%- form 'customer', id: 'newsletter-popup-form', class: 'newsletter-popup__form' -%}
+        <input type="hidden" name="contact[tags]" value="newsletter,popup-signup">
+
+        {%- if form.posted_successfully? -%}
+          <p class="newsletter-popup__success">{{ section.settings.success_message | default: 'Thanks for subscribing!' }}</p>
+        {%- else -%}
+          <div class="newsletter-popup__field-row">
+            <input
+              type="email"
+              name="contact[email]"
+              placeholder="{{ section.settings.email_placeholder | default: 'Email address' }}"
+              required
+              class="newsletter-popup__input"
+            >
+            <button type="submit" class="newsletter-popup__button">
+              {{ section.settings.button_label | default: 'Subscribe' }}
+            </button>
+          </div>
+          {%- if form.errors -%}
+            <p class="newsletter-popup__error">{{ form.errors.messages.email }}</p>
+          {%- endif -%}
+        {%- endif -%}
+      {%- endform -%}
+
+      {%- if section.settings.disclaimer != blank -%}
+        <p class="newsletter-popup__disclaimer">{{ section.settings.disclaimer }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+<style>
+  .newsletter-popup { position: fixed; inset: 0; z-index: 9999; }
+  .newsletter-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+  .newsletter-popup__modal {
+    position: relative; max-width: 480px; width: 90%; margin: 8vh auto;
+    padding: 2.5rem; border-radius: 8px; text-align: center;
+  }
+  .newsletter-popup__close {
+    position: absolute; top: 12px; right: 16px; background: none; border: none;
+    font-size: 1.75rem; line-height: 1; cursor: pointer; color: inherit; opacity: 0.6;
+  }
+  .newsletter-popup__close:hover { opacity: 1; }
+  .newsletter-popup__image img { width: 100%; height: auto; border-radius: 6px; margin-bottom: 1.25rem; }
+  .newsletter-popup__heading { margin: 0 0 0.75rem; font-size: 1.5rem; }
+  .newsletter-popup__subtext { margin-bottom: 1.25rem; }
+  .newsletter-popup__field-row { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+  .newsletter-popup__input {
+    flex: 1 1 200px; padding: 0.75rem 1rem; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
+  }
+  .newsletter-popup__button {
+    padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background: #111; color: #fff; cursor: pointer;
+  }
+  .newsletter-popup__disclaimer { font-size: 0.75rem; opacity: 0.7; margin-top: 1rem; }
+  .newsletter-popup__error { color: #d02e2e; font-size: 0.85rem; margin-top: 0.5rem; }
+  @media (max-width: 749px) {
+    .newsletter-popup--hide-mobile { display: none !important; }
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.getElementById('newsletter-popup-{{ section.id }}');
+    if (!root) return;
+
+    var cookieName = root.dataset.cookieName;
+    var frequency = root.dataset.frequency; // "always" | "day" | "session"
+    var delay = parseInt(root.dataset.delay, 10) * 1000;
+    var exitIntent = root.dataset.exitIntent === 'true';
+
+    function getCookie(name) {
+      var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    }
+    function setCookie(name, value, days) {
+      var expires = '';
+      if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+        expires = '; expires=' + date.toUTCString();
+      }
+      document.cookie = name + '=' + value + expires + '; path=/';
+    }
+
+    function alreadyClosed() {
+      if (frequency === 'always') return false;
+      if (frequency === 'session') return sessionStorage.getItem(cookieName) === '1';
+      if (frequency === 'day') return getCookie(cookieName) === '1';
+      return false;
+    }
+
+    function markClosed() {
+      if (frequency === 'session') sessionStorage.setItem(cookieName, '1');
+      if (frequency === 'day') setCookie(cookieName, '1', 1);
+    }
+
+    function showPopup() {
+      if (alreadyClosed()) return;
+      root.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    function hidePopup() {
+      root.style.display = 'none';
+      document.body.style.overflow = '';
+      markClosed();
+    }
+
+    root.querySelectorAll('[data-newsletter-close]').forEach(function (el) {
+      el.addEventListener('click', hidePopup);
+    });
+
+    // Success message showing means the form already posted - don't re-trigger closing logic weirdly
+    if (root.querySelector('.newsletter-popup__success')) {
+      markClosed();
+    }
+
+    if (!alreadyClosed()) {
+      if (delay >= 0) {
+        setTimeout(showPopup, delay);
+      }
+      if (exitIntent) {
+        document.addEventListener('mouseout', function (e) {
+          if (!e.relatedTarget && e.clientY < 10) showPopup();
+        });
+      }
+    }
+  })();
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Newsletter Popup",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Popup behavior"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_popup",
+      "label": "Enable popup",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "delay_seconds",
+      "label": "Delay before showing (seconds)",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "select",
+      "id": "frequency",
+      "label": "Show frequency",
+      "options": [
+        { "value": "always", "label": "Every page load" },
+        { "value": "session", "label": "Once per session" },
+        { "value": "day", "label": "Once per day" }
+      ],
+      "default": "session"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_exit_intent",
+      "label": "Also trigger on exit intent (desktop)",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_mobile",
+      "label": "Hide on mobile",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image (optional)"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Join our newsletter"
+    },
+    {
+      "type": "richtext",
+      "id": "subtext",
+      "label": "Subtext",
+      "default": "<p>Sign up and get 10% off your first order.</p>"
+    },
+    {
+      "type": "text",
+      "id": "email_placeholder",
+      "label": "Email field placeholder",
+      "default": "Email address"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Subscribe"
+    },
+    {
+      "type": "text",
+      "id": "success_message",
+      "label": "Success message",
+      "default": "Thanks for subscribing!"
+    },
+    {
+      "type": "text",
+      "id": "disclaimer",
+      "label": "Disclaimer text (optional)",
+      "default": "You can unsubscribe at any time."
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#111111"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Newsletter Popup"
+    }
+  ]
+}
+{% endschema %}
