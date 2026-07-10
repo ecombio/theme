@@ -12,6 +12,15 @@
   so the two snippets stay decoupled and can be reordered, reused,
   or dropped independently.
 
+  ACTIVE FILTERS (updated): "Clear all" now renders as the last child
+  INSIDE .collection-active-filters__track, alongside the pills —
+  not as a sibling after the scroll region. That puts it immediately
+  next to the last active-filter pill (matching search's layout) and
+  means it scrolls with the pills rather than sitting fixed on the
+  far side of the nav arrows. The prev/next nav buttons + edge fade
+  are only shown when the track actually overflows — see
+  assets/collection-filter.js's initActiveFiltersNav().
+
   Accepts:
     section              - the main-collection section
     collection           - the current collection
@@ -66,6 +75,7 @@
           class="collection-active-filters__nav collection-active-filters__nav--prev"
           aria-label="Scroll active filters left"
           data-active-filters-prev
+          hidden
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -80,6 +90,10 @@
               </a>
             {%- endfor -%}
           {%- endfor -%}
+
+          {%- if active_filter_count > 0 -%}
+            <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
+          {%- endif -%}
         </div>
 
         <button
@@ -87,16 +101,13 @@
           class="collection-active-filters__nav collection-active-filters__nav--next"
           aria-label="Scroll active filters right"
           data-active-filters-next
+          hidden
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
-
-      {%- if active_filter_count > 0 -%}
-        <a href="{{ collection.url }}" class="collection-filter__pill collection-filter__pill--clear">Clear all</a>
-      {%- endif -%}
     </div>
   {%- endif -%}
 
