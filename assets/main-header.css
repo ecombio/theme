@@ -28,22 +28,27 @@
    drawer are all rendered inside <header class="main-header">). That
    clipped all three of them down to roughly header-height + 30px,
    which is why they all appeared to get cut off at the same point.
-   Replaced with a ::after pseudo-element that carries the shadow
-   instead, so nothing inside .main-header gets clipped anymore.
+   Replaced with a plain border-bottom for the base state and a real
+   box-shadow only once .is-sticky.is-scrolled is present (see the
+   HEADER SHADOW / ELEVATION block below) — nothing inside .main-header
+   gets clipped anymore.
 
-   STICKY STYLES: there are now two sticky variants, chosen in the
-   theme editor via "Sticky header style":
-     - Standard   → .main-header--sticky-enabled only. Header pins and
-                    stays fully visible; the sticky hamburger/X toggle
-                    (rendered by header-hamburger.liquid, styled in
-                    header-hamburger.css) reveals/hides the menu bar.
-     - Auto-hide  → .main-header--sticky-enabled PLUS the
-                    .main-header--sticky-autohide modifier. Reuses the
-                    same position:fixed plumbing, but main-header.js
-                    also toggles .is-hidden based on scroll direction,
-                    and the header translates fully off-screen instead
-                    of showing a toggle button. See the "STICKY — AUTO-
-                    HIDE VARIANT" block below for the CSS side of this.
+   FIXED (double-shadow bug): a leftover `.header { box-shadow: 0 2px
+   6px rgba(0,0,0,.06); border-bottom: 1px solid #e5e5e5; }` rule used
+   to live down in the merged-in legacy block near the bottom of this
+   file (originally from the old standalone header.css, before it got
+   folded into this one). Every other selector in that legacy block was
+   properly renamed to .ecombio-header__* to avoid collisions with the
+   new header — this one bare `.header` shell rule was the one thing
+   that never got touched. If anything upstream (a layout wrapper div,
+   a section-group wrapper, etc.) ever has class="header", that rule
+   would fire on it at the same time .main-header's own border-bottom
+   rule fires on the header element itself — two nested elements each
+   drawing their own line/shadow right next to each other, which is
+   what produced the "two shadows stacked" look. Since .main-header's
+   own base rule below already covers this exact border-bottom, the
+   dead/duplicate .header rule has been removed outright rather than
+   merged — there was nothing in it worth keeping.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -368,9 +373,9 @@
    of its own — the width gate has to live in CSS, not here.
 
    FIXED: removed the clip-path bottom-shadow trick from here too (see
-   note at the top of this file) — .main-header's own ::after now
-   handles the shadow in both the normal and sticky states, so this
-   class no longer needs its own box-shadow/clip-path pair.
+   note at the top of this file) — .main-header's own base/sticky rules
+   now handle the shadow directly in both the normal and sticky states,
+   so this class no longer needs its own box-shadow/clip-path pair.
    ============================================================================= */
 
 /* Base header — normal, in-flow, until JS marks it .is-sticky */
@@ -464,10 +469,21 @@
      Desktop : ≥ 1024px
    ============================================================================= */
 
-.header {
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-  border-bottom: 1px solid #e5e5e5;
-}
+/* NOTE: the old shell rule that used to live here —
+     .header {
+       box-shadow: 0 2px 6px rgba(0,0,0,.06);
+       border-bottom: 1px solid #e5e5e5;
+     }
+   — has been removed. It was dead/duplicate leftover from before this
+   file was merged into main-header.css: every other selector below was
+   renamed to .ecombio-header__* to avoid colliding with the new header,
+   but this one bare `.header` rule never got touched. .main-header's own
+   base rule (top of this file, under "HEADER SHADOW / ELEVATION") already
+   draws this exact border-bottom on the real header element — if
+   anything upstream ever had class="header" too, this rule would fire a
+   second border+shadow on a different, nested element at the same time,
+   which is what caused the "two shadows stacked" bug. See this file's
+   top-of-file comment block for the full writeup. */
 
 /* ── Variables ── */
 :root {
