@@ -53,9 +53,14 @@
   assign enable_search_drawer_tablet = section.settings.enable_search_drawer_tablet
 
   # ── Section layout (width + padding) ──
-  # Mirrors sections/example-width-section.liquid / snippets/main-product.liquid:
-  # --section-padding / --custom-width are local vars set inline below, fully
-  # independent of the global --page-margin / --page-width vars.
+  # Mirrors the pattern in sections/example-width-section.liquid /
+  # snippets/main-product.liquid: --section-padding / --custom-width are
+  # local vars set inline below, from this section's own "Section layout"
+  # settings, fully independent of the global --page-margin / --page-width
+  # vars. NOTE: snippets/utility-bar.liquid now reads these SAME settings
+  # (section.settings.section_width / .custom_width / .section_padding)
+  # directly, so the utility bar row always shares this exact width/padding
+  # instead of having its own separate copy that could drift out of sync.
   assign section_width = section.settings.section_width
   if section_width == blank
     assign width_class = 'main-header--default-width'
@@ -162,7 +167,7 @@
       "step": 4,
       "unit": "px",
       "default": 24,
-      "info": "Applies at tablet and desktop widths. Mobile (< 640px) keeps its own fixed, tighter padding regardless of this setting."
+      "info": "Applies at tablet and desktop widths. Mobile (< 640px) keeps its own fixed, tighter padding regardless of this setting. Also controls the Utility Bar's width/padding below it, so the two rows always line up."
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
@@ -236,7 +241,7 @@
     { "type": "header", "content": "Utility Bar" },
     {
       "type": "paragraph",
-      "content": "Slim strip rendered above the main header row. Previously its own section; now built into this one via snippets/utility-bar.liquid (see that file — assets/utility-bar.css/.js load themselves, no separate section needed)."
+      "content": "Slim strip rendered above the main header row. Previously its own section; now built into this one via snippets/utility-bar.liquid (see that file — assets/utility-bar.css/.js load themselves, no separate section needed). Its width and side padding automatically match the header row's own Section layout settings above — there's no separate width control for it anymore."
     },
     {
       "type": "checkbox",
@@ -265,39 +270,6 @@
       "id": "show_locale",
       "label": "Show language selector",
       "default": true
-    },
-    {
-      "type": "select",
-      "id": "utility_bar_section_width",
-      "label": "Utility bar width",
-      "info": "Independent of the header row's own Section width setting above.",
-      "options": [
-        { "value": "", "label": "Default" },
-        { "value": "full-width", "label": "Full width" },
-        { "value": "custom-width", "label": "Custom width" }
-      ],
-      "default": ""
-    },
-    {
-      "type": "range",
-      "id": "utility_bar_custom_width",
-      "label": "Utility bar custom width",
-      "min": 40,
-      "max": 120,
-      "step": 5,
-      "unit": "rem",
-      "default": 80,
-      "visible_if": "{{ section.settings.utility_bar_section_width == 'custom-width' }}"
-    },
-    {
-      "type": "range",
-      "id": "utility_bar_section_padding",
-      "label": "Utility bar side padding",
-      "min": 0,
-      "max": 80,
-      "step": 4,
-      "unit": "px",
-      "default": 24
     },
     {
       "type": "image_picker",
