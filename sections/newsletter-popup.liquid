@@ -30,41 +30,45 @@
     {%- endif -%}
 
     <div class="newsletter-popup__content">
-      {%- if section.settings.heading != blank -%}
-        <h2 class="newsletter-popup__heading">{{ section.settings.heading }}</h2>
-      {%- endif -%}
-
-      {%- if section.settings.subtext != blank -%}
-        <div class="newsletter-popup__subtext">{{ section.settings.subtext }}</div>
-      {%- endif -%}
-
-      {%- form 'customer', id: 'newsletter-popup-form', class: 'newsletter-popup__form' -%}
-        <input type="hidden" name="contact[tags]" value="newsletter,popup-signup">
-
-        {%- if form.posted_successfully? -%}
-          <p class="newsletter-popup__success">{{ section.settings.success_message | default: 'Thanks for subscribing!' }}</p>
-        {%- else -%}
-          <div class="newsletter-popup__field-row">
-            <input
-              type="email"
-              name="contact[email]"
-              placeholder="{{ section.settings.email_placeholder | default: 'Email address' }}"
-              required
-              class="newsletter-popup__input"
-            >
-            <button type="submit" class="newsletter-popup__button">
-              {{ section.settings.button_label | default: 'Subscribe' }}
-            </button>
-          </div>
-          {%- if form.errors -%}
-            <p class="newsletter-popup__error">{{ form.errors.messages.email }}</p>
-          {%- endif -%}
+      <div class="newsletter-popup__text">
+        {%- if section.settings.heading != blank -%}
+          <h2 class="newsletter-popup__heading">{{ section.settings.heading }}</h2>
         {%- endif -%}
-      {%- endform -%}
 
-      {%- if section.settings.disclaimer != blank -%}
-        <p class="newsletter-popup__disclaimer">{{ section.settings.disclaimer }}</p>
-      {%- endif -%}
+        {%- if section.settings.subtext != blank -%}
+          <div class="newsletter-popup__subtext">{{ section.settings.subtext }}</div>
+        {%- endif -%}
+      </div>
+
+      <div class="newsletter-popup__action">
+        {%- form 'customer', id: 'newsletter-popup-form', class: 'newsletter-popup__form' -%}
+          <input type="hidden" name="contact[tags]" value="newsletter,popup-signup">
+
+          {%- if form.posted_successfully? -%}
+            <p class="newsletter-popup__success">{{ section.settings.success_message | default: 'Thanks for subscribing!' }}</p>
+          {%- else -%}
+            <div class="newsletter-popup__field-row">
+              <input
+                type="email"
+                name="contact[email]"
+                placeholder="{{ section.settings.email_placeholder | default: 'Email address' }}"
+                required
+                class="newsletter-popup__input"
+              >
+              <button type="submit" class="newsletter-popup__button">
+                {{ section.settings.button_label | default: 'Subscribe' }}
+              </button>
+            </div>
+            {%- if form.errors -%}
+              <p class="newsletter-popup__error">{{ form.errors.messages.email }}</p>
+            {%- endif -%}
+          {%- endif -%}
+        {%- endform -%}
+
+        {%- if section.settings.disclaimer != blank -%}
+          <p class="newsletter-popup__disclaimer">{{ section.settings.disclaimer }}</p>
+        {%- endif -%}
+      </div>
     </div>
   </div>
 </div>
@@ -73,40 +77,49 @@
   .newsletter-popup { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
   .newsletter-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); pointer-events: none; }
   .newsletter-popup__modal {
-    position: relative; padding: 2.5rem; border-radius: 8px; pointer-events: auto;
+    position: relative; padding: 1.5rem 1.75rem; border-radius: 8px; pointer-events: auto;
     box-shadow: 0 4px 24px rgba(0,0,0,0.15);
   }
   .newsletter-popup__close {
-    position: absolute; top: 12px; right: 16px; background: none; border: none;
-    font-size: 1.75rem; line-height: 1; cursor: pointer; color: inherit; opacity: 0.6;
+    position: absolute; top: 10px; right: 12px; background: none; border: none;
+    font-size: 1.5rem; line-height: 1; cursor: pointer; color: inherit; opacity: 0.6;
   }
   .newsletter-popup__close:hover { opacity: 1; }
-  .newsletter-popup__image img { width: 100%; height: auto; border-radius: 6px; margin-bottom: 1.25rem; }
-  .newsletter-popup__heading { margin: 0 0 0.75rem; font-size: 1.5rem; }
-  .newsletter-popup__subtext { margin-bottom: 1.25rem; }
-  .newsletter-popup__field-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .newsletter-popup__image img { width: 100%; height: auto; border-radius: 6px; margin-bottom: 1rem; }
+
+  .newsletter-popup__content { display: flex; align-items: center; gap: 1.5rem; text-align: left; }
+  .newsletter-popup__text { flex: 1 1 auto; }
+  .newsletter-popup__action { flex: 0 0 auto; }
+
+  .newsletter-popup__heading { margin: 0 0 0.25rem; font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
+  .newsletter-popup__subtext { font-size: 0.85rem; line-height: 1.35; opacity: 0.75; }
+  .newsletter-popup__subtext p { margin: 0; }
+
+  .newsletter-popup__field-row { display: flex; gap: 0.5rem; flex-wrap: nowrap; }
   .newsletter-popup__input {
-    flex: 1 1 200px; padding: 0.75rem 1rem; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
+    flex: 1 1 200px; padding: 0.55rem 0.85rem; border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 4px; font-size: 0.9rem;
   }
   .newsletter-popup__button {
-    padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background: #111; color: #fff; cursor: pointer;
+    padding: 0.55rem 1.15rem; border: none; border-radius: 4px; background: #111; color: #fff;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap;
   }
-  .newsletter-popup__disclaimer { font-size: 0.75rem; opacity: 0.7; margin-top: 1rem; }
-  .newsletter-popup__error { color: #d02e2e; font-size: 0.85rem; margin-top: 0.5rem; }
+  .newsletter-popup__disclaimer { font-size: 0.72rem; opacity: 0.6; margin: 0.5rem 0 0; }
+  .newsletter-popup__error { color: #d02e2e; font-size: 0.8rem; margin-top: 0.4rem; }
 
-  /* Center variant: full dimmed overlay, modal centered */
+  /* Center variant: dimmed overlay, wider bar-style modal, horizontal content */
   .newsletter-popup--center .newsletter-popup__overlay { pointer-events: auto; }
   .newsletter-popup--center .newsletter-popup__modal {
-    max-width: 480px; width: 90%; margin: 8vh auto; text-align: center;
+    max-width: 640px; width: 90%; margin: 10vh auto;
   }
-  .newsletter-popup--center .newsletter-popup__field-row { justify-content: center; }
 
-  /* Corner variant: no dimming, small card anchored bottom-right */
+  /* Corner variant: no dimming, narrow card, content stacks vertically */
   .newsletter-popup--corner .newsletter-popup__overlay { display: none; }
   .newsletter-popup--corner .newsletter-popup__modal {
     position: fixed; bottom: 20px; right: 20px; left: auto; margin: 0;
-    max-width: 360px; width: min(360px, calc(100vw - 40px)); text-align: left;
+    max-width: 340px; width: min(340px, calc(100vw - 40px));
   }
+  .newsletter-popup--corner .newsletter-popup__content { flex-direction: column; align-items: stretch; }
   .newsletter-popup--corner .newsletter-popup__field-row { flex-direction: column; }
   .newsletter-popup--corner .newsletter-popup__button { width: 100%; }
 
@@ -115,6 +128,11 @@
     .newsletter-popup--corner .newsletter-popup__modal {
       bottom: 12px; right: 12px; left: 12px; width: auto; max-width: none;
     }
+    .newsletter-popup--center .newsletter-popup__content {
+      flex-direction: column; align-items: stretch; text-align: left;
+    }
+    .newsletter-popup--center .newsletter-popup__field-row { flex-direction: column; }
+    .newsletter-popup--center .newsletter-popup__button { width: 100%; }
   }
 </style>
 
