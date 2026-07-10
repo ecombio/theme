@@ -77,7 +77,14 @@
     return item.querySelector('[data-showcase-menu-trigger]');
   }
 
+  function clearScrollLock(item) {
+    var panel = getPanel(item);
+    if (panel) panel.classList.remove('is-scroll-locked');
+  }
+
   function openMenu(item) {
+    clearScrollLock(item); // a fresh open always cancels any prior lock
+
     if (openItem === item) return;
     if (openItem) closeMenu(openItem);
 
@@ -98,13 +105,38 @@
     if (openItem === item) openItem = null;
   }
 
+  // Scroll-close needs to override CSS's :hover/:focus-within rules,
+  // not just remove .is-open — otherwise a panel stays visually open
+  // through a scroll as long as the cursor never actually leaves the
+  // menu item (true for trackpad/wheel scrolling, since the mouse
+  // doesn't move). is-scroll-locked (!important in CSS) forces it
+  // closed regardless of hover state. It's only cleared by a genuine
+  // fresh interaction — mouseleave+re-enter or a trigger regaining
+  // focus — never just because scrolling happened to stop, so the
+  // panel can't silently reopen mid-scroll while still hovered.
+  function scrollCloseMenu(item) {
+    var panel = getPanel(item);
+    var trigger = getTrigger(item);
+    if (panel) {
+      panel.classList.remove('is-open');
+      panel.classList.add('is-scroll-locked');
+    }
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    if (openItem === item) openItem = null;
+  }
+
   items.forEach(function (item) {
     var trigger = getTrigger(item);
     var panel = getPanel(item);
     if (!trigger || !panel) return;
 
     item.addEventListener('mouseenter', function () {
+      clearScrollLock(item);
       updateBottomVar();
+    });
+
+    item.addEventListener('mouseleave', function () {
+      clearScrollLock(item);
     });
 
     item.addEventListener('keydown', function (event) {
@@ -123,6 +155,7 @@
     });
 
     trigger.addEventListener('focus', function () {
+      clearScrollLock(item);
       updateBottomVar();
     });
   });
@@ -134,9 +167,11 @@
   });
 
   // Close on scroll rather than trying to track the header's sticky
-  // slide-in animation — see file header comment above.
+  // slide-in animation — see file header comment above. Uses
+  // scrollCloseMenu (not closeMenu) so the panel is forced closed even
+  // if the mouse is still hovering it.
   window.addEventListener('scroll', function () {
-    if (openItem) closeMenu(openItem);
+    if (openItem) scrollCloseMenu(openItem);
   }, { passive: true });
 
   window.addEventListener('resize', scheduleUpdate);
