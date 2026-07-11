@@ -46,7 +46,6 @@
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
   assign enable_sticky = section.settings.enable_sticky_header
-  assign sticky_style = section.settings.sticky_header_style | default: 'standard'
   assign mobile_drawer_style = section.settings.mobile_drawer_style | default: 'compact'
   assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
   assign show_menu_bar_tablet = section.settings.show_menu_bar_tablet
@@ -72,7 +71,7 @@
   endif
 -%}
 
-<header class="main-header {{ width_class }}{% if enable_sticky %} main-header--sticky-enabled{% if sticky_style == 'autohide' %} main-header--sticky-autohide{% endif %}{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if hide_utility_bar_sticky %} main-header--hide-utility-bar-sticky{% endif %}"
+<header class="main-header {{ width_class }}{% if enable_sticky %} main-header--sticky-enabled main-header--sticky-autohide{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if hide_utility_bar_sticky %} main-header--hide-utility-bar-sticky{% endif %}"
         id="main-header"
         role="banner"
         style="
@@ -224,19 +223,7 @@
       "id": "enable_sticky_header",
       "label": "Enable sticky header",
       "default": true,
-      "info": "Header stays visible while scrolling. Desktop-only — the sticky hamburger/X toggle only appears at 1024px and up."
-    },
-    {
-      "type": "select",
-      "id": "sticky_header_style",
-      "label": "Sticky header style",
-      "info": "Standard: the header stays pinned and fully visible once you've scrolled past it, with a hamburger/X toggle to reveal the nav menu bar. Auto-hide: the header slides out of view while you scroll down, and slides back in as soon as you scroll up — no toggle button, the whole header hides/shows as a unit.",
-      "options": [
-        { "value": "standard", "label": "Standard (always visible, with menu-bar toggle)" },
-        { "value": "autohide", "label": "Auto-hide (hide on scroll down, show on scroll up)" }
-      ],
-      "default": "standard",
-      "visible_if": "{{ section.settings.enable_sticky_header }}"
+      "info": "Header hides while scrolling down and reappears as soon as you scroll back up. Desktop-only — the sticky hamburger/X toggle only appears at 1024px and up."
     },
 
     { "type": "header", "content": "Utility Bar" },
