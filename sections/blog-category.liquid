@@ -1,0 +1,235 @@
+{{ 'section-blog-category.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  BLOG CATEGORY SECTION
+  --------------------------------------------------------------
+  Add this section to your Blog page template (blog.json).
+
+  How the "category" filtering works:
+  Shopify blogs don't have native categories, so this uses TAGS
+  as categories. Shopify has a built-in URL route that auto-filters
+  posts by tag — no custom logic needed:
+
+      /blogs/{blog-handle}/tagged/{tag}
+
+  Example: /blogs/news/tagged/recipes
+
+  When a visitor lands on that URL, `blog.articles` is automatically
+  limited to posts with that tag. This section just renders whatever
+  is in `blog.articles`, so it works as a normal blog listing AND
+  as a "category" page, with zero extra logic.
+
+  The section also prints a category/tag nav so people can jump
+  between categories, and highlights the active one.
+{%- endcomment -%}
+
+<div class="blog-category-section page-width">
+
+  {%- if section.settings.show_title -%}
+    <div class="blog-category-header">
+      <h2 class="blog-category-title">
+        {%- if current_tags -%}
+          {{ current_tags | join: ', ' }}
+        {%- else -%}
+          {{ section.settings.heading | default: blog.title }}
+        {%- endif -%}
+      </h2>
+    </div>
+  {%- endif -%}
+
+  {%- if section.settings.show_tag_nav and blog.all_tags.size > 0 -%}
+    <nav class="blog-category-nav" aria-label="Blog categories">
+      <a
+        href="{{ blog.url }}"
+        class="blog-category-nav__link{% unless current_tags %} is-active{% endunless %}"
+      >
+        {{ section.settings.all_label | default: 'All' }}
+      </a>
+      {%- for tag in blog.all_tags -%}
+        <a
+          href="{{ blog.url }}/tagged/{{ tag | handleize }}"
+          class="blog-category-nav__link{% if current_tags contains tag %} is-active{% endif %}"
+        >
+          {{ tag }}
+        </a>
+      {%- endfor -%}
+    </nav>
+  {%- endif -%}
+
+  {%- if blog.articles.size > 0 -%}
+    <div
+      class="blog-category-grid"
+      style="--columns: {{ section.settings.columns_desktop }}; --columns-mobile: {{ section.settings.columns_mobile }};"
+    >
+      {%- for article in blog.articles limit: section.settings.articles_to_show -%}
+        <article class="blog-category-card">
+          <a href="{{ article.url }}" class="blog-category-card__link">
+            {%- if article.image and section.settings.show_image -%}
+              <div class="blog-category-card__image-wrapper">
+                {{
+                  article.image
+                  | image_url: width: 800
+                  | image_tag:
+                    loading: 'lazy',
+                    class: 'blog-category-card__image',
+                    widths: '400,600,800',
+                    alt: article.image.alt | default: article.title
+                }}
+              </div>
+            {%- endif -%}
+
+            <div class="blog-category-card__content">
+              {%- if section.settings.show_date -%}
+                <span class="blog-category-card__date">{{ article.published_at | date: format: 'month_day_year' }}</span>
+              {%- endif -%}
+
+              <h3 class="blog-category-card__title">{{ article.title }}</h3>
+
+              {%- if section.settings.show_excerpt -%}
+                <div class="blog-category-card__excerpt">
+                  {{ article.excerpt_or_content | strip_html | truncatewords: section.settings.excerpt_length }}
+                </div>
+              {%- endif -%}
+
+              {%- if section.settings.show_tags and article.tags.size > 0 -%}
+                <div class="blog-category-card__tags">
+                  {%- for tag in article.tags -%}
+                    <span class="blog-category-card__tag">{{ tag }}</span>
+                  {%- endfor -%}
+                </div>
+              {%- endif -%}
+            </div>
+          </a>
+        </article>
+      {%- endfor -%}
+    </div>
+
+    {%- if paginate.pages > 1 -%}
+      <div class="blog-category-pagination">
+        {{ paginate | default_pagination }}
+      </div>
+    {%- endif -%}
+
+  {%- else -%}
+    <p class="blog-category-empty">
+      {{ section.settings.empty_text | default: 'No posts found in this category yet.' }}
+    </p>
+  {%- endif -%}
+
+</div>
+
+{% paginate blog.articles by section.settings.articles_per_page %}{% endpaginate %}
+
+{% schema %}
+{
+  "name": "Blog category listing",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "Show heading",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Fallback heading (used when not on a tagged/category URL)",
+      "default": "From the blog"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tag_nav",
+      "label": "Show category (tag) navigation",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "all_label",
+      "label": "\"All\" nav label",
+      "default": "All"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "label": "Columns on desktop",
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "label": "Columns on mobile",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "articles_to_show",
+      "min": 2,
+      "max": 24,
+      "step": 1,
+      "label": "Posts to show",
+      "default": 9
+    },
+    {
+      "type": "range",
+      "id": "articles_per_page",
+      "min": 2,
+      "max": 24,
+      "step": 1,
+      "label": "Posts per page (pagination)",
+      "default": 9
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "Show featured image",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show publish date",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_excerpt",
+      "label": "Show excerpt",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "excerpt_length",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "label": "Excerpt length (words)",
+      "default": 25
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags on card",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty state text",
+      "default": "No posts found in this category yet."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog category listing"
+    }
+  ]
+}
+{% endschema %}
