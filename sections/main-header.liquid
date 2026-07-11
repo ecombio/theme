@@ -46,9 +46,6 @@
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
   assign enable_sticky = section.settings.enable_sticky
-  assign mobile_drawer_style = section.settings.mobile_drawer_style | default: 'compact'
-  assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
-  assign show_menu_bar_tablet = section.settings.show_menu_bar_tablet
   assign enable_search_drawer_tablet = section.settings.enable_search_drawer_tablet
 
   assign section_width = section.settings.section_width
@@ -61,7 +58,7 @@
   endif
 -%}
 
-<header class="main-header {{ width_class }}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if enable_sticky %} main-header--sticky-enabled{% endif %}"
+<header class="main-header {{ width_class }} main-header--menu-bar-mobile-visible main-header--menu-bar-tablet-visible{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if enable_sticky %} main-header--sticky-enabled{% endif %}"
         id="main-header"
         role="banner"
         style="
@@ -75,8 +72,6 @@
 
   <div class="main-header__bar">
     <div class="main-header__inner">
-
-      {%- render 'header-hamburger', blocks: section.blocks, enable_sticky: enable_sticky, drawer_style: mobile_drawer_style, enable_predictive_search: section.settings.enable_predictive_search -%}
 
       {%- if section.settings.enable_search_drawer -%}
         <div class="main-header__search-drawer-mobile-only">
@@ -113,7 +108,7 @@
     </div>
   </div>
 
-  {%- render 'header-menu', blocks: section.blocks, show_on_mobile: show_menu_bar_mobile, show_on_tablet: show_menu_bar_tablet -%}
+  {%- render 'header-menu', blocks: section.blocks, show_on_mobile: true, show_on_tablet: true -%}
 
 </header>
 
@@ -171,44 +166,19 @@
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
     {
-      "type": "select",
-      "id": "mobile_drawer_style",
-      "label": "Mobile drawer style",
-      "info": "Compact keeps the drawer narrow with a dimmed backdrop over the page. Full-width fills the whole screen with no backdrop.",
-      "options": [
-        { "value": "compact", "label": "Compact (280px, with backdrop)" },
-        { "value": "full-width", "label": "Full-width (no backdrop)" }
-      ],
-      "default": "compact"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_menu_bar_mobile",
-      "label": "Show Menu Bar",
-      "info": "Shows the desktop navigation bar (blocks configured below) on mobile as well, in addition to the hamburger drawer. Independent of Tablet's setting below. Off by default.",
-      "default": false
-    },
-    {
       "type": "checkbox",
       "id": "enable_search_drawer",
       "label": "Enable search drawer icon (mobile only, < 640px)",
-      "info": "Adds a search icon to the header that opens a full-screen drawer sliding down from the top, replacing the search row on mobile screens only (below 640px). Independent of Tablet's setting below. The mobile nav drawer (hamburger menu) is unaffected either way.",
+      "info": "Adds a search icon to the header that opens a full-screen drawer sliding down from the top, replacing the search row on mobile screens only (below 640px). Independent of Tablet's setting below.",
       "default": false
     },
 
     { "type": "header", "content": "Tablet Division (640px – 1023px)" },
     {
       "type": "checkbox",
-      "id": "show_menu_bar_tablet",
-      "label": "Show Menu Bar",
-      "info": "Shows the desktop navigation bar (blocks configured below) on tablet as well, in addition to the hamburger drawer. Independent of Mobile's setting above. Off by default.",
-      "default": false
-    },
-    {
-      "type": "checkbox",
       "id": "enable_search_drawer_tablet",
       "label": "Enable search drawer icon (tablet only, 640px – 1023px)",
-      "info": "Adds a search icon to the header that opens a full-screen drawer sliding down from the top, replacing the search row on tablet screens only (640px–1023px). Independent of Mobile's setting above. The mobile nav drawer (hamburger menu) is unaffected either way.",
+      "info": "Adds a search icon to the header that opens a full-screen drawer sliding down from the top, replacing the search row on tablet screens only (640px–1023px). Independent of Mobile's setting above.",
       "default": false
     },
     {
