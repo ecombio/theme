@@ -10,7 +10,6 @@
   const AUTOHIDE_DELTA = 10;
   const STICKY_GRACE_MS = 250;
   const PIN_CLASS = 'main-header--menu-panel-open';
-  const isAutohide = header.classList.contains('main-header--sticky-autohide');
 
   const root = document.documentElement;
   let scrollAnchorY = window.scrollY;
@@ -24,7 +23,7 @@
   header.insertAdjacentElement('afterend', spacer);
 
   const setHeaderHeightVar = () => {
-    const isHidden = isAutohide && header.classList.contains('is-hidden');
+    const isHidden = header.classList.contains('is-hidden');
     const height = isHidden ? 0 : header.offsetHeight;
     root.style.setProperty('--sticky-header-height', height + 'px');
 
@@ -77,28 +76,26 @@
       header.classList.add('is-sticky', 'is-scrolled');
       setHeaderHeightVar();
 
-      if (isAutohide) {
-        if (header.classList.contains(PIN_CLASS)) {
+      if (header.classList.contains(PIN_CLASS)) {
+        header.classList.remove('is-hidden');
+        scrollAnchorY = currentScrollY;
+        setHeaderHeightVar();
+      } else if (!wasSticky) {
+        scrollAnchorY = currentScrollY;
+        stickyGraceUntil = Date.now() + STICKY_GRACE_MS;
+        setHeaderHeightVar();
+      } else if (Date.now() < stickyGraceUntil) {
+        scrollAnchorY = currentScrollY;
+      } else {
+        const delta = currentScrollY - scrollAnchorY;
+        if (delta > AUTOHIDE_DELTA) {
+          header.classList.add('is-hidden');
+          scrollAnchorY = currentScrollY;
+          setHeaderHeightVar();
+        } else if (delta < -AUTOHIDE_DELTA) {
           header.classList.remove('is-hidden');
           scrollAnchorY = currentScrollY;
           setHeaderHeightVar();
-        } else if (!wasSticky) {
-          scrollAnchorY = currentScrollY;
-          stickyGraceUntil = Date.now() + STICKY_GRACE_MS;
-          setHeaderHeightVar();
-        } else if (Date.now() < stickyGraceUntil) {
-          scrollAnchorY = currentScrollY;
-        } else {
-          const delta = currentScrollY - scrollAnchorY;
-          if (delta > AUTOHIDE_DELTA) {
-            header.classList.add('is-hidden');
-            scrollAnchorY = currentScrollY;
-            setHeaderHeightVar();
-          } else if (delta < -AUTOHIDE_DELTA) {
-            header.classList.remove('is-hidden');
-            scrollAnchorY = currentScrollY;
-            setHeaderHeightVar();
-          }
         }
       }
     } else {
