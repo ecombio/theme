@@ -45,12 +45,11 @@
   assign logo_width = settings.logo_width | default: 140
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
-  assign enable_sticky = section.settings.enable_sticky_header
+  assign enable_sticky = false
   assign mobile_drawer_style = section.settings.mobile_drawer_style | default: 'compact'
   assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
   assign show_menu_bar_tablet = section.settings.show_menu_bar_tablet
   assign enable_search_drawer_tablet = section.settings.enable_search_drawer_tablet
-  assign hide_utility_bar_sticky = section.settings.hide_utility_bar_on_sticky
 
   # ── Section layout (width + padding) ──
   # Mirrors the pattern in sections/example-width-section.liquid /
@@ -71,7 +70,7 @@
   endif
 -%}
 
-<header class="main-header {{ width_class }}{% if enable_sticky %} main-header--sticky-enabled main-header--sticky-autohide{% endif %}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if hide_utility_bar_sticky %} main-header--hide-utility-bar-sticky{% endif %}"
+<header class="main-header {{ width_class }}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
         id="main-header"
         role="banner"
         style="
@@ -126,8 +125,6 @@
   {%- render 'header-menu', blocks: section.blocks, show_on_mobile: show_menu_bar_mobile, show_on_tablet: show_menu_bar_tablet -%}
 
 </header>
-
-<script src="{{ 'main-header.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -217,15 +214,6 @@
       "content": "Icon labels are shown automatically at this width via CSS, with no toggle."
     },
 
-    { "type": "header", "content": "Desktop Division (≥ 1024px)" },
-    {
-      "type": "checkbox",
-      "id": "enable_sticky_header",
-      "label": "Enable sticky header",
-      "default": true,
-      "info": "Header hides while scrolling down and reappears as soon as you scroll back up. Desktop-only — the sticky hamburger/X toggle only appears at 1024px and up."
-    },
-
     { "type": "header", "content": "Utility Bar" },
     {
       "type": "paragraph",
@@ -258,13 +246,6 @@
       "id": "show_locale",
       "label": "Show language selector",
       "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "hide_utility_bar_on_sticky",
-      "label": "Hide utility bar when header is sticky",
-      "default": true,
-      "info": "On: the utility bar disappears the moment the header pins/sticks, matching how it behaved back when it was a separate section above the header (its original scroll-away feel). Off: the utility bar stays visible and scrolls up along with the rest of the sticky header. Only matters if \"Enable sticky header\" is also on — has no effect otherwise."
     },
     {
       "type": "image_picker",
