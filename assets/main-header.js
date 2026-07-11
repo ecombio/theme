@@ -6,7 +6,16 @@
 
   if (!header || !header.classList.contains('main-header--sticky-enabled')) return;
 
-  const STICKY_THRESHOLD = 60;
+  // Measured from the header's own rendered height instead of a fixed
+  // number. A hardcoded threshold (e.g. 60px) can be much smaller than
+  // the header's real height (utility bar + main row + nav row), which
+  // causes the header to snap to position:fixed while it's still
+  // partway through scrolling out of view in normal document flow —
+  // visually reading as a second header teleporting in. Measuring the
+  // real height means sticky mode only engages once the header would
+  // have scrolled fully off-screen anyway, so there's nothing to jump
+  // from and the transition is seamless.
+  let stickyThreshold = header.offsetHeight;
   const AUTOHIDE_DELTA = 10;
   const STICKY_GRACE_MS = 250;
   const PIN_CLASS = 'main-header--menu-panel-open';
@@ -60,6 +69,9 @@
   const handleResize = () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
+      if (!header.classList.contains('is-sticky')) {
+        stickyThreshold = header.offsetHeight;
+      }
       setHeaderHeightVar();
       setToolbarHeightVar();
       setHeaderBottomVar();
@@ -72,7 +84,7 @@
     const currentScrollY = window.scrollY;
     const wasSticky = header.classList.contains('is-sticky');
 
-    if (currentScrollY > STICKY_THRESHOLD) {
+    if (currentScrollY > stickyThreshold) {
       header.classList.add('is-sticky', 'is-scrolled');
       setHeaderHeightVar();
 
