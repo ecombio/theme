@@ -17,10 +17,6 @@
   endif
 -%}
 
-{%- if section.settings.ann_enable -%}
-  {%- render 'announcement-bar', settings: section.settings -%}
-{%- endif -%}
-
 <header class="main-header {{ width_class }} main-header--menu-bar-mobile-visible main-header--menu-bar-tablet-visible{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
         id="main-header"
         role="banner"
@@ -33,7 +29,193 @@
           {%- if section_width == 'custom-width' %}
             --custom-width: {{ section.settings.custom_width }}rem;
           {%- endif %}
+          {%- if section.settings.enable_sticky %}
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+          {%- endif %}
         ">
+
+  {%- liquid
+    assign ann_active_count = 0
+    if section.settings.ann_enable
+      for i in (1..5)
+        assign ann_type_key = 'ann_' | append: i | append: '_type'
+        assign ann_slide_type = section.settings[ann_type_key]
+        if ann_slide_type == 'announcement' or ann_slide_type == 'countdown'
+          assign ann_active_count = ann_active_count | plus: 1
+        endif
+      endfor
+    endif
+
+    assign ann_width_class = 'announcement-bar--full-width'
+    if section.settings.ann_section_width == 'boxed'
+      assign ann_width_class = 'announcement-bar--boxed'
+    elsif section.settings.ann_section_width == 'custom-width'
+      assign ann_width_class = 'announcement-bar--custom-width'
+    endif
+  -%}
+
+  {%- if section.settings.ann_enable and ann_active_count > 0 -%}
+    {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
+
+    <div
+      class="announcement-bar {{ ann_width_class }}"
+      role="region"
+      aria-label="Announcements"
+      data-announcement-bar
+      data-autorotate="{{ section.settings.ann_autorotate }}"
+      data-interval="{{ section.settings.ann_autorotate_speed | times: 1000 }}"
+      style="
+        --section-padding: {{ section.settings.ann_section_padding }}px;
+        {%- if section.settings.ann_section_width == 'custom-width' %}
+          --custom-width: {{ section.settings.ann_custom_width }}rem;
+        {%- endif %}
+      "
+    >
+      <div class="announcement-bar__track" data-track>
+        {%- assign ann_first_rendered = true -%}
+        {%- for i in (1..5) -%}
+          {%- assign ann_type_key = 'ann_' | append: i | append: '_type' -%}
+          {%- assign ann_slide_type = section.settings[ann_type_key] -%}
+
+          {%- if ann_slide_type == 'announcement' -%}
+            {%- assign ann_text_key = 'ann_' | append: i | append: '_text' -%}
+            {%- assign ann_link_key = 'ann_' | append: i | append: '_link' -%}
+            <div
+              class="announcement-bar__slide{% if ann_first_rendered %} is-active{% endif %}"
+              role="status"
+              aria-live="polite"
+            >
+              {%- if section.settings[ann_link_key] != blank -%}
+                <a href="{{ section.settings[ann_link_key] }}" class="announcement-bar__message announcement-bar__message--link">
+                  {{ section.settings[ann_text_key] }}
+                </a>
+              {%- else -%}
+                <p class="announcement-bar__message">{{ section.settings[ann_text_key] }}</p>
+              {%- endif -%}
+            </div>
+            {%- assign ann_first_rendered = false -%}
+
+          {%- elsif ann_slide_type == 'countdown' -%}
+            {%- assign ann_text_key = 'ann_' | append: i | append: '_text' -%}
+            {%- assign ann_ctype_key = 'ann_' | append: i | append: '_countdown_type' -%}
+            {%- assign ann_end_key = 'ann_' | append: i | append: '_end_date' -%}
+            {%- assign ann_ever_key = 'ann_' | append: i | append: '_evergreen_minutes' -%}
+            {%- assign ann_btnlabel_key = 'ann_' | append: i | append: '_button_label' -%}
+            {%- assign ann_btnlink_key = 'ann_' | append: i | append: '_button_link' -%}
+            <div
+              class="announcement-bar__slide announcement-bar__slide--countdown{% if ann_first_rendered %} is-active{% endif %}"
+            >
+              {%- if section.settings[ann_text_key] != blank -%}
+                <span class="announcement-bar__countdown-label">{{ section.settings[ann_text_key] }}</span>
+              {%- endif -%}
+              <span
+                class="announcement-bar__countdown"
+                data-countdown
+                data-type="{{ section.settings[ann_ctype_key] }}"
+                data-end="{{ section.settings[ann_end_key] }}"
+                data-duration="{{ section.settings[ann_ever_key] }}"
+              >
+                <span class="countdown__unit"><span data-days>0</span><em>d</em></span>
+                <span class="countdown__sep">:</span>
+                <span class="countdown__unit"><span data-hours>0</span><em>h</em></span>
+                <span class="countdown__sep">:</span>
+                <span class="countdown__unit"><span data-minutes>0</span><em>m</em></span>
+                <span class="countdown__sep">:</span>
+                <span class="countdown__unit"><span data-seconds>0</span><em>s</em></span>
+              </span>
+              {%- if section.settings[ann_btnlabel_key] != blank -%}
+                <a href="{{ section.settings[ann_btnlink_key] }}" class="announcement-bar__btn">
+                  {{ section.settings[ann_btnlabel_key] }}
+                </a>
+              {%- endif -%}
+            </div>
+            {%- assign ann_first_rendered = false -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+      {%- if ann_active_count > 1 -%}
+        <button class="announcement-bar__arrow announcement-bar__arrow--prev" aria-label="Previous announcement">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <button class="announcement-bar__arrow announcement-bar__arrow--next" aria-label="Next announcement">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      {%- endif -%}
+    </div>
+
+    <script>
+      (function () {
+        var bar = document.querySelector('[data-announcement-bar]');
+        if (!bar) return;
+
+        var slides     = bar.querySelectorAll('.announcement-bar__slide');
+        var autorotate = bar.dataset.autorotate === 'true';
+        var interval   = parseInt(bar.dataset.interval, 10) || 5000;
+        var current    = 0;
+        var timer;
+
+        function show(index) {
+          slides[current].classList.remove('is-active');
+          current = (index + slides.length) % slides.length;
+          slides[current].classList.add('is-active');
+        }
+
+        function next() { show(current + 1); }
+        function prev() { show(current - 1); }
+
+        function startAuto() {
+          if (autorotate && slides.length > 1) timer = setInterval(next, interval);
+        }
+        function stopAuto() { clearInterval(timer); }
+
+        var btnNext = bar.querySelector('.announcement-bar__arrow--next');
+        var btnPrev = bar.querySelector('.announcement-bar__arrow--prev');
+        if (btnNext) btnNext.addEventListener('click', function () { stopAuto(); next(); startAuto(); });
+        if (btnPrev) btnPrev.addEventListener('click', function () { stopAuto(); prev(); startAuto(); });
+
+        bar.querySelectorAll('[data-countdown]').forEach(function (el) {
+          var type     = el.dataset.type;
+          var endMs;
+
+          if (type === 'fixed') {
+            endMs = new Date(el.dataset.end.replace(/\//g, '-')).getTime();
+          } else {
+            var storageKey = 'ann_countdown_' + el.dataset.duration;
+            var saved = sessionStorage.getItem(storageKey);
+            endMs = saved ? parseInt(saved, 10) : Date.now() + parseInt(el.dataset.duration, 10) * 60000;
+            sessionStorage.setItem(storageKey, endMs);
+          }
+
+          function tick() {
+            var diff = endMs - Date.now();
+            if (diff <= 0) { el.closest('.announcement-bar__slide').style.display = 'none'; return; }
+            var d = Math.floor(diff / 86400000);
+            var h = Math.floor((diff % 86400000) / 3600000);
+            var m = Math.floor((diff % 3600000) / 60000);
+            var s = Math.floor((diff % 60000) / 1000);
+            el.querySelector('[data-days]').textContent    = String(d).padStart(2,'0');
+            el.querySelector('[data-hours]').textContent   = String(h).padStart(2,'0');
+            el.querySelector('[data-minutes]').textContent = String(m).padStart(2,'0');
+            el.querySelector('[data-seconds]').textContent = String(s).padStart(2,'0');
+          }
+          tick();
+          setInterval(tick, 1000);
+        });
+
+        startAuto();
+      })();
+    </script>
+  {%- endif -%}
 
   {%- if section.settings.enable_bar -%}
     {{ 'utility-bar.css' | asset_url | stylesheet_tag }}
@@ -201,17 +383,19 @@
 </header>
 
 {%- if section.settings.enable_sticky -%}
+  <div class="main-header__sticky-spacer" id="main-header-sticky-spacer" aria-hidden="true"></div>
+
   <script>
     (function () {
-      // Header is position: sticky now, so it stays in normal flow — no
-      // spacer div needed to prevent a layout jump like a fixed header would.
-      // Still publishing --main-header-bottom in case another snippet
-      // (a dropdown, a drawer, etc.) offsets itself against the header height.
       var header = document.querySelector('[data-sticky-fixed="true"]');
       if (!header) return;
 
+      var spacer = document.getElementById('main-header-sticky-spacer');
+
       function sync() {
-        document.documentElement.style.setProperty('--main-header-bottom', header.offsetHeight + 'px');
+        var h = header.offsetHeight;
+        document.documentElement.style.setProperty('--main-header-bottom', h + 'px');
+        if (spacer) spacer.style.height = h + 'px';
       }
 
       sync();
@@ -637,7 +821,7 @@
       "type": "checkbox",
       "id": "enable_sticky",
       "label": "Enable sticky header",
-      "info": "Header stays in place once you scroll past the announcement bar, then stays pinned to the top for the rest of the page. The announcement bar itself always scrolls away normally and is never sticky.",
+      "info": "Keeps the header pinned to the top of the viewport while the page scrolls.",
       "default": true
     },
     {
