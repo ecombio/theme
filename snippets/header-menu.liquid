@@ -10,8 +10,9 @@
 
   Loads its own CSS (header-menu.css) plus the CSS/JS for each block
   type that can appear in this bar, but only when that block type is
-  actually present in section.blocks — so a store with no mega-menu or
-  showcase-menu block never pays for that block type's CSS/JS.
+  actually present in section.blocks — so a store with no mega-menu,
+  showcase-menu, or link-list block never pays for that block type's
+  CSS/JS.
 
   Also loads header-menu.js, which toggles .has-scroll-left /
   .has-scroll-right on the <nav> based on scroll position, so
@@ -23,18 +24,21 @@
     blocks — section.blocks from sections/main-header.liquid
 {% endcomment %}
 
-{{ 'header-menu.css' | asset_url | stylesheet_tag }}
 {{ 'highlight.css'   | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign has_mega_menu = false
   assign has_showcase_menu = false
+  assign has_link_list = false
   for block in blocks
     if block.type == 'mega-menu'
       assign has_mega_menu = true
     endif
     if block.type == 'showcase-menu'
       assign has_showcase_menu = true
+    endif
+    if block.type == 'link-list'
+      assign has_link_list = true
     endif
   endfor
 -%}
@@ -44,6 +48,9 @@
 {%- endif -%}
 {%- if has_showcase_menu -%}
   {{ 'showcase-menu.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+{%- if has_link_list -%}
+  {{ 'link-list.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 
 {%- if blocks.size > 0 -%}
@@ -57,6 +64,9 @@
           {%- case block.type -%}
             {%- when 'single-link' -%}
               {%- render 'single-link', block: block -%}
+
+            {%- when 'link-list' -%}
+              {%- render 'link-list', block: block -%}
 
             {%- when 'highlight' -%}
               {%- render 'highlight', block: block -%}
@@ -79,5 +89,8 @@
   {%- endif -%}
   {%- if has_showcase_menu -%}
     <script src="{{ 'showcase-menu.js' | asset_url }}" defer></script>
+  {%- endif -%}
+  {%- if has_link_list -%}
+    <script src="{{ 'link-list.js' | asset_url }}" defer></script>
   {%- endif -%}
 {%- endif -%}
