@@ -1,20 +1,27 @@
 {%- comment -%}
-  Renders the announcement bar / countdown slider.
-  Deliberately rendered OUTSIDE <header> in main-header.liquid so it
-  scrolls away normally and is never part of the sticky/autohide header.
+  snippets/announcement-bar.liquid
+  Self-contained: loads its own CSS/JS and decides internally whether
+  there's anything active to render.
 
-  Usage: {% render 'announcement-bar', settings: section.settings %}
+  Usage:
+    {%- render 'announcement-bar', settings: section.settings -%}
+
+  Expects `settings` to be the settings object of whatever section is
+  rendering it (e.g. section.settings from sections/main-header.liquid).
+  Reads the same ann_* schema keys documented in that section's schema.
 {%- endcomment -%}
 
 {%- liquid
   assign ann_active_count = 0
-  for i in (1..5)
-    assign ann_type_key = 'ann_' | append: i | append: '_type'
-    assign ann_slide_type = settings[ann_type_key]
-    if ann_slide_type == 'announcement' or ann_slide_type == 'countdown'
-      assign ann_active_count = ann_active_count | plus: 1
-    endif
-  endfor
+  if settings.ann_enable
+    for i in (1..5)
+      assign ann_type_key = 'ann_' | append: i | append: '_type'
+      assign ann_slide_type = settings[ann_type_key]
+      if ann_slide_type == 'announcement' or ann_slide_type == 'countdown'
+        assign ann_active_count = ann_active_count | plus: 1
+      endif
+    endfor
+  endif
 
   assign ann_width_class = 'announcement-bar--full-width'
   if settings.ann_section_width == 'boxed'
@@ -24,16 +31,17 @@
   endif
 -%}
 
-{%- if ann_active_count > 0 -%}
+{%- if settings.ann_enable and ann_active_count > 0 -%}
   {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 
   <div
-    class="announcement-bar {{ ann_width_class }}"
+    class="announcement-bar {{ ann_width_class }}{% if settings.ann_enable_close %} announcement-bar--dismissible{% endif %}"
     role="region"
     aria-label="Announcements"
     data-announcement-bar
     data-autorotate="{{ settings.ann_autorotate }}"
     data-interval="{{ settings.ann_autorotate_speed | times: 1000 }}"
+    data-dismissible="{{ settings.ann_enable_close }}"
     style="
       --section-padding: {{ settings.ann_section_padding }}px;
       {%- if settings.ann_section_width == 'custom-width' %}
@@ -115,6 +123,16 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16" aria-hidden="true">
           <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    {%- endif -%}
+
+    {%- if settings.ann_enable_close -%}
+      <button class="announcement-bar__close" aria-label="Close announcement bar" data-close>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
     {%- endif -%}
