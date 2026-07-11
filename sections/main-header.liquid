@@ -61,12 +61,13 @@
     {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 
     <div
-      class="announcement-bar {{ ann_width_class }}"
+      class="announcement-bar {{ ann_width_class }}{% if section.settings.ann_enable_close %} announcement-bar--dismissible{% endif %}"
       role="region"
       aria-label="Announcements"
       data-announcement-bar
       data-autorotate="{{ section.settings.ann_autorotate }}"
       data-interval="{{ section.settings.ann_autorotate_speed | times: 1000 }}"
+      data-dismissible="{{ section.settings.ann_enable_close }}"
       style="
         --section-padding: {{ section.settings.ann_section_padding }}px;
         {%- if section.settings.ann_section_width == 'custom-width' %}
@@ -151,12 +152,30 @@
           </svg>
         </button>
       {%- endif -%}
+
+      {%- if section.settings.ann_enable_close -%}
+        <button class="announcement-bar__close" aria-label="Close announcement bar" data-close>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      {%- endif -%}
     </div>
 
     <script>
       (function () {
         var bar = document.querySelector('[data-announcement-bar]');
         if (!bar) return;
+
+        var dismissKey = 'announcement_bar_dismissed';
+        var dismissible = bar.dataset.dismissible === 'true';
+
+        if (dismissible && sessionStorage.getItem(dismissKey) === 'true') {
+          bar.style.display = 'none';
+          return;
+        }
 
         var slides     = bar.querySelectorAll('.announcement-bar__slide');
         var autorotate = bar.dataset.autorotate === 'true';
@@ -182,6 +201,15 @@
         var btnPrev = bar.querySelector('.announcement-bar__arrow--prev');
         if (btnNext) btnNext.addEventListener('click', function () { stopAuto(); next(); startAuto(); });
         if (btnPrev) btnPrev.addEventListener('click', function () { stopAuto(); prev(); startAuto(); });
+
+        var closeBtn = bar.querySelector('[data-close]');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function () {
+            stopAuto();
+            bar.style.display = 'none';
+            if (dismissible) sessionStorage.setItem(dismissKey, 'true');
+          });
+        }
 
         bar.querySelectorAll('[data-countdown]').forEach(function (el) {
           var type     = el.dataset.type;
@@ -504,6 +532,13 @@
       "max": 15,
       "step": 1,
       "default": 5
+    },
+    {
+      "type": "checkbox",
+      "id": "ann_enable_close",
+      "label": "Allow customers to close the bar",
+      "info": "Adds an X button. Once closed, it stays hidden for the rest of the browsing session (resets on a new session/tab).",
+      "default": false
     },
 
     { "type": "header", "content": "Announcement Bar — Slide 1" },
