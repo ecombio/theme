@@ -49,6 +49,22 @@
    own base rule below already covers this exact border-bottom, the
    dead/duplicate .header rule has been removed outright rather than
    merged — there was nothing in it worth keeping.
+
+   FIXED (double-animation / snap bug on autohide): the sticky-pinned
+   rule below used to run a one-shot `main-header-slide-in` keyframe
+   animation every time .is-sticky was added, with NO check for
+   whether autohide mode was active. In autohide mode, that keyframe
+   animation and the separate .main-header--sticky-autohide.is-sticky
+   transform transition (see the AUTO-HIDE VARIANT block further down)
+   both ended up fighting over the same `transform` property at the
+   same time — plus `position: fixed` itself applies instantly since
+   `position` isn't animatable, so the whole thing read as an abrupt
+   snap immediately followed by a competing slide. The entrance
+   keyframe is now scoped with :not(.main-header--sticky-autohide), so
+   only the "standard" sticky style gets the slide-in entrance;
+   autohide mode just appears instantly and lets its own transition
+   handle every subsequent show/hide on scroll direction, with nothing
+   else competing for `transform`.
    ============================================================= */
 
 /* ─────────────────────────────────────────────
@@ -384,18 +400,23 @@
   transition: box-shadow 0.2s ease;
 }
 
-/* Pinned to the viewport once scrolled past the threshold.
-   Uses a keyframe animation (not `transition`) because `position` itself
-   isn't animatable — the moment .is-sticky lands, position:fixed applies
-   instantly no matter what. The animation instead slides the now-fixed
-   header down from just above the viewport, so the *visual* transition
-   reads as smooth even though the underlying position change is a snap. */
+/* Pinned to the viewport once scrolled past the threshold. */
 .main-header--sticky-enabled.is-sticky {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 200;
+}
+
+/* Entrance slide-in only for "standard" sticky style. Autohide mode
+   has its own transform transition (below) for showing/hiding on
+   scroll direction — running the entrance keyframe on top of that
+   fought over the same `transform` property and produced a visible
+   double-motion/snap right at the sticky threshold. Autohide now
+   just appears with no animation and lets its own transition handle
+   all subsequent motion. */
+.main-header--sticky-enabled.is-sticky:not(.main-header--sticky-autohide) {
   animation: main-header-slide-in 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -423,15 +444,11 @@
    Only applies when .main-header--sticky-autohide sits alongside
    .main-header--sticky-enabled (i.e. "Sticky header style" is set to
    Auto-hide in the theme editor). Reuses the exact same position:fixed
-   plumbing above — .is-sticky still does the pinning and the entry
-   animation. The only new behavior is main-header.js also toggling
-   .is-hidden based on scroll direction, which this block translates
-   into a slide-away/slide-back transform.
-
-   Once .is-sticky is present, main-header-slide-in has already
-   finished (it's a one-shot 0.28s animation with no `forwards` fill,
-   so it reverts to computed `transform: none` on completion) — this
-   transition then takes over for every subsequent .is-hidden toggle.
+   plumbing above — .is-sticky still does the pinning, with no entrance
+   keyframe now (see FIXED note at the top of this file). The only
+   motion here is main-header.js toggling .is-hidden based on scroll
+   direction, which this block translates into a slide-away/slide-back
+   transform — the one and only transform effect active in this mode.
 
    There is no menu-bar / hamburger-toggle button in this mode: the
    whole header hides and reveals as a single unit on scroll direction,
