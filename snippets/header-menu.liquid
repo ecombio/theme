@@ -1,4 +1,19 @@
-{{ 'highlight.css'   | asset_url | stylesheet_tag }}
+{%- comment -%}
+  snippets/header-menu.liquid
+  Self-contained: detects which block types are present, loads only the
+  CSS/JS those block types need, and renders the nav.
+
+  Usage:
+    {%- render 'header-menu', blocks: section.blocks -%}
+
+  Expects `blocks` to be the blocks array of whatever section is
+  rendering it (e.g. section.blocks from sections/main-header.liquid).
+  highlight.css is loaded unconditionally, same as it was inline —
+  it's the base styling for menu-bar items generally, not just
+  'highlight' blocks.
+{%- endcomment -%}
+
+{{ 'highlight.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign has_mega_menu = false
@@ -57,7 +72,6 @@
     </div>
   </nav>
 
-  <script src="{{ 'header-menu.js' | asset_url }}" defer></script>
   {%- if has_mega_menu -%}
     <script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
   {%- endif -%}
