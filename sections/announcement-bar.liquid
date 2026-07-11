@@ -1,29 +1,5 @@
 {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  SECTION LAYOUT (width + padding):
-  Mirrors the independent pattern from sections/example-width-section.liquid
-  (also used by sections/main-header.liquid and sections/main-footer.liquid).
-  --section-padding and --custom-width are LOCAL vars set inline below from
-  this section's own schema settings — they never read from the global
-  --page-margin / --page-width vars, so this section's width/padding can't
-  affect, or be affected by, any other section.
-
-  UNLIKE header/footer, this section has no existing container to mirror —
-  the bar is edge-to-edge by design, and its horizontal padding exists to
-  keep the slide text clear of the prev/next arrows (28px wide + 8px inset),
-  not to line up with anything else on the page. So the defaults here
-  preserve the bar's current look exactly (Full width, 48px side padding,
-  40px fixed on mobile) rather than adopting the header's 1184px / 24px
-  defaults. "Boxed" and "Custom width" are opt-in for merchants who want
-  the bar constrained instead.
-
-  If Side padding is set below roughly 36px on a slide config that also
-  shows arrows (more than one block), the arrows can start to crowd the
-  slide text — that's a content/config concern for the merchant to notice
-  in preview, not something this section enforces.
-{%- endcomment -%}
-
 {%- liquid
   assign section_width = section.settings.section_width
   if section_width == 'boxed'
@@ -151,7 +127,6 @@
       if (btnNext) btnNext.addEventListener('click', function () { stopAuto(); next(); startAuto(); });
       if (btnPrev) btnPrev.addEventListener('click', function () { stopAuto(); prev(); startAuto(); });
 
-      /* ── Countdown timers ── */
       bar.querySelectorAll('[data-countdown]').forEach(function (el) {
         var type     = el.dataset.type;
         var endMs;
