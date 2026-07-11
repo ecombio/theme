@@ -1,137 +1,20 @@
-/* =============================================================
-   Header Menu Bar
-   File: assets/header-menu.css
-   Loaded by: snippets/header-menu.liquid
-
-   Scope: the desktop nav bar (.menu-bar) itself — links, icons,
-   carets, mega-menu/flyout/highlight trigger styling, and the
-   sticky-triggered show/hide rules for the whole bar.
-
-   Desktop only (≥1024px) BY DEFAULT. Mobile/tablet use the separate
-   drawer in assets/header-hamburger.css as the primary nav — but
-   .menu-bar can optionally also be shown below 1024px when the
-   "Show Menu Bar" section setting is on, via the
-   .main-header--menu-bar-mobile-visible class added to the ancestor
-   <header> by sections/main-header.liquid. See the override rule
-   inside the "MOBILE / TABLET" block below.
-
-   Four selectors here reference classes this file doesn't own:
-     .main-header--sticky-enabled.is-sticky — added/removed by
-       assets/main-header.js's scroll handler.
-     .menu-bar.is-visible — added/removed by assets/header-hamburger.js
-       when the sticky hamburger is clicked. Only relevant to the
-       Standard sticky style — see the auto-hide entry just below.
-     .main-header--sticky-autohide.is-sticky — the Auto-hide sticky
-       style modifier (from the "Sticky header style" section setting,
-       added by sections/main-header.liquid) combined with .is-sticky.
-       Auto-hide has no toggle button at all (the whole header hides/
-       reveals as one unit — see main-header.css's "STICKY — AUTO-HIDE
-       VARIANT" block), so instead of waiting on an .is-visible class
-       from a click, the menu bar just always reveals itself whenever
-       the header is sticky in this mode. DESKTOP ONLY, same scope as
-       the .is-visible reveal — see that rule for why.
-     .main-header--menu-bar-mobile-visible / --menu-bar-tablet-visible —
-       added/removed by sections/main-header.liquid based on the
-       "Show Menu Bar" checkboxes in the Mobile and Tablet Division
-       settings respectively (section.settings.show_menu_bar_mobile /
-       show_menu_bar_tablet). These are two SEPARATE settings/classes —
-       each only takes effect within its own breakpoint, so mobile and
-       tablet can show or hide the bar independently of each other.
-   All four are kept here (rather than in main-header.css) since
-   they're fundamentally about what .menu-bar looks like — the trigger
-   classes just happen to come from elsewhere.
-
-   FIXED (see note below): the previous version of this file hid
-   .menu-bar unconditionally below 1024px, with no override for the
-   mobile-visible setting. There was also a set of dead rules gated on
-   [data-header-layout="1"], an attribute nothing in this theme's
-   markup ever sets — removed as vestigial/leftover code from a
-   different header layout that no longer applies.
-
-   UPDATED: the highlighted-link/star styles (.menu-bar__item--highlight,
-   .menu-bar__link--highlight, .star / .star-1..3, @keyframes twinkle)
-   have been extracted out to assets/highlight.css, which is loaded by
-   snippets/highlight.liquid. This file no longer contains them.
-
-   UPDATED: "Show Menu Bar" used to be one setting/class combo
-   (--menu-bar-mobile-visible) covering both mobile AND tablet via a
-   single max-width: 1023px query. Tablet now has its own independent
-   setting/class (--menu-bar-tablet-visible, min-width:640/max-width:1023),
-   separate from mobile's (--menu-bar-mobile-visible, max-width:639 only)
-   — see the "MOBILE / TABLET" block below.
-
-   UPDATED: added the auto-hide sticky style's always-reveal rule for
-   .menu-bar (see the .main-header--sticky-autohide entry above and the
-   rule itself just below the existing .is-visible reveal).
-
-   FIXED (this pass): the sticky "hide the menu bar" rule right below
-   this comment used to have no @media wrapper, so it applied at every
-   screen width — including mobile/tablet, where nothing was ever
-   scoped to bring the bar back (the two reveal rules right after it
-   are both DESKTOP ONLY by design). That meant .menu-bar would vanish
-   the instant the header went sticky below 1024px and never return
-   until you scrolled back above the sticky threshold and .is-sticky
-   was removed entirely — a disappear/reappear loop on every pass
-   through that scroll position. Now scoped to
-   @media (min-width: 1024px), matching the two reveal rules beneath
-   it, so mobile/tablet menu-bar visibility is governed purely by
-   --menu-bar-mobile-visible / --menu-bar-tablet-visible as the doc
-   comments above always intended.
-
-   ADDED: horizontally-scrollable menu bar with hidden scrollbar +
-   left/right edge-fade "shadows" (like Back Market's header nav), for
-   when there are more nav links than fit in the available width on
-   desktop. The row itself (.menu-bar) still centers/pads as before;
-   .menu-bar__container is now the actual scrolling element, and two
-   .menu-bar__edge-fade overlays sit on top of it, pinned to the left/
-   right edges, faded in/out by assets/header-menu.js based on scroll
-   position (see .has-scroll-left / .has-scroll-right below).
-   ============================================================= */
-
-/* Desktop nav bar collapses by default while sticky ... */
 @media (min-width: 1024px) {
   .main-header--sticky-enabled.is-sticky .menu-bar {
     display: none;
   }
 }
 
-/* ... and reappears when the sticky hamburger (in header-hamburger.css/js)
-   toggles it open — DESKTOP ONLY. Gated so this can never override the
-   mobile/tablet "display: none" rule for .menu-bar defined under
-   @media (max-width: 1023px) further down this file. The `.is-visible`
-   class itself is added/removed by header-hamburger.js; this file only
-   owns what that class does to .menu-bar's display. Standard sticky
-   style only — auto-hide has no toggle button, see the rule below
-   instead. */
 @media (min-width: 1024px) {
   .main-header--sticky-enabled.is-sticky .menu-bar.is-visible {
     display: flex;
   }
 }
 
-/* ... or, for the auto-hide sticky style, reappears automatically the
-   moment the header goes sticky — no toggle click required, since
-   auto-hide mode has no toggle button at all (the whole header hides/
-   reveals together on scroll direction instead; see main-header.css's
-   "STICKY — AUTO-HIDE VARIANT" block and main-header.js's scroll
-   handler). Same specificity as the .is-visible rule above; wins
-   because it's declared later and the two modifiers
-   (--sticky-enabled / --sticky-autohide) always co-occur on the same
-   <header> when auto-hide is selected, so there's never a real
-   conflict between them to worry about.
-   DESKTOP ONLY, matching the .is-visible reveal's scope — mobile/
-   tablet sticky menu-bar visibility remains its own separate concern,
-   gated purely by .main-header--menu-bar-mobile-visible / --tablet-
-   visible, untouched by either sticky style. */
 @media (min-width: 1024px) {
   .main-header--sticky-autohide.is-sticky .menu-bar {
     display: flex;
   }
 }
-
-/* =============================================================================
-   DESKTOP MENU BAR (≥ 1024px)
-============================================================================= */
 
 @media (min-width: 1024px) {
   .menu-bar {
@@ -147,19 +30,15 @@
     z-index: 100;
   }
 
-  /* Scroll container — this is what actually scrolls, not .menu-bar
-     itself. Keeping the scrolling element separate from .menu-bar lets
-     the edge-fade overlays below stay pinned to the visual edges of the
-     bar instead of scrolling away with the links. */
   .menu-bar__container {
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: none;       /* Firefox */
-    -ms-overflow-style: none;    /* old Edge/IE */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
   }
   .menu-bar__container::-webkit-scrollbar {
-    display: none;               /* Chrome/Safari */
+    display: none;
   }
 
   .menu-bar__list {
@@ -167,10 +46,6 @@
     width: max-content;
   }
 
-  /* Edge fade overlays — absolutely positioned on top of .menu-bar,
-     pinned left/right regardless of scroll position. Hidden (opacity: 0)
-     until assets/header-menu.js adds .has-scroll-left / .has-scroll-right
-     to .menu-bar based on how far the container has been scrolled. */
   .menu-bar__edge-fade {
     display: block;
     position: absolute;
@@ -182,8 +57,6 @@
     opacity: 0;
     transition: opacity 0.2s ease;
   }
-  /* Multi-stop gradient instead of a flat two-stop one — reads as a
-     softer, more natural shadow instead of a hard-edged overlay. */
   .menu-bar__edge-fade--left {
     left: 0;
     background: linear-gradient(
@@ -211,28 +84,11 @@
   }
 }
 
-/* Edge fades are desktop-only. IMPORTANT: this must be scoped inside
-   a max-width query — a bare, unscoped `.menu-bar__edge-fade { display:
-   none; }` placed here would have the same specificity as the
-   `display: block` set inside the desktop media query above, and being
-   later in the file, would win the cascade and hide the fades even on
-   desktop. Scoping it to <1024px avoids that trap entirely. */
 @media (max-width: 1023px) {
   .menu-bar__edge-fade {
     display: none;
   }
 }
-
-/* =============================================================================
-   MOBILE / TABLET (< 1024px)
-
-   Hidden by default — mobile/tablet rely on the drawer in
-   header-hamburger.liquid for primary nav. Reappears independently per
-   division: mobile via .main-header--menu-bar-mobile-visible (<640px
-   only), tablet via .main-header--menu-bar-tablet-visible (640–1023px
-   only). Each is driven by its own section setting, so one division's
-   "Show Menu Bar" toggle has no effect on the other.
-============================================================================= */
 
 @media (max-width: 1023px) {
   .menu-bar {
@@ -240,8 +96,6 @@
   }
 }
 
-/* ── Mobile only (<640px) — horizontally scrollable single row,
-   since there usually isn't room to wrap nav items at this width. ── */
 @media (max-width: 639px) {
   .main-header--menu-bar-mobile-visible .menu-bar {
     display: flex;
@@ -267,9 +121,6 @@
   }
 }
 
-/* ── Tablet only (640–1023px) — wraps instead of scrolling, since
-   there's usually enough width for nav items to flow onto a second
-   line rather than needing horizontal scroll. ── */
 @media (min-width: 640px) and (max-width: 1023px) {
   .main-header--menu-bar-tablet-visible .menu-bar {
     display: flex;
@@ -278,7 +129,6 @@
 }
 
 .menu-bar {
-/*border-top: 1px solid #e5e7eb;*/
   background: #ffffff;
   position: relative;
   z-index: 100;
@@ -343,7 +193,6 @@
   transform: rotate(180deg);
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .icon-caret-down {
     transition: none !important;
@@ -354,7 +203,6 @@
   }
 }
 
-/* Reusable menu item component */
 .menu-item {
   display: inline-flex;
   align-items: center;
