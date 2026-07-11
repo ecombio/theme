@@ -1,3 +1,17 @@
+{%- comment -%}
+  snippets/utility-bar.liquid
+  Self-contained: loads its own CSS/JS and decides internally whether
+  to render.
+
+  Usage:
+    {%- render 'utility-bar', settings: section.settings -%}
+
+  Expects `settings` to be the settings object of whatever section is
+  rendering it (e.g. section.settings from sections/main-header.liquid).
+  Reuses that section's own section_width / section_padding / custom_width
+  layout settings so the bar lines up with the row above it.
+{%- endcomment -%}
+
 {%- if settings.enable_bar -%}
   {{ 'utility-bar.css' | asset_url | stylesheet_tag }}
 
@@ -6,23 +20,23 @@
     assign show_curr  = settings.show_currency
     assign show_loc   = settings.show_locale
 
-    assign width_type = settings.section_width
-    if width_type == blank
-      assign width_class = 'utility-bar__default-width'
-    elsif width_type == 'full-width'
-      assign width_class = 'utility-bar__full-width'
+    assign utility_width_type = settings.section_width
+    if utility_width_type == blank
+      assign utility_width_class = 'utility-bar__default-width'
+    elsif utility_width_type == 'full-width'
+      assign utility_width_class = 'utility-bar__full-width'
     else
-      assign width_class = 'utility-bar__custom-width'
+      assign utility_width_class = 'utility-bar__custom-width'
     endif
   -%}
 
-  <div class="utility-bar utility-bar--{{ bar_style }} {{ width_class }}"
+  <div class="utility-bar utility-bar--{{ bar_style }} {{ utility_width_class }}"
        role="navigation"
        aria-label="Utility bar"
        id="utility-bar"
        style="
          --section-padding: {{ settings.section_padding }}px;
-         {%- if width_type == 'custom-width' %}
+         {%- if utility_width_type == 'custom-width' %}
            --custom-width: {{ settings.custom_width }}rem;
          {%- endif %}
        ">
