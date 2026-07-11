@@ -12,13 +12,51 @@
    styled here -- it lives in the toolbar, next to the tabs, so its
    rules stay in main-collection.css alongside .collection-toolbar.
    Only the filter panel itself (#collection-filter and its contents)
-   is styled here. */
+   is styled here.
+
+   UPDATE (custom checkboxes + thin scrollbar): the checkbox options
+   below (.collection-filter__option-checkbox) were previously plain
+   native checkboxes -- this adds the same custom checkbox treatment
+   search-filter.css already has (hidden native input, black fill +
+   white checkmark when checked). Requires the checkbox <input> in
+   collection-filter.liquid to carry the class
+   collection-filter__option-checkbox.
+
+   The scrollbar on .collection-filter was previously unstyled
+   (default browser scrollbar) -- now thinned to 6px / thin, applied
+   globally rather than scoped to the mobile drawer, since the
+   sidebar's content can overflow on desktop too. Colors match this
+   file's existing hardcoded hex values (#d4d4d4 border tone,
+   #6b6b6b muted-text tone) rather than search-filter.css's
+   --hs-* tokens, to stay consistent with the rest of this file. */
 
 .collection-filter {
   position: sticky;
   top: calc(var(--sticky-header-height, 0px) + var(--sticky-toolbar-height, 64px));
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
+
+  /* Firefox: only thin/auto are settable, no exact pixel width */
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+/* Chrome, Safari, Edge */
+.collection-filter::-webkit-scrollbar {
+  width: 6px;
+}
+
+.collection-filter::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.collection-filter::-webkit-scrollbar-thumb {
+  background-color: #d4d4d4;
+  border-radius: 999px;
+}
+
+.collection-filter::-webkit-scrollbar-thumb:hover {
+  background-color: #6b6b6b;
 }
 
 .collection-filter[hidden] {
@@ -149,6 +187,52 @@
 
 .collection-filter__option--disabled span {
   color: #cfcfcf;
+}
+
+/* Hide native checkbox, replace with a custom one -- still a real
+   <input type="checkbox">, just visually restyled, so no markup
+   framework or JS is needed to make it look custom. Mirrors
+   search-filter.css's checkbox treatment. Requires the checkbox
+   <input> in collection-filter.liquid to carry this class. */
+.collection-filter__option-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 1.5px solid #d4d4d4;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.collection-filter__option-checkbox:checked {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+}
+
+.collection-filter__option-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 5px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.collection-filter__option-checkbox:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.collection-filter__option-checkbox:disabled {
+  cursor: not-allowed;
 }
 
 /* ── Price range ────────────────────────────────────────────── */
