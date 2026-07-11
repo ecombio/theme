@@ -492,3 +492,31 @@
   .ecombio-header__hamburger span { transition: none !important; }
 
 }
+
+/* ------------------------------------------------------------------ */
+/* WORKAROUND: force the menu bar (snippets/header-menu.liquid) to     */
+/* stay visible at every breakpoint now that the hamburger fallback   */
+/* has been removed from main-header.liquid.                          */
+/*                                                                     */
+/* This is a best-effort override, not a root-cause fix — it was      */
+/* written without visibility into header-menu.liquid's own CSS or    */
+/* the class names it actually uses. If the menu bar still disappears */
+/* after this, or if any of these selectors don't match your real     */
+/* markup, share header-menu.liquid (and its CSS/JS if separate) so   */
+/* this block can be replaced with a targeted fix instead of a guess. */
+/* ------------------------------------------------------------------ */
+.main-header [class*="header-menu"],
+.main-header [class*="__menu"],
+.main-header [class*="-menu-bar"],
+.main-header [class*="__nav"] {
+  display: flex !important;
+}
+
+@media (max-width: 1023px) {
+  .main-header [class*="header-menu"][hidden],
+  .main-header [class*="__menu"][hidden],
+  .main-header [class*="-menu-bar"][hidden],
+  .main-header [class*="__nav"][hidden] {
+    display: flex !important;
+  }
+}
