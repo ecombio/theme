@@ -64,6 +64,20 @@
    .menu-bar (see the .main-header--sticky-autohide entry above and the
    rule itself just below the existing .is-visible reveal).
 
+   FIXED (this pass): the sticky "hide the menu bar" rule right below
+   this comment used to have no @media wrapper, so it applied at every
+   screen width — including mobile/tablet, where nothing was ever
+   scoped to bring the bar back (the two reveal rules right after it
+   are both DESKTOP ONLY by design). That meant .menu-bar would vanish
+   the instant the header went sticky below 1024px and never return
+   until you scrolled back above the sticky threshold and .is-sticky
+   was removed entirely — a disappear/reappear loop on every pass
+   through that scroll position. Now scoped to
+   @media (min-width: 1024px), matching the two reveal rules beneath
+   it, so mobile/tablet menu-bar visibility is governed purely by
+   --menu-bar-mobile-visible / --menu-bar-tablet-visible as the doc
+   comments above always intended.
+
    ADDED: horizontally-scrollable menu bar with hidden scrollbar +
    left/right edge-fade "shadows" (like Back Market's header nav), for
    when there are more nav links than fit in the available width on
@@ -75,8 +89,10 @@
    ============================================================= */
 
 /* Desktop nav bar collapses by default while sticky ... */
-.main-header--sticky-enabled.is-sticky .menu-bar {
-  display: none;
+@media (min-width: 1024px) {
+  .main-header--sticky-enabled.is-sticky .menu-bar {
+    display: none;
+  }
 }
 
 /* ... and reappears when the sticky hamburger (in header-hamburger.css/js)
