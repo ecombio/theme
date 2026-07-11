@@ -1,56 +1,3 @@
-{% comment %}
-  Showcase Menu - Header Menu
-  File: snippets/showcase-menu.liquid
-
-  Renders a top-level nav link that opens a full-width dropdown panel
-  built from fixed "slot" settings on the block itself (NOT a link_list,
-  unlike mega-menu.liquid) — a left-hand "Good to know" sidebar of up to
-  3 tips, plus a right-hand grid of up to 8 image category cards.
-
-  Slots use fixed numbered fields (cat_1_*, cat_2_*, ... tip_1_*, ...)
-  rather than a repeatable list, because a category card needs its own
-  image/collection reference and a Shopify link_list link has nowhere
-  to attach either of those — the source has to live on the block.
-  A slot with a blank label AND blank link AND blank image is skipped
-  entirely, so stores don't have to fill all 8/3 slots.
-
-  Image resolution order per category, cheapest/most-specific first:
-    1. cat_N_image (image_picker) — if set, always wins
-    2. cat_N_collection's featured_image — if a collection is linked
-       and has one
-    3. Shopify's built-in placeholder_svg_tag — guarantees a card never
-       renders with a missing/broken image
-
-  Panel is position:fixed for the same reason as mega-menu.liquid: the
-  scrolling .menu-bar__container (overflow-x: auto) would clip an
-  absolutely-positioned panel. assets/showcase-menu.js repositions it
-  against the header's live bottom edge, mirroring mega-menu.js exactly
-  but kept in its own file/data-attribute namespace (data-showcase-menu*
-  vs data-mega-menu*) so the two never share open/close state.
-
-  PANEL LAYOUT (width + padding):
-  Follows the same independent "Section Layout" pattern as
-  sections/example-width-section.liquid / sections/main-header.liquid —
-  --panel-padding and --panel-custom-width are LOCAL vars, set inline
-  per-block from this block's own "Panel layout" schema settings below.
-  They never read from the global --page-margin / --page-width vars, so
-  changing a showcase-menu block's width/padding can't affect any other
-  section, and vice versa.
-
-  The previous markup used a shared "page-width--header" class that
-  isn't defined anywhere in this theme, so the panel had no max-width at
-  all and stretched edge-to-edge regardless of the header's own width.
-  Default now resolves to showcase-menu__panel-inner--default-width,
-  which matches main-header--default-width's 1184px max-width, so the
-  panel lines up with the header content out of the box. Full width and
-  custom width remain available per-block, same as the header itself.
-
-  Desktop (≥1024px) only — see assets/showcase-menu.css.
-
-  Params:
-    block — the showcase-menu block from section.blocks
-{% endcomment %}
-
 {%- liquid
   assign panel_id = 'ShowcaseMenuPanel-' | append: block.id
 
@@ -263,13 +210,6 @@
                       {%- elsif c_collection != blank and c_collection.featured_image != blank -%}
                         <img src="{{ c_collection.featured_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
                       {%- else -%}
-                        {%- comment -%}
-                          Shopify's built-in placeholder_svg_tag only ships
-                          collection-1 through collection-6 — there is no
-                          collection-7/8. Wrap i (1-8) back into 1-6 so slots
-                          7 and 8 reuse an earlier placeholder instead of
-                          requesting a name that doesn't exist.
-                        {%- endcomment -%}
                         {%- assign placeholder_index = i | modulo: 6 | plus: 1 -%}
                         {{ 'collection-' | append: placeholder_index | placeholder_svg_tag: 'showcase-menu__card-placeholder' }}
                       {%- endif -%}
