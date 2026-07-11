@@ -75,6 +75,7 @@
 
     if (currentScrollY > STICKY_THRESHOLD) {
       header.classList.add('is-sticky', 'is-scrolled');
+      setHeaderHeightVar();
 
       if (isAutohide) {
         if (header.classList.contains(PIN_CLASS)) {
