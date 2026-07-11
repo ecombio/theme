@@ -6,18 +6,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* ============================================
-   STICKY HEADER (generic wrapper)
-   Moved here from base.css — this is header-specific,
-   not a general layout rule.
-   ============================================ */
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  background-color: var(--color-white);
-}
-
 .main-header__bar { width: 100%; }
 
 .main-header__inner {
@@ -150,37 +138,6 @@
   .main-header__icon-label { display: none; }
   .main-header__icon-btn { padding: 6px; }
   .main-header__search-row-inner { padding: 6px 12px; }
-}
-
-/* ---------------------------------------------------------------- */
-/* Sticky header (enabled via section setting "enable_sticky")      */
-/* Driven by assets/main-header.js, which toggles is-sticky /       */
-/* is-hidden on #main-header and inserts .main-header-sticky__spacer*/
-/* right after it to prevent a layout jump when position becomes    */
-/* fixed.                                                            */
-/*                                                                    */
-/* The transition lives ONLY on the .is-sticky rule below, so it     */
-/* applies to the hide/reveal slide (triggered by is-hidden) but     */
-/* not to the initial jump into position: fixed, which stays instant.*/
-/* ---------------------------------------------------------------- */
-.main-header--sticky-enabled.is-sticky {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  transition: transform 0.25s ease;
-}
-
-.main-header--sticky-enabled.is-sticky.is-hidden {
-  transform: translateY(-100%);
-}
-
-.main-header-sticky__spacer {
-  display: none;
-}
-
-.main-header-sticky__spacer.is-active {
-  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -555,8 +512,7 @@
    separately by snippets/header-menu.liquid.
 
    Scope: the desktop nav bar (.menu-bar) itself — links, icons,
-   carets, mega-menu/flyout/highlight trigger styling, and the
-   sticky-triggered show/hide rules for the whole bar.
+   carets, mega-menu/flyout/highlight trigger styling.
 
    Desktop only (≥1024px) BY DEFAULT. Mobile/tablet use the separate
    drawer in assets/header-hamburger.css as the primary nav — but
@@ -566,21 +522,7 @@
    <header> by sections/main-header.liquid. See the override rule
    inside the "MOBILE / TABLET" block below.
 
-   Four selectors here reference classes this file doesn't own:
-     .main-header--sticky-enabled.is-sticky — added/removed by
-       assets/main-header.js's scroll handler.
-     .menu-bar.is-visible — added/removed by assets/header-hamburger.js
-       when the sticky hamburger is clicked. Only relevant to the
-       Standard sticky style — see the auto-hide entry just below.
-     .main-header--sticky-autohide.is-sticky — the Auto-hide sticky
-       style modifier (from the "Sticky header style" section setting,
-       added by sections/main-header.liquid) combined with .is-sticky.
-       Auto-hide has no toggle button at all (the whole header hides/
-       reveals as one unit — see this file's "STICKY — AUTO-HIDE
-       VARIANT" rules above), so instead of waiting on an .is-visible
-       class from a click, the menu bar just always reveals itself
-       whenever the header is sticky in this mode. DESKTOP ONLY, same
-       scope as the .is-visible reveal — see that rule for why.
+   One selector here references a class this file doesn't own:
      .main-header--menu-bar-mobile-visible / --menu-bar-tablet-visible —
        added/removed by sections/main-header.liquid based on the
        "Show Menu Bar" checkboxes in the Mobile and Tablet Division
@@ -608,47 +550,6 @@
    assets/header-menu.js based on scroll position (see
    .has-scroll-left / .has-scroll-right below).
    ============================================================= */
-
-/* Desktop nav bar collapses by default while sticky ... */
-@media (min-width: 1024px) {
-  .main-header--sticky-enabled.is-sticky .menu-bar {
-    display: none;
-  }
-}
-
-/* ... and reappears when the sticky hamburger (in header-hamburger.css/js)
-   toggles it open — DESKTOP ONLY. Gated so this can never override the
-   mobile/tablet "display: none" rule for .menu-bar defined under
-   @media (max-width: 1023px) further down this section. The `.is-visible`
-   class itself is added/removed by header-hamburger.js; this file only
-   owns what that class does to .menu-bar's display. Standard sticky
-   style only — auto-hide has no toggle button, see the rule below
-   instead. */
-@media (min-width: 1024px) {
-  .main-header--sticky-enabled.is-sticky .menu-bar.is-visible {
-    display: flex;
-  }
-}
-
-/* ... or, for the auto-hide sticky style, reappears automatically the
-   moment the header goes sticky — no toggle click required, since
-   auto-hide mode has no toggle button at all (the whole header hides/
-   reveals together on scroll direction instead; see this file's
-   "STICKY — AUTO-HIDE VARIANT" rules and main-header.js's scroll
-   handler). Same specificity as the .is-visible rule above; wins
-   because it's declared later and the two modifiers
-   (--sticky-enabled / --sticky-autohide) always co-occur on the same
-   <header> when auto-hide is selected, so there's never a real
-   conflict between them to worry about.
-   DESKTOP ONLY, matching the .is-visible reveal's scope — mobile/
-   tablet sticky menu-bar visibility remains its own separate concern,
-   gated purely by .main-header--menu-bar-mobile-visible / --tablet-
-   visible, untouched by either sticky style. */
-@media (min-width: 1024px) {
-  .main-header--sticky-autohide.is-sticky .menu-bar {
-    display: flex;
-  }
-}
 
 /* =============================================================================
    DESKTOP MENU BAR (≥ 1024px)
