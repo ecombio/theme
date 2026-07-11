@@ -68,7 +68,76 @@
     </div>
   </div>
 
-  {%- render 'header-menu', blocks: section.blocks, show_on_mobile: true, show_on_tablet: true -%}
+  {{ 'highlight.css'   | asset_url | stylesheet_tag }}
+
+  {%- liquid
+    assign has_mega_menu = false
+    assign has_showcase_menu = false
+    assign has_link_list = false
+    for block in section.blocks
+      if block.type == 'mega-menu'
+        assign has_mega_menu = true
+      endif
+      if block.type == 'showcase-menu'
+        assign has_showcase_menu = true
+      endif
+      if block.type == 'link-list'
+        assign has_link_list = true
+      endif
+    endfor
+  -%}
+
+  {%- if has_mega_menu -%}
+    {{ 'mega-menu.css' | asset_url | stylesheet_tag }}
+  {%- endif -%}
+  {%- if has_showcase_menu -%}
+    {{ 'showcase-menu.css' | asset_url | stylesheet_tag }}
+  {%- endif -%}
+  {%- if has_link_list -%}
+    {{ 'link-list.css' | asset_url | stylesheet_tag }}
+  {%- endif -%}
+
+  {%- if section.blocks.size > 0 -%}
+    <nav class="menu-bar" id="main-header-menu-bar" aria-label="Primary navigation">
+      <div class="menu-bar__edge-fade menu-bar__edge-fade--left" aria-hidden="true"></div>
+      <div class="menu-bar__edge-fade menu-bar__edge-fade--right" aria-hidden="true"></div>
+
+      <div class="menu-bar__container page-width--header">
+        <ul class="menu-bar__list">
+          {%- for block in section.blocks -%}
+            {%- case block.type -%}
+              {%- when 'single-link' -%}
+                {%- render 'single-link', block: block -%}
+
+              {%- when 'link-list' -%}
+                {%- render 'link-list', block: block -%}
+
+              {%- when 'highlight' -%}
+                {%- render 'highlight', block: block -%}
+
+              {%- when 'mega-menu' -%}
+                {%- render 'mega-menu', block: block -%}
+
+              {%- when 'showcase-menu' -%}
+                {%- render 'showcase-menu', block: block -%}
+
+            {%- endcase -%}
+          {%- endfor -%}
+        </ul>
+      </div>
+    </nav>
+
+    <script src="{{ 'header-menu.js' | asset_url }}" defer></script>
+    {%- if has_mega_menu -%}
+      <script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
+    {%- endif -%}
+    {%- if has_showcase_menu -%}
+      <script src="{{ 'showcase-menu.js' | asset_url }}" defer></script>
+    {%- endif -%}
+    {%- if has_link_list -%}
+      <script src="{{ 'link-list.js' | asset_url }}" defer></script>
+    {%- endif -%}
+  {%- endif -%}
 
 </header>
 
