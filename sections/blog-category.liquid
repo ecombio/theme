@@ -1,41 +1,29 @@
 {{ 'section-blog-category.css' | asset_url | stylesheet_tag }}
 
 {%- comment -%}
-  BLOG CATEGORY NAV — pill-shaped category switcher
+  BLOG CATEGORY NAV — pill-shaped category links
   --------------------------------------------------------------
-  Each block = one blog/category (e.g. Cycling, Scootering,
-  Skateboarding), rendered as a pill linking to that blog. The
-  pill matching the blog currently being viewed is highlighted.
-
-  To add/remove/reorder categories: edit the blocks in the
-  section settings — no code changes needed.
+  Each block = one blog/category pill. Add, remove, or reorder
+  blocks in the theme editor to control exactly what shows —
+  nothing here depends on which page/URL you're on.
 {%- endcomment -%}
 
 <div class="blog-category-section page-width">
 
   {%- if section.settings.show_title -%}
     <h2 class="blog-category-title">
-      {{ section.settings.heading | default: 'Explore' }}
+      {{ section.settings.heading }}
     </h2>
   {%- endif -%}
 
   {%- if section.blocks.size > 0 -%}
     <nav class="blog-category-pills" aria-label="Blog categories" style="--pill-alignment: {{ section.settings.alignment }};">
-      {%- if section.settings.show_all_pill -%}
-        <a
-          href="{{ section.settings.all_url | default: '/blogs' }}"
-          class="blog-category-pill{% if blog == blank %} is-active{% endif %}"
-        >
-          {{ section.settings.all_label | default: 'Explore' }}
-        </a>
-      {%- endif -%}
-
       {%- for block in section.blocks -%}
         {%- assign category_blog = blogs[block.settings.blog] -%}
         {%- if category_blog -%}
           <a
             href="{{ category_blog.url }}"
-            class="blog-category-pill{% if blog.handle == category_blog.handle %} is-active{% endif %}"
+            class="blog-category-pill"
             {{ block.shopify_attributes }}
           >
             {{ block.settings.label | default: category_blog.title }}
@@ -45,7 +33,7 @@
     </nav>
   {%- else -%}
     <p class="blog-category-empty">
-      {{ section.settings.empty_text | default: 'Add categories in the section settings.' }}
+      {{ section.settings.empty_text }}
     </p>
   {%- endif -%}
 
@@ -68,23 +56,6 @@
       "id": "heading",
       "label": "Heading",
       "default": "Explore"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_all_pill",
-      "label": "Show an \"Explore/All\" pill first",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "all_label",
-      "label": "\"All\" pill label",
-      "default": "Explore"
-    },
-    {
-      "type": "url",
-      "id": "all_url",
-      "label": "\"All\" pill link"
     },
     {
       "type": "select",
