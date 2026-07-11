@@ -181,13 +181,24 @@
   });
 
   window.addEventListener('scroll', function () {
-    if (openItem && !isHovered) scrollCloseMenu(openItem);
+    if (openItem && isHovered) {
+      scheduleUpdate();
+    } else if (openItem && !isHovered) {
+      scrollCloseMenu(openItem);
+    }
   }, { passive: true });
 
   window.addEventListener('resize', scheduleUpdate);
 
   if (navBar && 'ResizeObserver' in window) {
     new ResizeObserver(scheduleUpdate).observe(navBar);
+  }
+
+  if (header && 'MutationObserver' in window) {
+    new MutationObserver(scheduleUpdate).observe(header, {
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
   }
 
   updateBottomVar();
