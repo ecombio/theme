@@ -3,39 +3,71 @@
 {%- comment -%}
   BLOG CATEGORY NAV — pill-shaped category links
   --------------------------------------------------------------
-  Each block = one blog/category pill. Add, remove, or reorder
-  blocks in the theme editor to control exactly what shows —
-  nothing here depends on which page/URL you're on.
+  Each block = one pill (label + link), fully manual via the
+  theme editor. The pill whose link matches the current page URL
+  gets highlighted automatically.
+
+  SECTION LAYOUT (width/padding):
+  Follows the independent width/padding pattern from
+  sections/example-width-section.liquid — this section defines
+  its own local --section-padding / --custom-width variables,
+  set inline per-instance from its own settings below. It does
+  NOT read from the global --page-margin / --page-width, so
+  changing Theme settings > Layout > Body side padding will never
+  affect this section. Classes are scoped to
+  blog-category__default-width / __full-width / __custom-width
+  since this theme has no shared global width utility classes.
 {%- endcomment -%}
 
-<div class="blog-category-section page-width">
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'blog-category__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'blog-category__full-width'
+  else
+    assign width_class = 'blog-category__custom-width'
+  endif
+-%}
 
-  {%- if section.settings.show_title -%}
-    <h2 class="blog-category-title">
-      {{ section.settings.heading }}
-    </h2>
-  {%- endif -%}
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+  <div class="blog-category-section">
 
-  {%- if section.blocks.size > 0 -%}
-    <nav class="blog-category-pills" aria-label="Blog categories" style="--pill-alignment: {{ section.settings.alignment }};">
-      {%- for block in section.blocks -%}
-        {%- if block.settings.link != blank -%}
-          <a
-            href="{{ block.settings.link }}"
-            class="blog-category-pill{% if block.settings.link == request.path %} is-active{% endif %}"
-            {{ block.shopify_attributes }}
-          >
-            {{ block.settings.label }}
-          </a>
-        {%- endif -%}
-      {%- endfor -%}
-    </nav>
-  {%- else -%}
-    <p class="blog-category-empty">
-      {{ section.settings.empty_text }}
-    </p>
-  {%- endif -%}
+    {%- if section.settings.show_title -%}
+      <h2 class="blog-category-title">
+        {{ section.settings.heading }}
+      </h2>
+    {%- endif -%}
 
+    {%- if section.blocks.size > 0 -%}
+      <nav class="blog-category-pills" aria-label="Blog categories" style="--pill-alignment: {{ section.settings.alignment }};">
+        {%- for block in section.blocks -%}
+          {%- if block.settings.link != blank -%}
+            <a
+              href="{{ block.settings.link }}"
+              class="blog-category-pill{% if block.settings.link == request.path %} is-active{% endif %}"
+              {{ block.shopify_attributes }}
+            >
+              {{ block.settings.label }}
+            </a>
+          {%- endif -%}
+        {%- endfor -%}
+      </nav>
+    {%- else -%}
+      <p class="blog-category-empty">
+        {{ section.settings.empty_text }}
+      </p>
+    {%- endif -%}
+
+  </div>
 </div>
 
 {% schema %}
@@ -72,6 +104,42 @@
       "id": "empty_text",
       "label": "Empty state text",
       "default": "Add categories in the section settings."
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ],
   "blocks": [
