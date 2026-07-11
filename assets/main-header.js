@@ -79,3 +79,25 @@
     }
   }, { passive: true });
 })();
+
+(function () {
+  'use strict';
+
+  var header = document.querySelector('[data-sticky-fixed="true"]');
+  if (!header) return;
+
+  var spacer = document.getElementById('main-header-sticky-spacer');
+
+  var sync = function () {
+    var h = header.offsetHeight;
+    document.documentElement.style.setProperty('--main-header-bottom', h + 'px');
+    if (spacer) spacer.style.height = h + 'px';
+  };
+
+  sync();
+  window.addEventListener('resize', sync);
+
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(sync).observe(header);
+  }
+})();
