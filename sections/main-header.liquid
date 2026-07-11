@@ -20,14 +20,19 @@
 <header class="main-header {{ width_class }} main-header--menu-bar-mobile-visible main-header--menu-bar-tablet-visible{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
         id="main-header"
         role="banner"
+        {%- if section.settings.enable_sticky %}
+        data-sticky-fixed="true"
+        {%- endif %}
         style="
           --section-padding: {{ section.settings.section_padding }}px;
           {%- if section_width == 'custom-width' %}
             --custom-width: {{ section.settings.custom_width }}rem;
           {%- endif %}
           {%- if section.settings.enable_sticky %}
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 40;
           {%- endif %}
         ">
@@ -376,6 +381,32 @@
   {%- endif -%}
 
 </header>
+
+{%- if section.settings.enable_sticky -%}
+  <div class="main-header__sticky-spacer" id="main-header-sticky-spacer" aria-hidden="true"></div>
+
+  <script>
+    (function () {
+      var header = document.querySelector('[data-sticky-fixed="true"]');
+      if (!header) return;
+
+      var spacer = document.getElementById('main-header-sticky-spacer');
+
+      function sync() {
+        var h = header.offsetHeight;
+        document.documentElement.style.setProperty('--main-header-bottom', h + 'px');
+        if (spacer) spacer.style.height = h + 'px';
+      }
+
+      sync();
+      window.addEventListener('resize', sync);
+
+      if (window.ResizeObserver) {
+        new ResizeObserver(sync).observe(header);
+      }
+    })();
+  </script>
+{%- endif -%}
 
 <script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
 
