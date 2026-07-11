@@ -38,6 +38,16 @@
 
   var lastY = window.scrollY;
   var ticking = false;
+  var isPaused = false; // true while the header (incl. menu items/dropdowns) is hovered or focused
+
+  // Hover: pointer over the header itself, a nav item, or an open mega-menu/showcase-menu panel
+  // (these render as descendants of <header>, so one listener covers all of it).
+  header.addEventListener('mouseenter', function () { isPaused = true; });
+  header.addEventListener('mouseleave', function () { isPaused = false; });
+
+  // Keyboard: tabbing through menu links/inputs should pause it too, not just mouse hover.
+  header.addEventListener('focusin', function () { isPaused = true; });
+  header.addEventListener('focusout', function () { isPaused = false; });
 
   var onScroll = function () {
     var currentY = window.scrollY;
@@ -47,13 +57,15 @@
       header.classList.remove('main-header--autohide-hidden');
       lastY = currentY;
     } else if (Math.abs(delta) > THRESHOLD) {
-      if (delta > 0) {
-        // scrolling down
+      if (delta > 0 && !isPaused) {
+        // scrolling down — but never hide while the header is being interacted with
         header.classList.add('main-header--autohide-hidden');
-      } else {
+      } else if (delta < 0) {
         // scrolling up
         header.classList.remove('main-header--autohide-hidden');
       }
+      // keep tracking position even while paused, so there's no big
+      // stale delta the moment the pointer/focus leaves the header
       lastY = currentY;
     }
 
