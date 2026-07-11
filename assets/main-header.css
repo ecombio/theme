@@ -75,19 +75,18 @@
    HEADER SHADOW / ELEVATION
    ============================================ */
 
-/* Normal state - clean look */
+/* FIXED (unified shadow): the header used to swap between a flat
+   border-bottom (normal state) and a box-shadow (once sticky +
+   scrolled), which visibly changed the header's look mid-scroll —
+   read as two different header styles fighting each other. Now a
+   single box-shadow applies always, in every state, so there's
+   nothing to swap and nothing that can look inconsistent. */
 .main-header {
   position: relative;
   z-index: 200;
   width: 100%;
   background: #fff;
-  border-bottom: 1px solid #e5e5e5;
-}
-
-/* When header becomes sticky and user has scrolled */
-.main-header--sticky-enabled.is-sticky.is-scrolled {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid #e5e5e5;
 }
 
 /* ─────────────────────────────────────────────
@@ -425,11 +424,6 @@
   to   { transform: translateY(0); }
 }
 
-/* Shadow once the page has scrolled past the trigger point */
-.main-header--sticky-enabled.is-scrolled {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
-}
-
 /* Spacer — height is set by JS to match the header's own height right
    before it goes fixed, so the page content doesn't jump upward. */
 .main-header-sticky__spacer {
@@ -464,9 +458,6 @@
 
 .main-header--sticky-autohide.is-sticky.is-hidden {
   transform: translateY(-100%);
-  /* Suppress the shadow while off-screen so it doesn't flash at the
-     top edge mid-transition. */
-  box-shadow: none;
 }
 
 /* No toggle button in auto-hide mode — see comment block above. */
