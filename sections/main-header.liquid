@@ -45,7 +45,7 @@
   assign logo_width = settings.logo_width | default: 140
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
-  assign enable_sticky = false
+  assign enable_sticky = section.settings.enable_sticky
   assign mobile_drawer_style = section.settings.mobile_drawer_style | default: 'compact'
   assign show_menu_bar_mobile = section.settings.show_menu_bar_mobile
   assign show_menu_bar_tablet = section.settings.show_menu_bar_tablet
@@ -61,7 +61,7 @@
   endif
 -%}
 
-<header class="main-header {{ width_class }}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
+<header class="main-header {{ width_class }}{% if show_menu_bar_mobile %} main-header--menu-bar-mobile-visible{% endif %}{% if show_menu_bar_tablet %} main-header--menu-bar-tablet-visible{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if enable_sticky %} main-header--sticky-enabled{% endif %}"
         id="main-header"
         role="banner"
         style="
@@ -117,6 +117,8 @@
 
 </header>
 
+<script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
+
 {% schema %}
 {
   "name": "Main Header",
@@ -156,6 +158,15 @@
       "unit": "px",
       "default": 24,
       "info": "Applies at tablet and desktop widths. Mobile (< 640px) keeps its own fixed, tighter padding regardless of this setting. Also controls the Utility Bar's width/padding below it, so the two rows always line up."
+    },
+
+    { "type": "header", "content": "Sticky Header" },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky",
+      "label": "Enable sticky header",
+      "info": "Header sticks to the top on scroll and auto-hides when scrolling down, reappearing when scrolling up.",
+      "default": false
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
