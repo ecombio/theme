@@ -107,6 +107,15 @@
             assign item_link = block.settings.link | default: '#'
             assign item_menu = null
             assign item_label = block.settings.label
+            assign linked_collection = null
+
+            if block.settings.link contains '/collections/'
+              assign collection_handle = block.settings.link | split: '/collections/' | last | split: '/' | first | split: '?' | first
+              assign linked_collection = collections[collection_handle]
+              if linked_collection == empty
+                assign linked_collection = null
+              endif
+            endif
 
             case block.type
               when 'single-link'
@@ -118,9 +127,9 @@
                 assign item_label = item_label | default: item_menu.title
               when 'mega-menu'
                 assign item_menu = block.settings.menu
-                assign item_label = item_label | default: item_menu.title | default: 'Mega menu'
+                assign item_label = item_label | default: item_menu.title | default: linked_collection.title | default: 'Mega menu'
               when 'showcase'
-                assign item_label = item_label | default: 'Showcase'
+                assign item_label = item_label | default: linked_collection.title | default: 'Showcase'
             endcase
           -%}
 
