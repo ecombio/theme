@@ -1,3 +1,22 @@
+{% comment %}
+  DO NOT DELETE the label/link/image handling below (c_label, c_link, c_image,
+  and the card_href / card_label fallback chains in the category loop).
+
+  Schema was simplified to only expose a Collection picker per category —
+  the per-category "label", "link", and "image" settings were intentionally
+  removed from main-header.liquid's schema to keep the block editor minimal.
+
+  With those settings gone, block.settings.cat_X_label / cat_X_link /
+  cat_X_image simply resolve to blank at render time, so this code already
+  degrades gracefully to "always use the selected collection's title, url,
+  and featured image." Nothing needs to change here for that to work.
+
+  This logic is left in place (rather than stripped out) so that, if a
+  future need comes up for a merchant to override a single category's
+  label/link/image without changing the collection, those three settings
+  can simply be re-added to the schema and this snippet will honor them
+  immediately — no snippet changes required, only schema changes.
+{% endcomment %}
 {%- liquid
   assign panel_id = 'ShowcasePanel-' | append: block.id
 
