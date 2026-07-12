@@ -1,37 +1,3 @@
-/* assets/collection-toolbar.js
-   Behavior for snippets/collection-toolbar.liquid. Fully
-   self-contained: everything it queries (#collection-toolbar and its
-   descendants) lives inside that snippet's own markup.
-
-   Coordinates with collection-feed.js ONLY through:
-     - a `collection:tabchange` CustomEvent on `document`, fired on
-       tab click
-     - the `?tab=` URL param, read independently by both scripts on
-       `popstate`
-   Neither script queries into the other's DOM, so either snippet can
-   be reordered, reused elsewhere, or removed without breaking the
-   other.
-
-   Also writes `data-active-tab` onto [data-collection-page] (the
-   .collection-page wrapper in main-collection.liquid) whenever the
-   tab changes — collection-filter.js's buildFilterUrl() reads that
-   attribute to preserve the active tab on filter/sort requests. Make
-   sure main-collection.liquid actually renders that attribute.
-
-   Uses `window.CollectionBackdrop` (defined in main-collection.js)
-   for the shared full-page overlay behind the mobile sort sheet —
-   that overlay element is a page-level fixture shared with the
-   filter sidebar, so it stays owned by the parent section rather
-   than duplicated here.
-
-   NOTE: active-filters horizontal scroll (prev/next nav + overflow
-   detection) is NOT handled here — it's owned exclusively by
-   collection-filter.js's initActiveFiltersNav(), since that function
-   also has to re-run after every AJAX filter swap. An earlier version
-   of this file duplicated that listener binding, which caused
-   prev/next clicks to fire two scrollBy() calls at once. Don't
-   re-add it here. */
-
 (function () {
   'use strict';
 
@@ -40,9 +6,6 @@
 
   var collectionPage = document.querySelector('[data-collection-page]');
 
-  /* ══════════════════════════════════════════════════════════
-     TABS
-  ══════════════════════════════════════════════════════════ */
   var tabs = toolbar.querySelectorAll('[data-tab]');
 
   function setActiveTab(key) {
@@ -74,7 +37,6 @@
       document.dispatchEvent(new CustomEvent('collection:tabchange', { detail: { tab: key } }));
     });
 
-    /* Arrow key navigation (ARIA tablist pattern) */
     tab.addEventListener('keydown', function (e) {
       var next;
       if (e.key === 'ArrowRight') next = tabs[i + 1] || tabs[0];
@@ -91,9 +53,6 @@
     setActiveTab(key);
   });
 
-  /* ══════════════════════════════════════════════════════════
-     SORT SELECT (desktop)
-  ══════════════════════════════════════════════════════════ */
   var sortSelect = toolbar.querySelector('[data-sort]');
   if (sortSelect) {
     sortSelect.addEventListener('change', function () {
@@ -103,12 +62,6 @@
     });
   }
 
-  /* ══════════════════════════════════════════════════════════
-     MOBILE SORT SHEET
-     Built lazily on first open. Mirrors options from the desktop
-     #SortBy select (also inside this snippet) so there's a single
-     source of truth.
-  ══════════════════════════════════════════════════════════ */
   var mobileSortBtn = toolbar.querySelector('[data-mobile-sort-toggle]');
 
   if (mobileSortBtn) {
@@ -152,7 +105,7 @@
 
     function openSortSheet() {
       if (!sortSheet) sortSheet = buildSortSheet();
-      sortSheet.getBoundingClientRect(); // force reflow before transition
+      sortSheet.getBoundingClientRect();
       sortSheet.classList.add('is-open');
       mobileSortBtn.setAttribute('aria-expanded', 'true');
       document.body.style.overflow = 'hidden';
