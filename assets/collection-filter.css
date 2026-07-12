@@ -1,47 +1,13 @@
-/* assets/collection-filter.css
-   Styles for snippets/collection-filter.liquid: the filter sidebar on
-   desktop and the slide-in drawer on mobile (<= 768px).
-
-   BRAND MATCH (matches assets/search-filter.css's look): static
-   "Filters" header, button+chevron accordion (replacing the old
-   <details>/<summary> "+"/"-" marker), and labeled $-prefixed price
-   fields. Kept under the existing collection-filter__ class prefix
-   so nothing else on the page needs to change.
-
-   Note: the active-filters strip ("Your Selections" pills) is NOT
-   styled here -- it lives in the toolbar, next to the tabs, so its
-   rules stay in main-collection.css alongside .collection-toolbar.
-   Only the filter panel itself (#collection-filter and its contents)
-   is styled here.
-
-   UPDATE (custom checkboxes + thin scrollbar): the checkbox options
-   below (.collection-filter__option-checkbox) were previously plain
-   native checkboxes -- this adds the same custom checkbox treatment
-   search-filter.css already has (hidden native input, black fill +
-   white checkmark when checked). Requires the checkbox <input> in
-   collection-filter.liquid to carry the class
-   collection-filter__option-checkbox.
-
-   The scrollbar on .collection-filter was previously unstyled
-   (default browser scrollbar) -- now thinned to 6px / thin, applied
-   globally rather than scoped to the mobile drawer, since the
-   sidebar's content can overflow on desktop too. Colors match this
-   file's existing hardcoded hex values (#d4d4d4 border tone,
-   #6b6b6b muted-text tone) rather than search-filter.css's
-   --hs-* tokens, to stay consistent with the rest of this file. */
-
 .collection-filter {
   position: sticky;
-  top: calc(var(--sticky-header-height, 0px) + var(--sticky-toolbar-height, 64px));
+  top: calc(var(--main-header-bottom, 0px) + var(--sticky-toolbar-height, 64px));
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
     padding-right: 24px;
-  /* Firefox: only thin/auto are settable, no exact pixel width */
   scrollbar-width: thin;
   scrollbar-color: #d4d4d4 transparent;
 }
 
-/* Chrome, Safari, Edge */
 .collection-filter::-webkit-scrollbar {
   width: 6px;
 }
@@ -62,8 +28,6 @@
 .collection-filter[hidden] {
   display: none;
 }
-
-/* ── Header: "Filters" + mobile close button ───────────────── */
 
 .collection-filter__header {
   display: flex;
@@ -93,8 +57,6 @@
   color: #1a1a1a;
   padding: 0.25rem;
 }
-
-/* ── Filter group / accordion ──────────────────────────────── */
 
 .collection-filter__group {
   border-bottom: 1px solid #ececec;
@@ -141,7 +103,6 @@
   border-radius: 999px;
 }
 
-/* Chevron -- rotates when the toggle is expanded */
 .collection-filter__group-chevron {
   flex-shrink: 0;
   color: #6b6b6b;
@@ -190,11 +151,6 @@
   color: #cfcfcf;
 }
 
-/* Hide native checkbox, replace with a custom one -- still a real
-   <input type="checkbox">, just visually restyled, so no markup
-   framework or JS is needed to make it look custom. Mirrors
-   search-filter.css's checkbox treatment. Requires the checkbox
-   <input> in collection-filter.liquid to carry this class. */
 .collection-filter__option-checkbox {
   appearance: none;
   -webkit-appearance: none;
@@ -235,8 +191,6 @@
 .collection-filter__option-checkbox:disabled {
   cursor: not-allowed;
 }
-
-/* ── Price range ────────────────────────────────────────────── */
 
 .collection-filter__price-wrap {
   display: flex;
@@ -299,7 +253,7 @@
   font-size: 0.9rem;
   color: #1a1a1a;
   height: 2rem;
-  width: 0; /* flex child: grows to fill */
+  width: 0;
   background: transparent;
 }
 
@@ -319,8 +273,6 @@
   flex-shrink: 0;
 }
 
-/* ---------- Histogram (decorative price distribution) ---------- */
-
 .collection-filter__histogram {
   display: flex;
   align-items: flex-end;
@@ -334,8 +286,6 @@
   background: #f2d98a;
   border-radius: 2px 2px 0 0;
 }
-
-/* ---------- Dual-thumb range slider ---------- */
 
 .collection-filter__range-slider {
   position: relative;
@@ -422,8 +372,6 @@
   cursor: pointer;
 }
 
-/* ---------- Quick-pick price brackets ---------- */
-
 .collection-filter__price-brackets {
   display: flex;
   flex-direction: column;
@@ -447,12 +395,6 @@
   cursor: pointer;
 }
 
-/* ---------- Active-filter pill ----------
-   Flat fill using the theme's existing option-pill tokens (same
-   ones the product-option pills already use), rather than a
-   one-off outlined style, so this reads as the same design system.
-   Shared by every active-filter pill in the toolbar strip -- see
-   main-collection.css for that strip's layout. */
 .collection-filter__pill {
   display: inline-flex;
   align-items: center;
@@ -503,8 +445,6 @@
 .collection-filter__submit:hover {
   background: #333;
 }
-
-/* ---------- Mobile drawer state ---------- */
 
 @media (max-width: 768px) {
   .collection-filter {

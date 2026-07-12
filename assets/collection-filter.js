@@ -1,20 +1,3 @@
-/* assets/collection-filter.js
-   Filter drawer (mobile), desktop collapse toggle, group accordions,
-   and live AJAX filtering for snippets/collection-filter.liquid.
-
-   Depends on window.CollectionBackdrop, defined in main-collection.js
-   (the shared mobile overlay used by both the filter drawer and the
-   mobile sort sheet). This file must be loaded AFTER main-collection.js
-   — it's referenced lazily inside click handlers below, but keeping the
-   load order correct removes any fragility around that.
-
-   NOTE ON ATTRIBUTE NAMES: [data-filter-toggle] is the WHOLE-PANEL
-   open/close control (e.g. a "Filters" button elsewhere on the page,
-   such as in collection-toolbar.liquid) — see the click handler below.
-   Per-group accordion buttons in collection-filter.liquid intentionally
-   use a different attribute, [data-group-toggle], so the two behaviors
-   never collide. Don't rename either without checking both call sites. */
-
 (function () {
   'use strict';
 
@@ -23,15 +6,11 @@
 
   if (!filterPanel) return;
 
-  /* ── Header close button (static, rendered in the Liquid header) ──
-     Replaces the old runtime-injected close bar — the header now
-     always exists in the markup, so this just wires up its button. */
   var headerCloseBtn = filterPanel.querySelector('[data-filter-close]');
   if (headerCloseBtn) {
     headerCloseBtn.addEventListener('click', closeFilter);
   }
 
-  /* ── Open / close (whole panel — mobile drawer / desktop collapse) */
   function openFilter() {
     filterPanel.removeAttribute('hidden');
     requestAnimationFrame(function () {
@@ -66,7 +45,6 @@
     }
   }
 
-  /* ── Whole-panel toggle buttons (e.g. toolbar "Filters" button) ── */
   filterToggles.forEach(function (toggle) {
     toggle.addEventListener('click', function () {
       var isMobile = window.innerWidth <= 768;
@@ -92,12 +70,6 @@
     });
   });
 
-  /* ── Per-group accordion (Availability / Price / Category / etc.) ──
-     Uses [data-group-toggle] / [data-group-body] — deliberately NOT
-     [data-filter-toggle], which is already claimed by the whole-panel
-     control above. Must be re-run after every AJAX swap, since the
-     filter form's innerHTML (and therefore these buttons) gets
-     replaced by applyFiltersLive() below. */
   function initGroupAccordions(scope) {
     var toggles = (scope || document).querySelectorAll('[data-group-toggle]');
 
@@ -123,13 +95,6 @@
     });
   }
 
-  /* ── Active-filters strip: scroll nav ────────────────────────
-     Rendered by snippets/collection-active-filters.liquid, above the
-     product grid. Its prev/next buttons just scroll the track — the
-     live-filter refresh below (applyFiltersLive) swaps in a fresh
-     copy of the whole #collection-active-filters element on every
-     filter change, so this needs re-running after each swap too. ──
-  */
   function initActiveFiltersNav() {
     var bar = document.getElementById('collection-active-filters');
     if (!bar) return;
@@ -161,9 +126,6 @@
   var filterRequestToken = 0;
 
   function buildFilterUrl() {
-    // Preserve sort_by (and any other non-filter params) from the
-    // CURRENT url before rebuilding the query string from the filter
-    // form, so applying a filter never resets sort back to default.
     var currentUrl = new URL(window.location.href);
     var existingSortBy = currentUrl.searchParams.get('sort_by');
 
@@ -171,10 +133,6 @@
     url.search = '';
 
     new FormData(filterForm).forEach(function (val, key) {
-      // Skip blank values (e.g. an untouched price field with no value
-      // set) — submitting an empty filter.v.price.gte/lte param can
-      // cause the storefront to treat the range as effectively zero,
-      // filtering out products that should still match.
       if (val === '') return;
       url.searchParams.append(key, val);
     });
@@ -183,7 +141,6 @@
       url.searchParams.set('sort_by', existingSortBy);
     }
 
-    // Preserve active tab
     var page = document.querySelector('[data-collection-page]');
     var activeTab = page ? page.dataset.activeTab : 'products';
     url.searchParams.set('tab', activeTab);
@@ -205,15 +162,6 @@
     });
   }
 
-  /* ── Price: dual-range slider + quick-pick brackets ──────────
-     Keeps the min./max. number inputs, the two-thumb <input type=
-     "range"> slider, and the bracket radios all in sync. The number
-     inputs stay the source of truth for what actually gets submitted
-     — the slider and radios just write into them and then dispatch a
-     'change' event, which bindFilterFieldListeners() above already
-     wires up to applyFiltersLive(). Needs re-running after every AJAX
-     swap since the form's innerHTML (and therefore these elements)
-     gets replaced. ─────────────────────────────────────────────── */
   function initPriceFilters(scope) {
     var wraps = (scope || document).querySelectorAll('[data-price-filter]');
 
@@ -237,7 +185,6 @@
         activeTrack.style.right = (100 - (hi / rangeMax * 100)) + '%';
       }
 
-      // Number inputs -> slider (typing in min./max. moves the thumbs)
       function fieldsToSlider() {
         var lo = minInput.value === '' ? 0 : parseFloat(minInput.value);
         var hi = maxInput.value === '' ? rangeMax : parseFloat(maxInput.value);
@@ -246,12 +193,10 @@
         paintTrack();
       }
 
-      // Slider -> number inputs (dragging a thumb updates min./max.)
       function sliderToFields(commit) {
         var lo = parseFloat(minThumb.value);
         var hi = parseFloat(maxThumb.value);
 
-        // Don't let the two thumbs cross each other.
         if (lo > hi) {
           if (document.activeElement === maxThumb) { lo = hi; minThumb.value = lo; }
           else { hi = lo; maxThumb.value = hi; }
@@ -266,15 +211,11 @@
         }
       }
 
-      // Live-update the track while dragging, only fire the AJAX
-      // request once the drag ends ('change' fires on mouseup/release).
       minThumb.addEventListener('input', function () { sliderToFields(false); });
       maxThumb.addEventListener('input', function () { sliderToFields(false); });
       minThumb.addEventListener('change', function () { sliderToFields(true); });
       maxThumb.addEventListener('change', function () { sliderToFields(true); });
 
-      // Bring whichever thumb the user grabs to the front so two
-      // thumbs sitting at (or near) the same value can both be dragged.
       [minThumb, maxThumb].forEach(function (thumb) {
         thumb.addEventListener('pointerdown', function () {
           minThumb.classList.remove('is-active-top');
@@ -305,9 +246,6 @@
     var displayUrl = buildFilterUrl();
 
     if (!sectionId) {
-      // No section id available (e.g. template markup out of date) —
-      // fall back to the old full-page-reload behavior rather than
-      // silently doing nothing.
       window.location.href = displayUrl.toString();
       return;
     }
@@ -326,9 +264,6 @@
         return res.text();
       })
       .then(function (html) {
-        // Another change happened while this request was in flight —
-        // drop this (now-stale) response instead of overwriting newer
-        // results with older ones.
         if (thisRequest !== filterRequestToken) return;
 
         var doc = new DOMParser().parseFromString(html, 'text/html');
@@ -348,9 +283,6 @@
 
         var newFilterForm = doc.getElementById('FilterForm');
         if (newFilterForm) {
-          // Swap in the refreshed filter markup (updated counts,
-          // active pills, disabled options) and rebind listeners,
-          // since the old input elements were just replaced.
           filterForm.innerHTML = newFilterForm.innerHTML;
           bindFilterFieldListeners();
           initPriceFilters(filterForm);
@@ -372,8 +304,6 @@
         filterForm.removeAttribute('aria-busy');
       })
       .catch(function () {
-        // Network error, bad response, etc. — don't leave the user
-        // stuck with a half-applied filter and a dimmed grid.
         window.location.href = displayUrl.toString();
       });
   }
@@ -384,21 +314,16 @@
   initActiveFiltersNav();
 
   if (filterForm) {
-    // Keep the Apply button / Enter-key submit working (e.g. after
-    // typing in a price field and pressing Enter), routed through the
-    // same live path instead of a full navigation.
     filterForm.addEventListener('submit', function (e) {
       e.preventDefault();
       applyFiltersLive(true);
     });
   }
 
-  /* ── Back/forward support ─────────────────────────────────── */
   window.addEventListener('popstate', function () {
     applyFiltersLive(false);
   });
 
-  /* ── Expose close for external use (e.g. backdrop click) ─── */
   window.CollectionFilter = { close: closeFilter };
 
 })();
