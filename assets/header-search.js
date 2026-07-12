@@ -15,9 +15,17 @@
  *   4. Keyboard nav    — ArrowUp/Down across all panel items, Escape
  *   5. Clear button    — shown/hidden reactively, all entry paths covered
  *   6. Voice search    — Web Speech API, pulse animation, graceful no-op
- *   7. Typewriter      — animated placeholder cycling HS_TRENDING terms;
- *                         pauses only while input HAS a value, NOT on
- *                         every focus, so it keeps running in empty state
+ *   7. Typewriter      — animated placeholder cycling HS_TRENDING terms
+ *                         over a decorative overlay, with each newly
+ *                         typed character fading from an accent color to
+ *                         the muted resting color (CSS can't do this on
+ *                         a native placeholder attribute, which is why
+ *                         it's a separate overlay element rather than
+ *                         input.placeholder). Falls back to writing
+ *                         plain text into input.placeholder if no
+ *                         overlay element is found (e.g. older markup).
+ *                         Pauses only while input HAS a value, NOT on
+ *                         every focus, so it keeps running in empty state.
  *   8. Empty / focus state
  *        • Recent searches  (sessionStorage, max 5, remove + clear-all)
  *        • Trending searches (window.HS_TRENDING)
@@ -37,6 +45,12 @@
  *   - after voice transcript is written
  *   - after the clear button itself is clicked
  *   - on init (page load with pre-filled search.terms value)
+ *
+ * ── HAS-VALUE CLASS CONTRACT ────────────────────────────────────────────
+ * A single _syncHasValue() helper owns the .header-search--has-value class
+ * on the root element (used by CSS to hide the typewriter overlay whenever
+ * the input holds real text). Called from the same set of entry points as
+ * _syncClear() above, plus AnimatedPlaceholder's own pause/resume.
  *
  * ── KEYBOARD NAV ────────────────────────────────────────────────────────
  * The walker selector picks up focusable children of [role="option"] li
@@ -258,28 +272,53 @@
   /* ── Animated Placeholder (Typewriter) ─────────────────────────────── */
 
   /**
-   * Cycles through an array of terms in the input's placeholder attribute
-   * with a typewriter effect.
+   * Cycles through terms with a typewriter effect. If an overlay element
+   * is provided, characters are rendered as individual spans that fade
+   * from --hs-accent-fade to --hs-text-muted (the Back Market-style
+   * color-wash effect) — CSS can't do this on a native placeholder
+   * attribute. Without an overlay it falls back to writing plain text
+   * into input.placeholder, so this constructor is safe to call even if
+   * the markup hasn't been updated with the overlay span yet.
    *
-   * KEY BEHAVIOUR CHANGE from original:
+   * KEY BEHAVIOUR (unchanged from original):
    *   Pauses when input.value is non-empty, NOT on every focus event.
    *   This keeps the animation running while the empty-state panel is open.
+   *
+   * @param {HTMLInputElement} input
+   * @param {string[]} terms
+   * @param {HTMLElement|null} overlay  [data-search-typewriter] element, if present
+   * @param {Function|null} onVisibilityChange  called with true/false when
+   *   the overlay's visibility changes, so the caller can sync any other
+   *   UI state (e.g. the --has-value class on the root)
    */
-  function AnimatedPlaceholder(input, terms) {
+  function AnimatedPlaceholder(input, terms, overlay, onVisibilityChange) {
     if (!terms || !terms.length) return;
 
-    this.input      = input;
-    this.terms      = terms;
-    this.termIndex  = 0;
-    this.charIndex  = 0;
-    this.deleting   = false;
-    this.paused     = false;
-    this.rafId      = null;
-    this.lastTick   = 0;
-    this.pauseUntil = 0;
-    this.staticText = input.placeholder || 'What are you looking for?';
+    this.input       = input;
+    this.overlay     = overlay || null;
+    this.onVisChange = typeof onVisibilityChange === 'function' ? onVisibilityChange : null;
+    this.terms        = terms;
+    this.termIndex    = 0;
+    this.charIndex    = 0;
+    this.deleting     = false;
+    this.paused       = false;
+    this.rafId        = null;
+    this.lastTick     = 0;
+    this.pauseUntil   = 0;
+    this.staticText   = input.placeholder || 'What are you looking for?';
 
     var self = this;
+
+    if (this.overlay) {
+      this.overlay.innerHTML =
+        '<span class="hs-tw-prefix">Try \u201c</span>'
+        + '<span class="hs-tw-chars"></span>'
+        + '<span class="hs-tw-suffix">\u201d</span>';
+      this.charsEl = this.overlay.querySelector('.hs-tw-chars');
+      /* Overlay owns the visible text now — clear the native attribute
+         so nothing doubles up underneath it. */
+      input.placeholder = '';
+    }
 
     /* Pause/resume based on value, not focus */
     input.addEventListener('input', function () {
@@ -295,12 +334,46 @@
       if (!input.value && self.paused) self.resume();
     });
 
+    this._syncOverlayVisibility();
     this._tick(performance.now());
   }
 
+  AnimatedPlaceholder.prototype._syncOverlayVisibility = function () {
+    var hasValue = !!this.input.value;
+    if (this.overlay) this.overlay.style.display = hasValue ? 'none' : '';
+    if (this.onVisChange) this.onVisChange(hasValue);
+  };
+
   AnimatedPlaceholder.prototype._pause = function () {
     this.paused = true;
+    this._syncOverlayVisibility();
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+  };
+
+  /**
+   * Appends one character span. It's given the accent color with
+   * transitions disabled for one paint, then the class is removed so
+   * `transition: color` on .hs-tw-char eases it back to the muted
+   * resting color. Two nested rAFs are needed — one alone can land in
+   * the same paint as the initial style and skip the transition.
+   */
+  AnimatedPlaceholder.prototype._appendChar = function (ch) {
+    if (!this.charsEl) return;
+    var span = document.createElement('span');
+    span.className = 'hs-tw-char hs-tw-char--fresh';
+    span.textContent = ch;
+    this.charsEl.appendChild(span);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        span.classList.remove('hs-tw-char--fresh');
+      });
+    });
+  };
+
+  AnimatedPlaceholder.prototype._removeChar = function () {
+    if (this.charsEl && this.charsEl.lastElementChild) {
+      this.charsEl.removeChild(this.charsEl.lastElementChild);
+    }
   };
 
   AnimatedPlaceholder.prototype._tick = function (now) {
@@ -324,8 +397,13 @@
         this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
         return;
       }
+      var nextChar = term[this.charIndex];
       this.charIndex++;
-      this.input.placeholder = 'Try "' + term.slice(0, this.charIndex) + '"';
+      if (this.overlay) {
+        this._appendChar(nextChar);
+      } else {
+        this.input.placeholder = 'Try "' + term.slice(0, this.charIndex) + '"';
+      }
       this.lastTick = now;
       if (this.charIndex >= term.length) {
         this.deleting   = true;
@@ -337,9 +415,13 @@
         return;
       }
       this.charIndex--;
-      this.input.placeholder = this.charIndex > 0
-        ? 'Try "' + term.slice(0, this.charIndex) + '"'
-        : this.staticText;
+      if (this.overlay) {
+        this._removeChar();
+      } else {
+        this.input.placeholder = this.charIndex > 0
+          ? 'Try "' + term.slice(0, this.charIndex) + '"'
+          : this.staticText;
+      }
       this.lastTick = now;
       if (this.charIndex <= 0) {
         this.deleting   = false;
@@ -354,16 +436,25 @@
   /** Called externally (e.g. voice start) to freeze the animation. */
   AnimatedPlaceholder.prototype.pause = function (overridePlaceholder) {
     this._pause();
-    if (overridePlaceholder) this.input.placeholder = overridePlaceholder;
+    if (overridePlaceholder) {
+      if (this.overlay) this.overlay.style.display = 'none';
+      this.input.placeholder = overridePlaceholder;
+    }
   };
 
   /** Resume after an external pause (e.g. voice end/error). */
   AnimatedPlaceholder.prototype.resume = function () {
     if (this.input.value) return;
-    this.input.placeholder = this.staticText;
-    this.charIndex  = 0;
-    this.deleting   = false;
-    this.paused     = false;
+    this.paused    = false;
+    this.charIndex = 0;
+    this.deleting  = false;
+    if (this.overlay) {
+      this.input.placeholder = '';
+      if (this.charsEl) this.charsEl.innerHTML = '';
+      this._syncOverlayVisibility();
+    } else {
+      this.input.placeholder = this.staticText;
+    }
     this._tick(performance.now());
   };
 
@@ -402,8 +493,9 @@
 
     if (!this.input) return;
 
-    /* Sync clear button on init (handles pre-filled search.terms) */
+    /* Sync clear button + has-value class on init (handles pre-filled search.terms) */
     this._syncClear();
+    this._syncHasValue();
 
     /* Clear button works with or without predictive search */
     this._bindClear();
@@ -430,18 +522,29 @@
     this.clearBtn.hidden = this.input.value.length === 0;
   };
 
+  /**
+   * Single source of truth for the .header-search--has-value class,
+   * which CSS uses to hide the typewriter overlay whenever the input
+   * holds real text (the native input already hides its own placeholder
+   * in that case, so this only needs to cover the decorative overlay).
+   */
+  HeaderSearch.prototype._syncHasValue = function () {
+    this.root.classList.toggle('header-search--has-value', this.input.value.length > 0);
+  };
+
   HeaderSearch.prototype._bindClear = function () {
     var self = this;
 
     /* Sync on every input event (typing, paste, browser autofill) */
-    this.input.addEventListener('input',  function () { self._syncClear(); });
+    this.input.addEventListener('input',  function () { self._syncClear(); self._syncHasValue(); });
     /* Some autofill implementations fire 'change' but not 'input' */
-    this.input.addEventListener('change', function () { self._syncClear(); });
+    this.input.addEventListener('change', function () { self._syncClear(); self._syncHasValue(); });
 
     if (this.clearBtn) {
       this.clearBtn.addEventListener('click', function () {
         self.input.value = '';
         self._syncClear();
+        self._syncHasValue();
         self.input.focus();
         if (self.isPredictive) {
           /* Show empty state rather than closing completely */
@@ -769,6 +872,7 @@
       var transcript = (e.results[0][0].transcript || '').trim();
       self.input.value = transcript;
       self._syncClear();                /* update clear button */
+      self._syncHasValue();             /* hide typewriter overlay */
       if (transcript) self._fetch(transcript);
     });
 
@@ -811,7 +915,11 @@
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var terms = window.HS_TRENDING;
     if (!terms || !terms.length) return;
-    this._typewriter = new AnimatedPlaceholder(this.input, terms);
+    var self    = this;
+    var overlay = this.root.querySelector('[data-search-typewriter]');
+    this._typewriter = new AnimatedPlaceholder(this.input, terms, overlay, function (hasValue) {
+      self.root.classList.toggle('header-search--has-value', hasValue);
+    });
   };
 
 
