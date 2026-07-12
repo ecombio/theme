@@ -31,36 +31,13 @@
     {%- if section.blocks.size > 0 -%}
       <nav class="blog-category-pills" aria-label="Blog categories" style="--pill-alignment: {{ section.settings.alignment }};">
         {%- for block in section.blocks -%}
-          {%- liquid
-            assign pill_link = block.settings.link
-            assign pill_label = blank
-
-            if pill_link contains '/collections/'
-              assign c_handle = pill_link | split: '/collections/' | last | split: '/' | first | split: '?' | first
-              assign pill_label = collections[c_handle].title
-
-            elsif pill_link contains '/blogs/'
-              assign after_blogs = pill_link | split: '/blogs/' | last | split: '?' | first
-              assign b_handle = after_blogs | split: '/' | first
-              assign a_handle = after_blogs | split: '/' | last
-              if a_handle != b_handle and a_handle != blank
-                assign pill_label = blogs[b_handle].articles[a_handle].title
-              else
-                assign pill_label = blogs[b_handle].title
-              endif
-
-            elsif pill_link contains '/pages/'
-              assign p_handle = pill_link | split: '/pages/' | last | split: '?' | first
-              assign pill_label = pages[p_handle].title
-            endif
-          -%}
-          {%- if pill_link != blank and pill_label != blank -%}
+          {%- if block.settings.blog != blank -%}
             <a
-              href="{{ pill_link }}"
-              class="blog-category-pill{% if pill_link == request.path %} is-active{% endif %}"
+              href="{{ block.settings.blog.url }}"
+              class="blog-category-pill{% if block.settings.blog.url == request.path %} is-active{% endif %}"
               {{ block.shopify_attributes }}
             >
-              {{ pill_label }}
+              {{ block.settings.blog.title }}
             </a>
           {%- endif -%}
         {%- endfor -%}
@@ -152,10 +129,9 @@
       "name": "Category",
       "settings": [
         {
-          "type": "url",
-          "id": "link",
-          "label": "Link",
-          "info": "Pick the collection, blog, article, or page this pill should go to. Its name is used as the pill label automatically."
+          "type": "blog",
+          "id": "blog",
+          "label": "Blog"
         }
       ]
     }
