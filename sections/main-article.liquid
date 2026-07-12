@@ -1,8 +1,6 @@
 {{ 'main-article.css' | asset_url | stylesheet_tag }}
 {{ 'accordion.css'    | asset_url | stylesheet_tag }}
 {{ 'product-row.css'  | asset_url | stylesheet_tag }}
-{{ 'ai-summarizer.css' | asset_url | stylesheet_tag }}
-{{ 'article-player.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign width_type = section.settings.section_width
@@ -23,9 +21,6 @@
       <p class="article-banner__meta">{{ 'blog.article_metadata_html' | t: date: date, author: article.author }}</p>
     </div>
   </div>
-
-  {% comment %} ── Read Aloud / Follow Along player (fixed dock) ── {% endcomment %}
-  {% render 'article-player' %}
 
 {% comment %} ── Main Article Layout ── {% endcomment %}
 <div
@@ -52,18 +47,6 @@
   {% comment %} Article Content {% endcomment %}
   <article class="article-content">
 
-    {% comment %} AI Summarizer {% endcomment %}
-    {% if section.settings.show_ai_summarizer %}
-      {% render 'ai-summarizer', article: article %}
-    {% endif %}
-
-    {% comment %}
-      Scoped wrapper for article-player.js. CONTENT_SELECTOR must point
-      here (not at the outer .article-content grid item), or the word
-      walker will also wrap the AI summarizer card and every comment /
-      comment-form field in <span class="ma-word">, making them
-      clickable-to-seek and included in the read-aloud text.
-    {% endcomment %}
     <div class="article-content-body">
       {{ article.content }}
     </div>
@@ -128,26 +111,11 @@
 </div>
 
 <script src="{{ 'main-article.js' | asset_url }}" defer></script>
-{% if section.settings.show_ai_summarizer %}
-  <script src="{{ 'ai-summarizer.js' | asset_url }}" defer></script>
-{% endif %}
-<script src="{{ 'article-player.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
   "name": "t:general.article",
   "settings": [
-    {
-      "type": "header",
-      "content": "AI summarizer"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_ai_summarizer",
-      "label": "Show AI summarizer",
-      "info": "Adds a card after the article content letting readers open a pre-filled summary prompt in Claude, ChatGPT, Gemini, and other AI tools. Edit the default prompt per-article via the article's ai_summarizer metafield (custom.ai_summarizer).",
-      "default": true
-    },
     {
       "type": "header",
       "content": "Section layout"
