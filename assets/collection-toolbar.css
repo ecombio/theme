@@ -1,18 +1,3 @@
-/* assets/collection-toolbar.css
-   Styles for snippets/collection-toolbar.liquid — tabs, active-filters
-   strip, sort dropdown, mobile bar, and mobile sort sheet (the sheet
-   markup itself is injected by collection-toolbar.js, but its styles
-   live here since it's conceptually part of the toolbar).
-
-   PARITY WITH search-toolbar.css: kept in sync with assets/
-   search-toolbar.css everywhere except the active-filters strip,
-   which intentionally stays richer here (scroll-nav arrows + edge
-   fade) than search's plain scrollable row — that's a deliberate
-   keep, not a gap. Two small parity fixes folded in below: the
-   mobile-bar button :disabled state search already had, and
-   margin-inline-start (logical property) on the sort wrapper to
-   match search's. */
-
 .collection-toolbar {
   display: flex;
   align-items: center;
@@ -25,28 +10,11 @@
   background: #fff;
 }
 
-/* Desktop filter-toggle button removed — on desktop the filter
-   sidebar (snippets/collection-filter.liquid) is always visible, so
-   there's nothing to toggle. The mobile equivalent lives in
-   .collection-mobile-bar below and keeps its own [data-filter-toggle]
-   button; assets/collection-filter.js's toggle-click handler still
-   works unchanged since it just queries all [data-filter-toggle]
-   elements, and only the mobile one remains in the DOM. */
-
-/* Width pinned to match the collection-filter sidebar (currently
-   247px, set here explicitly for now rather than reading the same
-   var, since the sidebar's width is driven by the grid-template-
-   columns track on .collection-body rather than a standalone
-   custom property). Revisit if that ever changes to a shared token. */
 .tab-switcher {
   display: flex;
   flex: 0 0 247px;
   width: 247px;
 }
-
-/* ---------- Active filters ----------
-   Deliberately kept richer than search's plain version: scroll-nav
-   arrows + edge fade for when pills overflow. Not a gap to close. */
 
 .collection-active-filters {
   display: flex;
@@ -61,10 +29,6 @@
   display: none;
 }
 
-/* Scroll region: prev arrow + track + next arrow. Fading and 28px
-   arrow-inset math both live here, scoped to just this wrapper, so
-   Clear all (a sibling, outside this element) can never throw the
-   fade position off regardless of its own width. */
 .collection-active-filters__scroll {
   display: flex;
   align-items: center;
@@ -95,13 +59,6 @@
   white-space: nowrap;
 }
 
-/* ---------- Edge fade (white shadow) over the scrollable track ----------
-   Sits between the nav buttons and the track, on top of whatever
-   pills are scrolled underneath it, so overflow reads as a soft fade
-   rather than a hard clip. Purely decorative (pointer-events: none)
-   so it never blocks clicks on the pills or nav buttons. Scoped to
-   __scroll, so it only ever measures against the prev/track/next
-   trio — never Clear all. */
 .collection-active-filters__scroll::before,
 .collection-active-filters__scroll::after {
   content: '';
@@ -121,12 +78,12 @@
 }
 
 .collection-active-filters__scroll::before {
-  left: 28px; /* sits just past the prev nav button */
+  left: 28px;
   background: linear-gradient(to right, var(--color-white), rgba(255, 255, 255, 0));
 }
 
 .collection-active-filters__scroll::after {
-  right: 28px; /* sits just before the next nav button */
+  right: 28px;
   background: linear-gradient(to left, var(--color-white), rgba(255, 255, 255, 0));
 }
 
@@ -162,17 +119,10 @@
   pointer-events: none;
 }
 
-/* Clear all sits outside the scroll region entirely, so it needs its
-   own flex sizing rather than inheriting the track's overflow
-   behavior — it should never shrink or wrap. Visual styling (flat
-   text-link look) lives with the rest of the pill styles in
-   collection-filter.css, since it shares that base class. */
 .collection-active-filters .collection-filter__pill--clear {
   flex: 0 0 auto;
   white-space: nowrap;
 }
-
-/* ---------- Sort (desktop) ---------- */
 
 .collection-toolbar__sort {
   flex: 0 0 auto;
@@ -215,8 +165,6 @@
   white-space: nowrap;
   border: 0;
 }
-
-/* ---------- Tabs ---------- */
 
 .tab-switcher__tab {
   appearance: none;
@@ -262,8 +210,6 @@
 .tab-switcher__tab--active::after {
   background: #1a1a1a;
 }
-
-/* ---------- Mobile bar ---------- */
 
 .collection-mobile-bar {
   display: none;
@@ -312,8 +258,6 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-/* ---------- Mobile sort sheet (built by collection-toolbar.js) ---------- */
 
 .mobile-sort-sheet {
   position: fixed;
@@ -387,8 +331,6 @@
   content: ' ✓';
 }
 
-/* ---------- Responsive ---------- */
-
 @media (max-width: 768px) {
   .collection-toolbar {
     flex-wrap: wrap;
@@ -417,10 +359,6 @@
     width: auto;
   }
 
-  /* On mobile the active-filters strip drops to its own full-width
-     row below the tabs — there isn't room to keep it inline, and the
-     "Filters" entry point here is the .collection-mobile-bar button
-     above (a fixed bottom bar), not a toolbar toggle. */
   .collection-active-filters {
     flex: 1 1 100%;
     margin: 0.5rem 0 0;
