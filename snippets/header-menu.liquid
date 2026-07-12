@@ -17,14 +17,14 @@
 
 {%- liquid
   assign has_mega_menu = false
-  assign has_showcase_menu = false
+  assign has_showcase = false
   assign has_link_list = false
   for block in blocks
     if block.type == 'mega-menu'
       assign has_mega_menu = true
     endif
-    if block.type == 'showcase-menu'
-      assign has_showcase_menu = true
+    if block.type == 'showcase'
+      assign has_showcase = true
     endif
     if block.type == 'link-list'
       assign has_link_list = true
@@ -35,7 +35,7 @@
 {%- if has_mega_menu -%}
   {{ 'mega-menu.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
-{%- if has_showcase_menu -%}
+{%- if has_showcase -%}
   {{ 'showcase.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 {%- if has_link_list -%}
@@ -63,7 +63,7 @@
             {%- when 'mega-menu' -%}
               {%- render 'mega-menu', block: block -%}
 
-            {%- when 'showcase-menu' -%}
+            {%- when 'showcase' -%}
               {%- render 'showcase', block: block -%}
 
           {%- endcase -%}
@@ -75,7 +75,7 @@
   {%- if has_mega_menu -%}
     <script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
   {%- endif -%}
-  {%- if has_showcase_menu -%}
+  {%- if has_showcase -%}
     <script src="{{ 'showcase.js' | asset_url }}" defer></script>
   {%- endif -%}
   {%- if has_link_list -%}
