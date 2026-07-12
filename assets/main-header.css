@@ -18,6 +18,12 @@
 
 .main-header__sticky-spacer {
   width: 100%;
+  /* Defensive: this element's height is intentionally kept constant by
+     main-header.js regardless of autohide state (see sync() there), but
+     overflow-anchor: none ensures it can never become a scroll-anchoring
+     target if that logic ever changes — resizing it previously caused a
+     feedback loop with the autohide scroll handler. */
+  overflow-anchor: none;
 }
 
 .main-header__bar { width: 100%; }
@@ -739,9 +745,6 @@
   padding: 14px 16px;
 }
 
-/* Defensive override: forces the mobile/tablet search row to stay
-   hidden at desktop widths no matter what else touches its display
-   property elsewhere in the cascade. */
 @media (min-width: 1024px) {
   .main-header__search-row {
     display: none !important;

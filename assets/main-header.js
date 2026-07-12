@@ -36,10 +36,21 @@
   var spacer = document.getElementById('main-header-sticky-spacer');
 
   var sync = function () {
+    // Full header height — always reserved in the spacer regardless of
+    // autohide state, so the page's normal-flow layout never changes
+    // size on hide/show. Resizing the spacer here previously triggered
+    // the browser's scroll-anchoring compensation, which fired its own
+    // scroll events and fed back into the autohide handler in a loop.
+    var full = header.offsetHeight;
+
+    // Sticky-offset variable, consumed by things like collection-toolbar's
+    // `top`, which don't affect document flow — safe to drop to 0 while
+    // the header is off-screen so those elements close the gap.
     var hidden = header.classList.contains('main-header--autohide-hidden');
-    var h = hidden ? 0 : header.offsetHeight;
-    document.documentElement.style.setProperty('--main-header-bottom', h + 'px');
-    if (spacer) spacer.style.height = h + 'px';
+    var offset = hidden ? 0 : full;
+
+    document.documentElement.style.setProperty('--main-header-bottom', offset + 'px');
+    if (spacer) spacer.style.height = full + 'px';
   };
 
   sync();
