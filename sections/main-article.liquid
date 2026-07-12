@@ -3,6 +3,8 @@
 {{ 'product-row.css'  | asset_url | stylesheet_tag }}
 
 {%- liquid
+  assign content_blocks = article.metafields.custom.content_blocks.value
+
   assign width_type = section.settings.section_width
   if width_type == blank
     assign width_class = 'main-article__default-width'
@@ -48,7 +50,20 @@
   <article class="article-content">
 
     <div class="article-content-body">
-      {{ article.content }}
+      {%- if content_blocks.size > 0 -%}
+        {%- for block in content_blocks -%}
+          {%- case block.type -%}
+            {%- when 'rich_text_block' -%}
+              {%- render 'block-rich-text', block: block -%}
+            {%- when 'product_row_block' -%}
+              {%- render 'block-product-row', block: block -%}
+            {%- when 'accordion_block' -%}
+              {%- render 'block-accordion', block: block -%}
+          {%- endcase -%}
+        {%- endfor -%}
+      {%- else -%}
+        {{ article.content }}
+      {%- endif -%}
     </div>
 
     {% comment %} Comments {% endcomment %}
@@ -111,6 +126,7 @@
 </div>
 
 <script src="{{ 'main-article.js' | asset_url }}" defer></script>
+<script src="{{ 'accordion.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
