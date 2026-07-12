@@ -82,17 +82,29 @@
     assign has_panel = true
   endif
 
-  assign nav_label = block.settings.label
-  if nav_label == blank and block.settings.link contains '/collections/'
+  assign nav_matched_collection = blank
+  if block.settings.link contains '/collections/'
     assign nav_collection_handle = block.settings.link | split: '/collections/' | last | split: '/' | first | split: '?' | first
     assign nav_matched_collection = collections[nav_collection_handle]
-    if nav_matched_collection != blank
-      assign nav_label = nav_matched_collection.title
-    endif
+  endif
+
+  assign nav_label = block.settings.label
+  if nav_label == blank and nav_matched_collection != blank
+    assign nav_label = nav_matched_collection.title
   endif
 
   if nav_label == blank
     assign nav_label = 'Showcase'
+  endif
+
+  assign see_all_url = block.settings.see_all_link
+  if see_all_url == blank and nav_matched_collection != blank
+    assign see_all_url = nav_matched_collection.url
+  endif
+
+  assign see_all_text = block.settings.see_all_label
+  if see_all_text == blank
+    assign see_all_text = 'See all'
   endif
 -%}
 
@@ -169,8 +181,8 @@
           <div class="showcase__main">
             <div class="showcase__main-header">
               <p class="showcase__main-heading">Categories</p>
-              {%- if block.settings.see_all_link != blank -%}
-                <a href="{{ block.settings.see_all_link }}" class="showcase__see-all">{{ block.settings.see_all_label | default: 'See all' }}</a>
+              {%- if see_all_url != blank -%}
+                <a href="{{ see_all_url }}" class="showcase__see-all">{{ see_all_text }}</a>
               {%- endif -%}
             </div>
 
