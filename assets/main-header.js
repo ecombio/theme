@@ -140,3 +140,79 @@
     }
   }, { passive: true });
 })();
+
+(function () {
+  'use strict';
+
+  // Mobile/tablet hamburger + slide-in drawer, wired to the markup
+  // rendered by snippets/header-menu.liquid (< 1024px).
+  var trigger = document.getElementById('main-header-menu-trigger');
+  var nav = document.getElementById('main-header-mobile-nav');
+  if (!trigger || !nav) return;
+
+  var closeEls = nav.querySelectorAll('[data-mobile-nav-close]');
+  var toggles = nav.querySelectorAll('.ecombio-mobile-nav__toggle');
+
+  var openDrawer = function () {
+    nav.classList.add('is-open');
+    nav.setAttribute('aria-hidden', 'false');
+    trigger.setAttribute('aria-expanded', 'true');
+    document.documentElement.style.overflow = 'hidden';
+  };
+
+  var closeDrawer = function () {
+    nav.classList.remove('is-open');
+    nav.setAttribute('aria-hidden', 'true');
+    trigger.setAttribute('aria-expanded', 'false');
+    document.documentElement.style.overflow = '';
+  };
+
+  trigger.addEventListener('click', function () {
+    if (nav.classList.contains('is-open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
+
+  closeEls.forEach(function (el) {
+    el.addEventListener('click', closeDrawer);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+      closeDrawer();
+      trigger.focus();
+    }
+  });
+
+  // Accordion toggles for link-list / mega-menu / showcase submenus,
+  // and their nested level-3 submenus — same handler for both since
+  // they share the .ecombio-mobile-nav__toggle / __sub markup.
+  toggles.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var subId = btn.getAttribute('aria-controls');
+      var sub = subId ? document.getElementById(subId) : null;
+      if (!sub) return;
+
+      var expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+
+      if (expanded) {
+        sub.setAttribute('hidden', '');
+      } else {
+        sub.removeAttribute('hidden');
+      }
+    });
+  });
+
+  // Safety net: if the viewport crosses back into desktop while the
+  // drawer is open (e.g. rotating a tablet, or resizing a browser
+  // window), close it so it doesn't get stuck open behind the now-
+  // visible desktop menu-bar.
+  window.addEventListener('resize', function () {
+    if (window.innerWidth >= 1024 && nav.classList.contains('is-open')) {
+      closeDrawer();
+    }
+  });
+})();
