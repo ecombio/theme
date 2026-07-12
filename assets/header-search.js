@@ -310,10 +310,12 @@
     var self = this;
 
     if (this.overlay) {
+      /* No quote marks around the term: they'd sit as static text next
+         to characters that fade in, which reads as mismatched. Plain
+         "Search for <term>" keeps the whole visible string animated. */
       this.overlay.innerHTML =
-        '<span class="hs-tw-prefix">Try \u201c</span>'
-        + '<span class="hs-tw-chars"></span>'
-        + '<span class="hs-tw-suffix">\u201d</span>';
+        '<span class="hs-tw-prefix">Search for </span>'
+        + '<span class="hs-tw-chars"></span>';
       this.charsEl = this.overlay.querySelector('.hs-tw-chars');
       /* Overlay owns the visible text now — clear the native attribute
          so nothing doubles up underneath it. */
@@ -402,7 +404,7 @@
       if (this.overlay) {
         this._appendChar(nextChar);
       } else {
-        this.input.placeholder = 'Try "' + term.slice(0, this.charIndex) + '"';
+        this.input.placeholder = 'Search for ' + term.slice(0, this.charIndex);
       }
       this.lastTick = now;
       if (this.charIndex >= term.length) {
@@ -419,7 +421,7 @@
         this._removeChar();
       } else {
         this.input.placeholder = this.charIndex > 0
-          ? 'Try "' + term.slice(0, this.charIndex) + '"'
+          ? 'Search for ' + term.slice(0, this.charIndex)
           : this.staticText;
       }
       this.lastTick = now;
