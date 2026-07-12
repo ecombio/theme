@@ -9,6 +9,9 @@
                                injected at runtime by assets/header-search.js
      .hs-empty__*           — empty/focus-state panel (trending + recent),
                                built and injected by assets/header-search.js
+     .hs-tw-*               — animated placeholder overlay (typewriter
+                               with color-fade), built and toggled by
+                               assets/header-search.js
 
    Breakpoints (canonical, match main-header.css):
      Mobile  : max-width: 639px
@@ -28,6 +31,7 @@
   --hs-text:         #1a1a1a;
   --hs-text-muted:   #6b6860;
   --hs-accent-soft:  #f0ede8;
+  --hs-accent-fade:  #7f77dd;
   --hs-radius:       10px;
   --hs-radius-lg:    14px;
   --hs-shadow:       0 4px 24px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
@@ -44,6 +48,7 @@
    ============================================================ */
 
 .header-search__form {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
@@ -78,6 +83,53 @@
 /* Placeholder tint while voice is listening */
 .header-search--listening .header-search__input::placeholder {
   color: rgba(217, 64, 64, .6);
+}
+
+
+/* ============================================================
+   ANIMATED PLACEHOLDER (typewriter with color-fade)
+   .header-search__typewriter sits on top of the empty input,
+   left-aligned to match the input's own padding. Characters are
+   appended as individual .hs-tw-char spans by header-search.js;
+   each new character is briefly given the .hs-tw-char--fresh
+   accent color, then that class is removed so `transition: color`
+   eases it back to the muted resting color. The most recently
+   typed letters are always mid-fade, which is what produces the
+   "wash" of color trailing the cursor.
+
+   The native placeholder attribute on .header-search__input is
+   cleared while this overlay is active (see header-search.js) so
+   nothing doubles up underneath it, and is restored automatically
+   whenever the overlay is hidden — no-JS and prefers-reduced-motion
+   visitors always see the plain static placeholder instead.
+   ============================================================ */
+
+.header-search__typewriter {
+  position: absolute;
+  left: 12px;
+  right: 80px; /* clears submit (~50px) + voice (~32px) buttons; narrow this if you disable voice search */
+  top: 50%;
+  transform: translateY(-50%);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 15px;
+  color: var(--hs-text-muted);
+  pointer-events: none;
+}
+
+.header-search--has-value .header-search__typewriter { display: none; }
+
+.hs-tw-char {
+  color: var(--hs-text-muted);
+  transition: color 600ms ease-out;
+}
+.hs-tw-char--fresh {
+  color: var(--hs-accent-fade);
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-search__typewriter { display: none; }
 }
 
 
