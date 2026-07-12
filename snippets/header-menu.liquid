@@ -1,7 +1,9 @@
 {%- comment -%}
   snippets/header-menu.liquid
   Self-contained: detects which block types are present, loads only the
-  CSS/JS those block types need, and renders the nav.
+  CSS/JS those block types need, and renders both the desktop nav bar
+  and the mobile/tablet slide-in drawer (< 1024px) from the same block
+  loop, so they never drift out of sync with each other.
 
   Usage:
     {%- render 'header-menu', blocks: section.blocks -%}
@@ -11,6 +13,10 @@
   highlight.css is loaded unconditionally, same as it was inline —
   it's the base styling for menu-bar items generally, not just
   'highlight' blocks.
+
+  Mobile drawer reuses the .ecombio-mobile-nav / .ecombio-header__hamburger
+  CSS already shipped in main-header.css, and is opened/closed + accordion-
+  toggled by the IIFE at the bottom of main-header.js.
 {%- endcomment -%}
 
 {{ 'highlight.css' | asset_url | stylesheet_tag }}
@@ -81,4 +87,115 @@
   {%- if has_link_list -%}
     <script src="{{ 'link-list.js' | asset_url }}" defer></script>
   {%- endif -%}
+
+  {%- comment -%} Mobile / tablet slide-in drawer (< 1024px). Reuses .ecombio-mobile-nav CSS. {%- endcomment -%}
+  <div class="ecombio-mobile-nav" id="main-header-mobile-nav" aria-hidden="true">
+    <div class="ecombio-mobile-nav__overlay" data-mobile-nav-close></div>
+    <div class="ecombio-mobile-nav__panel" role="dialog" aria-modal="true" aria-label="Site navigation">
+      <div class="ecombio-mobile-nav__header">
+        <span class="ecombio-mobile-nav__header-label">Menu</span>
+        <button type="button" class="ecombio-mobile-nav__close" data-mobile-nav-close aria-label="Close menu">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <ul class="ecombio-mobile-nav__list">
+        {%- for block in blocks -%}
+          {%- liquid
+            assign item_link = block.settings.link | default: '#'
+            assign item_menu = null
+            assign item_label = block.settings.label
+
+            case block.type
+              when 'single-link'
+                assign item_label = item_label | default: 'Link'
+              when 'highlight'
+                assign item_label = item_label | default: 'Highlight'
+              when 'link-list'
+                assign item_menu = block.settings.menu
+                assign item_label = item_label | default: item_menu.title
+              when 'mega-menu'
+                assign item_menu = block.settings.menu
+                assign item_label = item_label | default: item_menu.title | default: 'Mega menu'
+              when 'showcase'
+                assign item_label = item_label | default: 'Showcase'
+            endcase
+          -%}
+
+          {%- if block.type == 'single-link' or block.type == 'highlight' -%}
+            <li class="ecombio-mobile-nav__item" {{ block.shopify_attributes }}>
+              <a class="ecombio-mobile-nav__link" href="{{ item_link }}">{{ item_label }}</a>
+            </li>
+
+          {%- elsif block.type == 'link-list' or block.type == 'mega-menu' -%}
+            <li class="ecombio-mobile-nav__item" {{ block.shopify_attributes }}>
+              <div class="ecombio-mobile-nav__row">
+                <a class="ecombio-mobile-nav__link" href="{{ item_link }}">{{ item_label }}</a>
+                {%- if item_menu.links.size > 0 -%}
+                  <button type="button" class="ecombio-mobile-nav__toggle" aria-expanded="false" aria-controls="mobile-sub-{{ block.id }}" aria-label="Toggle {{ item_label }} submenu">
+                    <svg class="ecombio-mobile-nav__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                {%- endif -%}
+              </div>
+
+              {%- if item_menu.links.size > 0 -%}
+                <ul class="ecombio-mobile-nav__sub" id="mobile-sub-{{ block.id }}" hidden>
+                  {%- for link in item_menu.links -%}
+                    <li class="ecombio-mobile-nav__item">
+                      <div class="ecombio-mobile-nav__row">
+                        <a class="ecombio-mobile-nav__link ecombio-mobile-nav__link--sub" href="{{ link.url }}">{{ link.title }}</a>
+                        {%- if link.links.size > 0 -%}
+                          <button type="button" class="ecombio-mobile-nav__toggle" aria-expanded="false" aria-controls="mobile-sub-{{ block.id }}-{{ forloop.index }}" aria-label="Toggle {{ link.title }} submenu">
+                            <svg class="ecombio-mobile-nav__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </button>
+                        {%- endif -%}
+                      </div>
+
+                      {%- if link.links.size > 0 -%}
+                        <ul class="ecombio-mobile-nav__sub ecombio-mobile-nav__sub--l3" id="mobile-sub-{{ block.id }}-{{ forloop.index }}" hidden>
+                          {%- for deep_link in link.links -%}
+                            <li class="ecombio-mobile-nav__item ecombio-mobile-nav__item--l3">
+                              <a class="ecombio-mobile-nav__link ecombio-mobile-nav__link--deep" href="{{ deep_link.url }}">{{ deep_link.title }}</a>
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      {%- endif -%}
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+            </li>
+
+          {%- elsif block.type == 'showcase' -%}
+            <li class="ecombio-mobile-nav__item" {{ block.shopify_attributes }}>
+              <div class="ecombio-mobile-nav__row">
+                <a class="ecombio-mobile-nav__link" href="{{ item_link }}">{{ item_label }}</a>
+                <button type="button" class="ecombio-mobile-nav__toggle" aria-expanded="false" aria-controls="mobile-sub-{{ block.id }}" aria-label="Toggle {{ item_label }} submenu">
+                  <svg class="ecombio-mobile-nav__chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+              <ul class="ecombio-mobile-nav__sub" id="mobile-sub-{{ block.id }}" hidden>
+                {%- for i in (1..8) -%}
+                  {%- assign cat = block.settings['cat_' | append: i | append: '_collection'] -%}
+                  {%- unless cat == blank -%}
+                    <li class="ecombio-mobile-nav__item">
+                      <a class="ecombio-mobile-nav__link ecombio-mobile-nav__link--sub" href="{{ cat.url }}">{{ cat.title }}</a>
+                    </li>
+                  {%- endunless -%}
+                {%- endfor -%}
+              </ul>
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    </div>
+  </div>
 {%- endif -%}
