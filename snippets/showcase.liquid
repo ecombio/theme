@@ -233,15 +233,20 @@
 
                 {%- if c_label != blank or c_link != blank or c_image != blank or c_collection != blank -%}
                   {%- liquid
-                    assign card_href = c_link | default: c_collection.url | default: '#'
-                    assign card_label = c_label | default: c_collection.title
+                    assign c_effective_collection = c_collection
+                    if c_effective_collection == blank and c_link contains '/collections/'
+                      assign c_collection_handle = c_link | split: '/collections/' | last | split: '/' | first | split: '?' | first
+                      assign c_effective_collection = collections[c_collection_handle]
+                    endif
+                    assign card_href = c_link | default: c_effective_collection.url | default: '#'
+                    assign card_label = c_label | default: c_effective_collection.title
                   -%}
                   <a href="{{ card_href }}" class="showcase__card">
                     <span class="showcase__card-image">
                       {%- if c_image != blank -%}
                         <img src="{{ c_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
-                      {%- elsif c_collection != blank and c_collection.featured_image != blank -%}
-                        <img src="{{ c_collection.featured_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
+                      {%- elsif c_effective_collection != blank and c_effective_collection.featured_image != blank -%}
+                        <img src="{{ c_effective_collection.featured_image | image_url: width: 300 }}" alt="{{ card_label | escape }}" width="150" height="150" loading="lazy">
                       {%- else -%}
                         {%- assign placeholder_index = i | modulo: 6 | plus: 1 -%}
                         {{ 'collection-' | append: placeholder_index | placeholder_svg_tag: 'showcase__card-placeholder' }}
