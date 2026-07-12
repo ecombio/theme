@@ -6,6 +6,17 @@
 
   var collectionPage = document.querySelector('[data-collection-page]');
 
+  var syncToolbarHeight = function () {
+    document.documentElement.style.setProperty('--sticky-toolbar-height', toolbar.offsetHeight + 'px');
+  };
+
+  syncToolbarHeight();
+  window.addEventListener('resize', syncToolbarHeight);
+
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(syncToolbarHeight).observe(toolbar);
+  }
+
   var tabs = toolbar.querySelectorAll('[data-tab]');
 
   function setActiveTab(key) {
