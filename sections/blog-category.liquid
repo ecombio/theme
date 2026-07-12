@@ -1,33 +1,5 @@
 {{ 'section-blog-category.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  BLOG CATEGORY NAV — pill-shaped category links
-  --------------------------------------------------------------
-  Each block = one pill. Merchants only pick a Link (collection,
-  blog, article, or page); the pill's label is derived automatically
-  from whatever that link resolves to:
-    /collections/<handle>          -> collection title
-    /blogs/<handle>                -> blog title
-    /blogs/<handle>/<article>      -> article title
-    /pages/<handle>                -> page title
-  Anything else (external URL, home page, etc.) falls back to the
-  block's "Fallback label" setting.
-
-  The pill whose link matches the current page URL gets highlighted
-  automatically.
-
-  SECTION LAYOUT (width/padding):
-  Follows the independent width/padding pattern from
-  sections/example-width-section.liquid — this section defines
-  its own local --section-padding / --custom-width variables,
-  set inline per-instance from its own settings below. It does
-  NOT read from the global --page-margin / --page-width, so
-  changing Theme settings > Layout > Body side padding will never
-  affect this section. Classes are scoped to
-  blog-category__default-width / __full-width / __custom-width
-  since this theme has no shared global width utility classes.
-{%- endcomment -%}
-
 {%- liquid
   assign width_type = section.settings.section_width
   if width_type == blank
@@ -61,30 +33,28 @@
         {%- for block in section.blocks -%}
           {%- liquid
             assign pill_link = block.settings.link
-            assign resolved_label = blank
+            assign pill_label = blank
 
             if pill_link contains '/collections/'
               assign c_handle = pill_link | split: '/collections/' | last | split: '/' | first | split: '?' | first
-              assign resolved_label = collections[c_handle].title
+              assign pill_label = collections[c_handle].title
 
             elsif pill_link contains '/blogs/'
               assign after_blogs = pill_link | split: '/blogs/' | last | split: '?' | first
               assign b_handle = after_blogs | split: '/' | first
               assign a_handle = after_blogs | split: '/' | last
               if a_handle != b_handle and a_handle != blank
-                assign resolved_label = blogs[b_handle].articles[a_handle].title
+                assign pill_label = blogs[b_handle].articles[a_handle].title
               else
-                assign resolved_label = blogs[b_handle].title
+                assign pill_label = blogs[b_handle].title
               endif
 
             elsif pill_link contains '/pages/'
               assign p_handle = pill_link | split: '/pages/' | last | split: '?' | first
-              assign resolved_label = pages[p_handle].title
+              assign pill_label = pages[p_handle].title
             endif
-
-            assign pill_label = resolved_label | default: block.settings.fallback_label
           -%}
-          {%- if pill_link != blank -%}
+          {%- if pill_link != blank and pill_label != blank -%}
             <a
               href="{{ pill_link }}"
               class="blog-category-pill{% if pill_link == request.path %} is-active{% endif %}"
@@ -185,14 +155,7 @@
           "type": "url",
           "id": "link",
           "label": "Link",
-          "info": "Pick the collection, blog, article, or page this pill should go to. Its title is used as the pill label automatically."
-        },
-        {
-          "type": "text",
-          "id": "fallback_label",
-          "label": "Fallback label",
-          "default": "Category",
-          "info": "Only shown if the link above isn't a collection, blog, article, or page (e.g. an external URL or the home page)."
+          "info": "Pick the collection, blog, article, or page this pill should go to. Its name is used as the pill label automatically."
         }
       ]
     }
