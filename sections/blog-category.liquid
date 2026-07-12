@@ -3,9 +3,14 @@
 {%- comment -%}
   BLOG CATEGORY NAV — pill-shaped category links
   --------------------------------------------------------------
-  Each block = one pill (label + link), fully manual via the
-  theme editor. The pill whose link matches the current page URL
-  gets highlighted automatically.
+  Each block = one pill (label + link). You can either:
+    1) Pick a Blog in "Category blog" and leave Label/Link blank —
+       the pill will use that blog's title and URL automatically, or
+    2) Fill in Label/Link manually (or use them to override the blog's
+       title/URL for a specific block) — manual fields always win.
+
+  The pill whose link matches the current page URL gets highlighted
+  automatically.
 
   SECTION LAYOUT (width/padding):
   Follows the independent width/padding pattern from
@@ -50,13 +55,17 @@
     {%- if section.blocks.size > 0 -%}
       <nav class="blog-category-pills" aria-label="Blog categories" style="--pill-alignment: {{ section.settings.alignment }};">
         {%- for block in section.blocks -%}
-          {%- if block.settings.link != blank -%}
+          {%- liquid
+            assign pill_link = block.settings.link | default: block.settings.blog.url
+            assign pill_label = block.settings.label | default: block.settings.blog.title
+          -%}
+          {%- if pill_link != blank -%}
             <a
-              href="{{ block.settings.link }}"
-              class="blog-category-pill{% if block.settings.link == request.path %} is-active{% endif %}"
+              href="{{ pill_link }}"
+              class="blog-category-pill{% if pill_link == request.path %} is-active{% endif %}"
               {{ block.shopify_attributes }}
             >
-              {{ block.settings.label }}
+              {{ pill_label }}
             </a>
           {%- endif -%}
         {%- endfor -%}
@@ -148,16 +157,22 @@
       "name": "Category",
       "settings": [
         {
+          "type": "blog",
+          "id": "blog",
+          "label": "Category blog (optional)",
+          "info": "If picked, empty Label/Link below will use this blog's title and URL automatically."
+        },
+        {
           "type": "text",
           "id": "label",
           "label": "Pill label",
-          "default": "Category"
+          "info": "Optional. Falls back to the selected blog's title."
         },
         {
           "type": "url",
           "id": "link",
           "label": "Link",
-          "info": "Pick the exact blog, article, or page this pill should go to."
+          "info": "Optional. Falls back to the selected blog's URL. Pick a specific blog, article, or page here to override."
         }
       ]
     }
