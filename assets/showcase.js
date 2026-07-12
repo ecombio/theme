@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var items = document.querySelectorAll('[data-showcase-menu]');
+  var items = document.querySelectorAll('[data-showcase]');
   if (!items.length) return;
 
   var navBar = document.getElementById('main-header-menu-bar');
@@ -28,16 +28,16 @@
     }
   }
 
-  var backdrop = document.querySelector('.showcase-menu-backdrop');
+  var backdrop = document.querySelector('.showcase-backdrop');
   if (!backdrop) {
     backdrop = document.createElement('div');
-    backdrop.className = 'showcase-menu-backdrop';
+    backdrop.className = 'showcase-backdrop';
     document.body.appendChild(backdrop);
   }
 
   function updateBottomVar() {
     if (!navBar) return;
-    root.style.setProperty('--showcase-menu-bottom', navBar.getBoundingClientRect().bottom + 'px');
+    root.style.setProperty('--showcase-bottom', navBar.getBoundingClientRect().bottom + 'px');
   }
 
   function scheduleUpdate() {
@@ -49,10 +49,10 @@
   }
 
   function getPanel(item) {
-    return item.querySelector('[data-showcase-menu-panel]');
+    return item.querySelector('[data-showcase-panel]');
   }
   function getTrigger(item) {
-    return item.querySelector('[data-showcase-menu-trigger]');
+    return item.querySelector('[data-showcase-trigger]');
   }
 
   function clearScrollLock(item) {
