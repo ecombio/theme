@@ -1,0 +1,251 @@
+{% comment %}
+  Brand Directory Section
+  Pulls entries from the "brand" metaobject (Settings > Custom data > Brand).
+  Expected metaobject fields (handles):
+    - name        (single line text)   REQUIRED
+    - logo        (file/image)         optional
+    - collection  (collection ref)     optional - where the brand links to
+    - url         (url)                optional - fallback link if no collection
+    - description (multi-line text)    optional, not shown in grid but available
+{% endcomment %}
+
+<div class="brand-directory page-width" id="brand-directory-{{ section.id }}">
+  <div class="brand-directory__header">
+    {% if section.settings.heading != blank %}
+      <h1 class="brand-directory__heading">{{ section.settings.heading }}</h1>
+    {% endif %}
+    {% if section.settings.description != blank %}
+      <div class="brand-directory__description">{{ section.settings.description }}</div>
+    {% endif %}
+  </div>
+
+  {% if section.settings.show_search %}
+    <div class="brand-directory__search">
+      <input
+        type="text"
+        id="brand-search-{{ section.id }}"
+        placeholder="{{ section.settings.search_placeholder | default: 'Search brands...' }}"
+        aria-label="Search brands"
+      >
+    </div>
+  {% endif %}
+
+  {% assign brands = section.settings.brands.value %}
+
+  {% if brands == blank %}
+    <p class="brand-directory__empty-state">
+      No brands added yet. Go to Settings &gt; Custom data &gt; Brand to add entries, then select them in this section's settings.
+    </p>
+  {% else %}
+    {% assign brands_sorted = brands | sort: 'name' %}
+
+    {% if section.settings.show_alphabet_nav %}
+      <nav class="brand-directory__alpha-nav" aria-label="Jump to letter">
+        {% assign letters = "" | split: "" %}
+        {% for brand in brands_sorted %}
+          {% assign first_letter = brand.name.value | slice: 0, 1 | upcase %}
+          {% unless letters contains first_letter %}
+            {% assign letters = letters | push: first_letter %}
+          {% endunless %}
+        {% endfor %}
+        {% for letter in letters %}
+          <a href="#brand-letter-{{ letter }}-{{ section.id }}">{{ letter }}</a>
+        {% endfor %}
+      </nav>
+    {% endif %}
+
+    <div class="brand-directory__grid" data-brand-grid>
+      {% assign current_letter = "" %}
+      {% for brand in brands_sorted %}
+        {% assign brand_name = brand.name.value %}
+        {% assign first_letter = brand_name | slice: 0, 1 | upcase %}
+
+        {% if first_letter != current_letter %}
+          {% unless current_letter == "" %}
+            </div>
+          {% endunless %}
+          {% assign current_letter = first_letter %}
+          <h2 class="brand-directory__letter" id="brand-letter-{{ current_letter }}-{{ section.id }}">{{ current_letter }}</h2>
+          <div class="brand-directory__row">
+        {% endif %}
+
+        {% assign brand_url = "#" %}
+        {% if brand.collection != blank %}
+          {% assign brand_url = brand.collection.value.url %}
+        {% elsif brand.url.value != blank %}
+          {% assign brand_url = brand.url.value %}
+        {% endif %}
+
+        <a
+          href="{{ brand_url }}"
+          class="brand-directory__item"
+          data-brand-name="{{ brand_name | downcase | escape }}"
+        >
+          {% if brand.logo != blank %}
+            {{ brand.logo.value | image_url: width: 300 | image_tag: loading: 'lazy', alt: brand_name, class: 'brand-directory__logo' }}
+          {% endif %}
+          <span class="brand-directory__name">{{ brand_name }}</span>
+        </a>
+      {% endfor %}
+      {% unless current_letter == "" %}
+        </div>
+      {% endunless %}
+    </div>
+
+    <p class="brand-directory__empty" data-brand-empty hidden>No brands match your search.</p>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    var input = document.getElementById('brand-search-{{ section.id }}');
+    if (!input) return;
+
+    var wrapper = document.getElementById('brand-directory-{{ section.id }}');
+    var grid = wrapper.querySelector('[data-brand-grid]');
+    var empty = wrapper.querySelector('[data-brand-empty]');
+    if (!grid) return;
+
+    input.addEventListener('input', function () {
+      var q = this.value.trim().toLowerCase();
+      var items = grid.querySelectorAll('.brand-directory__item');
+      var visibleCount = 0;
+
+      items.forEach(function (item) {
+        var match = item.dataset.brandName.indexOf(q) !== -1;
+        item.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+      });
+
+      grid.querySelectorAll('.brand-directory__row').forEach(function (row) {
+        var anyVisible = Array.prototype.some.call(
+          row.querySelectorAll('.brand-directory__item'),
+          function (i) { return i.style.display !== 'none'; }
+        );
+        row.style.display = anyVisible ? '' : 'none';
+        var heading = row.previousElementSibling;
+        if (heading && heading.classList.contains('brand-directory__letter')) {
+          heading.style.display = anyVisible ? '' : 'none';
+        }
+      });
+
+      if (empty) empty.hidden = visibleCount !== 0;
+    });
+  })();
+</script>
+
+<style>
+  .brand-directory {
+    padding: 40px 0;
+  }
+  .brand-directory__header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .brand-directory__search {
+    max-width: 400px;
+    margin: 0 auto 32px;
+  }
+  .brand-directory__search input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  .brand-directory__alpha-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+  .brand-directory__alpha-nav a {
+    padding: 4px 10px;
+    text-decoration: none;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    color: inherit;
+  }
+  .brand-directory__alpha-nav a:hover {
+    background: #f5f5f5;
+  }
+  .brand-directory__letter {
+    margin-top: 32px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+  }
+  .brand-directory__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+    margin: 16px 0;
+  }
+  .brand-directory__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    gap: 8px;
+  }
+  .brand-directory__logo {
+    max-width: 100%;
+    height: auto;
+  }
+  .brand-directory__empty,
+  .brand-directory__empty-state {
+    text-align: center;
+    margin-top: 32px;
+    color: #666;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Brand directory",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Shop by Brand"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Description"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search box",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder",
+      "default": "Search brands..."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_alphabet_nav",
+      "label": "Show A-Z navigation",
+      "default": true
+    },
+    {
+      "type": "metaobject_list",
+      "id": "brands",
+      "label": "Brands",
+      "metaobject_type": "brand"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Brand directory"
+    }
+  ]
+}
+{% endschema %}
