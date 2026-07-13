@@ -8,6 +8,14 @@
   Drop this section anywhere and it's pulled in automatically -
   no manual <link> tag needed elsewhere in the theme.
 
+  Section width behavior (Default / Full width / Custom width) plus its
+  own Side padding slider follow the shared "width section" pattern -
+  see sections/example-width-section.liquid for the full explanation.
+  This section's padding/width are fully local (own CSS variables set
+  inline per-instance) and never read from global --page-margin /
+  --page-width, so changing Theme settings > Layout > Body side
+  padding won't affect this section.
+
   IMPORTANT: brand links point to /collections/all?filter.v.vendor=Name
   This requires the "Product vendor" filter to be enabled in
   Settings > Apps > Search & Discovery > Filters. If that filter isn't
@@ -16,8 +24,25 @@
 
 {{ 'brands.css' | asset_url | stylesheet_tag }}
 
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'brand-directory__default-width'
+  else
+    assign width_class = 'brand-directory__' | append: width_type
+  endif
+-%}
+
 <div class="brand-directory" id="brand-directory-{{ section.id }}">
-  <div class="page-width">
+  <div
+    class="{{ width_class }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
+  >
     <div class="brand-directory__header">
       {% if section.settings.heading != blank %}
         <h1 class="brand-directory__heading">{{ section.settings.heading }}</h1>
@@ -110,6 +135,42 @@
       "type": "richtext",
       "id": "description",
       "label": "Description"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ],
   "presets": [
