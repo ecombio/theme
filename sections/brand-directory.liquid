@@ -1,27 +1,3 @@
-{% comment %}
-  Brand Directory Section (vendor-based)
-  Pulls every distinct vendor from your product catalog (shop.vendors) and
-  lists them alphabetically in a dense multi-column grid with an A-Z jump nav,
-  similar to Dermstore / Cycle Gear style brand directories.
-
-  Loads its own assets: assets/brand-directory.css and assets/brand-directory.js
-  Drop this section anywhere and both are pulled in automatically -
-  no manual <link>/<script> tags needed elsewhere in the theme.
-
-  Section width behavior (Default / Full width / Custom width) plus its
-  own Side padding slider follow the shared "width section" pattern -
-  see sections/example-width-section.liquid for the full explanation.
-  This section's padding/width are fully local (own CSS variables set
-  inline per-instance) and never read from global --page-margin /
-  --page-width, so changing Theme settings > Layout > Body side
-  padding won't affect this section.
-
-  IMPORTANT: brand links point to /collections/all?filter.v.vendor=Name
-  This requires the "Product vendor" filter to be enabled in
-  Settings > Apps > Search & Discovery > Filters. If that filter isn't
-  enabled, switch brand_url below to a search fallback (see comment near it).
-{% endcomment %}
-
 {{ 'brand-directory.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -54,7 +30,6 @@
 
     {% assign vendors = shop.vendors | sort_natural %}
 
-    {% comment %} Build the set of letters actually present, so the nav can grey out missing ones {% endcomment %}
     {% assign present_letters = "" | split: "" %}
     {% for vendor in vendors %}
       {% assign first_char = vendor | slice: 0, 1 | upcase %}
@@ -69,7 +44,6 @@
       {% endunless %}
     {% endfor %}
 
-    {% comment %} Full A-Z nav, 0-9 first, greying out letters with no brands {% endcomment %}
     <nav class="brand-directory__alpha-nav" aria-label="Jump to letter">
       {% assign nav_letters = "0-9,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z" | split: "," %}
       {% for letter in nav_letters %}
@@ -101,10 +75,6 @@
           <div class="brand-directory__row">
         {% endif %}
 
-        {% comment %}
-          Fallback if vendor filtering isn't enabled - swap the line below for:
-          {% assign brand_url = 'search?q=vendor:' | append: vendor | url_param_escape %}
-        {% endcomment %}
         {% assign brand_url = '/collections/all?filter.v.vendor=' | append: vendor | url_param_escape %}
 
         <a
