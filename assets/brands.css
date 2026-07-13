@@ -21,8 +21,19 @@
 }
 .brand-directory__alpha-nav {
   position: sticky;
-  top: 0;
-  z-index: 2;
+  /*
+   * Sticks just below the site header rather than underneath it.
+   * --main-header-bottom is set by header.js (see main-header.js's
+   * sync()) to the header's current visible height - 0 when the
+   * header is autohidden off-screen, its full height otherwise.
+   * The 0px fallback keeps this section working unchanged if the
+   * header's sticky/autohide feature is ever disabled or absent
+   * (main-header.js only sets the variable when
+   * data-sticky-fixed="true" on the header).
+   */
+  top: var(--main-header-bottom, 0px);
+  transition: top 0.3s ease;
+  z-index: 50;
   background: #fff;
   display: flex;
   flex-wrap: wrap;
@@ -74,5 +85,10 @@
 @media screen and (max-width: 749px) {
   .brand-directory__row {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-directory__alpha-nav {
+    transition: none;
   }
 }
