@@ -1,12 +1,12 @@
-{%- if settings.enable_bar -%}
+{%- if section.settings.enable_bar -%}
   {{ 'utility.css' | asset_url | stylesheet_tag }}
 
   {%- liquid
-    assign bar_style = settings.bar_style | default: 'hyper'
-    assign show_curr  = settings.show_currency
-    assign show_loc   = settings.show_locale
+    assign bar_style = section.settings.bar_style | default: 'hyper'
+    assign show_curr  = section.settings.show_currency
+    assign show_loc   = section.settings.show_locale
 
-    assign utility_width_type = settings.section_width
+    assign utility_width_type = section.settings.section_width
     if utility_width_type == blank
       assign utility_width_class = 'utility-bar__default-width'
     elsif utility_width_type == 'full-width'
@@ -16,24 +16,24 @@
     endif
   -%}
 
-  <div class="utility-bar utility-bar--{{ bar_style }} {{ utility_width_class }}{% if settings.enable_sticky %} utility-bar--sticky-enabled{% endif %}"
+  <div class="utility-bar utility-bar--{{ bar_style }} {{ utility_width_class }}{% if section.settings.enable_sticky %} utility-bar--sticky-enabled{% endif %}"
        role="navigation"
        aria-label="Utility bar"
        id="utility-bar"
-       {%- if settings.enable_sticky %}
+       {%- if section.settings.enable_sticky %}
        data-sticky-fixed="true"
        {%- endif %}
        style="
-         --section-padding: {{ settings.section_padding }}px;
+         --section-padding: {{ section.settings.section_padding }}px;
          {%- if utility_width_type == 'custom-width' %}
-           --custom-width: {{ settings.custom_width }}rem;
+           --custom-width: {{ section.settings.custom_width }}rem;
          {%- endif %}
        ">
 
     <div class="utility-bar__inner">
 
       <div class="utility-bar__col utility-bar__col--left">
-        {%- render 'utility-links', settings: settings, count: 3 -%}
+        {%- render 'utility-links', settings: section.settings, count: 3 -%}
       </div>
 
       <div class="utility-bar__col utility-bar__col--right">
