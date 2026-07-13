@@ -1,11 +1,59 @@
 /* ==========================================================================
    Announcement Bar
-   Handles: slide rotation (manual + auto), dismiss/close, and countdown
-   timers (fixed date or evergreen/repeating).
+   Handles: sticky-stack offset registration, slide rotation (manual +
+   auto), dismiss/close, and countdown timers (fixed date or
+   evergreen/repeating).
 
-   Loaded via: {{ 'announcement-bar.js' | asset_url }}, deferred — mirrors
-   utility-bar.js / main-header.js / mega-menu.js in this theme.
+   Loaded via: {{ 'announcement.js' | asset_url }}, deferred — mirrors
+   utility.js / main-header.js / mega-menu.js in this theme.
    ========================================================================== */
+
+(function () {
+  'use strict';
+
+  // Gives every sticky-enabled header-group section (this one, plus
+  // utility-bar/main-header if they turn sticky on too) the correct top
+  // offset based on DOM order — i.e. whatever order they're arranged in
+  // inside header-group.json. This same block is duplicated in each
+  // sticky-capable section's own JS file, guarded below so only one copy
+  // ever actually runs. That's deliberate: if the other sections get
+  // deleted from the theme entirely, this section still carries its own
+  // working copy and needs nothing else.
+  if (!window.__stickyStackInitialized) {
+    window.__stickyStackInitialized = true;
+
+    var getStickyEls = function () {
+      return Array.prototype.slice.call(
+        document.querySelectorAll('[data-sticky-fixed="true"]')
+      );
+    };
+
+    var stackLayout = function () {
+      var offset = 0;
+      getStickyEls().forEach(function (el) {
+        el.style.setProperty('--sticky-offset', offset + 'px');
+        offset += el.offsetHeight;
+      });
+      document.documentElement.style.setProperty('--sticky-stack-height', offset + 'px');
+    };
+
+    stackLayout();
+    window.addEventListener('resize', stackLayout);
+    window.addEventListener('load', stackLayout);
+
+    getStickyEls().forEach(function (el) {
+      if ('ResizeObserver' in window) {
+        new ResizeObserver(stackLayout).observe(el);
+      }
+    });
+
+    document.addEventListener('shopify:section:load', stackLayout);
+    document.addEventListener('shopify:section:unload', stackLayout);
+    document.addEventListener('shopify:section:reorder', stackLayout);
+
+    window.__stickyStackLayout = stackLayout;
+  }
+})();
 
 (function () {
   var bar = document.querySelector('[data-announcement-bar]');
