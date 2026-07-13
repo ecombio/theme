@@ -1,28 +1,3 @@
-/* =============================================================
-   Header Search
-   File: assets/header-search.css
-   Loaded by: snippets/header-search.liquid (always, predictive or not)
-
-   Covers two independently-sourced pieces of markup:
-     .header-search__*      — owned by snippets/header-search.liquid
-     .predictive-search__*  — owned by sections/predictive-search.liquid,
-                               injected at runtime by assets/header-search.js
-     .hs-empty__*           — empty/focus-state panel (trending + recent),
-                               built and injected by assets/header-search.js
-     .hs-tw-*               — animated placeholder overlay (typewriter
-                               with color-fade), built and toggled by
-                               assets/header-search.js
-
-   Breakpoints (canonical, match main-header.css):
-     Mobile  : max-width: 639px
-     Tablet  : min-width: 640px  and  max-width: 1023px
-     Desktop : min-width: 1024px
-
-   All colours are CSS variables so a re-skin only touches the
-   :root block on .header-search — no selector changes needed.
-   ============================================================= */
-
-/* ── Design tokens ──────────────────────────────────────────── */
 .header-search {
   --hs-bg:           #ffffff;
   --hs-bg-hover:     #f8f7f5;
@@ -41,11 +16,6 @@
   position: relative;
   width: 100%;
 }
-
-
-/* ============================================================
-   FORM SHELL
-   ============================================================ */
 
 .header-search__form {
   position: relative;
@@ -80,34 +50,14 @@
 .header-search__input::placeholder        { color: var(--hs-text-muted); }
 .header-search__input::-webkit-search-cancel-button { appearance: none; }
 
-/* Placeholder tint while voice is listening */
 .header-search--listening .header-search__input::placeholder {
   color: rgba(217, 64, 64, .6);
 }
 
-
-/* ============================================================
-   ANIMATED PLACEHOLDER (typewriter with color-fade)
-   .header-search__typewriter sits on top of the empty input,
-   left-aligned to match the input's own padding. Characters are
-   appended as individual .hs-tw-char spans by header-search.js;
-   each new character is briefly given the .hs-tw-char--fresh
-   accent color, then that class is removed so `transition: color`
-   eases it back to the muted resting color. The most recently
-   typed letters are always mid-fade, which is what produces the
-   "wash" of color trailing the cursor.
-
-   The native placeholder attribute on .header-search__input is
-   cleared while this overlay is active (see header-search.js) so
-   nothing doubles up underneath it, and is restored automatically
-   whenever the overlay is hidden — no-JS and prefers-reduced-motion
-   visitors always see the plain static placeholder instead.
-   ============================================================ */
-
 .header-search__typewriter {
   position: absolute;
   left: 12px;
-  right: 80px; /* clears submit (~50px) + voice (~32px) buttons; narrow this if you disable voice search */
+  right: 80px;
   top: 50%;
   transform: translateY(-50%);
   overflow: hidden;
@@ -131,11 +81,6 @@
 @media (prefers-reduced-motion: reduce) {
   .header-search__typewriter { display: none; }
 }
-
-
-/* ============================================================
-   ICON BUTTONS  (clear, voice, submit)
-   ============================================================ */
 
 .header-search__clear,
 .header-search__voice,
@@ -167,10 +112,8 @@
   outline-offset: -2px;
 }
 
-/* Voice button needs relative positioning for pulse rings */
 .header-search__voice { position: relative; }
 
-/* ── Voice listening state ────────────────────────────────── */
 .header-search__voice--listening {
   color: var(--hs-mic-active);
   background: rgba(217, 64, 64, .08);
@@ -180,7 +123,6 @@
   color: var(--hs-mic-active);
 }
 
-/* Pulse rings */
 .header-search__voice--listening::before,
 .header-search__voice--listening::after {
   content: '';
@@ -214,12 +156,6 @@
   outline-offset: 2px;
 }
 
-
-/* ============================================================
-   RESULTS PANEL
-   Shared container for both predictive results and empty state.
-   ============================================================ */
-
 .header-search__panel {
   position: absolute;
   top: calc(100% + 6px);
@@ -232,7 +168,6 @@
   border-radius: var(--hs-radius-lg);
   box-shadow: var(--hs-shadow);
   z-index: var(--hs-z);
-  /* Smooth reveal */
   animation: hs-panel-in 120ms ease;
 }
 .header-search__panel[hidden] { display: none; }
@@ -242,7 +177,6 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Status / loading / error messages */
 .header-search__state {
   padding: 18px 16px;
   margin: 0;
@@ -251,13 +185,6 @@
   text-align: center;
 }
 .header-search__state--error { color: #b04040; }
-
-
-/* ============================================================
-   PREDICTIVE RESULTS
-   Rendered by sections/predictive-search.liquid and injected
-   by header-search.js — do not touch the Liquid source.
-   ============================================================ */
 
 .predictive-search__group {
   padding: 6px 0;
@@ -317,7 +244,6 @@
   flex-shrink: 0;
 }
 
-/* Product rows */
 .predictive-search__item--product { padding: 8px 16px; }
 
 .predictive-search__item-media img {
@@ -364,7 +290,6 @@
   background: rgba(176,64,64,.08);
 }
 
-/* "View all results" footer row */
 .predictive-search__group--footer { padding: 4px; }
 .predictive-search__view-all {
   display: flex;
@@ -384,7 +309,6 @@
   outline-offset: -2px;
 }
 
-/* Zero results */
 .predictive-search__empty {
   padding: 18px 16px;
   text-align: center;
@@ -392,23 +316,12 @@
   font-size: 14px;
 }
 
-
-/* ============================================================
-   EMPTY / FOCUS STATE
-   Shown immediately on focus before the user types.
-   Built and injected by header-search.js.
-   Reuses .predictive-search__list and .predictive-search__item
-   so the two states look visually identical.
-   ============================================================ */
-
-/* Group wrapper — mirrors .predictive-search__group */
 .hs-empty__group {
   padding: 6px 0;
   border-bottom: 1px solid var(--hs-border);
 }
 .hs-empty__group:last-child { border-bottom: none; }
 
-/* ── Section header row (label + "Clear all" on same line) ── */
 .hs-empty__group-header {
   display: flex;
   align-items: center;
@@ -416,7 +329,6 @@
   padding-right: 16px;
 }
 
-/* Label — same visual style as .predictive-search__group-label */
 .hs-empty__label {
   padding: 6px 16px 4px;
   margin: 0;
@@ -460,7 +372,6 @@
   text-overflow: ellipsis;
 }
 
-/* ✕ remove button */
 .hs-empty__remove {
   display: flex;
   align-items: center;
@@ -492,7 +403,6 @@
   opacity: 1;
 }
 
-/* ── Trending pills ─────────────────────────────────────────── */
 .hs-empty__pill-list {
   display: flex;
   flex-wrap: wrap;
@@ -502,7 +412,7 @@
   padding: 8px 16px 14px;
 }
 
-.hs-empty__pill-item { /* intentionally unstyled */ }
+.hs-empty__pill-item { }
 
 .hs-empty__pill {
   display: inline-flex;
@@ -525,10 +435,6 @@
   background: var(--hs-border);
 }
 
-
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .header-search__form,
   .header-search__clear,
@@ -545,13 +451,6 @@
   .header-search__voice--listening::after { animation: none; opacity: 0; }
 }
 
-
-/* ============================================================
-   RESPONSIVE VISIBILITY
-   Desktop ≥ 1024px  → show --desktop, hide --mobile
-   Tablet + Mobile ≤ 1023px → hide --desktop, show --mobile
-   ============================================================ */
-
 .header-search--mobile { display: none; }
 
 @media (max-width: 1023px) {
@@ -562,7 +461,6 @@
   }
 }
 
-/* ── Mobile-specific panel tweaks (< 640px) ─────────────────── */
 @media (max-width: 639px) {
   .header-search__panel {
     border-radius: var(--hs-radius);
