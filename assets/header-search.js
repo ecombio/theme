@@ -153,7 +153,7 @@
   }
 
 
-  function AnimatedPlaceholder(input, terms, overlay, onVisibilityChange) {
+  function AnimatedPlaceholder(input, terms, overlay, onVisibilityChange, opts) {
     if (!terms || !terms.length) return;
 
     this.input       = input;
@@ -168,6 +168,7 @@
     this.lastTick     = 0;
     this.pauseUntil   = 0;
     this.staticText   = input.placeholder || 'What are you looking for?';
+    this.opts         = opts || {};
 
     var self = this;
 
@@ -228,9 +229,9 @@
 
   AnimatedPlaceholder.prototype._tick = function (now) {
     var self     = this;
-    var TYPING   = 68;
-    var DELETING = 36;
-    var HOLD     = 3200;
+    var TYPING   = this.opts.typeSpeed || 68;
+    var DELETING = Math.round(TYPING * 0.53);
+    var HOLD     = this.opts.holdMs || 3200;
     var GAP      = 400;
 
     if (this.paused || this.input.value) return;
@@ -696,13 +697,18 @@
 
   HeaderSearch.prototype._initTypewriter = function () {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!this.root.hasAttribute('data-typewriter-enabled')) return;
+
     var terms = window.HS_TRENDING;
     if (!terms || !terms.length) return;
+
     var self    = this;
     var overlay = this.root.querySelector('[data-search-typewriter]');
+    var opts    = window.HS_TYPEWRITER_OPTS || {};
+
     this._typewriter = new AnimatedPlaceholder(this.input, terms, overlay, function (hasValue) {
       self.root.classList.toggle('header-search--has-value', hasValue);
-    });
+    }, opts);
   };
 
 

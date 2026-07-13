@@ -4,25 +4,35 @@
     assign predictive = false
   endif
   assign sfx = variant | default: 'desktop'
+  assign show_typewriter = true
+  if enable_typewriter == false
+    assign show_typewriter = false
+  endif
 -%}
 
 {{- 'header-search.css' | asset_url | stylesheet_tag -}}
 
 {%- if predictive -%}
   <script src="{{ 'header-search.js' | asset_url }}" defer="defer"></script>
-  {%- assign trending_menu = linklists['predictive-search-trending'] -%}
-  <script>
-    window.HS_TRENDING = [
-      {%- if trending_menu and trending_menu.links.size > 0 -%}
-        {%- for link in trending_menu.links -%}
-          {{- link.title | json -}}{%- unless forloop.last -%},{%- endunless -%}
-        {%- endfor -%}
-      {%- else -%}
-        "sneakers","hoodies","summer dresses","running shoes","gift sets",
-        "new arrivals","accessories","sale items"
-      {%- endif -%}
-    ];
-  </script>
+  {%- if show_typewriter -%}
+    <script>
+      window.HS_TRENDING = window.HS_TRENDING || [
+        {%- if trending_terms != blank -%}
+          {%- assign _terms = trending_terms | split: '||' -%}
+          {%- for t in _terms -%}
+            {{- t | json -}}{%- unless forloop.last -%},{%- endunless -%}
+          {%- endfor -%}
+        {%- else -%}
+          "sneakers","hoodies","summer dresses","running shoes","gift sets",
+          "new arrivals","accessories","sale items"
+        {%- endif -%}
+      ];
+      window.HS_TYPEWRITER_OPTS = window.HS_TYPEWRITER_OPTS || {
+        typeSpeed: {{ typewriter_type_speed | default: 68 }},
+        holdMs: {{ typewriter_hold_ms | default: 3200 }}
+      };
+    </script>
+  {%- endif -%}
 {%- endif -%}
 
 <div class="header-search header-search--{{ sfx }}{% unless predictive %} header-search--basic{% endunless %}"
@@ -31,7 +41,8 @@
      data-predictive
      data-predictive-search-url="{{ routes.predictive_search_url }}"
      data-search-url="{{ routes.search_url }}"
-     {%- endif %}>
+     {%- endif %}
+     {%- if show_typewriter %} data-typewriter-enabled{% endif %}>
 
   <form action="{{ routes.search_url }}" method="get" role="search"
         class="header-search__form"
