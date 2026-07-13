@@ -15,6 +15,15 @@
   else
     assign width_class = 'main-header--custom-width'
   endif
+
+  assign trending_terms = ''
+  for i in (1..8)
+    assign key = 'trending_' | append: i
+    assign term = section.settings[key]
+    if term != blank
+      assign trending_terms = trending_terms | append: term | append: '||'
+    endif
+  endfor
 -%}
 
 <header class="main-header {{ width_class }}{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
@@ -59,19 +68,38 @@
 
       {%- if section.settings.enable_search_drawer -%}
         <div class="main-header__search-drawer-mobile-only">
-          {%- render 'header-search-drawer', enable_predictive_search: section.settings.enable_predictive_search -%}
+          {%- render 'header-search-drawer',
+            enable_predictive_search: section.settings.enable_predictive_search,
+            trending_terms: trending_terms,
+            enable_typewriter: section.settings.enable_typewriter,
+            typewriter_type_speed: section.settings.typewriter_type_speed,
+            typewriter_hold_ms: section.settings.typewriter_hold_ms
+          -%}
         </div>
       {%- endif -%}
       {%- if enable_search_drawer_tablet -%}
         <div class="main-header__search-drawer-tablet-only">
-          {%- render 'header-search-drawer', enable_predictive_search: section.settings.enable_predictive_search -%}
+          {%- render 'header-search-drawer',
+            enable_predictive_search: section.settings.enable_predictive_search,
+            trending_terms: trending_terms,
+            enable_typewriter: section.settings.enable_typewriter,
+            typewriter_type_speed: section.settings.typewriter_type_speed,
+            typewriter_hold_ms: section.settings.typewriter_hold_ms
+          -%}
         </div>
       {%- endif -%}
 
       {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
       <div class="main-header__search--inline">
-        {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'desktop' -%}
+        {%- render 'header-search',
+          enable_predictive_search: section.settings.enable_predictive_search,
+          variant: 'desktop',
+          trending_terms: trending_terms,
+          enable_typewriter: section.settings.enable_typewriter,
+          typewriter_type_speed: section.settings.typewriter_type_speed,
+          typewriter_hold_ms: section.settings.typewriter_hold_ms
+        -%}
       </div>
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
@@ -88,7 +116,14 @@
 
   <div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
     <div class="main-header__search-row-inner">
-      {%- render 'header-search', enable_predictive_search: section.settings.enable_predictive_search, variant: 'mobile' -%}
+      {%- render 'header-search',
+        enable_predictive_search: section.settings.enable_predictive_search,
+        variant: 'mobile',
+        trending_terms: trending_terms,
+        enable_typewriter: section.settings.enable_typewriter,
+        typewriter_type_speed: section.settings.typewriter_type_speed,
+        typewriter_hold_ms: section.settings.typewriter_hold_ms
+      -%}
     </div>
   </div>
 
@@ -643,6 +678,96 @@
       "label": "Enable predictive search",
       "info": "Shows product, collection and query suggestions as the customer types.",
       "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_typewriter",
+      "label": "Animate placeholder (typewriter effect)",
+      "default": true,
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "range",
+      "id": "typewriter_type_speed",
+      "label": "Typing speed",
+      "min": 30,
+      "max": 150,
+      "step": 5,
+      "default": 70,
+      "unit": "ms",
+      "visible_if": "{{ section.settings.enable_predictive_search and section.settings.enable_typewriter }}"
+    },
+    {
+      "type": "range",
+      "id": "typewriter_hold_ms",
+      "label": "Pause on full word",
+      "min": 1000,
+      "max": 5000,
+      "step": 100,
+      "default": 3200,
+      "unit": "ms",
+      "visible_if": "{{ section.settings.enable_predictive_search and section.settings.enable_typewriter }}"
+    },
+    {
+      "type": "paragraph",
+      "content": "Trending search terms — shown as the animated placeholder and in the empty-state suggestions. Leave a field blank to drop that term.",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_1",
+      "label": "Trending term 1",
+      "default": "sneakers",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_2",
+      "label": "Trending term 2",
+      "default": "hoodies",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_3",
+      "label": "Trending term 3",
+      "default": "summer dresses",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_4",
+      "label": "Trending term 4",
+      "default": "running shoes",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_5",
+      "label": "Trending term 5",
+      "default": "gift sets",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_6",
+      "label": "Trending term 6",
+      "default": "new arrivals",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_7",
+      "label": "Trending term 7",
+      "default": "accessories",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
+    },
+    {
+      "type": "text",
+      "id": "trending_8",
+      "label": "Trending term 8",
+      "default": "sale items",
+      "visible_if": "{{ section.settings.enable_predictive_search }}"
     },
 
     { "type": "header", "content": "Icons (all breakpoints)" },

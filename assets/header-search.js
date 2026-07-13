@@ -229,7 +229,7 @@
 
   AnimatedPlaceholder.prototype._tick = function (now) {
     var self     = this;
-    var TYPING   = this.opts.typeSpeed || 68;
+    var TYPING   = this.opts.typeSpeed || 70;
     var DELETING = Math.round(TYPING * 0.53);
     var HOLD     = this.opts.holdMs || 3200;
     var GAP      = 400;
