@@ -569,6 +569,7 @@
     this.panel.hidden = false;
     this.input.setAttribute('aria-expanded', 'true');
     this.root.classList.add('header-search--open');
+    document.dispatchEvent(new CustomEvent('header-search:open'));
   };
 
   HeaderSearch.prototype.close = function () {
@@ -578,6 +579,7 @@
     this.input.removeAttribute('aria-activedescendant');
     this.root.classList.remove('header-search--open');
     this.activeIndex = -1;
+    document.dispatchEvent(new CustomEvent('header-search:close'));
   };
 
   HeaderSearch.prototype._bindDismiss = function () {

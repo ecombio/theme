@@ -36,16 +36,8 @@
   var spacer = document.getElementById('main-header-sticky-spacer');
 
   var sync = function () {
-    // Full header height — always reserved in the spacer regardless of
-    // autohide state, so the page's normal-flow layout never changes
-    // size on hide/show. Resizing the spacer here previously triggered
-    // the browser's scroll-anchoring compensation, which fired its own
-    // scroll events and fed back into the autohide handler in a loop.
     var full = header.offsetHeight;
 
-    // Sticky-offset variable, consumed by things like collection-toolbar's
-    // `top`, which don't affect document flow — safe to drop to 0 while
-    // the header is off-screen so those elements close the gap.
     var hidden = header.classList.contains('main-header--autohide-hidden');
     var offset = hidden ? 0 : full;
 
@@ -60,9 +52,6 @@
     new ResizeObserver(sync).observe(header);
   }
 
-  // Exposed so the autohide script (below) can re-run this after it
-  // toggles main-header--autohide-hidden, keeping --main-header-bottom
-  // and the spacer in sync with whether the header is actually visible.
   window.__mainHeaderSync = sync;
 })();
 
@@ -72,31 +61,45 @@
   var header = document.querySelector('[data-sticky-fixed="true"]');
   if (!header || header.dataset.autohide !== 'true') return;
 
-  var THRESHOLD = 8;    // px of scroll before we react — avoids jitter on tiny scrolls
-  var REVEAL_ZONE = 80; // always show header within this many px of the top
+  var THRESHOLD = 8;
+  var REVEAL_ZONE = 80;
 
   var lastY = window.scrollY;
   var ticking = false;
-  var isPaused = false; // true while the header (incl. menu items/dropdowns) is hovered or focused
+  var isPaused = false;
 
   var syncBottomVar = function () {
     if (window.__mainHeaderSync) window.__mainHeaderSync();
   };
 
-  // Hover: pointer over the header itself, a nav item, or an open mega-menu/showcase-menu panel
-  // (these render as descendants of <header>, so one listener covers all of it).
   header.addEventListener('mouseenter', function () { isPaused = true; });
   header.addEventListener('mouseleave', function () { isPaused = false; });
 
-  // Keyboard: tabbing through menu links/inputs should pause it too, not just mouse hover.
   header.addEventListener('focusin', function () { isPaused = true; });
   header.addEventListener('focusout', function () { isPaused = false; });
 
-  // Once the slide transition finishes, re-measure so --main-header-bottom
-  // and the spacer reflect whatever the header's final state actually is
-  // (0 when hidden, full height when revealed) instead of relying on
-  // offsetHeight alone, which doesn't change just because the header was
-  // translated off-screen.
+  /*
+   * The predictive search dropdown (header-search.js) can open or close
+   * without a matching focusin/focusout on the header — e.g. it renders
+   * new panel content on every keystroke, or gets dismissed via Escape
+   * or an outside click that never focused anything inside <header> in
+   * the first place. Those don't naturally set/clear isPaused above, so
+   * header-search.js dispatches these two events on the document to
+   * cover that gap explicitly. While the panel is open we force the
+   * header visible and pause autohide, so the dropdown never ends up
+   * anchored to a header that has since scrolled away underneath it.
+   */
+  document.addEventListener('header-search:open', function () {
+    isPaused = true;
+    if (header.classList.contains('main-header--autohide-hidden')) {
+      header.classList.remove('main-header--autohide-hidden');
+      syncBottomVar();
+    }
+  });
+  document.addEventListener('header-search:close', function () {
+    isPaused = false;
+  });
+
   header.addEventListener('transitionend', function (e) {
     if (e.propertyName === 'transform') syncBottomVar();
   });
@@ -113,20 +116,16 @@
       lastY = currentY;
     } else if (Math.abs(delta) > THRESHOLD) {
       if (delta > 0 && !isPaused) {
-        // scrolling down — but never hide while the header is being interacted with
         if (!header.classList.contains('main-header--autohide-hidden')) {
           header.classList.add('main-header--autohide-hidden');
           syncBottomVar();
         }
       } else if (delta < 0) {
-        // scrolling up
         if (header.classList.contains('main-header--autohide-hidden')) {
           header.classList.remove('main-header--autohide-hidden');
           syncBottomVar();
         }
       }
-      // keep tracking position even while paused, so there's no big
-      // stale delta the moment the pointer/focus leaves the header
       lastY = currentY;
     }
 
@@ -144,8 +143,6 @@
 (function () {
   'use strict';
 
-  // Mobile/tablet hamburger + slide-in drawer, wired to the markup
-  // rendered by snippets/header-menu.liquid (< 1024px).
   var trigger = document.getElementById('main-header-menu-trigger');
   var nav = document.getElementById('main-header-mobile-nav');
   if (!trigger || !nav) return;
@@ -186,9 +183,6 @@
     }
   });
 
-  // Accordion toggles for link-list / mega-menu / showcase submenus,
-  // and their nested level-3 submenus — same handler for both since
-  // they share the .ecombio-mobile-nav__toggle / __sub markup.
   toggles.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var subId = btn.getAttribute('aria-controls');
@@ -206,10 +200,6 @@
     });
   });
 
-  // Safety net: if the viewport crosses back into desktop while the
-  // drawer is open (e.g. rotating a tablet, or resizing a browser
-  // window), close it so it doesn't get stuck open behind the now-
-  // visible desktop menu-bar.
   window.addEventListener('resize', function () {
     if (window.innerWidth >= 1024 && nav.classList.contains('is-open')) {
       closeDrawer();
