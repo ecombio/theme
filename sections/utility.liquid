@@ -16,10 +16,13 @@
     endif
   -%}
 
-  <div class="utility-bar utility-bar--{{ bar_style }} {{ utility_width_class }}"
+  <div class="utility-bar utility-bar--{{ bar_style }} {{ utility_width_class }}{% if settings.enable_sticky %} utility-bar--sticky-enabled{% endif %}"
        role="navigation"
        aria-label="Utility bar"
        id="utility-bar"
+       {%- if settings.enable_sticky %}
+       data-sticky-fixed="true"
+       {%- endif %}
        style="
          --section-padding: {{ settings.section_padding }}px;
          {%- if utility_width_type == 'custom-width' %}
@@ -55,7 +58,7 @@
 
 {% schema %}
 {
-  "name": "Utility",
+  "name": "Utility Bar",
   "tag": "div",
   "settings": [
     { "type": "header", "content": "Section layout" },
@@ -102,6 +105,13 @@
       "id": "enable_bar",
       "label": "Enable utility bar",
       "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky",
+      "label": "Stick to top of screen",
+      "info": "Works alongside Announcement Bar and Main Header's own sticky settings — all sticky-enabled sections stack together automatically, in whatever order they're arranged in the header group.",
+      "default": false
     },
     {
       "type": "select",
@@ -176,7 +186,7 @@
   ],
   "presets": [
     {
-      "name": "Utility",
+      "name": "Utility Bar",
       "settings": {
         "link_1_label": "Track Order",
         "link_1_url": "/apps/track",
