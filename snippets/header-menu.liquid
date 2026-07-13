@@ -1,9 +1,17 @@
 {%- comment -%}
   snippets/header-menu.liquid
   Self-contained: detects which block types are present, loads only the
-  CSS/JS those block types need, and renders both the desktop nav bar
-  and the mobile/tablet slide-in drawer (< 1024px) from the same block
-  loop, so they never drift out of sync with each other.
+  CSS/JS those block types need, and renders the mobile/tablet slide-in
+  drawer (< 1024px) from the blocks array.
+
+  NOTE: the desktop <nav class="menu-bar"> markup now lives directly in
+  sections/main-header.liquid, rendered via {% content_for 'blocks' %},
+  since theme blocks render their own markup instead of being looped
+  over here with a case/when. This snippet still handles:
+    - conditional CSS/JS loading based on which block types are present
+    - the mobile/tablet drawer (unchanged — it reads block.type /
+      block.settings directly, same as before, since that still works
+      identically for theme blocks)
 
   Usage:
     {%- render 'header-menu', blocks: section.blocks -%}
@@ -49,35 +57,6 @@
 {%- endif -%}
 
 {%- if blocks.size > 0 -%}
-  <nav class="menu-bar" id="main-header-menu-bar" aria-label="Primary navigation">
-    <div class="menu-bar__edge-fade menu-bar__edge-fade--left" aria-hidden="true"></div>
-    <div class="menu-bar__edge-fade menu-bar__edge-fade--right" aria-hidden="true"></div>
-
-    <div class="menu-bar__container page-width--header">
-      <ul class="menu-bar__list">
-        {%- for block in blocks -%}
-          {%- case block.type -%}
-            {%- when 'single-link' -%}
-              {%- render 'single-link', block: block -%}
-
-            {%- when 'link-list' -%}
-              {%- render 'link-list', block: block -%}
-
-            {%- when 'highlight' -%}
-              {%- render 'highlight', block: block -%}
-
-            {%- when 'mega-menu' -%}
-              {%- render 'mega-menu', block: block -%}
-
-            {%- when 'showcase' -%}
-              {%- render 'showcase', block: block -%}
-
-          {%- endcase -%}
-        {%- endfor -%}
-      </ul>
-    </div>
-  </nav>
-
   {%- if has_mega_menu -%}
     <script src="{{ 'mega-menu.js' | asset_url }}" defer></script>
   {%- endif -%}
