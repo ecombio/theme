@@ -1,70 +1,3 @@
-/* =============================================================
-   Main Footer
-   File: assets/main-footer.css
-   Loaded by: sections/main-footer.liquid
-
-   Scope: footer shell, nav menu columns, payment/social icons,
-   copyright + policy links row.
-
-   DESIGN TOKENS: reuses the header's --hdr-* custom properties
-   directly (defined in assets/main-header.css) rather than
-   introducing a parallel --ftr-* set, per the consistency decision
-   in theme.md. If the header's tokens change, the footer updates
-   with it automatically.
-
-   ASSUMPTION: footer uses the same light color scheme as the header
-   (--hdr-bg background, --hdr-text copy) rather than a dark/inverted
-   footer. If a dark footer is wanted instead, this file's color
-   values need revisiting — flag it and this can be redone.
-
-   BREAKPOINTS: matches the header's exactly, so footer and header
-   change layout at the same viewport widths:
-     Mobile  : < 640px
-     Tablet  : 640px – 1023px
-     Desktop : ≥ 1024px
-
-   SECTION LAYOUT (width + padding): mirrors the independent pattern
-   from sections/example-width-section.liquid, also used by
-   sections/main-header.liquid. --section-padding and --custom-width
-   are LOCAL vars, set inline per-instance from this section's own
-   schema settings (see sections/main-footer.liquid) — they never
-   read from the global --page-margin / --page-width vars, so this
-   section's width/padding can't affect, or be affected by, any other
-   section.
-
-   This section's defaults (Default width → 1184px max-width, 24px
-   side padding, 12px fixed mobile override) are deliberately set to
-   match main-header's defaults exactly, so out of the box
-   `.footer-width` still lines up edge-to-edge with the header's
-   `.main-header__inner` above it. That alignment holds only while
-   both sections are left at matching settings — since each now has
-   independent controls, a merchant changing one section's Section
-   width / Side padding without changing the other's will make them
-   drift apart. That's an accepted tradeoff of independent per-section
-   control, not a bug. Do not reintroduce a shared/global width var
-   here as a "fix" without discussing it — see the note in
-   sections/main-footer.liquid for why header and footer went
-   independent in the first place.
-
-   MOBILE ACCORDION: below 1024px, main-footer.js progressively
-   converts each .footer-menu__column's heading into a toggle button
-   and adds a .is-open state class to the column. This file styles
-   both the enhanced (JS-present) and unenhanced (no-JS) states — with
-   JS disabled, all columns simply stay open/static, which is a safe
-   fallback rather than a broken one.
-
-   COLUMN COUNT: the number of desktop columns is a merchant-facing
-   style option (section.settings.column_layout), not something
-   inferred from the menu automatically. Liquid renders
-   .footer-menu__columns--4 or .footer-menu__columns--5 based on that
-   setting — see the modifiers below. Add further modifiers here
-   (and a matching schema option) if more counts are ever needed.
-   ============================================================= */
-
-/* ─────────────────────────────────────────────
-   SHELL
-   ───────────────────────────────────────────── */
-
 .main-footer {
   background: var(--hdr-bg);
   border-top: 1px solid var(--hdr-border);
@@ -78,11 +11,6 @@
   padding-inline: var(--section-padding, 24px);
 }
 
-/* Width modifiers — same three-way split as main-header's
-   .main-header--default-width / --full-width / --custom-width,
-   scoped to this section's own BEM namespace per the guidance in
-   example-width-section.liquid (this theme has no shared global
-   width utility classes). */
 .main-footer--default-width .footer-width {
   max-width: 1184px;
 }
@@ -96,18 +24,10 @@
 }
 
 @media (max-width: 639px) {
-  /* Deliberately a fixed value, not var(--section-padding) — mirrors
-     main-header.css's mobile override (see that file's SECTION
-     LAYOUT comment): mobile stays tight regardless of whatever Side
-     padding value is set for tablet/desktop. */
   .footer-width {
     padding-inline: 12px;
   }
 }
-
-/* ─────────────────────────────────────────────
-   FOOTER MENU
-   ───────────────────────────────────────────── */
 
 .main-footer__menu {
   padding: 48px 0 32px;
@@ -121,21 +41,16 @@
   margin: 0 0 24px;
 }
 
-/* Base layout shared by every column-count modifier. Modifiers below
-   only need to set grid-template-columns (and, where useful, gap). */
 .footer-menu__columns {
   display: grid;
   gap: 32px;
 }
 
-/* Default / 4-column style option (also the fallback if no modifier
-   class resolves, e.g. an unrecognized setting value). */
 .footer-menu__columns,
 .footer-menu__columns--4 {
   grid-template-columns: repeat(4, 1fr);
 }
 
-/* 5-column style option */
 .footer-menu__columns--5 {
   grid-template-columns: repeat(5, 1fr);
   gap: 32px 24px;
@@ -146,8 +61,6 @@
   flex-direction: column;
 }
 
-/* Column heading — becomes a toggle button on mobile/tablet via JS.
-   Base styles apply whether or not JS has enhanced it. */
 .footer-menu__heading {
   font-size: 0.875rem;
   font-weight: 700;
@@ -182,21 +95,10 @@
   color: var(--hdr-accent);
 }
 
-/* ─────────────────────────────────────────────
-   RESERVED CONTENT SLOT
-   Empty today (see sections/main-footer.liquid) — this rule just
-   keeps consistent vertical rhythm if/when it's populated, and does
-   nothing if it stays empty.
-   ───────────────────────────────────────────── */
-
 .main-footer__content:not(:empty) {
   padding: 32px 0;
   border-bottom: 1px solid var(--hdr-border);
 }
-
-/* ─────────────────────────────────────────────
-   BOTTOM ROW — payments, socials, copyright, policies
-   ───────────────────────────────────────────── */
 
 .main-footer__bottom {
   padding: 24px 0 32px;
@@ -287,14 +189,7 @@
   color: var(--hdr-accent);
 }
 
-/* ─────────────────────────────────────────────
-   TABLET  (640px – 1023px)
-   ───────────────────────────────────────────── */
-
 @media (min-width: 640px) and (max-width: 1023px) {
-  /* Both style options collapse to the same 2-up tablet grid — at
-     this width, 4 vs 5 desktop columns isn't a meaningful
-     distinction, so there's no --4/--5 split here. */
   .footer-menu__columns,
   .footer-menu__columns--4,
   .footer-menu__columns--5 {
@@ -306,10 +201,6 @@
     padding: 36px 0 24px;
   }
 }
-
-/* ─────────────────────────────────────────────
-   MOBILE  (< 640px)
-   ───────────────────────────────────────────── */
 
 @media (max-width: 639px) {
   .main-footer__menu {
@@ -333,14 +224,6 @@
     align-items: flex-start;
   }
 }
-
-/* ─────────────────────────────────────────────
-   MOBILE/TABLET ACCORDION (JS-enhanced state)
-   Applied only once main-footer.js has run — see
-   .js-footer-accordion below, added to <footer> by the JS on init.
-   Without JS, columns simply stay static/open (see fallback note in
-   the file header comment above).
-   ───────────────────────────────────────────── */
 
 @media (max-width: 1023px) {
   .js-footer-accordion .footer-menu__column {
@@ -392,10 +275,6 @@
     padding-bottom: 12px;
   }
 }
-
-/* ─────────────────────────────────────────────
-   REDUCED MOTION
-   ───────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .footer-menu__link,
