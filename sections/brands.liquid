@@ -4,64 +4,33 @@
   lists them alphabetically in a dense multi-column grid with an A-Z jump nav,
   similar to Dermstore / Cycle Gear style brand directories.
 
+  Loads its own stylesheet: assets/brands.css
+  Drop this section anywhere and it's pulled in automatically -
+  no manual <link> tag needed elsewhere in the theme.
+
   IMPORTANT: brand links point to /collections/all?filter.v.vendor=Name
   This requires the "Product vendor" filter to be enabled in
   Settings > Apps > Search & Discovery > Filters. If that filter isn't
   enabled, switch brand_url below to a search fallback (see comment near it).
 {% endcomment %}
 
-<div class="brand-directory page-width" id="brand-directory-{{ section.id }}">
-  <div class="brand-directory__header">
-    {% if section.settings.heading != blank %}
-      <h1 class="brand-directory__heading">{{ section.settings.heading }}</h1>
-    {% endif %}
-    {% if section.settings.description != blank %}
-      <div class="brand-directory__description">{{ section.settings.description }}</div>
-    {% endif %}
-  </div>
+{{ 'brands.css' | asset_url | stylesheet_tag }}
 
-  {% if section.settings.show_search %}
-    <div class="brand-directory__search">
-      <input
-        type="text"
-        id="brand-search-{{ section.id }}"
-        placeholder="{{ section.settings.search_placeholder | default: 'Search brands...' }}"
-        aria-label="Search brands"
-      >
-    </div>
-  {% endif %}
-
-  {% assign vendors = shop.vendors | sort_natural %}
-
-  {% comment %} Build the set of letters actually present, so the nav can grey out missing ones {% endcomment %}
-  {% assign present_letters = "" | split: "" %}
-  {% for vendor in vendors %}
-    {% assign first_char = vendor | slice: 0, 1 | upcase %}
-    {% assign first_char_num = first_char | times: 1 %}
-    {% if first_char_num > 0 or first_char == "0" %}
-      {% assign bucket = "0-9" %}
-    {% else %}
-      {% assign bucket = first_char %}
-    {% endif %}
-    {% unless present_letters contains bucket %}
-      {% assign present_letters = present_letters | push: bucket %}
-    {% endunless %}
-  {% endfor %}
-
-  {% comment %} Full A-Z nav, 0-9 first, greying out letters with no brands {% endcomment %}
-  <nav class="brand-directory__alpha-nav" aria-label="Jump to letter">
-    {% assign nav_letters = "0-9,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z" | split: "," %}
-    {% for letter in nav_letters %}
-      {% if present_letters contains letter %}
-        <a href="#brand-letter-{{ letter | handle }}-{{ section.id }}">{{ letter }}</a>
-      {% else %}
-        <span class="is-disabled">{{ letter }}</span>
+<div class="brand-directory" id="brand-directory-{{ section.id }}">
+  <div class="page-width">
+    <div class="brand-directory__header">
+      {% if section.settings.heading != blank %}
+        <h1 class="brand-directory__heading">{{ section.settings.heading }}</h1>
       {% endif %}
-    {% endfor %}
-  </nav>
+      {% if section.settings.description != blank %}
+        <div class="brand-directory__description">{{ section.settings.description }}</div>
+      {% endif %}
+    </div>
 
-  <div class="brand-directory__list" data-brand-list>
-    {% assign current_bucket = "" %}
+    {% assign vendors = shop.vendors | sort_natural %}
+
+    {% comment %} Build the set of letters actually present, so the nav can grey out missing ones {% endcomment %}
+    {% assign present_letters = "" | split: "" %}
     {% for vendor in vendors %}
       {% assign first_char = vendor | slice: 0, 1 | upcase %}
       {% assign first_char_num = first_char | times: 1 %}
@@ -70,158 +39,62 @@
       {% else %}
         {% assign bucket = first_char %}
       {% endif %}
-
-      {% if bucket != current_bucket %}
-        {% unless current_bucket == "" %}
-          </div>
-        {% endunless %}
-        {% assign current_bucket = bucket %}
-        <h2 class="brand-directory__letter" id="brand-letter-{{ bucket | handle }}-{{ section.id }}">{{ bucket }}</h2>
-        <div class="brand-directory__row">
-      {% endif %}
-
-      {% comment %}
-        Fallback if vendor filtering isn't enabled - swap the line below for:
-        {% assign brand_url = 'search?q=vendor:' | append: vendor | url_param_escape %}
-      {% endcomment %}
-      {% assign brand_url = '/collections/all?filter.v.vendor=' | append: vendor | url_param_escape %}
-
-      <a
-        href="{{ brand_url }}"
-        class="brand-directory__item"
-        data-brand-name="{{ vendor | downcase | escape }}"
-      >
-        {{ vendor }}
-      </a>
+      {% unless present_letters contains bucket %}
+        {% assign present_letters = present_letters | push: bucket %}
+      {% endunless %}
     {% endfor %}
-    {% unless current_bucket == "" %}
-      </div>
-    {% endunless %}
+
+    {% comment %} Full A-Z nav, 0-9 first, greying out letters with no brands {% endcomment %}
+    <nav class="brand-directory__alpha-nav" aria-label="Jump to letter">
+      {% assign nav_letters = "0-9,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z" | split: "," %}
+      {% for letter in nav_letters %}
+        {% if present_letters contains letter %}
+          <a href="#brand-letter-{{ letter | handle }}-{{ section.id }}">{{ letter }}</a>
+        {% else %}
+          <span class="is-disabled">{{ letter }}</span>
+        {% endif %}
+      {% endfor %}
+    </nav>
+
+    <div class="brand-directory__list">
+      {% assign current_bucket = "" %}
+      {% for vendor in vendors %}
+        {% assign first_char = vendor | slice: 0, 1 | upcase %}
+        {% assign first_char_num = first_char | times: 1 %}
+        {% if first_char_num > 0 or first_char == "0" %}
+          {% assign bucket = "0-9" %}
+        {% else %}
+          {% assign bucket = first_char %}
+        {% endif %}
+
+        {% if bucket != current_bucket %}
+          {% unless current_bucket == "" %}
+            </div>
+          {% endunless %}
+          {% assign current_bucket = bucket %}
+          <h2 class="brand-directory__letter" id="brand-letter-{{ bucket | handle }}-{{ section.id }}">{{ bucket }}</h2>
+          <div class="brand-directory__row">
+        {% endif %}
+
+        {% comment %}
+          Fallback if vendor filtering isn't enabled - swap the line below for:
+          {% assign brand_url = 'search?q=vendor:' | append: vendor | url_param_escape %}
+        {% endcomment %}
+        {% assign brand_url = '/collections/all?filter.v.vendor=' | append: vendor | url_param_escape %}
+
+        <a
+          href="{{ brand_url }}"
+          class="brand-directory__item"
+        >
+          {{ vendor }}
+        </a>
+      {% endfor %}
+      {% unless current_bucket == "" %}
+        </div>
+      {% endunless %}
+    </div>
   </div>
-
-  <p class="brand-directory__empty" data-brand-empty hidden>No brands match your search.</p>
 </div>
-
-<script>
-  (function () {
-    var input = document.getElementById('brand-search-{{ section.id }}');
-    if (!input) return;
-
-    var wrapper = document.getElementById('brand-directory-{{ section.id }}');
-    var list = wrapper.querySelector('[data-brand-list]');
-    var empty = wrapper.querySelector('[data-brand-empty]');
-    if (!list) return;
-
-    input.addEventListener('input', function () {
-      var q = this.value.trim().toLowerCase();
-      var items = list.querySelectorAll('.brand-directory__item');
-      var visibleCount = 0;
-
-      items.forEach(function (item) {
-        var match = item.dataset.brandName.indexOf(q) !== -1;
-        item.style.display = match ? '' : 'none';
-        if (match) visibleCount++;
-      });
-
-      list.querySelectorAll('.brand-directory__row').forEach(function (row) {
-        var anyVisible = Array.prototype.some.call(
-          row.querySelectorAll('.brand-directory__item'),
-          function (i) { return i.style.display !== 'none'; }
-        );
-        row.style.display = anyVisible ? '' : 'none';
-        var heading = row.previousElementSibling;
-        if (heading && heading.classList.contains('brand-directory__letter')) {
-          heading.style.display = anyVisible ? '' : 'none';
-        }
-      });
-
-      if (empty) empty.hidden = visibleCount !== 0;
-    });
-  })();
-</script>
-
-<style>
-  .brand-directory {
-    padding: 40px 0;
-  }
-  .brand-directory__header {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-  .brand-directory__search {
-    max-width: 400px;
-    margin: 0 auto 32px;
-  }
-  .brand-directory__search input {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-  .brand-directory__alpha-nav {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: #fff;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    justify-content: center;
-    padding: 12px 0;
-    margin-bottom: 24px;
-    border-bottom: 1px solid #eee;
-  }
-  .brand-directory__alpha-nav a,
-  .brand-directory__alpha-nav span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px;
-    height: 28px;
-    padding: 0 4px;
-    font-size: 0.85rem;
-    text-decoration: none;
-    color: inherit;
-    border-radius: 3px;
-  }
-  .brand-directory__alpha-nav a:hover {
-    background: #f5f5f5;
-  }
-  .brand-directory__alpha-nav span.is-disabled {
-    color: #ccc;
-  }
-  .brand-directory__letter {
-    font-size: 1.4rem;
-    margin: 32px 0 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #eee;
-  }
-  .brand-directory__row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    row-gap: 10px;
-    column-gap: 20px;
-  }
-  .brand-directory__item {
-    text-decoration: none;
-    color: #1a1a1a;
-    font-size: 0.95rem;
-  }
-  .brand-directory__item:hover {
-    text-decoration: underline;
-  }
-  .brand-directory__empty {
-    text-align: center;
-    margin-top: 32px;
-  }
-
-  @media screen and (max-width: 749px) {
-    .brand-directory__row {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-</style>
 
 {% schema %}
 {
@@ -237,18 +110,6 @@
       "type": "richtext",
       "id": "description",
       "label": "Description"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_search",
-      "label": "Show search box",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "search_placeholder",
-      "label": "Search placeholder",
-      "default": "Search brands..."
     }
   ],
   "presets": [
