@@ -10,8 +10,12 @@
     assign width_class = 'main-footer--custom-width'
   endif
 
-  assign social_col_num = section.settings.social_column | plus: 0
-  assign payment_col_num = section.settings.payment_column | plus: 0
+  assign social_col_num = 0
+  assign payment_col_num = 0
+  if section.settings.footer_style == 'columns'
+    assign social_col_num = section.settings.social_column | plus: 0
+    assign payment_col_num = section.settings.payment_column | plus: 0
+  endif
 -%}
 
 <footer class="main-footer {{ width_class }}"
@@ -110,7 +114,7 @@
               {% endfor %}
             </div>
 
-            {% if section.blocks.size > 0 %}
+            {% if section.settings.footer_style == 'columns' and section.blocks.size > 0 %}
               <div class="footer-menu__badges">
                 {% for block in section.blocks %}
                   {% if block.type == 'badge' and block.settings.image != blank %}
@@ -133,6 +137,55 @@
     <div class="main-footer__content"></div>
 
     <div class="main-footer__bottom">
+
+      {% if section.settings.footer_style == 'original' %}
+        <div class="main-footer__icons">
+          <div class="main-footer__payments">
+            <img src="{{ 'icon-visa.svg' | asset_url }}" alt="Visa">
+            <img src="{{ 'icon-mastercard.svg' | asset_url }}" alt="Mastercard">
+            <img src="{{ 'icon-paypal.svg' | asset_url }}" alt="PayPal">
+            <img src="{{ 'icon-applepay.svg' | asset_url }}" alt="Apple Pay">
+            <img src="{{ 'icon-googlepay.svg' | asset_url }}" alt="Google Pay">
+            <img src="{{ 'icon-amazonpay.svg' | asset_url }}" alt="Amazon Pay">
+            <img src="{{ 'icon-amex.svg' | asset_url }}" alt="American Express">
+            <img src="{{ 'icon-discover.svg' | asset_url }}" alt="Discover">
+          </div>
+
+          <div class="main-footer__socials">
+            {% if section.settings.social_x != blank %}
+              <a href="{{ section.settings.social_x }}" target="_blank">
+                <img src="{{ 'icon-x.svg' | asset_url }}" alt="X">
+              </a>
+            {% endif %}
+            {% if section.settings.social_tiktok != blank %}
+              <a href="{{ section.settings.social_tiktok }}" target="_blank">
+                <img src="{{ 'tiktok.svg' | asset_url }}" alt="TikTok">
+              </a>
+            {% endif %}
+            {% if section.settings.social_youtube != blank %}
+              <a href="{{ section.settings.social_youtube }}" target="_blank">
+                <img src="{{ 'icon-youtube.svg' | asset_url }}" alt="YouTube">
+              </a>
+            {% endif %}
+            {% if section.settings.social_instagram != blank %}
+              <a href="{{ section.settings.social_instagram }}" target="_blank">
+                <img src="{{ 'icon-instagram.svg' | asset_url }}" alt="Instagram">
+              </a>
+            {% endif %}
+            {% if section.settings.social_facebook != blank %}
+              <a href="{{ section.settings.social_facebook }}" target="_blank">
+                <img src="{{ 'icon-facebook.svg' | asset_url }}" alt="Facebook">
+              </a>
+            {% endif %}
+            {% if section.settings.social_linkedin != blank %}
+              <a href="{{ section.settings.social_linkedin }}" target="_blank">
+                <img src="{{ 'icon-linkedin.svg' | asset_url }}" alt="LinkedIn">
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
       <div class="main-footer__bottom-inner">
         <div class="main-footer__copyright">
           <p>{{ section.settings.copyright_text }}</p>
@@ -145,6 +198,7 @@
           <li><a href="/policies/shipping-policy">Shipping Policy</a></li>
         </ul>
       </div>
+
     </div>
   </div>
 </footer>
@@ -198,6 +252,17 @@
       "content": "Footer Menu"
     },
     {
+      "type": "select",
+      "id": "footer_style",
+      "label": "Footer style",
+      "options": [
+        { "value": "original", "label": "Original (payments/socials in bottom bar)" },
+        { "value": "columns", "label": "Columns with badges" }
+      ],
+      "default": "original",
+      "info": "Switch between the original footer layout and the newer column-based layout with social/payment icons embedded in a menu column plus a trust-badges area."
+    },
+    {
       "type": "text",
       "id": "menu_heading",
       "label": "Menu heading (optional)"
@@ -230,7 +295,7 @@
       "type": "select",
       "id": "social_column",
       "label": "Social icons column",
-      "info": "Which footer menu column the social icons appear under",
+      "info": "Which footer menu column the social icons appear under. Only applies to the Columns with badges style.",
       "options": [
         { "value": "0", "label": "None" },
         { "value": "1", "label": "Column 1" },
@@ -239,13 +304,14 @@
         { "value": "4", "label": "Column 4" },
         { "value": "5", "label": "Column 5" }
       ],
-      "default": "1"
+      "default": "1",
+      "visible_if": "{{ section.settings.footer_style == 'columns' }}"
     },
     {
       "type": "select",
       "id": "payment_column",
       "label": "Payment icons column",
-      "info": "Which footer menu column the payment icons appear under",
+      "info": "Which footer menu column the payment icons appear under. Only applies to the Columns with badges style.",
       "options": [
         { "value": "0", "label": "None" },
         { "value": "1", "label": "Column 1" },
@@ -254,7 +320,8 @@
         { "value": "4", "label": "Column 4" },
         { "value": "5", "label": "Column 5" }
       ],
-      "default": "3"
+      "default": "3",
+      "visible_if": "{{ section.settings.footer_style == 'columns' }}"
     },
     {
       "type": "header",
@@ -315,7 +382,7 @@
           "type": "text",
           "id": "alt",
           "label": "Alt text",
-          "info": "Describe the badge for accessibility, e.g. \"Certified B Corporation\""
+          "info": "Describe the badge for accessibility, e.g. \"Certified B Corporation\". Only shows when Footer style is set to Columns with badges."
         }
       ]
     }
