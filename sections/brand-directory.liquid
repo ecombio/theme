@@ -30,19 +30,8 @@
 
     {% assign vendors = shop.vendors | sort_natural %}
 
-    {% assign present_letters = "" | split: "" %}
-    {% for vendor in vendors %}
-      {% assign first_char = vendor | slice: 0, 1 | upcase %}
-      {% assign first_char_num = first_char | times: 1 %}
-      {% if first_char_num > 0 or first_char == "0" %}
-        {% assign bucket = "0-9" %}
-      {% else %}
-        {% assign bucket = first_char %}
-      {% endif %}
-      {% unless present_letters contains bucket %}
-        {% assign present_letters = present_letters | push: bucket %}
-      {% endunless %}
-    {% endfor %}
+    {% capture present_letters_raw %}{% for vendor in vendors %}{% assign first_char = vendor | slice: 0, 1 | upcase %}{% assign first_char_num = first_char | times: 1 %}{% if first_char_num > 0 or first_char == "0" %}0-9,{% else %}{{ first_char }},{% endif %}{% endfor %}{% endcapture %}
+    {% assign present_letters = present_letters_raw | split: "," | uniq %}
 
     <nav class="brand-directory__alpha-nav" aria-label="Jump to letter">
       {% assign nav_letters = "0-9,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z" | split: "," %}
