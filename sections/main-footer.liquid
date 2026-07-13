@@ -117,12 +117,54 @@
                   <div class="footer-menu__badges">
                     {% for block in section.blocks %}
                       {% if block.type == 'badge' and block.settings.image != blank %}
+                        {% liquid
+                          assign has_hover = false
+                          if block.settings.hover_image != blank
+                            assign has_hover = true
+                          endif
+                        %}
                         <div class="footer-menu__badge" {{ block.shopify_attributes }}>
-                          <img
-                            src="{{ block.settings.image | image_url: width: 200 }}"
-                            alt="{{ block.settings.alt | escape }}"
-                            width="60"
-                            loading="lazy">
+                          {% if block.settings.link != blank %}
+                            <a
+                              href="{{ block.settings.link }}"
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              class="footer-menu__badge-link{% if has_hover %} footer-menu__badge-link--flip{% endif %}">
+                              <img
+                                class="footer-menu__badge-img footer-menu__badge-img--base"
+                                src="{{ block.settings.image | image_url: width: 200 }}"
+                                alt="{{ block.settings.alt | escape }}"
+                                width="60"
+                                loading="lazy">
+                              {% if has_hover %}
+                                <img
+                                  class="footer-menu__badge-img footer-menu__badge-img--hover"
+                                  src="{{ block.settings.hover_image | image_url: width: 200 }}"
+                                  alt=""
+                                  aria-hidden="true"
+                                  width="60"
+                                  loading="lazy">
+                              {% endif %}
+                            </a>
+                          {% else %}
+                            <span class="footer-menu__badge-link{% if has_hover %} footer-menu__badge-link--flip{% endif %}">
+                              <img
+                                class="footer-menu__badge-img footer-menu__badge-img--base"
+                                src="{{ block.settings.image | image_url: width: 200 }}"
+                                alt="{{ block.settings.alt | escape }}"
+                                width="60"
+                                loading="lazy">
+                              {% if has_hover %}
+                                <img
+                                  class="footer-menu__badge-img footer-menu__badge-img--hover"
+                                  src="{{ block.settings.hover_image | image_url: width: 200 }}"
+                                  alt=""
+                                  aria-hidden="true"
+                                  width="60"
+                                  loading="lazy">
+                              {% endif %}
+                            </span>
+                          {% endif %}
                         </div>
                       {% endif %}
                     {% endfor %}
@@ -378,6 +420,18 @@
           "type": "image_picker",
           "id": "image",
           "label": "Badge image"
+        },
+        {
+          "type": "image_picker",
+          "id": "hover_image",
+          "label": "Hover image (optional)",
+          "info": "Shown when the badge is hovered or focused, e.g. accreditation details. Leave blank for a static badge."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link (optional)",
+          "info": "Makes the badge clickable, e.g. a BBB or B Corp profile page."
         },
         {
           "type": "text",
