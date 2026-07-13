@@ -1,130 +1,36 @@
-{% comment %}
-  Utility Bar
-  File: sections/utility-bar.liquid
+{%- comment -%}
+  sections/utility-bar.liquid
+  Thin wrapper around snippets/utility-bar.liquid so the bar can live
+  as its own entry in sections/header-group.json — independently
+  reorderable/removable from main-header.
 
-  A slim 32px bar rendered above the main header via the theme layout.
-  Componentized into snippets:
-    snippets/utility-links.liquid     — left-hand utility links (fixed settings slots, not blocks)
-    snippets/currency-selector.liquid — currency form
-    snippets/locale-selector.liquid   — language form
-    snippets/region-picker.liquid     — region trigger + dropdown (teleported to body by JS)
+  NOTE ON LAYOUT SETTINGS: the snippet reads settings.section_width /
+  settings.custom_width / settings.section_padding to line up with
+  whatever row is rendering it. When this lived inside main-header.liquid,
+  those came for free from main-header's own "Section layout" group, so
+  the utility bar always matched automatically. Now that this is a
+  separate section, those three fields are duplicated below so the
+  snippet still has something to read — but they no longer auto-sync
+  with main-header's width/padding. If you want the utility bar to
+  visually line up with the header row above it, match these values to
+  main-header's Section layout settings by hand (or eyeball it live in
+  the theme editor).
 
-  Assets:
-    assets/utility-bar.css  — all styles
-    assets/utility-bar.js   — behaviour (teleport, focus trap, search, fallbacks)
+  All rendering logic (including the "enable_bar" check, and loading
+  utility-bar.css/js) already lives in the snippet and is untouched here.
+{%- endcomment -%}
 
-  Add to layout/theme.liquid above {%- section 'header' -%}:
-    {%- section 'utility-bar' -%}
-
-  SECTION WIDTH / SIDE PADDING:
-  Handled locally per the pattern in sections/example-width-section.liquid.
-  This section does NOT read the global --page-margin or --page-width
-  variables (snippets/css-variables.liquid) — --section-padding and
-  --custom-width are only ever set inline here, from this section's own
-  "Section layout" settings, so bumping the global Body side padding
-  setting elsewhere in the theme will never move this bar.
-
-  LINK ICONS:
-  Each utility link has an optional image_picker (link_1_icon / link_2_icon /
-  link_3_icon). These are passed through to snippets/utility-links.liquid via
-  the existing `settings: section.settings` argument — the snippet must be
-  updated separately to actually render an <img> before the label when an
-  icon is present. This file only adds the schema fields.
-{% endcomment %}
-
-{%- if section.settings.enable_bar -%}
-  {{ 'utility-bar.css' | asset_url | stylesheet_tag }}
-
-  {%- liquid
-    assign bar_style = section.settings.bar_style | default: 'hyper'
-    assign show_curr  = section.settings.show_currency
-    assign show_loc   = section.settings.show_locale
-
-    assign width_type = section.settings.section_width
-    if width_type == blank
-      assign width_class = 'utility-bar__default-width'
-    elsif width_type == 'full-width'
-      assign width_class = 'utility-bar__full-width'
-    else
-      assign width_class = 'utility-bar__custom-width'
-    endif
-  -%}
-
-  <div class="utility-bar utility-bar--{{ bar_style }} {{ width_class }}"
-       role="navigation"
-       aria-label="Utility bar"
-       id="utility-bar"
-       style="
-         --section-padding: {{ section.settings.section_padding }}px;
-         {%- if width_type == 'custom-width' %}
-           --custom-width: {{ section.settings.custom_width }}rem;
-         {%- endif %}
-       ">
-
-    <div class="utility-bar__inner">
-
-      <div class="utility-bar__col utility-bar__col--left">
-        {%- render 'utility-links', settings: section.settings, count: 3 -%}
-      </div>
-
-      <div class="utility-bar__col utility-bar__col--right">
-        <div class="utility-bar__switchers">
-          {%- if show_curr -%}
-            {%- render 'currency-selector', form_id: 'utility-bar-currency-form' -%}
-          {%- endif -%}
-
-          {%- if show_loc -%}
-            {%- render 'locale-selector', form_id: 'utility-bar-locale-form' -%}
-          {%- endif -%}
-
-          {%- render 'region-picker' -%}
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <script src="{{ 'utility-bar.js' | asset_url }}" defer></script>
-{%- endif -%}
+{%- render 'utility-bar', settings: section.settings -%}
 
 {% schema %}
 {
   "name": "Utility Bar",
   "tag": "div",
-  "class": "utility-bar-section",
-  "limit": 1,
   "settings": [
+    { "type": "header", "content": "Section layout" },
     {
-      "type": "checkbox",
-      "id": "enable_bar",
-      "label": "Enable utility bar",
-      "default": true
-    },
-    {
-      "type": "select",
-      "id": "bar_style",
-      "label": "Bar style",
-      "default": "hyper",
-      "options": [
-        { "value": "hyper", "label": "Hyper (white)" },
-        { "value": "focus", "label": "Focus (warm grey)" }
-      ]
-    },
-    {
-      "type": "checkbox",
-      "id": "show_currency",
-      "label": "Show currency selector",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_locale",
-      "label": "Show language selector",
-      "default": true
-    },
-    {
-      "type": "header",
-      "content": "Section layout"
+      "type": "paragraph",
+      "content": "These control the bar's own width/padding. To visually line up with the main header row above it, match these to that section's Section layout settings."
     },
     {
       "type": "select",
@@ -158,9 +64,35 @@
       "unit": "px",
       "default": 24
     },
+
+    { "type": "header", "content": "Utility Bar" },
     {
-      "type": "header",
-      "content": "Utility links"
+      "type": "checkbox",
+      "id": "enable_bar",
+      "label": "Enable utility bar",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "bar_style",
+      "label": "Bar style",
+      "default": "hyper",
+      "options": [
+        { "value": "hyper", "label": "Hyper (white)" },
+        { "value": "focus", "label": "Focus (warm grey)" }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency",
+      "label": "Show currency selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_locale",
+      "label": "Show language selector",
+      "default": true
     },
     {
       "type": "image_picker",
