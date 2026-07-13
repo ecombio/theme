@@ -2,14 +2,11 @@
   'use strict';
 
   // Gives every sticky-enabled header-group section (this one, plus
-  // announcement-bar/utility-bar if they turn sticky on too) the
-  // correct top offset based on DOM order — i.e. whatever order
-  // they're arranged in inside header-group.json. This same block is
-  // duplicated in each sticky-capable section's own JS file, guarded
-  // below so only one copy ever actually runs. That's deliberate: if
-  // main-header gets deleted from the theme entirely, announcement-bar
-  // (or whichever section is left) still carries its own working copy
-  // and needs nothing else.
+  // announcement/utility if they're present and sticky too) the correct
+  // top offset based on DOM order. Guarded so only one copy ever runs —
+  // that's deliberate: if the other sections get removed from the theme
+  // entirely, this file still carries its own working copy and needs
+  // nothing else.
   if (!window.__stickyStackInitialized) {
     window.__stickyStackInitialized = true;
 
@@ -78,23 +75,19 @@
 (function () {
   'use strict';
 
+  // Real position:sticky reserves its own space in normal document flow
+  // automatically — no spacer element needed. --main-header-bottom is
+  // still useful for anything below the header (e.g. collection-toolbar's
+  // `top`) that wants to know how much of the header is actually visible
+  // right now, since that collapses to 0 while autohide has translated
+  // the header off-screen.
   var header = document.querySelector('[data-sticky-fixed="true"]');
   if (!header) return;
 
-  // NOTE: with the header now using real position:sticky (not
-  // position:fixed), the browser keeps its normal-flow space reserved
-  // automatically — there is no layout gap to fill, so no spacer
-  // element is needed here anymore.
-  //
-  // --main-header-bottom is still useful for anything below the header
-  // (e.g. collection-toolbar's `top`) that wants to know how much of
-  // the header is actually visible right now, since that collapses to
-  // 0 while autohide has translated the header off-screen.
   var sync = function () {
     var full = header.offsetHeight;
     var hidden = header.classList.contains('main-header--autohide-hidden');
     var offset = hidden ? 0 : full;
-
     document.documentElement.style.setProperty('--main-header-bottom', offset + 'px');
   };
 
@@ -105,9 +98,8 @@
     new ResizeObserver(sync).observe(header);
   }
 
-  // Exposed so the autohide script (below) can re-run this after it
-  // toggles main-header--autohide-hidden, keeping --main-header-bottom
-  // in sync with whether the header is actually visible.
+  // Exposed so the autohide script below can re-run this after it
+  // toggles main-header--autohide-hidden.
   window.__mainHeaderSync = sync;
 })();
 
@@ -128,20 +120,11 @@
     if (window.__mainHeaderSync) window.__mainHeaderSync();
   };
 
-  // Hover: pointer over the header itself, a nav item, or an open mega-menu/showcase-menu panel
-  // (these render as descendants of <header>, so one listener covers all of it).
   header.addEventListener('mouseenter', function () { isPaused = true; });
   header.addEventListener('mouseleave', function () { isPaused = false; });
-
-  // Keyboard: tabbing through menu links/inputs should pause it too, not just mouse hover.
   header.addEventListener('focusin', function () { isPaused = true; });
   header.addEventListener('focusout', function () { isPaused = false; });
 
-  // Once the slide transition finishes, re-measure so --main-header-bottom
-  // reflects whatever the header's final state actually is (0 when
-  // hidden, full height when revealed) instead of relying on
-  // offsetHeight alone, which doesn't change just because the header was
-  // translated off-screen.
   header.addEventListener('transitionend', function (e) {
     if (e.propertyName === 'transform') syncBottomVar();
   });
@@ -158,20 +141,16 @@
       lastY = currentY;
     } else if (Math.abs(delta) > THRESHOLD) {
       if (delta > 0 && !isPaused) {
-        // scrolling down — but never hide while the header is being interacted with
         if (!header.classList.contains('main-header--autohide-hidden')) {
           header.classList.add('main-header--autohide-hidden');
           syncBottomVar();
         }
       } else if (delta < 0) {
-        // scrolling up
         if (header.classList.contains('main-header--autohide-hidden')) {
           header.classList.remove('main-header--autohide-hidden');
           syncBottomVar();
         }
       }
-      // keep tracking position even while paused, so there's no big
-      // stale delta the moment the pointer/focus leaves the header
       lastY = currentY;
     }
 
@@ -189,8 +168,6 @@
 (function () {
   'use strict';
 
-  // Mobile/tablet hamburger + slide-in drawer, wired to the markup
-  // rendered by snippets/header-menu.liquid (< 1024px).
   var trigger = document.getElementById('main-header-menu-trigger');
   var nav = document.getElementById('main-header-mobile-nav');
   if (!trigger || !nav) return;
@@ -231,9 +208,6 @@
     }
   });
 
-  // Accordion toggles for link-list / mega-menu / showcase submenus,
-  // and their nested level-3 submenus — same handler for both since
-  // they share the .ecombio-mobile-nav__toggle / __sub markup.
   toggles.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var subId = btn.getAttribute('aria-controls');
@@ -251,10 +225,6 @@
     });
   });
 
-  // Safety net: if the viewport crosses back into desktop while the
-  // drawer is open (e.g. rotating a tablet, or resizing a browser
-  // window), close it so it doesn't get stuck open behind the now-
-  // visible desktop menu-bar.
   window.addEventListener('resize', function () {
     if (window.innerWidth >= 1024 && nav.classList.contains('is-open')) {
       closeDrawer();
