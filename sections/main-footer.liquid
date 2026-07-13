@@ -1,38 +1,3 @@
-{% comment %}
-sections/main-footer.liquid
-Merged footer section for ScooterBio
-
-Structure:
-- Footer navigation menu (nested link list)
-- Payment icons + Social icons
-- Copyright + Policies
-
-SECTION LAYOUT (width + padding):
-Mirrors the independent "Section Layout" pattern from
-sections/example-width-section.liquid, already adopted by
-sections/main-header.liquid. --section-padding and --custom-width are
-LOCAL vars set inline below from this section's own schema settings —
-they never read from the global --page-margin / --page-width vars, so
-changing this section's Section width / Side padding can't affect any
-other section, and vice versa.
-
-This section's defaults (Default width, 24px padding, 12px fixed
-mobile override) are deliberately set to match main-header's defaults
-exactly, so out of the box the footer's `.footer-width` container still
-lines up edge-to-edge with the header's `.main-header__inner` above it,
-just as it always has.
-
-IMPORTANT: because both header and footer now control their width/
-padding independently (per-section, not shared), that alignment is only
-guaranteed while both are left at matching values. If a merchant changes
-Section width/Side padding on one but not the other, header and footer
-will visibly drift apart — that's an accepted tradeoff of giving each
-section independent control, not a bug. If perfect alignment needs to be
-enforced regardless of settings, header and footer would need to share
-a single synced value instead of two independent ones — a bigger change
-this section doesn't attempt.
-{% endcomment %}
-
 {{ 'main-footer.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -57,7 +22,6 @@ this section doesn't attempt.
         ">
   <div class="footer-width">
 
-    <!-- Footer Navigation Menu -->
     {% if section.settings.menu != blank %}
       {% assign footer_menu = section.settings.menu %}
 
@@ -97,14 +61,11 @@ this section doesn't attempt.
       {% endif %}
     {% endif %}
 
-    <!-- Main footer content slot -->
     <div class="main-footer__content">
-      <!-- Reserved for future content -->
     </div>
 
     <div class="main-footer__bottom">
 
-      <!-- Payment + Social Icons -->
       <div class="main-footer__icons">
         <div class="main-footer__payments">
           <img src="{{ 'icon-visa.svg' | asset_url }}" alt="Visa">
@@ -146,7 +107,6 @@ this section doesn't attempt.
         </div>
       </div>
 
-      <!-- Copyright + Policies -->
       <div class="main-footer__bottom-inner">
         <div class="main-footer__copyright">
           <p>{{ section.settings.copyright_text }}</p>
