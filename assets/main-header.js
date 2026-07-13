@@ -1,6 +1,54 @@
 (function () {
   'use strict';
 
+  // Gives every sticky-enabled header-group section (this one, plus
+  // announcement-bar/utility-bar if they turn sticky on too) the
+  // correct top offset based on DOM order — i.e. whatever order
+  // they're arranged in inside header-group.json. This same block is
+  // duplicated in each sticky-capable section's own JS file, guarded
+  // below so only one copy ever actually runs. That's deliberate: if
+  // main-header gets deleted from the theme entirely, announcement-bar
+  // (or whichever section is left) still carries its own working copy
+  // and needs nothing else.
+  if (!window.__stickyStackInitialized) {
+    window.__stickyStackInitialized = true;
+
+    var getStickyEls = function () {
+      return Array.prototype.slice.call(
+        document.querySelectorAll('[data-sticky-fixed="true"]')
+      );
+    };
+
+    var stackLayout = function () {
+      var offset = 0;
+      getStickyEls().forEach(function (el) {
+        el.style.setProperty('--sticky-offset', offset + 'px');
+        offset += el.offsetHeight;
+      });
+      document.documentElement.style.setProperty('--sticky-stack-height', offset + 'px');
+    };
+
+    stackLayout();
+    window.addEventListener('resize', stackLayout);
+    window.addEventListener('load', stackLayout);
+
+    getStickyEls().forEach(function (el) {
+      if ('ResizeObserver' in window) {
+        new ResizeObserver(stackLayout).observe(el);
+      }
+    });
+
+    document.addEventListener('shopify:section:load', stackLayout);
+    document.addEventListener('shopify:section:unload', stackLayout);
+    document.addEventListener('shopify:section:reorder', stackLayout);
+
+    window.__stickyStackLayout = stackLayout;
+  }
+})();
+
+(function () {
+  'use strict';
+
   var nav = document.getElementById('main-header-menu-bar');
   if (!nav) return;
 
@@ -33,24 +81,21 @@
   var header = document.querySelector('[data-sticky-fixed="true"]');
   if (!header) return;
 
-  var spacer = document.getElementById('main-header-sticky-spacer');
-
+  // NOTE: with the header now using real position:sticky (not
+  // position:fixed), the browser keeps its normal-flow space reserved
+  // automatically — there is no layout gap to fill, so no spacer
+  // element is needed here anymore.
+  //
+  // --main-header-bottom is still useful for anything below the header
+  // (e.g. collection-toolbar's `top`) that wants to know how much of
+  // the header is actually visible right now, since that collapses to
+  // 0 while autohide has translated the header off-screen.
   var sync = function () {
-    // Full header height — always reserved in the spacer regardless of
-    // autohide state, so the page's normal-flow layout never changes
-    // size on hide/show. Resizing the spacer here previously triggered
-    // the browser's scroll-anchoring compensation, which fired its own
-    // scroll events and fed back into the autohide handler in a loop.
     var full = header.offsetHeight;
-
-    // Sticky-offset variable, consumed by things like collection-toolbar's
-    // `top`, which don't affect document flow — safe to drop to 0 while
-    // the header is off-screen so those elements close the gap.
     var hidden = header.classList.contains('main-header--autohide-hidden');
     var offset = hidden ? 0 : full;
 
     document.documentElement.style.setProperty('--main-header-bottom', offset + 'px');
-    if (spacer) spacer.style.height = full + 'px';
   };
 
   sync();
@@ -62,7 +107,7 @@
 
   // Exposed so the autohide script (below) can re-run this after it
   // toggles main-header--autohide-hidden, keeping --main-header-bottom
-  // and the spacer in sync with whether the header is actually visible.
+  // in sync with whether the header is actually visible.
   window.__mainHeaderSync = sync;
 })();
 
@@ -93,8 +138,8 @@
   header.addEventListener('focusout', function () { isPaused = false; });
 
   // Once the slide transition finishes, re-measure so --main-header-bottom
-  // and the spacer reflect whatever the header's final state actually is
-  // (0 when hidden, full height when revealed) instead of relying on
+  // reflects whatever the header's final state actually is (0 when
+  // hidden, full height when revealed) instead of relying on
   // offsetHeight alone, which doesn't change just because the header was
   // translated off-screen.
   header.addEventListener('transitionend', function (e) {
