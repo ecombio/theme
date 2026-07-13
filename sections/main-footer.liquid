@@ -40,8 +40,7 @@
             </h3>
           {%- endif %}
 
-          <div class="footer-menu__row">
-            <div class="footer-menu__columns footer-menu__columns--{{ section.settings.column_layout }}">
+          <div class="footer-menu__columns footer-menu__columns--{{ section.settings.column_layout }}">
               {% for column in footer_menu.links %}
                 {% if column.links.size > 0 %}
                   <div class="footer-menu__column">
@@ -112,24 +111,25 @@
                   </div>
                 {% endif %}
               {% endfor %}
-            </div>
 
-            {% if section.settings.footer_style == 'columns' and section.blocks.size > 0 %}
-              <div class="footer-menu__badges">
-                {% for block in section.blocks %}
-                  {% if block.type == 'badge' and block.settings.image != blank %}
-                    <div class="footer-menu__badge" {{ block.shopify_attributes }}>
-                      <img
-                        src="{{ block.settings.image | image_url: width: 200 }}"
-                        alt="{{ block.settings.alt | escape }}"
-                        width="60"
-                        loading="lazy">
-                    </div>
-                  {% endif %}
-                {% endfor %}
-              </div>
-            {% endif %}
-          </div>
+              {% if section.settings.footer_style == 'columns' and section.blocks.size > 0 %}
+                <div class="footer-menu__column footer-menu__column--badges">
+                  <div class="footer-menu__badges">
+                    {% for block in section.blocks %}
+                      {% if block.type == 'badge' and block.settings.image != blank %}
+                        <div class="footer-menu__badge" {{ block.shopify_attributes }}>
+                          <img
+                            src="{{ block.settings.image | image_url: width: 200 }}"
+                            alt="{{ block.settings.alt | escape }}"
+                            width="60"
+                            loading="lazy">
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            </div>
         </div>
       {% endif %}
     {% endif %}
@@ -277,10 +277,11 @@
       "type": "select",
       "id": "column_layout",
       "label": "Menu columns",
-      "info": "Choose 5 columns if your footer menu has a fifth top-level link list",
+      "info": "Choose 5 columns if your footer menu has a fifth top-level link list. Choose 6 columns to make room for a dedicated badges column (Columns with badges style only).",
       "options": [
         { "value": "4", "label": "4 columns" },
-        { "value": "5", "label": "5 columns" }
+        { "value": "5", "label": "5 columns" },
+        { "value": "6", "label": "6 columns" }
       ],
       "default": "4"
     },
