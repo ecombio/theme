@@ -2,19 +2,34 @@
    Styles for the main-header BEM component (snippets/main-header.liquid).
    Self-contained: loaded by snippets/main-header.liquid itself.
    Everything here is scoped under .main-header / .main-header__* / .main-header--*.
-
-   Section-level layout concerns (width_class rules, sticky positioning,
-   autohide, sticky-spacer) have moved to assets/header.css, since
-   sections/header.liquid now owns the outer <header> element and the
-   spacer div that those rules target.
 */
 
 .main-header {
-  position: relative;
+  position: relative; /* or static */
   width: 100%;
   z-index: 200;
   background: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.main-header--sticky-enabled {
+  position: sticky;
+  top: 0;
+  transition: transform 0.3s ease;
+}
+
+.main-header--sticky-enabled.main-header--autohide-hidden {
+  transform: translateY(-100%);
+}
+
+.main-header__sticky-spacer {
+  width: 100%;
+  /* Defensive: this element's height is intentionally kept constant by
+     main-header.js regardless of autohide state (see sync() there), but
+     overflow-anchor: none ensures it can never become a scroll-anchoring
+     target if that logic ever changes — resizing it previously caused a
+     feedback loop with the autohide scroll handler. */
+  overflow-anchor: none;
 }
 
 .main-header__bar { width: 100%; }
@@ -28,6 +43,10 @@
   padding-inline: var(--section-padding, 24px);
   height: 64px;
 }
+
+.main-header--default-width .main-header__inner { max-width: 1184px; }
+.main-header--full-width .main-header__inner { max-width: none; }
+.main-header--custom-width .main-header__inner { max-width: var(--custom-width); }
 
 .main-header--logo-centered .main-header__inner {
   position: relative;
@@ -149,6 +168,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .main-header,
+  .main-header--sticky-enabled,
   .main-header__icon-btn,
   .main-header__cart-badge { transition: none; }
 }
@@ -191,7 +211,7 @@
   }
 }
 
-/* sr-only utility â€” duplicated here (also in header.css) so this component
+/* sr-only utility — duplicated here (also in header.css) so this component
    never depends on header.css/js being loaded on the page. */
 .visually-hidden {
   position: absolute;
