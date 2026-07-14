@@ -1,44 +1,38 @@
-{% comment %}
-  ECOMBIO Header — Compare Icon
-  File: snippets/header-compare.liquid
+{%- comment -%}
+  snippets/header-compare.liquid
+  Header compare icon + live count badge. Links to /pages/compare.
 
-  Self-contained: loads its own header-compare.css and
-  header-compare.js below. Does not rely on classes from
-  header-account.css, header-cart.css, or header-wishlist.css, so
-  this snippet can be dropped into the header (or anywhere else) on
-  its own.
+  Wired to assets/header-compare.js (loaded globally via theme.liquid).
+  CSS dependency: assets/header-compare.css (loaded globally via
+                  theme.liquid — snippets do not load their own assets,
+                  per the asset-ownership rule documented in
+                  snippets/product-card.liquid).
 
-  Renders: a link to the compare page with an arrows icon and an
-  item-count badge. The badge reads the 'shopify_compare' key from
-  localStorage — entries stored as { id, handle }, same shape as the
-  wishlist's 'shopify_compare' localStorage entries written by
-  product-card.js.
+  Reads the same 'shopify_compare' localStorage list that
+  main-compare.js reads/writes, so the badge count here always
+  matches what /pages/compare will show.
 
-  Parameters:
-    show_label (boolean, optional) — pass `false` to render the
-    icon only, with no visible text label. Defaults to true when
-    omitted (unchanged behavior).
-{% endcomment %}
-{{ 'header-compare.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'header-compare.js' | asset_url }}" defer></script>
+  Expects a Shopify page with handle "compare" to exist
+  (templates/page.compare.json assigning the main-compare section).
+  Falls back to a hardcoded /pages/compare path if that page
+  hasn't been created yet in the admin.
+{%- endcomment -%}
 
 <a
   href="{{ pages.compare.url | default: '/pages/compare' }}"
-  class="header-compare__link"
-  aria-label="View compare list"
-  data-compare-link
+  class="header-compare"
+  data-header-compare
+  aria-label="Compare products"
 >
-  <span class="header-compare__icon-wrap">
-    <svg class="header-compare__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m16 3 4 4-4 4"/>
-      <path d="M20 7H4"/>
-      <path d="m8 21-4-4 4-4"/>
-      <path d="M4 17h16"/>
-    </svg>
-    <span class="header-compare__badge header-compare__badge--hidden" data-compare-count aria-hidden="true">0</span>
-  </span>
-  {%- unless show_label == false -%}
-    <span class="header-compare__label">Compare</span>
-  {%- endunless -%}
+  <svg class="header-compare__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="m16 3 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20 7H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m8 21-4-4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+
+  <span class="header-compare__count" data-header-compare-count hidden aria-hidden="true">0</span>
+
+  {%- comment -%} Screen-reader text carries the real count; the badge above is aria-hidden. {%- endcomment -%}
+  <span class="visually-hidden" data-header-compare-sr>Compare, no products selected</span>
 </a>
