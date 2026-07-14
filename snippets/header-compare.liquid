@@ -1,0 +1,39 @@
+{% comment %}
+  ECOMBIO Header — Compare Icon
+  File: snippets/header-compare.liquid
+
+  Self-contained: loads its own header-compare.css and
+  header-compare.js below. Does not rely on classes from
+  header-account.css, header-cart.css, or header-wishlist.css, so
+  this snippet can be dropped into the header (or anywhere else) on
+  its own.
+
+  Renders: a link to the compare page with an arrows icon and an
+  item-count badge. The badge reads the 'shopify_compare' key from
+  localStorage — entries stored as { id, handle }, same shape as the
+  wishlist's 'shopify_compare' localStorage entries written by
+  product-card.js.
+
+  No parameters required.
+{% endcomment %}
+{{ 'header-compare.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'header-compare.js' | asset_url }}" defer></script>
+
+<a
+  href="{{ pages.compare.url | default: '/pages/compare' }}"
+  class="header-compare__link"
+  aria-label="View compare list"
+  data-compare-link
+>
+  <span class="header-compare__icon-wrap">
+    <svg class="header-compare__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 3 4 4-4 4"/>
+      <path d="M20 7H4"/>
+      <path d="m8 21-4-4 4-4"/>
+      <path d="M4 17h16"/>
+    </svg>
+    <span class="header-compare__badge header-compare__badge--hidden" data-compare-count aria-hidden="true">0</span>
+  </span>
+  <span class="header-compare__label">Compare</span>
+</a>
