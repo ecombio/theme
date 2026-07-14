@@ -96,6 +96,44 @@
         }, {passive: true});
       }
     </script>
+<script>
+  (function () {
+    const header = document.getElementById('header-group-wrapper');
+    if (!header) return;
 
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    const SCROLL_THRESHOLD = 10; // ignore tiny jitters
+    const REVEAL_ZONE = header.offsetHeight; // always show near the very top
+
+    function onScroll() {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY;
+
+      // Always show header near the top of the page
+      if (currentScrollY <= REVEAL_ZONE) {
+        header.classList.remove('header--hidden');
+      }
+      // Scrolling down past threshold -> hide
+      else if (delta > SCROLL_THRESHOLD) {
+        header.classList.add('header--hidden');
+      }
+      // Scrolling up past threshold -> show
+      else if (delta < -SCROLL_THRESHOLD) {
+        header.classList.remove('header--hidden');
+      }
+
+      lastScrollY = currentScrollY;
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(onScroll);
+        ticking = true;
+      }
+    }, { passive: true });
+  })();
+</script>
   </body>
 </html>
