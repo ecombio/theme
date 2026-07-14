@@ -66,10 +66,20 @@
    after the user has actually scrolled — staying flat/borderless at the
    very top where there's nothing yet to separate from — that needs
    main-header.js to toggle a separate class (e.g. based on scrollY > 0)
-   and this rule scoped to that class instead. */
+   and this rule scoped to that class instead.
+
+   FIX — header-group stacking: this was hardcoded to top: 0, which is
+   correct in isolation but wrong the moment an announcement bar above it
+   is also sticky-enabled — both end up pinned to the same y:0 and
+   overlap. --main-header-stack-offset is set by main-header.js to the
+   announcement bar's live rendered height (0 if it isn't sticky-enabled,
+   not present, or has been dismissed), so main-header sits directly
+   below it instead of underneath/behind it. The variable name matches
+   the one already referenced (but never implemented) in the comment
+   block above .announcement-bar--sticky-enabled in announcement-bar.css. */
 #main-header.main-header--sticky-enabled {
   position: fixed;
-  top: 0;
+  top: var(--main-header-stack-offset, 0px);
   left: 0;
   width: 100%;
   transition: transform 0.3s ease, box-shadow 0.2s ease;
