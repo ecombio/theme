@@ -1,47 +1,3 @@
-{%- comment -%}
-  snippets/product-card.liquid
-  Reusable product card. Context-agnostic — works in carousels,
-  collection grids, search results, featured collections, sponsored
-  ad units, etc.
-
-  Wired to assets/product-card.js (loaded globally via theme.liquid).
-
-  Parameters:
-    product        {Object}  required  — Shopify product object
-    show_quickview {Boolean} optional  — default true
-    show_compare   {Boolean} optional  — default true
-    show_eta       {Boolean} optional  — default true
-    is_sponsored   {Boolean} optional  — default false
-                             When true, renders a "Sponsored" disclosure
-                             label on the card. Used by sponsored-products
-                             and sponsored-brands so in-feed ad units share
-                             the exact same card markup/behavior as
-                             organic product cards.
-
-  CSS dependency: assets/product-card.css (loaded by collection-products.liquid;
-                  snippets do not load their own assets — see asset ownership rule)
-
-  MIGRATION NOTES (from card-product-carousel.liquid):
-    • All CSS classes renamed: .cpc__* → .product-card__*
-    • ATC label span: class="card-product__atc-label" → data-atc-label
-      (eliminates the JS→CSS class coupling documented in Architecture_Review.pdf)
-    • Guard flag renamed: window.__cardProductFeaturesLoaded → window.__productCardLoaded
-    • File rename: card-product-carousel.liquid → product-card.liquid
-
-  IMAGE SIZES FIX (2026-07):
-    • `sizes` was hardcoded to '(max-width: 767px) 50vw, 25vw', which
-      assumes the grid always shows 2 columns on mobile. But
-      main-collection.css's .product-feed__grid caps the grid at
-      1 column below 480px, 2 columns below 768px, and 3 columns below
-      1024px. Because the old `sizes` claimed 50vw even inside the
-      1-column (<=480px) breakpoint, browsers fetched a smaller srcset
-      candidate than the card actually needed and stretched it across
-      the full card width — a soft/pixelated image at the narrowest
-      breakpoint specifically.
-    • `sizes` now mirrors the real grid breakpoints so the browser
-      requests the correctly-sized image at each width.
-{%- endcomment -%}
-
 {%- liquid
   assign card_product  = product
   assign card_image    = card_product.featured_image
@@ -74,10 +30,6 @@
 -%}
 
 {{- '' -}}
-{%- comment -%}
-  data-product-handle sits on the wrapper so product-card.js wishlist
-  logic can climb up with btn.closest('[data-product-handle]').
-{%- endcomment -%}
 <div
   class="product-card{% if is_sponsored %} product-card--sponsored{% endif %}"
   data-product-id="{{ card_product.id }}"
@@ -87,7 +39,6 @@
   {%- endif %}
 >
 
-  {%- comment -%}── IMAGE ZONE ──{%- endcomment -%}
   <div class="product-card__img-zone">
 
     {%- if is_sponsored -%}
@@ -125,7 +76,6 @@
       {%- endif -%}
     </a>
 
-    {%- comment -%}── Wishlist ──{%- endcomment -%}
     <button
       class="product-card__wishlist-btn"
       type="button"
@@ -161,7 +111,6 @@
     {%- endif -%}
   </div>
 
-  {%- comment -%}── CARD BODY ──{%- endcomment -%}
   <div class="product-card__body">
 
     {%- if card_vendor != blank -%}
@@ -170,9 +119,6 @@
 
     <a href="{{ card_url }}" class="product-card__title">{{ card_title }}</a>
 
-    {%- comment -%}
-      Judge.me: raw widget div hydrated after page load by the jdgm script.
-    {%- endcomment -%}
     <div class="product-card__reviews">
       <div
         class="jdgm-widget jdgm-preview-badge"
@@ -181,7 +127,6 @@
       ></div>
     </div>
 
-    {%- comment -%}── Pricing ──{%- endcomment -%}
     <div class="product-card__pricing">
       {%- if on_sale -%}
         <span class="product-card__price product-card__price--sale">{{ card_price | money }}</span>
@@ -195,7 +140,6 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%}── ETA row ──{%- endcomment -%}
     {%- if show_eta and eta_text != blank -%}
       <div class="product-card__eta" aria-label="Estimated delivery">
         <svg class="product-card__eta-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -208,13 +152,8 @@
       </div>
     {%- endif -%}
 
-    {%- comment -%}── Bottom row: ATC + Compare ──{%- endcomment -%}
     <div class="product-card__bottom-row">
 
-      {%- comment -%}
-        ATC label: now uses data-atc-label instead of a CSS class,
-        so product-card.js has zero dependency on CSS class names.
-      {%- endcomment -%}
       <button
         class="product-card__atc-btn"
         type="button"
