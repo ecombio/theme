@@ -17,6 +17,14 @@
   --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --hdr-z              : 200;
   --hdr-drawer-z       : 400;
+
+  /* ASSUMPTION — this is the boxed max-width used when "Section width"
+     is set to "Default". This section is intentionally decoupled from
+     the theme's global --page-width (see the Section layout comment
+     below), so there's no existing value to borrow here. 90rem (1440px)
+     is a common Shopify container width — change this one value if it
+     doesn't match the rest of your theme. */
+  --hdr-default-max-width : 90rem;
 }
 
 /* FIX — .showcase-backdrop (header-menu.js) is appended directly to
@@ -34,6 +42,36 @@
   z-index: var(--hdr-z);
 }
 
+/* FIX — sticky/autohide were previously inert: main-header.js correctly
+   tracked scroll direction and toggled main-header--sticky-enabled /
+   main-header--autohide-hidden on #main-header, and main-header.liquid
+   correctly added data-sticky-fixed + the class, but no rule ever took
+   the header out of normal flow or moved it on scroll — so the classes
+   changed with nothing rendered differently. This pins the header to the
+   viewport when sticky is on, and slides it up out of view when the JS
+   marks it hidden. main-header.liquid now also renders a
+   #main-header-sticky-spacer element right after </header> so removing
+   the header from flow doesn't leave a gap where its content used to
+   push the page down — main-header.js sets that spacer's height to match
+   the header's real (rendered) height on load/resize. */
+#main-header.main-header--sticky-enabled {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+#main-header.main-header--sticky-enabled.main-header--autohide-hidden {
+  transform: translateY(-100%);
+}
+
+#main-header-sticky-spacer {
+  display: block;
+  width: 100%;
+}
+
 .main-header__bar {
   position: relative;
   top: auto;
@@ -48,7 +86,7 @@
   gap: 12px;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--section-padding, 24px);
   height: var(--hdr-height-desktop);
 }
 
@@ -186,7 +224,39 @@
 .main-header__search--inline { flex: 1 1 auto; min-width: 0; max-width: 640px; }
 
 .main-header__search-row { display: none; border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
-.main-header__search-row-inner { max-width: 100%; margin: 0 auto; padding: 8px 24px; }
+.main-header__search-row-inner { max-width: 100%; margin: 0 auto; padding: 8px var(--section-padding, 24px); }
+
+/* FIX — Section layout (Section width / Custom width / Side padding)
+   was wired up correctly in main-header.liquid — same pattern as
+   sections/example-width-section.liquid — but these classes and
+   variables were never actually implemented here, so none of those
+   settings did anything. This also caused the nav row (.menu-bar) to
+   visually drift out of alignment with the logo/search/icons row
+   whenever a boxed width was expected: .menu-bar had its own separate
+   hardcoded width/padding that never matched. Scoping all three header
+   rows (icons row, search row, nav row) to the same classes and the
+   same --section-padding / --custom-width variables keeps them aligned
+   together no matter which "Section width" option is chosen. */
+#main-header.main-header--default-width .main-header__inner,
+#main-header.main-header--default-width .main-header__search-row-inner,
+#main-header.main-header--default-width .menu-bar {
+  max-width: var(--hdr-default-max-width);
+  margin-inline: auto;
+}
+
+#main-header.main-header--full-width .main-header__inner,
+#main-header.main-header--full-width .main-header__search-row-inner,
+#main-header.main-header--full-width .menu-bar {
+  max-width: 100%;
+  margin-inline: 0;
+}
+
+#main-header.main-header--custom-width .main-header__inner,
+#main-header.main-header--custom-width .main-header__search-row-inner,
+#main-header.main-header--custom-width .menu-bar {
+  max-width: var(--custom-width, 80rem);
+  margin-inline: auto;
+}
 
 /* ASSUMPTION — new, not present in header.css; flex row to fix the bulleted-list bug in your screenshot */
 .main-header__icons {
@@ -338,7 +408,8 @@
   .ecombio-mobile-nav__overlay,
   .ecombio-mobile-nav__panel,
   .ecombio-mobile-nav__chevron,
-  .ecombio-header__hamburger span { transition: none !important; }
+  .ecombio-header__hamburger span,
+  #main-header.main-header--sticky-enabled { transition: none !important; }
 }
 
 @media (min-width: 1024px) {
@@ -354,7 +425,7 @@
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 0 24px;
+    padding: 0 var(--section-padding, 24px);
     border-top: 0;
     background: #ffffff;
     position: relative;
