@@ -3,6 +3,7 @@
   <head>
     {{ 'base.css'                  | asset_url | stylesheet_tag }}
     {{ 'theme.css'                 | asset_url | stylesheet_tag }}
+    {{ 'header-group.css'          | asset_url | stylesheet_tag }}
     {{ 'quick-view.css'            | asset_url | stylesheet_tag }}
     {{ 'cart-drawer.css'           | asset_url | stylesheet_tag }}
     {{ 'cart-recommendations.css'  | asset_url | stylesheet_tag }}
@@ -30,39 +31,6 @@
     {% endif %}
 
     {{ content_for_header }}
-
-    <style>
-#header-group-wrapper {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  z-index: 2147483647 !important;
-  background: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-  transition: transform 0.3s ease !important;
-  will-change: transform;
-}
-
-#header-group-wrapper.header--hidden {
-  transform: translateY(-100%) !important;
-}
-
-      #header-group-sticky-spacer {
-        height: 68px;
-      }
-
-      @media (max-width: 1023px) { #header-group-sticky-spacer { height: 64px; } }
-      @media (max-width: 599px) { #header-group-sticky-spacer { height: 56px; } }
-
-      /* NUCLEAR - destroy stacking traps */
-      main, .shopify-section, section, .page-width, [class*="section"] {
-        overflow: visible !important;
-        transform: none !important;
-        filter: none !important;
-        contain: none !important;
-      }
-    </style>
   </head>
 
   <body class="{{ settings.theme_preset | default: 'ecombio' }}" data-header-layout="{{ settings.header_layout }}">
@@ -84,124 +52,7 @@
 
     {{- 'base.js' | asset_url | script_tag }}
     {{- 'theme.js' | asset_url | script_tag }}
+    {{- 'header-group.js' | asset_url | script_tag }}
     <!-- other scripts... -->
-
-    <script>
-      // Final boss - force it every scroll
-      const header = document.getElementById('header-group-wrapper');
-      if (header) {
-        window.addEventListener('scroll', () => {
-          header.style.position = 'sticky';
-          header.style.top = '0';
-        }, {passive: true});
-      }
-    </script>
-<script>
-  (function () {
-    const header = document.getElementById('header-group-wrapper');
-    if (!header) return;
-
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-    const SCROLL_THRESHOLD = 10; // ignore tiny jitters
-    const REVEAL_ZONE = header.offsetHeight; // always show near the very top
-
-    function onScroll() {
-      const currentScrollY = window.scrollY;
-      const delta = currentScrollY - lastScrollY;
-
-      // Always show header near the top of the page
-      if (currentScrollY <= REVEAL_ZONE) {
-        header.classList.remove('header--hidden');
-      }
-      // Scrolling down past threshold -> hide
-      else if (delta > SCROLL_THRESHOLD) {
-        header.classList.add('header--hidden');
-      }
-      // Scrolling up past threshold -> show
-      else if (delta < -SCROLL_THRESHOLD) {
-        header.classList.remove('header--hidden');
-      }
-
-      lastScrollY = currentScrollY;
-      ticking = false;
-    }
-
-    window.addEventListener('scroll', () => {
-      if (!ticking) {
-        window.requestAnimationFrame(onScroll);
-        ticking = true;
-      }
-    }, { passive: true });
-  })();
-</script>
-<script>
-  (function () {
-    const header = document.getElementById('header-group-wrapper');
-    if (!header) return;
-
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-    let isLocked = false; // true while hovering/focusing header
-    const SCROLL_THRESHOLD = 10;
-    const REVEAL_ZONE = header.offsetHeight;
-
-    function onScroll() {
-      const currentScrollY = window.scrollY;
-      const delta = currentScrollY - lastScrollY;
-
-      if (isLocked) {
-        // While locked, always keep it visible and just track position
-        header.classList.remove('header--hidden');
-        lastScrollY = currentScrollY;
-        ticking = false;
-        return;
-      }
-
-      if (currentScrollY <= REVEAL_ZONE) {
-        header.classList.remove('header--hidden');
-      } else if (delta > SCROLL_THRESHOLD) {
-        header.classList.add('header--hidden');
-      } else if (delta < -SCROLL_THRESHOLD) {
-        header.classList.remove('header--hidden');
-      }
-
-      lastScrollY = currentScrollY;
-      ticking = false;
-    }
-
-    window.addEventListener('scroll', () => {
-      if (!ticking) {
-        window.requestAnimationFrame(onScroll);
-        ticking = true;
-      }
-    }, { passive: true });
-
-    // --- Hover lock (mouse users) ---
-    header.addEventListener('mouseenter', () => {
-      isLocked = true;
-      header.classList.remove('header--hidden');
-    });
-
-    header.addEventListener('mouseleave', () => {
-      isLocked = false;
-      lastScrollY = window.scrollY; // reset baseline so it doesn't jump-hide immediately
-    });
-
-    // --- Focus lock (keyboard users tabbing through nav/menu links) ---
-    header.addEventListener('focusin', () => {
-      isLocked = true;
-      header.classList.remove('header--hidden');
-    });
-
-    header.addEventListener('focusout', (e) => {
-      // Only unlock if focus actually left the header, not just moved between children
-      if (!header.contains(e.relatedTarget)) {
-        isLocked = false;
-        lastScrollY = window.scrollY;
-      }
-    });
-  })();
-</script>
   </body>
 </html>
