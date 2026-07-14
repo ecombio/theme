@@ -1,50 +1,3 @@
-{%- comment -%}
-  snippets/header-compare.liquid
-  Header compare icon + label + live count. Links to /pages/compare.
-
-  SELF-CONTAINED: loads its own assets/header-compare.css and
-  assets/header-compare.js directly below — nothing needs to be added
-  to theme.liquid for this to work. This intentionally departs from
-  the "snippets don't load their own assets" convention documented in
-  snippets/product-card.liquid: that rule exists because product-card
-  is rendered many times per page (grids, carousels, search results)
-  and its parent (collection-products.liquid etc.) already owns a
-  single shared stylesheet_tag/script_tag for it. header-compare is a
-  single, once-per-page header nav item with no equivalent parent
-  section to own its assets, so it owns them itself — same reasoning
-  as sections/main-compare.liquid loading its own main-compare.css/js.
-
-  If your theme ends up rendering this snippet more than once per
-  page (e.g. both a desktop and mobile nav each render it), duplicate
-  <link>/<script> tags are harmless (browsers dedupe fetches by URL)
-  but you may want to hoist the tags into a parent section's own
-  asset block instead — see the note above for why that's the
-  existing pattern for repeated snippets.
-
-  Reads the same 'shopify_compare' localStorage list that
-  main-compare.js and product-card.js read/write, so the count here
-  always matches the compare page and the product-card compare bar.
-
-  PARAMS:
-    show_icon  {Boolean} optional — default true. Matches the header
-               section's "Show compare icon" toggle.
-    show_label {Boolean} optional — default true. Matches the header
-               section's "Show compare label" toggle. When off, only
-               the icon is shown — no text label at any breakpoint
-               (same convention as the wishlist/cart nav items).
-
-  ASSUMED CALL SITE (adjust the setting IDs if yours differ):
-    {% render 'header-compare',
-       show_icon: section.settings.show_compare_icon,
-       show_label: section.settings.show_compare_label
-    %}
-
-  Expects a Shopify page with handle "compare" to exist
-  (templates/page.compare.json assigning the main-compare section).
-  Falls back to a hardcoded /pages/compare path if that page
-  hasn't been created yet in the admin.
-{%- endcomment -%}
-
 {{ 'header-compare.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -59,7 +12,7 @@
   endif
 -%}
 
-<a
+
   href="{{ pages.compare.url | default: '/pages/compare' }}"
   class="header-compare"
   data-header-compare
@@ -73,12 +26,6 @@
         <path d="m8 21-4-4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      {%- comment -%}
-        Corner badge — only meaningful when the icon is visible.
-        If show_label is also true, the inline count next to the
-        label (below) is the primary indicator and this stays a
-        small secondary cue; header-compare.js keeps both updated.
-      {%- endcomment -%}
       <span class="header-compare__badge" data-header-compare-badge hidden aria-hidden="true">0</span>
     </span>
   {%- endif -%}
@@ -90,7 +37,6 @@
     </span>
   {%- endif -%}
 
-  {%- comment -%} Screen-reader text always carries the real count, regardless of icon/label visibility. {%- endcomment -%}
   <span class="visually-hidden" data-header-compare-sr>Compare, no products selected</span>
 </a>
 
