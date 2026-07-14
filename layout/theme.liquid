@@ -31,34 +31,41 @@
 
     {{ content_for_header }}
 
-    <!-- NUCLEAR STICKY HEADER - HARDCODED ONLY -->
+    <!-- HARDCODED AGGRESSIVE STICKY -->
     <style>
       #header-group-wrapper {
-        position: -webkit-sticky !important;
         position: sticky !important;
         top: 0 !important;
         z-index: 2147483647 !important;
         width: 100% !important;
-        background: inherit !important;
-        will-change: transform;
-        isolation: isolate !important;
-        contain: none !important;
+        background: var(--hdr-bg, #ffffff) !important;
       }
 
       #header-group-sticky-spacer {
-        height: 0;
+        height: var(--hdr-height-desktop, 68px);
       }
 
-      /* Kill common Shopify traps */
-      main, 
-      .shopify-section, 
-      .page-width, 
-      .section,
-      section {
+      @media (max-width: 1023px) {
+        #header-group-sticky-spacer {
+          height: var(--hdr-height-tablet, 64px);
+        }
+      }
+      @media (max-width: 599px) {
+        #header-group-sticky-spacer {
+          height: var(--hdr-height-mobile, 56px);
+        }
+      }
+
+      /* Force main header to play nice */
+      #main-header {
+        position: relative !important;
+        z-index: 10 !important;
+      }
+
+      /* Kill traps from sections */
+      main .shopify-section,
+      .shopify-section {
         overflow: visible !important;
-        overflow-x: visible !important;
-        overflow-y: visible !important;
-        transform: none !important;
       }
     </style>
   </head>
@@ -95,25 +102,6 @@
     <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
     <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
     <script src="{{ 'quick-view.js'           | asset_url }}" defer></script>
-
-    <!-- JS fallback to force sticky forever -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const header = document.getElementById('header-group-wrapper');
-        if (header) {
-          header.style.position = 'sticky';
-          header.style.top = '0';
-          header.style.zIndex = '2147483647';
-          
-          // Re-apply on scroll in case sections fuck it
-          window.addEventListener('scroll', () => {
-            if (header.style.position !== 'sticky') {
-              header.style.position = 'sticky';
-            }
-          }, { passive: true });
-        }
-      });
-    </script>
 
   </body>
 </html>
