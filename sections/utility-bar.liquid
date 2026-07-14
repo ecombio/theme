@@ -1,38 +1,25 @@
 {%- comment -%}
   sections/utility-bar.liquid
-  Thin wrapper around snippets/utility-bar.liquid so the bar can live
-  as its own entry in sections/header-group.json — independently
-  reorderable/removable from main-header.
 
-  NOTE ON LAYOUT SETTINGS: the snippet reads settings.section_width /
-  settings.custom_width / settings.section_padding to line up with
-  whatever row is rendering it. When this lived inside main-header.liquid,
-  those came for free from main-header's own "Section layout" group, so
-  the utility bar always matched automatically. Now that this is a
-  separate section, those three fields are duplicated below so the
-  snippet still has something to read — but they no longer auto-sync
-  with main-header's width/padding. If you want the utility bar to
-  visually line up with the header row above it, match these values to
-  main-header's Section layout settings by hand (or eyeball it live in
-  the theme editor).
+  Split out of sections/header.liquid — used to render via snippets/utility-bar.liquid,
+  passed the header section's own settings. Now a standalone section, placed above or
+  below "Header" in config/header-group.json (same pattern as sections/announcement-bar.liquid).
 
-  All rendering logic (including the "enable_bar" check, and loading
-  utility-bar.css/js) already lives in the snippet and is untouched here.
+  NOTE: "Section width" / "Side padding" below are duplicated from the Header section's
+  own layout settings rather than shared — since this is now a sibling section it can no
+  longer read header.liquid's section.settings directly. Keep the two in sync manually if
+  you want this row to line up with the header row above/below it.
 {%- endcomment -%}
 
-{%- comment -%}
-  snippets/utility-bar.liquid
-{%- endcomment -%}
-
-{%- if settings.enable_bar -%}
+{%- if section.settings.enable_bar -%}
   {{ 'utility-bar.css' | asset_url | stylesheet_tag }}
 
   {%- liquid
-    assign bar_style = settings.bar_style | default: 'hyper'
-    assign show_curr  = settings.show_currency
-    assign show_loc   = settings.show_locale
+    assign bar_style = section.settings.bar_style | default: 'hyper'
+    assign show_curr  = section.settings.show_currency
+    assign show_loc   = section.settings.show_locale
 
-    assign utility_width_type = settings.section_width
+    assign utility_width_type = section.settings.section_width
     if utility_width_type == blank
       assign utility_width_class = 'utility-bar__default-width'
     elsif utility_width_type == 'full-width'
@@ -47,16 +34,16 @@
        aria-label="Utility bar"
        id="utility-bar"
        style="
-         --section-padding: {{ settings.section_padding }}px;
+         --section-padding: {{ section.settings.section_padding }}px;
          {%- if utility_width_type == 'custom-width' %}
-           --custom-width: {{ settings.custom_width }}rem;
+           --custom-width: {{ section.settings.custom_width }}rem;
          {%- endif %}
        ">
 
     <div class="utility-bar__inner">
 
       <div class="utility-bar__col utility-bar__col--left">
-        {%- render 'utility-links', settings: settings, count: 3 -%}
+        {%- render 'utility-links', settings: section.settings, count: 3 -%}
       </div>
 
       <div class="utility-bar__col utility-bar__col--right">
@@ -81,18 +68,16 @@
 
 {% schema %}
 {
-  "name": "Utility Bar",
+  "name": "Utility bar",
   "tag": "div",
+  "class": "utility-bar-section",
   "settings": [
-    { "type": "header", "content": "Section layout" },
-    {
-      "type": "paragraph",
-      "content": "These control the bar's own width/padding. To visually line up with the main header row above it, match these to that section's Section layout settings."
-    },
+    { "type": "header", "content": "Layout" },
     {
       "type": "select",
       "id": "section_width",
       "label": "Section width",
+      "info": "Should match the Header section's own width setting, so the two rows line up.",
       "options": [
         { "value": "", "label": "Default" },
         { "value": "full-width", "label": "Full width" },
@@ -119,10 +104,11 @@
       "max": 80,
       "step": 4,
       "unit": "px",
-      "default": 24
+      "default": 24,
+      "info": "Should match the Header section's own side padding setting, so the two rows line up."
     },
 
-    { "type": "header", "content": "Utility Bar" },
+    { "type": "header", "content": "Style" },
     {
       "type": "checkbox",
       "id": "enable_bar",
@@ -151,58 +137,23 @@
       "label": "Show language selector",
       "default": true
     },
-    {
-      "type": "image_picker",
-      "id": "link_1_icon",
-      "label": "Link 1 icon (optional)"
-    },
-    {
-      "type": "text",
-      "id": "link_1_label",
-      "label": "Link 1 label",
-      "default": "Track Order"
-    },
-    {
-      "type": "url",
-      "id": "link_1_url",
-      "label": "Link 1 URL"
-    },
-    {
-      "type": "image_picker",
-      "id": "link_2_icon",
-      "label": "Link 2 icon (optional)"
-    },
-    {
-      "type": "text",
-      "id": "link_2_label",
-      "label": "Link 2 label",
-      "default": "Store Locator"
-    },
-    {
-      "type": "url",
-      "id": "link_2_url",
-      "label": "Link 2 URL"
-    },
-    {
-      "type": "image_picker",
-      "id": "link_3_icon",
-      "label": "Link 3 icon (optional)"
-    },
-    {
-      "type": "text",
-      "id": "link_3_label",
-      "label": "Link 3 label",
-      "default": "Track Order"
-    },
-    {
-      "type": "url",
-      "id": "link_3_url",
-      "label": "Link 3 URL"
-    }
+
+    { "type": "header", "content": "Links" },
+    { "type": "image_picker", "id": "link_1_icon", "label": "Link 1 icon (optional)" },
+    { "type": "text", "id": "link_1_label", "label": "Link 1 label", "default": "Track Order" },
+    { "type": "url", "id": "link_1_url", "label": "Link 1 URL" },
+
+    { "type": "image_picker", "id": "link_2_icon", "label": "Link 2 icon (optional)" },
+    { "type": "text", "id": "link_2_label", "label": "Link 2 label", "default": "Store Locator" },
+    { "type": "url", "id": "link_2_url", "label": "Link 2 URL" },
+
+    { "type": "image_picker", "id": "link_3_icon", "label": "Link 3 icon (optional)" },
+    { "type": "text", "id": "link_3_label", "label": "Link 3 label", "default": "Track Order" },
+    { "type": "url", "id": "link_3_url", "label": "Link 3 URL" }
   ],
   "presets": [
     {
-      "name": "Utility Bar",
+      "name": "Utility bar",
       "settings": {
         "link_1_label": "Track Order",
         "link_1_url": "/apps/track",
