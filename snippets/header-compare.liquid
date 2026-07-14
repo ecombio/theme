@@ -1,6 +1,6 @@
 {%- comment -%}
   snippets/header-compare.liquid
-  Header compare icon + live count badge. Links to /pages/compare.
+  Header compare icon + label + live count. Links to /pages/compare.
 
   Wired to assets/header-compare.js (loaded globally via theme.liquid).
   CSS dependency: assets/header-compare.css (loaded globally via
@@ -9,8 +9,22 @@
                   snippets/product-card.liquid).
 
   Reads the same 'shopify_compare' localStorage list that
-  main-compare.js reads/writes, so the badge count here always
-  matches what /pages/compare will show.
+  main-compare.js and product-card.js read/write, so the count here
+  always matches the compare page and the product-card compare bar.
+
+  PARAMS:
+    show_icon  {Boolean} optional — default true. Matches the header
+               section's "Show compare icon" toggle.
+    show_label {Boolean} optional — default true. Matches the header
+               section's "Show compare label" toggle. When off, only
+               the icon is shown — no text label at any breakpoint
+               (same convention as the wishlist/cart nav items).
+
+  ASSUMED CALL SITE (adjust the setting IDs if yours differ):
+    {% render 'header-compare',
+       show_icon: section.settings.show_compare_icon,
+       show_label: section.settings.show_compare_label
+    %}
 
   Expects a Shopify page with handle "compare" to exist
   (templates/page.compare.json assigning the main-compare section).
@@ -18,21 +32,49 @@
   hasn't been created yet in the admin.
 {%- endcomment -%}
 
+{%- liquid
+  assign show_icon_setting = show_icon
+  if show_icon_setting == nil
+    assign show_icon_setting = true
+  endif
+
+  assign show_label_setting = show_label
+  if show_label_setting == nil
+    assign show_label_setting = true
+  endif
+-%}
+
 <a
   href="{{ pages.compare.url | default: '/pages/compare' }}"
   class="header-compare"
   data-header-compare
   aria-label="Compare products"
 >
-  <svg class="header-compare__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="m16 3 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M20 7H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="m8 21-4-4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
+  {%- if show_icon_setting -%}
+    <span class="header-compare__icon-wrap">
+      <svg class="header-compare__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="m16 3 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20 7H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m8 21-4-4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {%- comment -%}
+        Corner badge — only meaningful when the icon is visible.
+        If show_label is also true, the inline count next to the
+        label (below) is the primary indicator and this stays a
+        small secondary cue; header-compare.js keeps both updated.
+      {%- endcomment -%}
+      <span class="header-compare__badge" data-header-compare-badge hidden aria-hidden="true">0</span>
+    </span>
+  {%- endif -%}
 
-  <span class="header-compare__count" data-header-compare-count hidden aria-hidden="true">0</span>
+  {%- if show_label_setting -%}
+    <span class="header-compare__label">
+      Compare
+      <span class="header-compare__label-count" data-header-compare-label-count hidden aria-hidden="true">(0)</span>
+    </span>
+  {%- endif -%}
 
-  {%- comment -%} Screen-reader text carries the real count; the badge above is aria-hidden. {%- endcomment -%}
+  {%- comment -%} Screen-reader text always carries the real count, regardless of icon/label visibility. {%- endcomment -%}
   <span class="visually-hidden" data-header-compare-sr>Compare, no products selected</span>
 </a>
