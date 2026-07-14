@@ -1,0 +1,44 @@
+/*
+ * assets/header-group.css
+ *
+ * Drives sticky + autohide for the ENTIRE header stack (announcement bar,
+ * header menu bar, main header â€” whatever sections live in
+ * config/header-group.json) as one unit.
+ *
+ * Shopify wraps every section in that group inside a single element,
+ * #shopify-section-group-header-group, in document order. That means we
+ * don't need per-section positioning math, a data-header-stack-member
+ * attribute, or a spacer div: making THIS ONE wrapper sticky is enough to
+ * pin the whole stack together, and since position: sticky keeps the
+ * element in normal document flow, there's no layout shift to account
+ * for either.
+ *
+ * Both behaviors are opt-in via body attributes set in theme.liquid from
+ * settings.enable_sticky_header / settings.enable_header_autohide, so
+ * this CSS does nothing unless those theme settings are turned on.
+ */
+
+body[data-sticky-header="true"] #shopify-section-group-header-group {
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  transition: transform 0.3s ease;
+}
+
+/*
+ * .header-group--hidden is toggled by header-group.js on scroll-down /
+ * removed on scroll-up. Only takes effect when autohide is also enabled â€”
+ * without data-header-autohide="true" this class may exist on the
+ * element but has no rule to act on it, so the header just stays
+ * pinned in place.
+ */
+body[data-sticky-header="true"][data-header-autohide="true"]
+  #shopify-section-group-header-group.header-group--hidden {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-sticky-header="true"] #shopify-section-group-header-group {
+    transition: none;
+  }
+}
