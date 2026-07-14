@@ -2,11 +2,24 @@
   snippets/header-compare.liquid
   Header compare icon + label + live count. Links to /pages/compare.
 
-  Wired to assets/header-compare.js (loaded globally via theme.liquid).
-  CSS dependency: assets/header-compare.css (loaded globally via
-                  theme.liquid — snippets do not load their own assets,
-                  per the asset-ownership rule documented in
-                  snippets/product-card.liquid).
+  SELF-CONTAINED: loads its own assets/header-compare.css and
+  assets/header-compare.js directly below — nothing needs to be added
+  to theme.liquid for this to work. This intentionally departs from
+  the "snippets don't load their own assets" convention documented in
+  snippets/product-card.liquid: that rule exists because product-card
+  is rendered many times per page (grids, carousels, search results)
+  and its parent (collection-products.liquid etc.) already owns a
+  single shared stylesheet_tag/script_tag for it. header-compare is a
+  single, once-per-page header nav item with no equivalent parent
+  section to own its assets, so it owns them itself — same reasoning
+  as sections/main-compare.liquid loading its own main-compare.css/js.
+
+  If your theme ends up rendering this snippet more than once per
+  page (e.g. both a desktop and mobile nav each render it), duplicate
+  <link>/<script> tags are harmless (browsers dedupe fetches by URL)
+  but you may want to hoist the tags into a parent section's own
+  asset block instead — see the note above for why that's the
+  existing pattern for repeated snippets.
 
   Reads the same 'shopify_compare' localStorage list that
   main-compare.js and product-card.js read/write, so the count here
@@ -31,6 +44,8 @@
   Falls back to a hardcoded /pages/compare path if that page
   hasn't been created yet in the admin.
 {%- endcomment -%}
+
+{{ 'header-compare.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign show_icon_setting = show_icon
@@ -78,3 +93,5 @@
   {%- comment -%} Screen-reader text always carries the real count, regardless of icon/label visibility. {%- endcomment -%}
   <span class="visually-hidden" data-header-compare-sr>Compare, no products selected</span>
 </a>
+
+<script src="{{ 'header-compare.js' | asset_url }}" defer></script>
