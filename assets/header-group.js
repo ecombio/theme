@@ -52,13 +52,28 @@
     window.addEventListener('resize', syncHeaderHeightVar, { passive: true });
   }
 
+  // Single place that toggles the header's hidden state. Mirrors it
+  // onto :root as a class (rather than only the header element) so
+  // any other fixed/sticky element in the theme — the collection
+  // toolbar, a sticky sidebar, etc. — can react to the header
+  // disappearing without each one needing its own scroll listener.
+  // e.g. `:root.header-group-hidden .my-sticky-el { top: 0; }`
+  let isHidden = false;
+
+  function setHeaderHidden(hidden) {
+    if (hidden === isHidden) return;
+    isHidden = hidden;
+    header.classList.toggle('header--hidden', hidden);
+    root.classList.toggle('header-group-hidden', hidden);
+  }
+
   function onScroll() {
     const currentScrollY = window.scrollY;
     const delta = currentScrollY - lastScrollY;
 
     if (isLocked) {
       // While locked, always keep it visible and just track position
-      header.classList.remove('header--hidden');
+      setHeaderHidden(false);
       lastScrollY = currentScrollY;
       ticking = false;
       return;
@@ -66,15 +81,15 @@
 
     // Always show header near the top of the page
     if (currentScrollY <= revealZone) {
-      header.classList.remove('header--hidden');
+      setHeaderHidden(false);
     }
     // Scrolling down past threshold -> hide
     else if (delta > SCROLL_THRESHOLD) {
-      header.classList.add('header--hidden');
+      setHeaderHidden(true);
     }
     // Scrolling up past threshold -> show
     else if (delta < -SCROLL_THRESHOLD) {
-      header.classList.remove('header--hidden');
+      setHeaderHidden(false);
     }
 
     lastScrollY = currentScrollY;
@@ -95,7 +110,7 @@
   // --- Hover lock (mouse users) ---
   header.addEventListener('mouseenter', () => {
     isLocked = true;
-    header.classList.remove('header--hidden');
+    setHeaderHidden(false);
   });
 
   header.addEventListener('mouseleave', () => {
@@ -106,7 +121,7 @@
   // --- Focus lock (keyboard users tabbing through nav/menu links) ---
   header.addEventListener('focusin', () => {
     isLocked = true;
-    header.classList.remove('header--hidden');
+    setHeaderHidden(false);
   });
 
   header.addEventListener('focusout', (e) => {
