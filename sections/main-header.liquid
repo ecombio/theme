@@ -140,6 +140,20 @@
   {%- render 'header-menu', blocks: section.blocks -%}
 </header>
 
+{%- comment -%}
+  FIX — when sticky is enabled the header is taken out of normal document
+  flow (position: fixed) so it can pin to the viewport and slide away on
+  autohide. Removing it from flow collapses the space it used to occupy,
+  which caused content to jump up underneath it. This spacer reserves
+  that space; main-header.js measures the header's real height and sets
+  this element's height to match, keeping layout stable. It intentionally
+  isn't rendered when sticky is off, since a non-sticky header stays in
+  normal flow and needs no spacer.
+{%- endcomment -%}
+{%- if section.settings.enable_sticky -%}
+  <div id="main-header-sticky-spacer" aria-hidden="true"></div>
+{%- endif -%}
+
 <script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
