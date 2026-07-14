@@ -1,21 +1,32 @@
-
+/*
+ * assets/header-group.css
+ *
+ * Sticky is applied PER SECTION — to each direct .shopify-section child
+ * of #shopify-section-group-header-group — instead of to the group
+ * wrapper as one block. Each section gets position: sticky with its own
+ * `top` offset (set inline by header-group.js, since it depends on
+ * runtime-measured heights of the sections before it), so multiple
+ * sections stack correctly on top of each other as you scroll instead
+ * of fighting over one shared sticky box.
+ *
+ * Autohide still moves the WHOLE stack together via transform on the
+ * group wrapper itself — that part is intentionally still group-level,
+ * since "hide the entire header on scroll down" is a single visual
+ * unit even though "stick to the top" is now per-section.
+ */
 
 body[data-sticky-header="true"] #shopify-section-group-header-group {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 300;
   transition: transform 0.3s ease;
-  align-self: flex-start; /* prevent flex stretch from breaking sticky calc */
-  flex-shrink: 0;
 }
 
-/*
- * .header-group--hidden is toggled by header-group.js on scroll-down /
- * removed on scroll-up. Only takes effect when autohide is also enabled â€”
- * without data-header-autohide="true" this class may exist on the
- * element but has no rule to act on it, so the header just stays
- * pinned in place.
- */
+body[data-sticky-header="true"] #shopify-section-group-header-group > .shopify-section {
+  position: sticky;
+  z-index: 300;
+  /* top is set inline, per section, by header-group.js */
+}
+
 body[data-sticky-header="true"][data-header-autohide="true"]
   #shopify-section-group-header-group.header-group--hidden {
   transform: translateY(-100%);
