@@ -1,11 +1,5 @@
 {{ 'main-compare.css' | asset_url | stylesheet_tag }}
 
-{%- comment -%}
-  Section layout (width + padding) follows the same independent
-  pattern as main-wishlist.liquid / sections/example-width-section.liquid —
-  its own local --section-padding / --custom-width, set inline only
-  from this section's own schema settings.
-{%- endcomment -%}
 {%- liquid
   assign width_type = section.settings.section_width
   if width_type == blank
@@ -27,13 +21,11 @@
     {%- endif %}
   "
 >
-  {%- comment -%} ── Page header ────────────────────────────────── {%- endcomment -%}
   <header class="compare-header">
     <h1 class="compare-header__title">{{ page.title | default: 'Compare' }}</h1>
     <p class="compare-header__count" data-compare-count-label aria-live="polite"></p>
   </header>
 
-  {%- comment -%} ── Empty state ───────────────────────────────── {%- endcomment -%}
   <div class="compare-empty" data-compare-empty hidden>
     <div class="compare-empty__icon" aria-hidden="true">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -49,7 +41,6 @@
     </a>
   </div>
 
-  {%- comment -%} ── Comparison table (populated by JS) ───────────── {%- endcomment -%}
   <div class="compare-table-wrap" data-compare-table-wrap hidden>
     <table class="compare-table" data-compare-table>
       <thead data-compare-thead></thead>
@@ -57,21 +48,7 @@
     </table>
   </div>
 
-  {%- comment -%} ── Actions bar ──────────────────────────────────── {%- endcomment -%}
   <div class="compare-actions" data-compare-actions hidden>
-    {%- comment -%}
-      RENAMED: data-compare-clear → data-compare-page-clear.
-      The sticky compare-bar (snippets/compare-bar.liquid, rendered
-      globally in theme.liquid — including on this page) has its own
-      "Clear all" button using [data-compare-clear], and product-card.js
-      listens for that selector via a document-level delegated click
-      handler. Since compare-bar.liquid renders on every page including
-      this one, the old shared attribute name meant a single click here
-      fired BOTH main-compare.js's and product-card.js's clear handlers.
-      Harmless today since both happen to clear the same list, but it's
-      an unrelated-scripts-sharing-a-selector footgun. Renaming this one
-      makes the two clear actions unambiguous.
-    {%- endcomment -%}
     <button class="compare-actions__clear btn btn--plain" data-compare-page-clear type="button">
       Clear compare
     </button>
