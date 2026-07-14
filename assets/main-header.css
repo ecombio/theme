@@ -19,10 +19,26 @@
   --hdr-drawer-z       : 400;
 }
 
+/* FIX — .showcase-backdrop (header-menu.js) is appended directly to
+   <body> with z-index:150. If the header establishes its own stacking
+   context (position:fixed/sticky + a transform, common for the autohide
+   effect), any position:fixed descendant of the header — including
+   .showcase__panel — gets trapped inside that context. Its z-index:300
+   then only wins against other elements *inside* the header, not
+   against the backdrop sitting at the body level, so the backdrop paints
+   over the panel content. Giving the header itself a z-index above the
+   backdrop's 150 fixes this regardless of what else is happening inside
+   its stacking context. */
+#main-header {
+  position: relative;
+  z-index: var(--hdr-z);
+}
+
 .main-header__bar {
   position: relative;
   top: auto;
   background: var(--hdr-bg);
+  border-bottom: 1px solid var(--hdr-border);
   font-family: var(--hdr-font);
   width: 100%;
 }
