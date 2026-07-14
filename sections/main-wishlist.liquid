@@ -1,10 +1,35 @@
 {{ 'main-wishlist.css' | asset_url | stylesheet_tag }}
 
+{%- comment -%}
+  Section layout (width + padding) is intentionally independent of
+  the global --page-margin / --page-width variables. See
+  sections/example-width-section.liquid for the full rationale.
+  This section defines its own local --section-padding /
+  --custom-width, set inline per-instance from this section's own
+  schema settings only.
+{%- endcomment -%}
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'wishlist__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'wishlist__full-width'
+  else
+    assign width_class = 'wishlist__custom-width'
+  endif
+-%}
+
 <section
-  class="main-wishlist page-width"
+  class="main-wishlist {{ width_class }}"
   data-section-id="{{ section.id }}"
   data-cols-desktop="{{ section.settings.products_per_row_desktop }}"
   data-cols-mobile="{{ section.settings.products_per_row_mobile }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
 >
   {%- comment -%} ── Page header ────────────────────────────────── {%- endcomment -%}
   <header class="wishlist-header">
@@ -133,6 +158,42 @@
       "max": 3,
       "step": 1,
       "default": 2
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     },
     {
       "type": "header",
