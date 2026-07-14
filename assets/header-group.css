@@ -18,28 +18,36 @@
   transform: translateY(-100%) !important;
 }
 
-/* Reserves layout space equal to the fixed header's height so page
-   content doesn't sit underneath it. These are first-paint fallback
-   values only (before header-group.js runs / for no-JS) — actual
-   header content (announcement bar, utility bar, nav) can be taller
-   than this, so header-group.js measures the real header height on
-   load and on any resize and overrides this via inline style. Keep
-   these roughly accurate anyway so there's minimal layout shift
-   before JS takes over. */
-#header-group-sticky-spacer {
-  height: 68px;
+/* Single source of truth for the header's height. header-group.js
+   measures the real, rendered header (announcement bar + utility bar
+   + main header + nav, whatever combination is actually present) and
+   keeps this updated on load/resize/content-change via ResizeObserver.
+   The value here is a static fallback only, for first paint before JS
+   runs and for no-JS — set it close to the real height at each
+   breakpoint to minimize layout shift once JS takes over. Any other
+   stylesheet in the theme that needs the header's height (anchor-link
+   scroll offsets, a sticky sidebar's top offset, etc.) should read
+   var(--header-group-height) rather than hardcoding a number. */
+:root {
+  --header-group-height: 68px;
 }
 
 @media (max-width: 1023px) {
-  #header-group-sticky-spacer {
-    height: 64px;
+  :root {
+    --header-group-height: 64px;
   }
 }
 
 @media (max-width: 599px) {
-  #header-group-sticky-spacer {
-    height: 56px;
+  :root {
+    --header-group-height: 56px;
   }
+}
+
+/* Reserves layout space equal to the header's height so page content
+   doesn't sit underneath the fixed header. */
+#header-group-sticky-spacer {
+  height: var(--header-group-height);
 }
 
 /* Stacking-context reset.
