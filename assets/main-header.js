@@ -23,6 +23,22 @@
     new ResizeObserver(sync).observe(header);
   }
 
+  /*
+   * FIX — sync() above runs immediately on script execution, which can be
+   * before the logo image or webfonts have finished loading. If the header
+   * grows/shrinks after that point without triggering a ResizeObserver
+   * callback (some browsers coalesce a resize that happens in the same
+   * frame the observer was attached), the spacer is left holding a stale
+   * height — this is what caused the leftover blank gap under the header.
+   * Re-running sync() once everything has actually finished loading closes
+   * that gap without changing any of the autohide/scroll behavior below.
+   */
+  window.addEventListener('load', sync);
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(sync);
+  }
+
   window.__mainHeaderSync = sync;
 })();
 
