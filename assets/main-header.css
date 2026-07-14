@@ -460,6 +460,28 @@
     z-index: 100;
   }
 
+  /* FIX — .menu-bar is both the outer row AND the element we cap to
+     the section's width, unlike the row above it (.main-header__bar is
+     a separate full-width wrapper around the boxed .main-header__inner).
+     Once .menu-bar itself gets boxed to a custom/default width, its own
+     background box shrinks with it, leaving the page background
+     visible on either side instead of white reaching the page edges.
+     This pseudo-element bleeds a white backdrop the full viewport width
+     regardless of how narrow .menu-bar's own box is, sitting behind its
+     content, so the row reads as one continuous white bar just like the
+     row above it. */
+  .menu-bar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 100vw;
+    transform: translateX(-50%);
+    background: var(--hdr-bg);
+    z-index: -1;
+  }
+
   .menu-bar__container {
     overflow-x: auto;
     overflow-y: hidden;
