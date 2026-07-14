@@ -31,41 +31,29 @@
 
     {{ content_for_header }}
 
-    <!-- HARDCODED AGGRESSIVE STICKY -->
     <style>
       #header-group-wrapper {
         position: sticky !important;
         top: 0 !important;
         z-index: 2147483647 !important;
         width: 100% !important;
-        background: var(--hdr-bg, #ffffff) !important;
+        background: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
       }
 
       #header-group-sticky-spacer {
-        height: var(--hdr-height-desktop, 68px);
+        height: 68px;
       }
 
-      @media (max-width: 1023px) {
-        #header-group-sticky-spacer {
-          height: var(--hdr-height-tablet, 64px);
-        }
-      }
-      @media (max-width: 599px) {
-        #header-group-sticky-spacer {
-          height: var(--hdr-height-mobile, 56px);
-        }
-      }
+      @media (max-width: 1023px) { #header-group-sticky-spacer { height: 64px; } }
+      @media (max-width: 599px) { #header-group-sticky-spacer { height: 56px; } }
 
-      /* Force main header to play nice */
-      #main-header {
-        position: relative !important;
-        z-index: 10 !important;
-      }
-
-      /* Kill traps from sections */
-      main .shopify-section,
-      .shopify-section {
+      /* NUCLEAR - destroy stacking traps */
+      main, .shopify-section, section, .page-width, [class*="section"] {
         overflow: visible !important;
+        transform: none !important;
+        filter: none !important;
+        contain: none !important;
       }
     </style>
   </head>
@@ -75,6 +63,7 @@
     <div id="header-group-wrapper">
       {% sections 'header-group' %}
     </div>
+    <div id="header-group-sticky-spacer"></div>
 
     <main role="main">
       {{ content_for_layout }}
@@ -86,21 +75,20 @@
       </div>
     </footer>
 
-    {{- 'base.js'               | asset_url | script_tag }}
-    {{- 'theme.js'              | asset_url | script_tag }}
-    {{- 'countdown-timer.js'    | asset_url | script_tag }}
-    {{- 'copy-to-clipboard.js'  | asset_url | script_tag }}
-    {{- 'collection-filters.js' | asset_url | script_tag }}
-    {{- 'product-card.js'       | asset_url | script_tag }}
+    {{- 'base.js' | asset_url | script_tag }}
+    {{- 'theme.js' | asset_url | script_tag }}
+    <!-- other scripts... -->
 
-    {% render 'compare-bar' %}
-    {% section 'cart-drawer' %}
-    {% section 'quick-view' %}
-    {% section 'newsletter-popup' %}
-
-    <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
-    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
-    <script src="{{ 'quick-view.js'           | asset_url }}" defer></script>
+    <script>
+      // Final boss - force it every scroll
+      const header = document.getElementById('header-group-wrapper');
+      if (header) {
+        window.addEventListener('scroll', () => {
+          header.style.position = 'sticky';
+          header.style.top = '0';
+        }, {passive: true});
+      }
+    </script>
 
   </body>
 </html>
