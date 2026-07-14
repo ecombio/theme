@@ -30,13 +30,30 @@
     {% endif %}
 
     {{ content_for_header }}
+
+    <!-- HARDCODED STICKY STYLES -->
+    <style>
+      #header-group-wrapper {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        background: inherit !important;
+        will-change: transform;
+      }
+      
+      #header-group-sticky-spacer {
+        height: 0;
+      }
+    </style>
   </head>
 
   <body class="{{ settings.theme_preset | default: 'ecombio' }}" data-header-layout="{{ settings.header_layout }}">
 
-    <div id="header-group-wrapper" style="position: sticky; top: 0; z-index: 1000; width: 100%; background: inherit;">
+    <div id="header-group-wrapper">
       {% sections 'header-group' %}
     </div>
+    <div id="header-group-sticky-spacer"></div>
 
     <main role="main">
       {{ content_for_layout }}
@@ -47,6 +64,7 @@
         {% sections 'footer-group' %}
       </div>
     </footer>
+
     {{- 'base.js'               | asset_url | script_tag }}
     {{- 'theme.js'              | asset_url | script_tag }}
     {{- 'countdown-timer.js'    | asset_url | script_tag }}
