@@ -1,27 +1,3 @@
-/* ============================================================
-   header-compare.js
-   Keeps the header compare icon's badge and label count in sync
-   with the 'shopify_compare' localStorage list.
-
-   Storage format (matches main-compare.js / product-card.js):
-     [{ id: "123456", handle: "my-product", … }, …]
-     (product-card.js also stores title/image/price alongside id/handle
-     for its own compare-bar thumbnails — this file only reads .handle,
-     ignoring the rest.)
-
-   Rather than trust any single event's payload, this file always
-   re-reads localStorage directly whenever a relevant event fires.
-   That makes it correct regardless of which surface changed the
-   list — product-card.js's checkboxes, the compare-bar, or
-   main-compare.js's remove/clear buttons on the compare page itself.
-
-   Listens for:
-     - 'compare:toggle'   (main-compare.js's removeProduct)
-     - 'compare:cleared'  (main-compare.js's clear-all handler)
-     - 'compare:updated'  (product-card.js's compare checkboxes)
-     - 'storage'          (list changed in another tab)
-   ============================================================ */
-
 (function () {
   'use strict';
 
