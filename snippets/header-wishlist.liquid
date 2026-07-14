@@ -1,0 +1,34 @@
+{% comment %}
+  ECOMBIO Header — Wishlist Icon
+  File: snippets/header-wishlist.liquid
+
+  Self-contained: loads its own header-wishlist.css and
+  header-wishlist.js below. Does not rely on classes from
+  header-account.css or header-cart.css, so this snippet can be
+  dropped into the header (or anywhere else) on its own.
+
+  Renders: a link to the wishlist page with a heart icon and an
+  item-count badge. The badge reads the 'shopify_wishlist' key from
+  localStorage — same key/entry format ({ id, handle }) written by
+  product-card.js and read by main-wishlist.js.
+
+  No parameters required.
+{% endcomment %}
+{{ 'header-wishlist.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'header-wishlist.js' | asset_url }}" defer></script>
+
+<a
+  href="{{ pages.wishlist.url | default: '/pages/wishlist' }}"
+  class="header-wishlist__link"
+  aria-label="View wishlist"
+  data-wishlist-link
+>
+  <span class="header-wishlist__icon-wrap">
+    <svg class="header-wishlist__icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 21s-7.16-4.35-9.78-8.5C.36 8.77 1.94 5 5.6 5c2.02 0 3.55 1.1 4.4 2.3.85-1.2 2.38-2.3 4.4-2.3 3.66 0 5.24 3.77 3.38 7.5C19.16 16.65 12 21 12 21z"/>
+    </svg>
+    <span class="header-wishlist__badge header-wishlist__badge--hidden" data-wishlist-count aria-hidden="true">0</span>
+  </span>
+  <span class="header-wishlist__label">Wishlist</span>
+</a>
