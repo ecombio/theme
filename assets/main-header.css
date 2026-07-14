@@ -14,6 +14,7 @@
   --hdr-radius-pill    : 9999px;
   --hdr-radius-drop    : 12px;
   --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
+  --hdr-shadow-sticky  : 0 2px 8px rgba(0,0,0,.08);
   --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --hdr-z              : 200;
   --hdr-drawer-z       : 400;
@@ -53,14 +54,27 @@
    #main-header-sticky-spacer element right after </header> so removing
    the header from flow doesn't leave a gap where its content used to
    push the page down — main-header.js sets that spacer's height to match
-   the header's real (rendered) height on load/resize. */
+   the header's real (rendered) height on load/resize.
+
+   FIX — added box-shadow here too: a flat border-bottom reads fine when
+   the header sits in normal flow with page content naturally below it,
+   but once it's fixed and pinned over scrolling content, a border alone
+   doesn't read as "floating above" the page the way a shadow does. This
+   applies as soon as sticky is enabled (not gated to a scrolled state),
+   matching how the rest of the sticky styling here is applied unconditionally
+   once main-header--sticky-enabled is on. If you'd rather it only appear
+   after the user has actually scrolled — staying flat/borderless at the
+   very top where there's nothing yet to separate from — that needs
+   main-header.js to toggle a separate class (e.g. based on scrollY > 0)
+   and this rule scoped to that class instead. */
 #main-header.main-header--sticky-enabled {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.2s ease;
   will-change: transform;
+  box-shadow: var(--hdr-shadow-sticky);
 }
 
 #main-header.main-header--sticky-enabled.main-header--autohide-hidden {
@@ -221,7 +235,15 @@
 }
 .ecombio-search__submit:hover { color: var(--hdr-text); }
 
-.main-header__search--inline { flex: 1 1 auto; min-width: 0; max-width: 640px; }
+/* FIX — was capped at max-width: 640px, which left a growing dead zone
+   between the search box and the icons on wider viewports since
+   flex: 1 1 auto could never actually use the extra space past 640px.
+   Raised the cap rather than removing it outright, so the bar still
+   fills the available room on typical desktop widths without stretching
+   to an awkward, overly wide bar on very large / ultrawide screens. If
+   you'd rather it always fill 100% of whatever space is left with no
+   ceiling at all, drop the max-width line entirely. */
+.main-header__search--inline { flex: 1 1 auto; min-width: 0; max-width: 960px; }
 
 .main-header__search-row { display: none; border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
 .main-header__search-row-inner { max-width: 100%; margin: 0 auto; padding: 8px var(--section-padding, 24px); }
