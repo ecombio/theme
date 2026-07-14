@@ -1,14 +1,25 @@
 {%- comment -%}
   sections/announcement-bar.liquid
+
+  Standalone section — no longer a snippet rendered from within
+  sections/header.liquid. Intended to sit directly above sections/header.liquid
+  in a header-group.json (announcement-bar first, header second).
+
+  Self-contained: loads its own CSS/JS and decides internally whether
+  there's anything active to render. Reads its own section.settings —
+  previously this was snippets/announcement-bar.liquid, rendered via
+  {%- render 'announcement-bar', settings: section.settings -%} from
+  header.liquid, receiving header's settings object as a passed-in
+  `settings` param. The ann_* schema below used to live inside header's
+  schema for that reason; it's now this section's own schema instead.
 {%- endcomment -%}
 
 {%- liquid
-  assign settings = section.settings
   assign ann_active_count = 0
-  if settings.ann_enable
+  if section.settings.ann_enable
     for i in (1..5)
       assign ann_type_key = 'ann_' | append: i | append: '_type'
-      assign ann_slide_type = settings[ann_type_key]
+      assign ann_slide_type = section.settings[ann_type_key]
       if ann_slide_type == 'announcement' or ann_slide_type == 'countdown'
         assign ann_active_count = ann_active_count | plus: 1
       endif
@@ -16,28 +27,28 @@
   endif
 
   assign ann_width_class = 'announcement-bar--full-width'
-  if settings.ann_section_width == 'boxed'
+  if section.settings.ann_section_width == 'boxed'
     assign ann_width_class = 'announcement-bar--boxed'
-  elsif settings.ann_section_width == 'custom-width'
+  elsif section.settings.ann_section_width == 'custom-width'
     assign ann_width_class = 'announcement-bar--custom-width'
   endif
 -%}
 
-{%- if settings.ann_enable and ann_active_count > 0 -%}
+{%- if section.settings.ann_enable and ann_active_count > 0 -%}
   {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 
   <div
-    class="announcement-bar {{ ann_width_class }}{% if settings.ann_enable_close %} announcement-bar--dismissible{% endif %}"
+    class="announcement-bar {{ ann_width_class }}{% if section.settings.ann_enable_close %} announcement-bar--dismissible{% endif %}"
     role="region"
     aria-label="Announcements"
     data-announcement-bar
-    data-autorotate="{{ settings.ann_autorotate }}"
-    data-interval="{{ settings.ann_autorotate_speed | times: 1000 }}"
-    data-dismissible="{{ settings.ann_enable_close }}"
+    data-autorotate="{{ section.settings.ann_autorotate }}"
+    data-interval="{{ section.settings.ann_autorotate_speed | times: 1000 }}"
+    data-dismissible="{{ section.settings.ann_enable_close }}"
     style="
-      --section-padding: {{ settings.ann_section_padding }}px;
-      {%- if settings.ann_section_width == 'custom-width' %}
-        --custom-width: {{ settings.ann_custom_width }}rem;
+      --section-padding: {{ section.settings.ann_section_padding }}px;
+      {%- if section.settings.ann_section_width == 'custom-width' %}
+        --custom-width: {{ section.settings.ann_custom_width }}rem;
       {%- endif %}
     "
   >
@@ -45,7 +56,7 @@
       {%- assign ann_first_rendered = true -%}
       {%- for i in (1..5) -%}
         {%- assign ann_type_key = 'ann_' | append: i | append: '_type' -%}
-        {%- assign ann_slide_type = settings[ann_type_key] -%}
+        {%- assign ann_slide_type = section.settings[ann_type_key] -%}
 
         {%- if ann_slide_type == 'announcement' -%}
           {%- assign ann_text_key = 'ann_' | append: i | append: '_text' -%}
@@ -55,12 +66,12 @@
             role="status"
             aria-live="polite"
           >
-            {%- if settings[ann_link_key] != blank -%}
-              <a href="{{ settings[ann_link_key] }}" class="announcement-bar__message announcement-bar__message--link">
-                {{ settings[ann_text_key] }}
+            {%- if section.settings[ann_link_key] != blank -%}
+              <a href="{{ section.settings[ann_link_key] }}" class="announcement-bar__message announcement-bar__message--link">
+                {{ section.settings[ann_text_key] }}
               </a>
             {%- else -%}
-              <p class="announcement-bar__message">{{ settings[ann_text_key] }}</p>
+              <p class="announcement-bar__message">{{ section.settings[ann_text_key] }}</p>
             {%- endif -%}
           </div>
           {%- assign ann_first_rendered = false -%}
@@ -75,15 +86,15 @@
           <div
             class="announcement-bar__slide announcement-bar__slide--countdown{% if ann_first_rendered %} is-active{% endif %}"
           >
-            {%- if settings[ann_text_key] != blank -%}
-              <span class="announcement-bar__countdown-label">{{ settings[ann_text_key] }}</span>
+            {%- if section.settings[ann_text_key] != blank -%}
+              <span class="announcement-bar__countdown-label">{{ section.settings[ann_text_key] }}</span>
             {%- endif -%}
             <span
               class="announcement-bar__countdown"
               data-countdown
-              data-type="{{ settings[ann_ctype_key] }}"
-              data-end="{{ settings[ann_end_key] }}"
-              data-duration="{{ settings[ann_ever_key] }}"
+              data-type="{{ section.settings[ann_ctype_key] }}"
+              data-end="{{ section.settings[ann_end_key] }}"
+              data-duration="{{ section.settings[ann_ever_key] }}"
             >
               <span class="countdown__unit"><span data-days>0</span><em>d</em></span>
               <span class="countdown__sep">:</span>
@@ -93,9 +104,9 @@
               <span class="countdown__sep">:</span>
               <span class="countdown__unit"><span data-seconds>0</span><em>s</em></span>
             </span>
-            {%- if settings[ann_btnlabel_key] != blank -%}
-              <a href="{{ settings[ann_btnlink_key] }}" class="announcement-bar__btn">
-                {{ settings[ann_btnlabel_key] }}
+            {%- if section.settings[ann_btnlabel_key] != blank -%}
+              <a href="{{ section.settings[ann_btnlink_key] }}" class="announcement-bar__btn">
+                {{ section.settings[ann_btnlabel_key] }}
               </a>
             {%- endif -%}
           </div>
@@ -119,7 +130,7 @@
       </button>
     {%- endif -%}
 
-    {%- if settings.ann_enable_close -%}
+    {%- if section.settings.ann_enable_close -%}
       <button class="announcement-bar__close" aria-label="Close announcement bar" data-close>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14" aria-hidden="true">
@@ -135,8 +146,9 @@
 
 {% schema %}
 {
-  "name": "Announcement Bar",
+  "name": "Announcement bar",
   "tag": "div",
+  "class": "announcement-bar-section",
   "settings": [
     {
       "type": "checkbox",
@@ -508,11 +520,6 @@
       "id": "ann_5_button_link",
       "label": "Button link",
       "visible_if": "{{ section.settings.ann_5_type == 'countdown' }}"
-    }
-  ],
-  "presets": [
-    {
-      "name": "Announcement Bar"
     }
   ]
 }
