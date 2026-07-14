@@ -1,39 +1,56 @@
-/*
- * assets/header-group.css
- *
- * Sticky is applied PER SECTION — to each direct .shopify-section child
- * of #shopify-section-group-header-group — instead of to the group
- * wrapper as one block. Each section gets position: sticky with its own
- * `top` offset (set inline by header-group.js, since it depends on
- * runtime-measured heights of the sections before it), so multiple
- * sections stack correctly on top of each other as you scroll instead
- * of fighting over one shared sticky box.
- *
- * Autohide still moves the WHOLE stack together via transform on the
- * group wrapper itself — that part is intentionally still group-level,
- * since "hide the entire header on scroll down" is a single visual
- * unit even though "stick to the top" is now per-section.
- */
+/* header-group.css
+   Sticky/hide-on-scroll header wrapper + supporting layout fixes.
+   Paired with header-group.js (scroll/hover/focus behavior). */
 
-body[data-sticky-header="true"] #shopify-section-group-header-group {
-  position: relative;
-  z-index: 300;
-  transition: transform 0.3s ease;
+#header-group-wrapper {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 2147483647 !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.3s ease !important;
+  will-change: transform;
 }
 
-body[data-sticky-header="true"] #shopify-section-group-header-group > .shopify-section {
-  position: sticky;
-  z-index: 300;
-  /* top is set inline, per section, by header-group.js */
+#header-group-wrapper.header--hidden {
+  transform: translateY(-100%) !important;
 }
 
-body[data-sticky-header="true"][data-header-autohide="true"]
-  #shopify-section-group-header-group.header-group--hidden {
-  transform: translateY(-100%);
+/* Reserves layout space equal to the fixed header's height so page
+   content doesn't jump underneath it. Keep in sync with actual
+   header height per breakpoint. */
+#header-group-sticky-spacer {
+  height: 68px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  body[data-sticky-header="true"] #shopify-section-group-header-group {
-    transition: none;
+@media (max-width: 1023px) {
+  #header-group-sticky-spacer {
+    height: 64px;
   }
+}
+
+@media (max-width: 599px) {
+  #header-group-sticky-spacer {
+    height: 56px;
+  }
+}
+
+/* Stacking-context reset.
+   Carried over as-is from theme.liquid â€” still theme-wide and still
+   overrides overflow/transform/filter/contain on any section-like
+   element site-wide, which can affect image crops, carousels, and
+   perf-isolated sections that rely on those properties elsewhere.
+   TODO: narrow this to the specific ancestor(s) that were actually
+   trapping the header in a stacking context, once identified. */
+main,
+.shopify-section,
+section,
+.page-width,
+[class*="section"] {
+  overflow: visible !important;
+  transform: none !important;
+  filter: none !important;
+  contain: none !important;
 }
