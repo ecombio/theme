@@ -1,5 +1,17 @@
 {{ 'header.css' | asset_url | stylesheet_tag }}
 
+{%- liquid
+  assign section_width = section.settings.section_width
+  case section_width
+    when 'full-width'
+      assign width_class = 'main-header--full-width'
+    when 'custom-width'
+      assign width_class = 'main-header--custom-width'
+    else
+      assign width_class = 'main-header--default-width'
+  endcase
+-%}
+
 <header class="main-header {{ width_class }}{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
         id="main-header"
         role="banner"
