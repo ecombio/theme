@@ -135,5 +135,73 @@
     }, { passive: true });
   })();
 </script>
+<script>
+  (function () {
+    const header = document.getElementById('header-group-wrapper');
+    if (!header) return;
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    let isLocked = false; // true while hovering/focusing header
+    const SCROLL_THRESHOLD = 10;
+    const REVEAL_ZONE = header.offsetHeight;
+
+    function onScroll() {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY;
+
+      if (isLocked) {
+        // While locked, always keep it visible and just track position
+        header.classList.remove('header--hidden');
+        lastScrollY = currentScrollY;
+        ticking = false;
+        return;
+      }
+
+      if (currentScrollY <= REVEAL_ZONE) {
+        header.classList.remove('header--hidden');
+      } else if (delta > SCROLL_THRESHOLD) {
+        header.classList.add('header--hidden');
+      } else if (delta < -SCROLL_THRESHOLD) {
+        header.classList.remove('header--hidden');
+      }
+
+      lastScrollY = currentScrollY;
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(onScroll);
+        ticking = true;
+      }
+    }, { passive: true });
+
+    // --- Hover lock (mouse users) ---
+    header.addEventListener('mouseenter', () => {
+      isLocked = true;
+      header.classList.remove('header--hidden');
+    });
+
+    header.addEventListener('mouseleave', () => {
+      isLocked = false;
+      lastScrollY = window.scrollY; // reset baseline so it doesn't jump-hide immediately
+    });
+
+    // --- Focus lock (keyboard users tabbing through nav/menu links) ---
+    header.addEventListener('focusin', () => {
+      isLocked = true;
+      header.classList.remove('header--hidden');
+    });
+
+    header.addEventListener('focusout', (e) => {
+      // Only unlock if focus actually left the header, not just moved between children
+      if (!header.contains(e.relatedTarget)) {
+        isLocked = false;
+        lastScrollY = window.scrollY;
+      }
+    });
+  })();
+</script>
   </body>
 </html>
