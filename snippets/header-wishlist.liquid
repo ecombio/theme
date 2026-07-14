@@ -1,4 +1,5 @@
 {% comment %}
+  ECOMBIO Header — Wishlist Icon
   File: snippets/header-wishlist.liquid
 
   Self-contained: loads its own header-wishlist.css and
@@ -11,7 +12,10 @@
   localStorage — same key/entry format ({ id, handle }) written by
   product-card.js and read by main-wishlist.js.
 
-  No parameters required.
+  Parameters:
+    show_label (boolean, optional) — pass `false` to render the
+    icon only, with no visible text label. Defaults to true when
+    omitted (unchanged behavior).
 {% endcomment %}
 {{ 'header-wishlist.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'header-wishlist.js' | asset_url }}" defer></script>
@@ -29,5 +33,7 @@
     </svg>
     <span class="header-wishlist__badge header-wishlist__badge--hidden" data-wishlist-count aria-hidden="true">0</span>
   </span>
-  <span class="header-wishlist__label">Wishlist</span>
+  {%- unless show_label == false -%}
+    <span class="header-wishlist__label">Wishlist</span>
+  {%- endunless -%}
 </a>

@@ -1,9 +1,14 @@
 {% comment %}
   ECOMBIO Header — Account Icon
-  File: snippets/ecombio-header-icon-account.liquid
+  File: snippets/header-account.liquid
 
   Renders: Account link with person SVG icon and label.
-  No parameters required — reads routes from global Liquid context.
+
+  Parameters:
+    show_label (boolean, optional) — pass `false` to render the
+    icon only, with no visible text label. Defaults to true when
+    omitted (unchanged behavior). Reads routes from global Liquid
+    context otherwise; no other parameters required.
 {% endcomment %}
 {{ 'header-account.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'header-account.js' | asset_url }}" defer></script>
@@ -14,5 +19,7 @@
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
   </svg>
-  <span class="ecombio-header__icon-label">Sign in/ Register</span>
+  {%- unless show_label == false -%}
+    <span class="ecombio-header__icon-label">Sign in/ Register</span>
+  {%- endunless -%}
 </a>
