@@ -1,19 +1,25 @@
 {%- comment -%}
   sections/main-header.liquid
 
-  CHANGED — sticky/autohide positioning is now handled at the header-group
-  level (assets/header-group.css / .js), not per-section. This section:
-    - no longer adds main-header--sticky-enabled to its own class list
-      (header-group.css positions it via [data-header-stack-member] instead)
-    - adds data-header-stack-member unconditionally, so it participates in
-      the shared stack the same way announcement-bar and utility-bar do
-    - renders a single shared #header-group-sticky-spacer instead of its
-      own #main-header-sticky-spacer (main-header is last in
-      config/header-group.json's order, so this remains the correct place
-      in the DOM for one shared spacer to reserve space for the WHOLE
-      stack, not just this section)
-    - loads header-group.js before main-header.js, since main-header.js no
-      longer contains any header-group stacking logic of its own
+  CHANGED — sticky/autohide is now controlled by the GLOBAL theme
+  settings (settings.enable_sticky_header / settings.enable_header_autohide),
+  applied as data attributes on <body> in theme.liquid, and acted on by
+  assets/header-group.css + assets/header-group.js, which are loaded
+  centrally in theme.liquid (not from this section).
+
+  Removed from this section as a result, since none of it is needed
+  anymore:
+    - the enable_sticky / enable_autohide section settings (superseded by
+      the global toggles — having both was two switches controlling the
+      same behavior)
+    - data-sticky-fixed / data-autohide / data-header-stack-member
+      attributes on <header> (header-group.css targets the shared
+      #shopify-section-group-header-group wrapper directly, not
+      per-section attributes)
+    - #header-group-sticky-spacer (position: sticky keeps the wrapper in
+      normal flow, so nothing needs to reserve space for it)
+    - the <script src="header-group.js"> tag here (loaded once, centrally,
+      in theme.liquid instead — loading it here too would run it twice)
 {%- endcomment -%}
 
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
@@ -55,11 +61,6 @@
   class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
   id="main-header"
   role="banner"
-  data-header-stack-member
-  {%- if section.settings.enable_sticky %}
-  data-sticky-fixed="true"
-  data-autohide="{{ section.settings.enable_autohide }}"
-  {%- endif %}
   style="
     --section-padding: {{ section.settings.section_padding }}px;
     {%- if section_width == 'custom-width' %}
@@ -155,27 +156,6 @@
   {%- render 'header-menu', blocks: section.blocks -%}
 </header>
 
-{%- comment -%}
-  CHANGED — this used to be #main-header-sticky-spacer, sized only to
-  main-header's own height. It's now #header-group-sticky-spacer, sized by
-  header-group.js to the summed height of every section in the stack
-  (announcement bar + utility bar + main header), since main-header is no
-  longer the only section that can be sticky-fixed. Still only rendered
-  when this section's own sticky setting is on, since that setting remains
-  the master switch for the whole group (see header-group.js).
-{%- endcomment -%}
-{%- if section.settings.enable_sticky -%}
-  <div id="header-group-sticky-spacer" aria-hidden="true"></div>
-{%- endif -%}
-
-{%- comment -%}
-  header-group.js must load BEFORE main-header.js: main-header.js no
-  longer contains any stacking logic of its own, but keeping this order
-  mirrors the CSS load order (header-group.css also loads before
-  main-header.css) and avoids any ambiguity if main-header.js is extended
-  later to call window.__headerGroupSync.
-{%- endcomment -%}
-<script src="{{ 'header-group.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
@@ -208,20 +188,6 @@
       "id": "section_padding",
       "label": "Side padding",
       "min": 0, "max": 80, "step": 4, "unit": "px", "default": 24
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_sticky",
-      "label": "Enable sticky header",
-      "info": "Master switch for the whole header group — when on, the announcement bar and utility bar above this section stay pinned and hide/reveal together with it.",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_autohide",
-      "label": "Hide header on scroll down",
-      "default": false,
-      "visible_if": "{{ section.settings.enable_sticky }}"
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
