@@ -19,8 +19,13 @@
 }
 
 /* Reserves layout space equal to the fixed header's height so page
-   content doesn't jump underneath it. Keep in sync with actual
-   header height per breakpoint. */
+   content doesn't sit underneath it. These are first-paint fallback
+   values only (before header-group.js runs / for no-JS) — actual
+   header content (announcement bar, utility bar, nav) can be taller
+   than this, so header-group.js measures the real header height on
+   load and on any resize and overrides this via inline style. Keep
+   these roughly accurate anyway so there's minimal layout shift
+   before JS takes over. */
 #header-group-sticky-spacer {
   height: 68px;
 }
@@ -38,7 +43,7 @@
 }
 
 /* Stacking-context reset.
-   Carried over as-is from theme.liquid â€” still theme-wide and still
+   Carried over as-is from theme.liquid — still theme-wide and still
    overrides overflow/transform/filter/contain on any section-like
    element site-wide, which can affect image crops, carousels, and
    perf-isolated sections that rely on those properties elsewhere.
