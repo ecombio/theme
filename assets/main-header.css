@@ -238,24 +238,52 @@
    same --section-padding / --custom-width variables keeps them aligned
    together no matter which "Section width" option is chosen. */
 #main-header.main-header--default-width .main-header__inner,
-#main-header.main-header--default-width .main-header__search-row-inner,
-#main-header.main-header--default-width .menu-bar {
+#main-header.main-header--default-width .main-header__search-row-inner {
   max-width: var(--hdr-default-max-width);
   margin-inline: auto;
 }
 
 #main-header.main-header--full-width .main-header__inner,
-#main-header.main-header--full-width .main-header__search-row-inner,
-#main-header.main-header--full-width .menu-bar {
+#main-header.main-header--full-width .main-header__search-row-inner {
   max-width: 100%;
   margin-inline: 0;
 }
 
 #main-header.main-header--custom-width .main-header__inner,
-#main-header.main-header--custom-width .main-header__search-row-inner,
-#main-header.main-header--custom-width .menu-bar {
+#main-header.main-header--custom-width .main-header__search-row-inner {
   max-width: var(--custom-width, 80rem);
   margin-inline: auto;
+}
+
+/* FIX — .menu-bar specifically breaks its max-width only once
+   main-header--sticky-enabled is active, even though the rule above
+   applies to it too. The CSS itself doesn't check for sticky, so
+   something else with higher priority than a normal stylesheet rule is
+   winning in that state — almost always a script setting an inline
+   style directly (element.style.width = ...), most likely whatever
+   drives the .has-scroll-left / .has-scroll-right edge-fade classes
+   further down this file, since that's the only scroll/resize-aware
+   logic touching .menu-bar. Inline styles beat any non-!important
+   stylesheet rule regardless of selector specificity, so rather than
+   guess at unseen JS, these three rules are forced with !important to
+   win the fight outright. Narrowly scoped to just these two properties
+   on .menu-bar — nothing else here is touched. If it's still not
+   respecting section width after this, the script is setting the style
+   with its own 'important' priority, and needs to be found and patched
+   directly. */
+#main-header.main-header--default-width .menu-bar {
+  max-width: var(--hdr-default-max-width) !important;
+  margin-inline: auto !important;
+}
+
+#main-header.main-header--full-width .menu-bar {
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+}
+
+#main-header.main-header--custom-width .menu-bar {
+  max-width: var(--custom-width, 80rem) !important;
+  margin-inline: auto !important;
 }
 
 /* ASSUMPTION — new, not present in header.css; flex row to fix the bulleted-list bug in your screenshot */
