@@ -9,6 +9,12 @@
   own layout settings rather than shared — since this is now a sibling section it can no
   longer read header.liquid's section.settings directly. Keep the two in sync manually if
   you want this row to line up with the header row above/below it.
+
+  CHANGED — this section never had any sticky logic of its own, so joining the
+  header-group stack is a one-line addition: data-header-stack-member below.
+  header-group.js picks it up automatically (in DOM order, matching its position
+  in config/header-group.json's `order` array) with no other markup, settings,
+  or script changes needed here.
 {%- endcomment -%}
 
 {%- if section.settings.enable_bar -%}
@@ -33,6 +39,7 @@
        role="navigation"
        aria-label="Utility bar"
        id="utility-bar"
+       data-header-stack-member
        style="
          --section-padding: {{ section.settings.section_padding }}px;
          {%- if utility_width_type == 'custom-width' %}

@@ -1,5 +1,19 @@
 {%- comment -%}
   sections/announcement-bar.liquid
+
+  CHANGED — removed the "Stick to top of viewport" setting (ann_enable_sticky)
+  and its inline position:fixed block. Sticky positioning for this section
+  is now handled at the header-group level (assets/header-group.css / .js):
+  this bar just carries data-header-stack-member unconditionally and
+  header-group.js computes its position/offset alongside any other section
+  in config/header-group.json. Keeping an independent sticky mechanism here
+  would fight with the group-level one, so it's been removed entirely
+  rather than left as a second, conflicting way to achieve the same thing.
+
+  Dismiss (ann_enable_close) is unrelated to sticky and unchanged — the
+  bar's own JS still sets display:none on close, which naturally collapses
+  its offsetHeight to 0 and drops it out of header-group.js's stack-height
+  calculation automatically.
 {%- endcomment -%}
 
 {%- liquid
@@ -26,28 +40,18 @@
   {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 
   <div
-    class="announcement-bar {{ ann_width_class }}{% if section.settings.ann_enable_close %} announcement-bar--dismissible{% endif %}{% if section.settings.ann_enable_sticky %} announcement-bar--sticky-enabled{% endif %}"
+    class="announcement-bar {{ ann_width_class }}{% if section.settings.ann_enable_close %} announcement-bar--dismissible{% endif %}"
     role="region"
     aria-label="Announcements"
     data-announcement-bar
+    data-header-stack-member
     data-autorotate="{{ section.settings.ann_autorotate }}"
     data-interval="{{ section.settings.ann_autorotate_speed | times: 1000 }}"
     data-dismissible="{{ section.settings.ann_enable_close }}"
-    {%- if section.settings.ann_enable_sticky %}
-    data-sticky-fixed="true"
-    data-autohide-class="announcement-bar--autohide-hidden"
-    {%- endif %}
     style="
       --section-padding: {{ section.settings.ann_section_padding }}px;
       {%- if section.settings.ann_section_width == 'custom-width' %}
         --custom-width: {{ section.settings.ann_custom_width }}rem;
-      {%- endif %}
-      {%- if section.settings.ann_enable_sticky %}
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 210;
       {%- endif %}
     "
   >
@@ -208,13 +212,6 @@
       "label": "Allow customers to close the bar",
       "info": "Adds an X button. Once closed, it stays hidden for the rest of the browsing session (resets on a new session/tab).",
       "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "ann_enable_sticky",
-      "label": "Stick to top of viewport",
-      "info": "Pins the bar above the header. Intended to be used together with the header's own 'Enable sticky header' setting (Header section) — with both on, the two stack and stay pinned together, and hide/reveal together on scroll if the header's 'Hide header on scroll down' is also on. There's no separate autohide setting here; the header's controls the whole stack.",
-      "default": true
     },
 
     { "type": "header", "content": "Slide 1" },

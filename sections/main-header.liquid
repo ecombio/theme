@@ -1,5 +1,19 @@
 {%- comment -%}
   sections/main-header.liquid
+
+  CHANGED — sticky/autohide positioning is now handled at the header-group
+  level (assets/header-group.css / .js), not per-section. This section:
+    - no longer adds main-header--sticky-enabled to its own class list
+      (header-group.css positions it via [data-header-stack-member] instead)
+    - adds data-header-stack-member unconditionally, so it participates in
+      the shared stack the same way announcement-bar and utility-bar do
+    - renders a single shared #header-group-sticky-spacer instead of its
+      own #main-header-sticky-spacer (main-header is last in
+      config/header-group.json's order, so this remains the correct place
+      in the DOM for one shared spacer to reserve space for the WHOLE
+      stack, not just this section)
+    - loads header-group.js before main-header.js, since main-header.js no
+      longer contains any header-group stacking logic of its own
 {%- endcomment -%}
 
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
@@ -38,14 +52,13 @@
 -%}
 
 <header
-  class="main-header {{ width_class }}{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
+  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
   id="main-header"
   role="banner"
   data-header-stack-member
   {%- if section.settings.enable_sticky %}
   data-sticky-fixed="true"
   data-autohide="{{ section.settings.enable_autohide }}"
-  data-autohide-class="main-header--autohide-hidden"
   {%- endif %}
   style="
     --section-padding: {{ section.settings.section_padding }}px;
@@ -143,19 +156,26 @@
 </header>
 
 {%- comment -%}
-  FIX — when sticky is enabled the header is taken out of normal document
-  flow (position: fixed) so it can pin to the viewport and slide away on
-  autohide. Removing it from flow collapses the space it used to occupy,
-  which caused content to jump up underneath it. This spacer reserves
-  that space; main-header.js measures the header's real height and sets
-  this element's height to match, keeping layout stable. It intentionally
-  isn't rendered when sticky is off, since a non-sticky header stays in
-  normal flow and needs no spacer.
+  CHANGED — this used to be #main-header-sticky-spacer, sized only to
+  main-header's own height. It's now #header-group-sticky-spacer, sized by
+  header-group.js to the summed height of every section in the stack
+  (announcement bar + utility bar + main header), since main-header is no
+  longer the only section that can be sticky-fixed. Still only rendered
+  when this section's own sticky setting is on, since that setting remains
+  the master switch for the whole group (see header-group.js).
 {%- endcomment -%}
 {%- if section.settings.enable_sticky -%}
-  <div id="main-header-sticky-spacer" aria-hidden="true"></div>
+  <div id="header-group-sticky-spacer" aria-hidden="true"></div>
 {%- endif -%}
 
+{%- comment -%}
+  header-group.js must load BEFORE main-header.js: main-header.js no
+  longer contains any stacking logic of its own, but keeping this order
+  mirrors the CSS load order (header-group.css also loads before
+  main-header.css) and avoids any ambiguity if main-header.js is extended
+  later to call window.__headerGroupSync.
+{%- endcomment -%}
+<script src="{{ 'header-group.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
@@ -193,6 +213,7 @@
       "type": "checkbox",
       "id": "enable_sticky",
       "label": "Enable sticky header",
+      "info": "Master switch for the whole header group — when on, the announcement bar and utility bar above this section stay pinned and hide/reveal together with it.",
       "default": true
     },
     {
