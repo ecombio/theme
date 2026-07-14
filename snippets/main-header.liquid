@@ -1,8 +1,13 @@
 {%- comment -%}
   snippets/main-header.liquid
-  Renders the main header markup. Expects `section` to be passed in.
-  Self-contained: loads its own main-header.css / main-header.js — this
-  snippet doesn't rely on anything from sections/header.liquid's assets.
+  Renders the inner main-header row (hamburger, search drawer triggers,
+  logo, inline search, icons) plus the mobile search row and menu bar.
+  Expects `section` to be passed in.
+
+  Section-level concerns — the outer <header> tag, width_class, sticky
+  positioning/autohide attributes, the announcement bar, the utility bar,
+  and the sticky spacer — all live in sections/header.liquid now. This
+  snippet only owns markup that's actually local to it.
 {%- endcomment -%}
 
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
@@ -20,15 +25,6 @@
   assign label_comp = section.settings.show_label_compare
   assign enable_search_drawer_tablet = section.settings.enable_search_drawer_tablet
 
-  assign section_width = section.settings.section_width
-  if section_width == blank
-    assign width_class = 'main-header--default-width'
-  elsif section_width == 'full-width'
-    assign width_class = 'main-header--full-width'
-  else
-    assign width_class = 'main-header--custom-width'
-  endif
-
   assign trending_terms = ''
   for i in (1..8)
     assign key = 'trending_' | append: i
@@ -39,119 +35,87 @@
   endfor
 -%}
 
-<header class="main-header {{ width_class }}{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
-        id="main-header"
-        role="banner"
-        {%- if section.settings.enable_sticky %}
-        data-sticky-fixed="true"
-        data-autohide="{{ section.settings.enable_autohide }}"
-        {%- endif %}
-        style="
-          --section-padding: {{ section.settings.section_padding }}px;
-          {%- if section_width == 'custom-width' %}
-            --custom-width: {{ section.settings.custom_width }}rem;
-          {%- endif %}
-          {%- if section.settings.enable_sticky %}
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-          {%- endif %}
-        ">
+<div class="main-header__bar">
+  <div class="main-header__inner">
 
-  {%- render 'announcement-bar', settings: section.settings -%}
+    {%- if section.blocks.size > 0 -%}
+      <button type="button"
+              class="ecombio-header__hamburger"
+              id="main-header-menu-trigger"
+              aria-expanded="false"
+              aria-controls="main-header-mobile-nav"
+              aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    {%- endif -%}
 
-  {%- render 'utility-bar', settings: section.settings -%}
-
-  <div class="main-header__bar">
-    <div class="main-header__inner">
-
-      {%- if section.blocks.size > 0 -%}
-        <button type="button"
-                class="ecombio-header__hamburger"
-                id="main-header-menu-trigger"
-                aria-expanded="false"
-                aria-controls="main-header-mobile-nav"
-                aria-label="Open menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      {%- endif -%}
-
-      {%- if section.settings.enable_search_drawer -%}
-        <div class="main-header__search-drawer-mobile-only">
-          {%- render 'header-search-drawer',
-            enable_predictive_search: section.settings.enable_predictive_search,
-            trending_terms: trending_terms,
-            enable_typewriter: section.settings.enable_typewriter,
-            typewriter_type_speed: section.settings.typewriter_type_speed,
-            typewriter_hold_ms: section.settings.typewriter_hold_ms
-          -%}
-        </div>
-      {%- endif -%}
-      {%- if enable_search_drawer_tablet -%}
-        <div class="main-header__search-drawer-tablet-only">
-          {%- render 'header-search-drawer',
-            enable_predictive_search: section.settings.enable_predictive_search,
-            trending_terms: trending_terms,
-            enable_typewriter: section.settings.enable_typewriter,
-            typewriter_type_speed: section.settings.typewriter_type_speed,
-            typewriter_hold_ms: section.settings.typewriter_hold_ms
-          -%}
-        </div>
-      {%- endif -%}
-
-      {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
-
-      <div class="main-header__search--inline">
-        {%- render 'header-search',
+    {%- if section.settings.enable_search_drawer -%}
+      <div class="main-header__search-drawer-mobile-only">
+        {%- render 'header-search-drawer',
           enable_predictive_search: section.settings.enable_predictive_search,
-          variant: 'desktop',
           trending_terms: trending_terms,
           enable_typewriter: section.settings.enable_typewriter,
           typewriter_type_speed: section.settings.typewriter_type_speed,
           typewriter_hold_ms: section.settings.typewriter_hold_ms
         -%}
       </div>
+    {%- endif -%}
+    {%- if enable_search_drawer_tablet -%}
+      <div class="main-header__search-drawer-tablet-only">
+        {%- render 'header-search-drawer',
+          enable_predictive_search: section.settings.enable_predictive_search,
+          trending_terms: trending_terms,
+          enable_typewriter: section.settings.enable_typewriter,
+          typewriter_type_speed: section.settings.typewriter_type_speed,
+          typewriter_hold_ms: section.settings.typewriter_hold_ms
+        -%}
+      </div>
+    {%- endif -%}
 
-      <ul class="main-header__icons" role="list" aria-label="Header actions">
-        {%- if show_comp != false -%}
-          <li>{%- render 'header-compare', show_label: label_comp -%}</li>
-        {%- endif -%}
-        {%- if show_wish != false -%}
-          <li>{%- render 'header-wishlist', show_label: label_wish -%}</li>
-        {%- endif -%}
-        {%- if show_acct != false -%}
-          <li>{%- render 'header-account', show_label: label_acct -%}</li>
-        {%- endif -%}
-        {%- if show_cart != false -%}
-          <li>{%- render 'header-cart', show_label: label_cart -%}</li>
-        {%- endif -%}
-      </ul>
+    {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
 
-    </div>
-  </div>
-
-  <div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
-    <div class="main-header__search-row-inner">
+    <div class="main-header__search--inline">
       {%- render 'header-search',
         enable_predictive_search: section.settings.enable_predictive_search,
-        variant: 'mobile',
+        variant: 'desktop',
         trending_terms: trending_terms,
         enable_typewriter: section.settings.enable_typewriter,
         typewriter_type_speed: section.settings.typewriter_type_speed,
         typewriter_hold_ms: section.settings.typewriter_hold_ms
       -%}
     </div>
+
+    <ul class="main-header__icons" role="list" aria-label="Header actions">
+      {%- if show_comp != false -%}
+        <li>{%- render 'header-compare', show_label: label_comp -%}</li>
+      {%- endif -%}
+      {%- if show_wish != false -%}
+        <li>{%- render 'header-wishlist', show_label: label_wish -%}</li>
+      {%- endif -%}
+      {%- if show_acct != false -%}
+        <li>{%- render 'header-account', show_label: label_acct -%}</li>
+      {%- endif -%}
+      {%- if show_cart != false -%}
+        <li>{%- render 'header-cart', show_label: label_cart -%}</li>
+      {%- endif -%}
+    </ul>
+
   </div>
+</div>
 
-  {%- render 'header-menu', blocks: section.blocks -%}
+<div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
+  <div class="main-header__search-row-inner">
+    {%- render 'header-search',
+      enable_predictive_search: section.settings.enable_predictive_search,
+      variant: 'mobile',
+      trending_terms: trending_terms,
+      enable_typewriter: section.settings.enable_typewriter,
+      typewriter_type_speed: section.settings.typewriter_type_speed,
+      typewriter_hold_ms: section.settings.typewriter_hold_ms
+    -%}
+  </div>
+</div>
 
-</header>
-
-{%- if section.settings.enable_sticky -%}
-  <div class="main-header__sticky-spacer" id="main-header-sticky-spacer" aria-hidden="true"></div>
-{%- endif -%}
-
-<script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
+{%- render 'header-menu', blocks: section.blocks -%}
