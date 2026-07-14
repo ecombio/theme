@@ -5,7 +5,7 @@
  * Features:
  *   • Add to Cart  — POST /cart/add.js, fires cart:updated + cart:open
  *   • Wishlist     — localStorage, aria-pressed + aria-label sync
- *   • Compare      — in-memory, renders compare-bar, max 5
+ *   • Compare      — localStorage, renders compare-bar, max 5
  *   • Quick View   — delegates to product-quickview.js via custom event
  *   • Sticky offsets — measures the real header/toolbar height and exposes
  *     them as CSS custom properties so sticky elements stack correctly
@@ -37,6 +37,15 @@
  *        This file is already loaded globally via theme.liquid (see header
  *        comment above), so the measurement lives here instead of in a
  *        separate script.
+ *   [12] Compare persistence (2026-07): compareItems used to live in
+ *        memory only, so a page refresh (or navigating away and back)
+ *        silently lost every selection — nothing backed it. It now
+ *        reads/writes the same 'shopify_compare' localStorage key that
+ *        main-compare.js and header-compare.js already read, using the
+ *        same {id, handle} shape those files expect PLUS the extra
+ *        title/image/price fields this file's own compare-bar needs for
+ *        its thumbnails — the extra fields are simply ignored by the
+ *        other two files, which only look at .id and .handle.
  */
 
 (() => {
@@ -179,8 +188,16 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // [5][6] COMPARE
+  // [5][6][12] COMPARE
   // Max 5 items. Renders into .compare-bar (snippets/compare-bar.liquid)
+  //
+  // Storage key : 'shopify_compare' — same key main-compare.js and
+  //               header-compare.js read. Persisted shape is
+  //               { id, handle, title, image, price } — main-compare.js
+  //               and header-compare.js only ever read .id / .handle off
+  //               each entry, so the extra display fields this file
+  //               stores alongside them are inert as far as those two
+  //               files are concerned.
   //
   // Checkbox attributes:
   //   [data-compare-checkbox]  [data-product-id]   [data-product-handle]
@@ -191,11 +208,30 @@
   //   [data-compare-submit]     [data-compare-clear]
   //   [data-compare-remove]     (injected per item)
   //
-  // Compare URL: /pages/compare?handles=a,b,c
+  // Compare page: /pages/compare — the page reads 'shopify_compare'
+  // from localStorage directly, so no URL query string is needed to
+  // hand off the selection anymore.
   // ══════════════════════════════════════════════════════════════════════════════
+  const COMPARE_KEY = 'shopify_compare';
   const COMPARE_MAX = 5;
   // [5] let — avoids var re-declaration bugs and keeps mutability explicit
   let compareItems = []; // [{ id, handle, title, image, price }]
+
+  function getCompareStorage() {
+    try   { return JSON.parse(localStorage.getItem(COMPARE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveCompareStorage(list) {
+    try   { localStorage.setItem(COMPARE_KEY, JSON.stringify(list)); }
+    catch { /* storage full or private browsing */ }
+  }
+
+  // Defensive filter for anything malformed / legacy bare strings —
+  // compare has always required the richer object shape, unlike wishlist.
+  function validCompareEntries(list) {
+    return list.filter((entry) => entry && typeof entry === 'object' && entry.id && entry.handle);
+  }
 
   function findCompare(id) {
     return compareItems.findIndex((x) => x.id === id);
@@ -249,6 +285,14 @@
   }
 
   function initCompare() {
+    // [12] Hydrate from storage on load — this is what was missing.
+    // Without it, compareItems always started as [], so a refresh (or
+    // simply landing on a fresh page) looked identical to "nothing
+    // selected" even though localStorage still had the real list.
+    compareItems = validCompareEntries(getCompareStorage());
+    syncCompareCheckboxes();
+    renderCompareBar();
+
     // Checkbox toggle
     document.body.addEventListener('change', (e) => {
       const cb = e.target.closest('[data-compare-checkbox]');
@@ -278,6 +322,7 @@
         if (idx !== -1) compareItems.splice(idx, 1);
       }
 
+      saveCompareStorage(compareItems); // [12]
       syncCompareCheckboxes();
       renderCompareBar();
       emit('compare:updated', { items: compareItems });
@@ -289,26 +334,54 @@
       if (!btn) return;
       const idx = findCompare(btn.getAttribute('data-compare-remove'));
       if (idx !== -1) compareItems.splice(idx, 1);
+      saveCompareStorage(compareItems); // [12]
       syncCompareCheckboxes();
       renderCompareBar();
+      emit('compare:updated', { items: compareItems });
     });
 
     // [6] Clear all — mutation rather than reassignment keeps reference stable
     document.body.addEventListener('click', (e) => {
       if (!e.target.closest('[data-compare-clear]')) return;
       compareItems.length = 0;
+      saveCompareStorage(compareItems); // [12]
+      syncCompareCheckboxes();
+      renderCompareBar();
+      emit('compare:updated', { items: compareItems });
+    });
+
+    // Submit → navigate to compare page. No query string needed —
+    // localStorage already holds the selection.
+    document.body.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-compare-submit]')) return;
+      if (compareItems.length >= 2) {
+        window.location.href = '/pages/compare';
+      }
+    });
+
+    // [12] Stay in sync if another tab changes the list, or if the
+    // compare page itself (main-compare.js) removes/clears items and
+    // the visitor navigates back here without a full reload in
+    // between (e.g. back/forward cache).
+    window.addEventListener('storage', (e) => {
+      if (e.key !== COMPARE_KEY) return;
+      compareItems = validCompareEntries(getCompareStorage());
       syncCompareCheckboxes();
       renderCompareBar();
     });
 
-    // Submit → navigate to compare page
-    document.body.addEventListener('click', (e) => {
-      if (!e.target.closest('[data-compare-submit]')) return;
-      if (compareItems.length >= 2) {
-        window.location.href =
-          '/pages/compare?handles=' +
-          compareItems.map((x) => x.handle).join(',');
-      }
+    document.addEventListener('compare:toggle', (e) => {
+      const detail = e.detail || {};
+      if (!detail.fromPage) return; // only re-hydrate for changes made on the compare page itself
+      compareItems = validCompareEntries(getCompareStorage());
+      syncCompareCheckboxes();
+      renderCompareBar();
+    });
+
+    document.addEventListener('compare:cleared', () => {
+      compareItems.length = 0;
+      syncCompareCheckboxes();
+      renderCompareBar();
     });
 
     renderCompareBar();
