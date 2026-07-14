@@ -1,17 +1,6 @@
 {{ 'header.css' | asset_url | stylesheet_tag }}
 
-{%- liquid
-  assign section_width = section.settings.section_width
-  if section_width == blank
-    assign width_class = 'main-header--default-width'
-  elsif section_width == 'full-width'
-    assign width_class = 'main-header--full-width'
-  else
-    assign width_class = 'main-header--custom-width'
-  endif
--%}
-
-<header class="main-header {{ width_class }}{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if section.settings.enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
+<header class="main-header {{ width_class }}{% if section.settings.enable_sticky %} main-header--sticky-enabled{% endif %}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
         id="main-header"
         role="banner"
         {%- if section.settings.enable_sticky %}
@@ -34,8 +23,7 @@
   {%- render 'announcement-bar', settings: section.settings -%}
 
   {%- render 'utility-bar', settings: section.settings -%}
-
-  {%- render 'main-header', section: section -%}
+{%- render 'main-header', section: section -%}
 
 </header>
 

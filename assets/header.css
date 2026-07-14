@@ -1,8 +1,7 @@
 /* assets/header.css
    Styles for the section-level navigation system: the "ecombio" hamburger
-   trigger, the mobile nav drawer (mega menu / showcase blocks), the
-   desktop menu-bar strip, and section-level layout (width, sticky
-   positioning, autohide). Self-contained: loaded by sections/header.liquid
+   trigger, the mobile nav drawer (mega menu / showcase blocks), and the
+   desktop menu-bar strip. Self-contained: loaded by sections/header.liquid
    itself. Rendered via snippets/header-menu.liquid.
 */
 
@@ -25,51 +24,6 @@
   --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --hdr-z              : 200;
   --hdr-drawer-z       : 400;
-}
-
-/* Section layout: width classes.
-   Moved/kept here as the canonical home for width_class, since header.liquid
-   is now the file that computes width_class and applies it to the outer
-   <header id="main-header"> element. (Descendant selectors below still
-   target .main-header__inner, which lives inside snippets/main-header.liquid
-   — that's fine, CSS doesn't care which file loaded the stylesheet.) */
-.main-header--default-width .main-header__inner { max-width: 1184px; }
-.main-header--full-width .main-header__inner { max-width: none; }
-.main-header--custom-width .main-header__inner { max-width: var(--custom-width); }
-
-/* Sticky header positioning + autohide.
-   Moved here from main-header.css: header.liquid owns the outer <header>
-   element (data-sticky-fixed, inline position:fixed) and the sticky-spacer
-   div, so the CSS that targets them belongs alongside that markup rather
-   than in the main-header snippet's stylesheet. The dead
-   `.main-header--sticky-enabled { position: sticky }` rule that used to
-   live in main-header.css has been dropped rather than migrated — the
-   inline `position: fixed` set in header.liquid always won on specificity
-   over it, so it never actually did anything; all of the autohide/spacer
-   JS logic is built and tested around `fixed`, not `sticky`.
-*/
-.main-header--sticky-enabled {
-  transition: transform 0.3s ease;
-}
-
-.main-header--sticky-enabled.main-header--autohide-hidden {
-  transform: translateY(-100%);
-}
-
-.main-header__sticky-spacer {
-  width: 100%;
-  /* Defensive: this element's height is intentionally kept constant by
-     header.js regardless of autohide state (see sync() there), but
-     overflow-anchor: none ensures it can never become a scroll-anchoring
-     target if that logic ever changes — resizing it previously caused a
-     feedback loop with the autohide scroll handler. */
-  overflow-anchor: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .main-header--sticky-enabled {
-    transition: none;
-  }
 }
 
 .ecombio-header {
@@ -490,6 +444,10 @@
   }
 }
 
+/* NOTE: previously this same selector/property set also appeared a second
+   time, unconditionally (no media query), just below here. Since it hides
+   entirely below 1024px anyway (see rule above), that unconditional copy
+   was pure duplication of the desktop rule above — merged into one. */
 .menu-bar__container {
   position: relative;
 }
