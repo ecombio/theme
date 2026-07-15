@@ -22,6 +22,7 @@
   assign eta_text      = card_product.metafields.custom.eta_text
 
   assign show_quickview = show_quickview | default: true
+  assign show_atc       = show_atc       | default: true
   assign show_compare   = show_compare   | default: true
   assign show_eta       = show_eta       | default: true
   assign is_sponsored   = is_sponsored   | default: false
@@ -152,37 +153,41 @@
       </div>
     {%- endif -%}
 
-    <div class="product-card__bottom-row">
+    {%- if show_atc or show_compare -%}
+      <div class="product-card__bottom-row">
 
-      <button
-        class="product-card__atc-btn"
-        type="button"
-        aria-label="Add {{ card_title | escape }} to cart"
-        data-atc-btn
-        data-variant-id="{{ variant_id }}"
-        data-product-title="{{ card_title | escape }}"
-      >
-        <span data-atc-label>Add to cart</span>
-      </button>
-
-      {%- if show_compare -%}
-        <label class="product-card__compare-label">
-          <input
-            class="product-card__compare-checkbox"
-            type="checkbox"
-            data-compare-checkbox
-            data-product-id="{{ card_product.id }}"
-            data-product-handle="{{ card_product.handle }}"
+        {%- if show_atc -%}
+          <button
+            class="product-card__atc-btn"
+            type="button"
+            aria-label="Add {{ card_title | escape }} to cart"
+            data-atc-btn
+            data-variant-id="{{ variant_id }}"
             data-product-title="{{ card_title | escape }}"
-            data-product-image="{{ card_image | image_url: width: 120 }}"
-            data-product-price="{{ card_price | money }}"
-            aria-label="Compare {{ card_title | escape }}"
           >
-          <span class="product-card__compare-text">Compare</span>
-        </label>
-      {%- endif -%}
+            <span data-atc-label>Add to cart</span>
+          </button>
+        {%- endif -%}
 
-    </div>
+        {%- if show_compare -%}
+          <label class="product-card__compare-label">
+            <input
+              class="product-card__compare-checkbox"
+              type="checkbox"
+              data-compare-checkbox
+              data-product-id="{{ card_product.id }}"
+              data-product-handle="{{ card_product.handle }}"
+              data-product-title="{{ card_title | escape }}"
+              data-product-image="{{ card_image | image_url: width: 120 }}"
+              data-product-price="{{ card_price | money }}"
+              aria-label="Compare {{ card_title | escape }}"
+            >
+            <span class="product-card__compare-text">Compare</span>
+          </label>
+        {%- endif -%}
+
+      </div>
+    {%- endif -%}
   </div>
 
 </div>
