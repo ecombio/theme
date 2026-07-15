@@ -21,6 +21,15 @@
   of a bespoke image/link markup. This gets the banner the same ambient
   shadow, hover lift/zoom, and optional heading/subheading/price/button
   overlay that banner-carousel slides have, for free.
+
+  BANNER SHADOW CLIPPING: .product-carousel__banner-clip is the element
+  that actually clips (overflow: hidden + border-radius); .product-carousel__banner
+  is just the flex/sizing box. This mirrors banner-carousel.css's
+  .banner-carousel__track / .banner-carousel pairing — the clip element
+  is padded on the inside to give banner-card's hover shadow (16px blur)
+  and 6px hover lift room to render before overflow:hidden cuts them off,
+  then a negative margin of the same size cancels the padding back out
+  so the banner's footprint and surrounding layout are unaffected.
 {%- endcomment -%}
 
 {%- liquid
@@ -33,6 +42,8 @@
   assign autoplay       = section.settings.autoplay
   assign autoplay_ms    = section.settings.autoplay_interval | default: 4 | times: 1000
   assign banner_show    = section.settings.show_banner
+  assign banner_h_desk  = section.settings.banner_height_desktop | default: 260
+  assign banner_h_mob   = section.settings.banner_height_mobile  | default: 160
   assign products_limit = section.settings.products_per_tab | default: 12
   assign sort_by        = section.settings.sort_by | default: 'best-selling'
   assign tab_blocks     = section.blocks | where: 'type', 'tab'
@@ -108,17 +119,19 @@
         style="
           --bc-card-ease: cubic-bezier(0.16, 1, 0.3, 1);
           --slide-radius: 12px;
-          --slide-height-desktop: 260px;
-          --slide-height-mobile: 160px;
+          --slide-height-desktop: {{ banner_h_desk }}px;
+          --slide-height-mobile: {{ banner_h_mob }}px;
         "
       >
-        {%- if banner_block -%}
-          {%- render 'banner-card', block: banner_block, is_first: true -%}
-        {%- else -%}
-          <div class="product-carousel__banner-placeholder" aria-hidden="true">
-            {{ 'collection-1' | placeholder_svg_tag: 'product-carousel__banner-placeholder-svg' }}
-          </div>
-        {%- endif -%}
+        <div class="product-carousel__banner-clip">
+          {%- if banner_block -%}
+            {%- render 'banner-card', block: banner_block, is_first: true -%}
+          {%- else -%}
+            <div class="product-carousel__banner-placeholder" aria-hidden="true">
+              {{ 'collection-1' | placeholder_svg_tag: 'product-carousel__banner-placeholder-svg' }}
+            </div>
+          {%- endif -%}
+        </div>
       </div>
     {%- endif -%}
 
@@ -334,6 +347,26 @@
       "label": "Show banner",
       "info": "Add a \"Banner\" block below to set its image, link, and optional text overlay.",
       "default": false
+    },
+    {
+      "type": "range",
+      "id": "banner_height_desktop",
+      "label": "Banner height (desktop)",
+      "min": 160,
+      "max": 500,
+      "step": 10,
+      "unit": "px",
+      "default": 260
+    },
+    {
+      "type": "range",
+      "id": "banner_height_mobile",
+      "label": "Banner height (mobile)",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "default": 160
     },
     {
       "type": "header",

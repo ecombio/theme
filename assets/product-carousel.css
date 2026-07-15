@@ -49,16 +49,33 @@
   gap: 14px;
 }
 
-/* ── Banner ── */
+/* ── Banner ──
+   .product-carousel__banner handles sizing/flex only. The actual
+   clip (overflow + border-radius) lives on the inner
+   .product-carousel__banner-clip element — see below. */
 .product-carousel__banner {
   flex-shrink: 0;
   width: 220px;
   min-width: 160px;
   max-width: 260px;
-  border-radius: 12px;
-  overflow: hidden;
   position: relative;
 }
+
+/* Same technique as banner-carousel.css's .banner-carousel__track /
+   .banner-carousel pairing: pad the inside of the clipping box so
+   banner-card's hover shadow (16px blur) + 6px hover lift have room to
+   render before overflow:hidden cuts them off, then cancel the padding
+   back out with a matching negative margin on the outer element so the
+   banner's footprint and surrounding layout are unaffected.
+   22px top = 16px blur + 6px lift, matching banner-carousel.css. */
+.product-carousel__banner-clip {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 22px 16px 16px;
+  margin: -22px -16px -16px;
+}
+
 .product-carousel__banner-link {
   display: block;
   height: 100%;
@@ -99,6 +116,8 @@
   .product-carousel__banner {
     width: 100%;
     max-width: 100%;
+  }
+  .product-carousel__banner-clip {
     min-height: 160px;
   }
   .product-carousel__banner-placeholder {
