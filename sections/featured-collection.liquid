@@ -37,7 +37,10 @@
       assign show_promo = true
     endif
 
-    assign promo_width = section.settings.promo_width | append: '%'
+    assign promo_width = blank
+    if section.settings.promo_custom_width
+      assign promo_width = section.settings.promo_width_px | append: 'px'
+    endif
   -%}
 
   <div
@@ -369,16 +372,23 @@
     },
     { "type": "header", "content": "Promo card sizing" },
     {
-      "type": "range",
-      "id": "promo_width",
-      "label": "Card width",
-      "min": 40,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "default": 100,
-      "info": "Narrower than 100% centers the card within its grid cell instead of filling it.",
+      "type": "checkbox",
+      "id": "promo_custom_width",
+      "label": "Use a custom width",
+      "default": false,
+      "info": "Off: card fills its grid cell, same as before. On: set an exact pixel width below — this can be larger than the cell, letting the card grow beyond the space the grid would normally give it.",
       "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "range",
+      "id": "promo_width_px",
+      "label": "Card width",
+      "min": 200,
+      "max": 900,
+      "step": 10,
+      "unit": "px",
+      "default": 400,
+      "visible_if": "{{ section.settings.enable_promo_card and section.settings.promo_custom_width }}"
     },
     {
       "type": "range",
