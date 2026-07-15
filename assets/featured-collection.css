@@ -88,11 +88,39 @@
    however many cards there are *instead of* shrinking them — a clamp
    floor below 260px silently reintroduces the exact squeeze this
    layout exists to avoid. 280px keeps a safety margin above that
-   breakpoint. */
+   breakpoint.
+
+   height: 100% closes a gap between this grid and .product-card
+   (product-card.css: height: 100%): .featured-collection__wrapper
+   (flex, align-items: stretch) correctly stretches its two direct
+   children — .featured-collection__promo-pinned and
+   .featured-collection__scroll-region — to match line height, and
+   .image-card correctly relays that stretched height all the way down
+   to its own visible box (height: 100% at every link in that chain).
+   But .featured-collection__grid--row is a plain block child *inside*
+   .scroll-region, not the flex item itself — so it was never told to
+   fill .scroll-region's stretched height, and defaulted to `auto`
+   (i.e. just tall enough for its tallest product-card). Whenever the
+   promo card was naturally taller than the products (any promo image
+   height ≥ ~500px against typical product-card content), the leftover
+   space became blank dead space below the products instead of being
+   passed down to them. height: 100% here closes that gap: once this
+   grid container has a definite height to work with, CSS Grid's
+   default align-content: stretch expands the implicit single row
+   (grid-auto-flow: column ⇒ only one row exists) to fill it, and
+   align-items: stretch (Grid's default) then does the same to each
+   product-card in it — matching what .image-card already gets via the
+   flex chain, using Grid's own equivalent mechanism instead.
+   Percentage heights resolve to `auto` (i.e. this is a no-op) in any
+   context where .scroll-region's own height is itself intrinsic rather
+   than flex-stretched — no promo card, or the mobile stacked layout —
+   so this is safe to apply unconditionally rather than needing a
+   min-width gate. */
 .featured-collection__grid--row {
   grid-template-columns: none;
   grid-auto-flow: column;
   grid-auto-columns: clamp(280px, 24cqw, 340px);
+  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
