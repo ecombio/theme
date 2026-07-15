@@ -143,6 +143,22 @@
 @media screen and (max-width: 599px) {
   .featured-collection__grid .featured-collection__promo-cell {
     grid-column: 1 / -1;
+    /* Full-bleed on mobile: break out of the section's own side padding
+       (--section-padding, applied to .featured-collection__default-width
+       etc.) so the promo card reads as an edge-to-edge banner instead
+       of sitting inset by the same gutter as the product cards below
+       it — that gutter is far more visible here since this card has a
+       strong white background + shadow against it. Negative margin
+       pulls it out on both sides; the matching width increase keeps it
+       flush with the viewport edges rather than just centered narrower.
+       Safe with any --section-padding value, including 0 (full-width
+       section setting) where this becomes a no-op. */
+    margin-inline: calc(var(--section-padding, 24px) * -1);
+    width: calc(100% + (var(--section-padding, 24px) * 2));
+    /* Breathing room before the product grid starts underneath —
+       previously relied entirely on the grid's own 1.2rem row gap,
+       which reads as tight once the card above it is full-bleed. */
+    margin-bottom: 20px;
   }
 }
 
@@ -175,7 +191,14 @@
   }
 
   .featured-collection__promo-pinned {
-    width: 100%;
+    /* Same full-bleed treatment as .featured-collection__promo-cell
+       above (see the comment there) — row layout converts to the same
+       stacked mobile look as grid layout, so it needs the same fix.
+       Replaces the old width: 100%, which only filled the padded
+       container rather than breaking out of it. */
+    margin-inline: calc(var(--section-padding, 24px) * -1);
+    width: calc(100% + (var(--section-padding, 24px) * 2));
+    margin-bottom: 20px;
     /* --ic-width is intentionally NOT overridden here anymore. It used
        to be set to 100% on this ancestor as the mobile fallback, but
        an inline --ic-width set directly on the .image-card element
