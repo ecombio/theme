@@ -1,9 +1,36 @@
 {{ 'banner-iconset.css' | asset_url | stylesheet_tag }}
 
+{%- comment -%}
+  Section width/padding follows the pattern established in
+  sections/example-width-section.liquid: local, per-instance
+  --section-padding (and --custom-width when applicable), applied via
+  the theme's global .default-width / .full-width / .custom-width
+  utility classes (see base.css SECTION GRID SYSTEM). This is
+  intentionally decoupled from the global --page-margin/--page-width
+  settings, so this section's width/padding never shifts just because
+  someone changes Theme settings > Layout > Body side padding.
+{%- endcomment -%}
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = width_type
+  endif
+-%}
+
 <div
-  class="banner-iconset-section"
+  class="banner-iconset-section {{ width_class }}"
   {% unless section.settings.enable_animations %}data-animations="off"{% endunless %}
-  style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }};"
+  style="
+    padding-top: {{ section.settings.padding_top }}px;
+    padding-bottom: {{ section.settings.padding_bottom }}px;
+    background-color: {{ section.settings.bg_color }};
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
 >
   <div class="banner-iconset-section__inner">
 
@@ -331,6 +358,42 @@
       "id": "subheading_color",
       "label": "Subheading color",
       "default": "#6e6e73"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     },
     {
       "type": "header",
