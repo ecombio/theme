@@ -133,15 +133,12 @@
    auto-flow drops the product cards into a fresh row underneath —
    still 2-per-row, no extra markup or JS needed.
 
-   Applies to BOTH layout modes. Below, .featured-collection__grid--row
-   is first converted back into a plain wrapping grid for this same
-   breakpoint (see next rule) — a merchant's "Scrollable row" choice is
-   meant for tablet/desktop; on phones we always want the simple
-   stacked layout instead of a horizontal carousel, so the promo-cell
-   span rule can just target both classes here rather than needing two
-   separate versions. */
+   Scoped to [data-mobile-layout="grid"] only — the Row and Row (2
+   rows) mobile layouts (see below) treat the promo card as an
+   ordinary scroll-track item instead of a full-bleed banner, since a
+   full-width span doesn't mean much inside a horizontal scroller. */
 @media screen and (max-width: 599px) {
-  .featured-collection__grid .featured-collection__promo-cell {
+  [data-mobile-layout="grid"] .featured-collection__grid .featured-collection__promo-cell {
     grid-column: 1 / -1;
     /* Full-bleed on mobile: break out of the section's own side padding
        (--section-padding, applied to .featured-collection__default-width
@@ -162,40 +159,23 @@
   }
 }
 
-/* Mobile override for row layout: cancel every carousel-specific
-   property (scroll-snap, horizontal auto-flow, side padding for the
-   arrow gutter) and fall back to the exact same wrapping 2-column
-   grid used above 600px anyway (.featured-collection__grid's own
-   grid-template-columns), so row and grid render identically on
-   phones. The wrapper — flex row on tablet/desktop, pinning the promo
-   card beside the scroll region — switches to a plain vertical stack
-   here instead, so the promo card sits full-width above the products,
-   same "image on top" behavior as the true Grid layout. Arrows/dots/
-   edge-fade are hidden below since there's nothing left to scroll
-   through, and the scroll-region's negative margin (added only to
-   cancel the track's shadow-clearance padding) is zeroed out for the
-   same reason. */
+/* Wrapper always stacks vertically on mobile (row layout's pinned
+   promo card + scroll region sit side-by-side above 600px — see
+   .featured-collection__wrapper further down — but never on phones),
+   and the arrows/dots always hide on mobile, regardless of which
+   mobile layout is chosen below. Touch users scroll directly; arrow
+   buttons don't add much at this width. */
 @media screen and (max-width: 599px) {
-  .featured-collection__grid--row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-flow: row;
-    grid-auto-columns: unset;
-    overflow: visible;
-    scroll-snap-type: none;
-    padding: 0;
-    scroll-padding-inline: 0;
-  }
-
   .featured-collection__wrapper {
     flex-direction: column;
   }
 
   .featured-collection__promo-pinned {
     /* Same full-bleed treatment as .featured-collection__promo-cell
-       above (see the comment there) — row layout converts to the same
-       stacked mobile look as grid layout, so it needs the same fix.
-       Replaces the old width: 100%, which only filled the padded
-       container rather than breaking out of it. */
+       above (see the comment there) — this is the Row *desktop*
+       layout's pinned promo card, which also stacks full-width on
+       phones. Replaces the old width: 100%, which only filled the
+       padded container rather than breaking out of it. */
     margin-inline: calc(var(--section-padding, 24px) * -1);
     width: calc(100% + (var(--section-padding, 24px) * 2));
     margin-bottom: 20px;
@@ -221,6 +201,87 @@
   .featured-collection__arrow,
   .featured-collection__dots {
     display: none;
+  }
+}
+
+/* Mobile layout: Grid (default) — converts either desktop layout
+   (Row or Grid) into the same wrapping 2-column grid on phones,
+   matching the theme's previous mobile behavior exactly when this
+   setting is left at its default. Controlled independently of the
+   desktop "Layout" setting via data-mobile-layout on the section root
+   (see featured-collection.liquid). */
+@media screen and (max-width: 599px) {
+  [data-mobile-layout="grid"] .featured-collection__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-rows: none;
+    overflow: visible;
+    scroll-snap-type: none;
+    padding: 0;
+    scroll-padding-inline: 0;
+  }
+
+  /* Cap at 8 products (Grid mobile layout only — desktop and the two
+     Row mobile layouts below show everything "Products to show"
+     allows). The promo card, when it's a grid child (non-Row desktop
+     branch — see data-promo-in-track in featured-collection.liquid),
+     takes up the first slot without counting against the 8, hence the
+     +10 instead of +9 in that case. */
+  [data-mobile-layout="grid"]:not([data-promo-in-track="true"]) .featured-collection__grid > *:nth-child(n+9) {
+    display: none;
+  }
+  [data-mobile-layout="grid"][data-promo-in-track="true"] .featured-collection__grid > *:nth-child(n+10) {
+    display: none;
+  }
+}
+
+/* Mobile layout: Row / Row (2 rows) — horizontal scroll on phones,
+   using the same fluid card-width approach as the desktop Row layout
+   (see .featured-collection__grid--row above), just with its own
+   clamp() tuned for narrower phone widths. Written as its own rule
+   (rather than reusing .featured-collection__grid--row's always-on
+   styles) because this also needs to work when the *desktop* layout
+   is plain Grid, whose .featured-collection__grid is otherwise a
+   static wrapping grid with no scroll behavior at any width.
+   No JS changes needed for either variant: the existing
+   featured-collection.js only initializes on
+   [data-featured-collection][data-layout="row"] (the desktop Row
+   case) for its arrow/dot logic, and arrows/dots are hidden on mobile
+   regardless (see above) — native touch scroll handles the rest. */
+@media screen and (max-width: 599px) {
+  [data-mobile-layout="row"] .featured-collection__grid,
+  [data-mobile-layout="row_two_rows"] .featured-collection__grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(150px, 42cqw, 220px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 20px 16px 16px;
+    box-sizing: border-box;
+    scroll-padding-inline: 16px;
+  }
+
+  [data-mobile-layout="row"] .featured-collection__grid::-webkit-scrollbar,
+  [data-mobile-layout="row_two_rows"] .featured-collection__grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-mobile-layout="row"] .featured-collection__grid > *,
+  [data-mobile-layout="row_two_rows"] .featured-collection__grid > * {
+    scroll-snap-align: start;
+  }
+
+  /* Row (2 rows): same horizontal scroll as plain Row above, but
+     grid-template-rows splits the track into two rows, so
+     grid-auto-flow: column fills both rows of a column before
+     starting the next one — each scroll-page shows two products
+     stacked instead of one. */
+  [data-mobile-layout="row_two_rows"] .featured-collection__grid {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
   }
 }
 
