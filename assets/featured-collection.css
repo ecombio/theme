@@ -71,18 +71,28 @@
    This is deliberately NOT container-width / N: dividing evenly always
    lands on a whole number of cards flush with the edge, which is
    exactly why the old breakpoint version never showed a partial card.
-   clamp(200px, 24cqw, 320px) instead gives cards their own intrinsic
+   clamp(280px, 24cqw, 340px) instead gives cards their own intrinsic
    width, so however many fit (plus a leftover sliver of the next one)
    is just whatever falls out of the math — same principle as Apple's
    store carousel. That sliver is what the has-overflow-start/-end
    mask-image fade below is designed to sit next to.
    grid-template-columns is reset to none so it doesn't fight
    grid-auto-columns. Side padding leaves a gutter for the overlaid
-   arrows (see below). */
+   arrows (see below).
+
+   The 280px floor is deliberate, not cosmetic: product-card.css has
+   its own @container product-card (max-width: 260px) breakpoint that
+   stacks the "Add to cart" button and "Compare" checkbox onto
+   separate lines and tightens the savings row. The entire point of a
+   scrollable row over a wrapping grid is to let overflow-x absorb
+   however many cards there are *instead of* shrinking them — a clamp
+   floor below 260px silently reintroduces the exact squeeze this
+   layout exists to avoid. 280px keeps a safety margin above that
+   breakpoint. */
 .featured-collection__grid--row {
   grid-template-columns: none;
   grid-auto-flow: column;
-  grid-auto-columns: clamp(200px, 24cqw, 320px);
+  grid-auto-columns: clamp(280px, 24cqw, 340px);
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
@@ -125,6 +135,21 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Row-half wrapper for the mobile "Row (2 rows)" layout (see
+   featured-collection.liquid — only rendered when mobile_layout ==
+   'row_two_rows'). display: contents is the default everywhere:
+   it removes this element from the box model entirely, splicing its
+   product-card children directly into .featured-collection__grid as
+   if the wrapper didn't exist. That keeps desktop Grid, desktop Row,
+   mobile Grid, and mobile single-Row all rendering exactly as if this
+   markup weren't there. Only the mobile row_two_rows media query
+   below turns it into a real flex row with its own overflow-x — a
+   single shared scroll container can't have two independent scroll
+   positions, so each row genuinely needs to be its own element. */
+.featured-collection__row-half {
+  display: contents;
 }
 
 /* Mobile: promo card becomes a full-width banner above the products,
@@ -236,25 +261,30 @@
   }
 }
 
-/* Mobile layout: Row / Row (2 rows) — horizontal scroll on phones,
-   using the same fluid card-width approach as the desktop Row layout
-   (see .featured-collection__grid--row above), just with its own
-   clamp() tuned for narrower phone widths. Written as its own rule
-   (rather than reusing .featured-collection__grid--row's always-on
-   styles) because this also needs to work when the *desktop* layout
-   is plain Grid, whose .featured-collection__grid is otherwise a
-   static wrapping grid with no scroll behavior at any width.
-   No JS changes needed for either variant: the existing
-   featured-collection.js only initializes on
-   [data-featured-collection][data-layout="row"] (the desktop Row
-   case) for its arrow/dot logic, and arrows/dots are hidden on mobile
-   regardless (see above) — native touch scroll handles the rest. */
+/* Mobile layout: Row — horizontal scroll on phones, using the same
+   fluid card-width approach as the desktop Row layout (see
+   .featured-collection__grid--row above), just with its own clamp()
+   tuned for narrower phone widths. Written as its own rule (rather
+   than reusing .featured-collection__grid--row's always-on styles)
+   because this also needs to work when the *desktop* layout is plain
+   Grid, whose .featured-collection__grid is otherwise a static
+   wrapping grid with no scroll behavior at any width.
+   No JS changes needed: the existing featured-collection.js only
+   initializes on [data-featured-collection][data-layout="row"] (the
+   desktop Row case) for its arrow/dot logic, and arrows/dots are
+   hidden on mobile regardless (see above) — native touch scroll
+   handles the rest.
+   Floor raised to 280px for the same reason as the desktop clamp
+   above: product-card's own @container breakpoint at 260px stacks
+   "Add to cart" and "Compare" onto separate lines once the card gets
+   that narrow — the squeeze visible in a too-tight scrollable row.
+   Overflow-x is what's supposed to absorb card count here, not a
+   shrinking card. */
 @media screen and (max-width: 599px) {
-  [data-mobile-layout="row"] .featured-collection__grid,
-  [data-mobile-layout="row_two_rows"] .featured-collection__grid {
+  [data-mobile-layout="row"] .featured-collection__grid {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: clamp(150px, 42cqw, 220px);
+    grid-auto-columns: clamp(280px, 46cqw, 320px);
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
@@ -265,23 +295,61 @@
     scroll-padding-inline: 16px;
   }
 
-  [data-mobile-layout="row"] .featured-collection__grid::-webkit-scrollbar,
-  [data-mobile-layout="row_two_rows"] .featured-collection__grid::-webkit-scrollbar {
+  [data-mobile-layout="row"] .featured-collection__grid::-webkit-scrollbar {
     display: none;
   }
 
-  [data-mobile-layout="row"] .featured-collection__grid > *,
-  [data-mobile-layout="row_two_rows"] .featured-collection__grid > * {
+  [data-mobile-layout="row"] .featured-collection__grid > * {
     scroll-snap-align: start;
   }
+}
 
-  /* Row (2 rows): same horizontal scroll as plain Row above, but
-     grid-template-rows splits the track into two rows, so
-     grid-auto-flow: column fills both rows of a column before
-     starting the next one — each scroll-page shows two products
-     stacked instead of one. */
+/* Mobile layout: Row (2 rows) — two independently-scrollable rows.
+   Unlike the single-Row layout above (one shared scroll container),
+   this can't be done with grid-auto-flow/grid-template-rows tricks on
+   a single element — a shared scrollLeft always ties both rows
+   together, so scrolling row 1 would drag row 2 with it. Instead each
+   .featured-collection__row-half (see featured-collection.liquid and
+   its display: contents base rule above) becomes its own real flex
+   row with its own overflow-x here, genuinely independent of its
+   sibling.
+   The outer .featured-collection__grid switches from its default
+   display: grid (2-column wrap, used by every other layout) to a
+   plain vertical flex stack, so the promo card (if present, sitting
+   outside the row-halves — see featured-collection.liquid) and the
+   two row-halves simply stack top to bottom. */
+@media screen and (max-width: 599px) {
   [data-mobile-layout="row_two_rows"] .featured-collection__grid {
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  [data-mobile-layout="row_two_rows"] .featured-collection__row-half {
+    display: flex;
+    gap: 1.2rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 20px 16px 16px;
+    box-sizing: border-box;
+    scroll-padding-inline: 16px;
+  }
+
+  [data-mobile-layout="row_two_rows"] .featured-collection__row-half::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Same 280px floor as the other Row layouts, same reasoning: stay
+     above product-card's 260px container-query breakpoint so
+     overflow-x — not card shrinkage — absorbs however many products
+     there are. flex: 0 0 <width> replaces grid-auto-columns since
+     each row-half is a flex row rather than a grid track now. */
+  [data-mobile-layout="row_two_rows"] .featured-collection__row-half > * {
+    flex: 0 0 clamp(280px, 46cqw, 320px);
+    scroll-snap-align: start;
   }
 }
 
