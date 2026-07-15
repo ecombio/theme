@@ -176,11 +176,19 @@
 
   .featured-collection__promo-pinned {
     width: 100%;
-    /* Without this, .image-card would still inherit the desktop
-       clamp(200px, 24cqw, 320px) set on .featured-collection__promo-pinned
-       above and render narrow, instead of filling this full-width
-       mobile banner. */
-    --ic-width: 100%;
+    /* --ic-width is intentionally NOT overridden here anymore. It used
+       to be set to 100% on this ancestor as the mobile fallback, but
+       an inline --ic-width set directly on the .image-card element
+       (from a merchant's desktop "custom width" setting) always won
+       over this inherited value — same element beats inherited value —
+       so a narrow desktop width silently carried over to mobile with
+       no way to set it independently.
+       Mobile width now comes from --ic-width-mobile, resolved inside
+       image-card.css itself (see the max-width: 599px rule there),
+       which does NOT fall back to --ic-width — only to 100%. That
+       reproduces the same "fill the banner" default this line used to
+       provide, but from a place an inline --ic-width can't override.
+       Re-adding --ic-width here would be inert at best. */
   }
 
   .featured-collection__scroll-region {
