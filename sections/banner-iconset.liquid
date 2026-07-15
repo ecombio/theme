@@ -1,242 +1,625 @@
-(() => {
-  const SELECTOR = '[data-banner-iconset]';
+{{ 'banner-iconset.css' | asset_url | stylesheet_tag }}
 
-  class BannerIconset {
-    constructor(root) {
-      this.root = root;
-      this.track = root.querySelector('[data-banner-iconset-track]');
-      this.prevBtn = root.querySelector('[data-banner-iconset-prev]');
-      this.nextBtn = root.querySelector('[data-banner-iconset-next]');
-      this.dotsWrapper = root.querySelector('[data-banner-iconset-dots]');
-      this.slides = Array.from(root.querySelectorAll('[data-banner-iconset-slide]'));
+<div
+  class="banner-iconset-section"
+  {% unless section.settings.enable_animations %}data-animations="off"{% endunless %}
+  style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }};"
+>
+  <div class="banner-iconset-section__inner">
 
-      if (!this.track || this.slides.length === 0) return;
+    {%- if section.settings.heading != blank or section.settings.subheading != blank -%}
+      <h2 class="banner-iconset-section__heading banner-iconset-section__heading--align-{{ section.settings.heading_align }}">
+        {%- if section.settings.heading != blank -%}
+          <span class="banner-iconset-section__heading-main" style="color: {{ section.settings.heading_color }};">{{ section.settings.heading }}</span>
+        {%- endif -%}
+        {%- if section.settings.subheading != blank -%}
+          <span class="banner-iconset-section__heading-sub" style="color: {{ section.settings.subheading_color }};">{{ section.settings.subheading }}</span>
+        {%- endif -%}
+      </h2>
+    {%- endif -%}
 
-      this.autoplayEnabled = root.dataset.autoplay === 'true';
-      this.autoplaySpeed = parseInt(root.dataset.autoplaySpeed, 10) || 5000;
-      this.autoplayTimer = null;
-      this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      this.activeIndex = 0;
+    <div
+      class="banner-iconset"
+      data-banner-iconset
+      data-autoplay="{{ section.settings.autoplay }}"
+      data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
+      style="
+        --slides-mobile: {{ section.settings.columns_mobile }};
+        --slides-tablet: {{ section.settings.columns_tablet }};
+        --slides-desktop: {{ section.settings.columns_desktop }};
+        --slide-gap: {{ section.settings.slide_gap }}px;
+        --card-width-desktop: {{ section.settings.card_width_desktop }}px;
+        --card-radius: {{ section.settings.card_radius }}px;
+        --card-padding: {{ section.settings.card_padding }}px;
+        --card-min-height-desktop: {{ section.settings.card_min_height_desktop }}px;
+        --card-min-height-mobile: {{ section.settings.card_min_height_mobile }}px;
+        --card-bg: {{ section.settings.card_bg_color }};
+        --bc-btn-bg: {{ section.settings.bg_color }};
+      "
+    >
+      <div class="banner-iconset__track" data-banner-iconset-track>
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign icon = block.settings.icon
+            assign icon_width = block.settings.icon_width
+            assign text = block.settings.text
+            assign link = block.settings.link
+          -%}
 
-      this.onPrevClick = this.onPrevClick.bind(this);
-      this.onNextClick = this.onNextClick.bind(this);
-      this.onScroll = this.onScroll.bind(this);
-      this.onResize = this.onResize.bind(this);
-      this.onKeydown = this.onKeydown.bind(this);
-      this.stopAutoplay = this.stopAutoplay.bind(this);
-      this.maybeStartAutoplay = this.maybeStartAutoplay.bind(this);
+          {%- assign modal_enable = block.settings.modal_enable -%}
+          {%- assign modal_id = 'biModal-' | append: block.id -%}
+          {%- capture card_inner -%}
+            {%- if icon != blank -%}
+              <span class="banner-iconset__icon" style="width: {{ icon_width | default: 32 }}px; height: {{ icon_width | default: 32 }}px;">
+                <img
+                  src="{{ icon | image_url: width: 160 }}"
+                  srcset="{{ icon | image_url: width: 80 }} 80w, {{ icon | image_url: width: 160 }} 160w"
+                  alt=""
+                  width="{{ icon.width }}"
+                  height="{{ icon.height }}"
+                  loading="lazy"
+                >
+              </span>
+            {%- endif -%}
 
-      this.buildDots();
-      this.bindEvents();
-      this.update();
-      this.observeSlides();
+            {%- if text != blank -%}
+              <span class="banner-iconset__text" style="color: {{ section.settings.text_color | default: '#1d1d1f' }};">{{ text | newline_to_br }}</span>
+            {%- endif -%}
+          {%- endcapture -%}
 
-      if (this.autoplayEnabled && !this.reducedMotion) {
-        this.startAutoplay();
-      }
-    }
+          <div class="banner-iconset__slide" data-banner-iconset-slide {{ block.shopify_attributes }}>
+            {%- if modal_enable -%}
+              <button
+                type="button"
+                class="banner-iconset__card"
+                data-bi-modal-open="{{ modal_id }}"
+                aria-haspopup="dialog"
+              >
+                {{ card_inner }}
+              </button>
+            {%- else -%}
+              <a href="{{ link | default: '#' }}" class="banner-iconset__card" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
+                {{ card_inner }}
+              </a>
+            {%- endif -%}
+          </div>
+        {%- else -%}
+          <div class="banner-iconset__slide" data-banner-iconset-slide>
+            <a href="#" class="banner-iconset__card" tabindex="-1" aria-disabled="true">
+              <span class="banner-iconset__text">Add cards in the section settings</span>
+            </a>
+          </div>
+        {%- endfor -%}
+      </div>
 
-    /* ---------- Setup ---------- */
+      {%- if section.blocks.size > 1 and section.settings.show_arrows -%}
+        <button type="button" class="banner-iconset__btn banner-iconset__btn--prev" data-banner-iconset-prev aria-label="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button type="button" class="banner-iconset__btn banner-iconset__btn--next" data-banner-iconset-next aria-label="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      {%- endif -%}
 
-    getSlidesPerView() {
-      const width = window.innerWidth;
-      const styles = getComputedStyle(this.root);
-      if (width >= 990) return parseFloat(styles.getPropertyValue('--slides-desktop')) || 1;
-      if (width >= 750) return parseFloat(styles.getPropertyValue('--slides-tablet')) || 1;
-      return parseFloat(styles.getPropertyValue('--slides-mobile')) || 1;
-    }
+      {%- if section.blocks.size > 1 and section.settings.show_dots -%}
+        <div class="banner-iconset__dots" data-banner-iconset-dots></div>
+      {%- endif -%}
+    </div>
 
-    buildDots() {
-      if (!this.dotsWrapper) return;
-      this.dotsWrapper.innerHTML = '';
+  </div>
 
-      const perView = this.getSlidesPerView();
-      const pageCount = Math.max(1, Math.ceil(this.slides.length / perView));
+  {%- for block in section.blocks -%}
+    {%- if block.settings.modal_enable -%}
+      {%- assign modal_id = 'biModal-' | append: block.id -%}
+      <div
+        class="bi-modal"
+        id="{{ modal_id }}"
+        data-bi-modal
+        aria-hidden="true"
+        role="dialog"
+        aria-modal="true"
+        {% if block.settings.modal_heading != blank %}aria-labelledby="{{ modal_id }}-heading"{% endif %}
+      >
+        <div class="bi-modal__backdrop" data-bi-modal-close tabindex="-1"></div>
+        <div class="bi-modal__panel">
+          <button type="button" class="bi-modal__close" data-bi-modal-close aria-label="Close">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
 
-      if (pageCount <= 1) {
-        this.dotsWrapper.hidden = true;
-        this.dots = [];
+          {%- if block.settings.modal_heading != blank -%}
+            <h3 class="bi-modal__heading" id="{{ modal_id }}-heading">{{ block.settings.modal_heading }}</h3>
+          {%- endif -%}
+
+          {%- if block.settings.modal_intro != blank -%}
+            <p class="bi-modal__intro">{{ block.settings.modal_intro | newline_to_br }}</p>
+          {%- endif -%}
+
+          {%- for i in (1..3) -%}
+            {%- assign heading_key = 'modal_section_' | append: i | append: '_heading' -%}
+            {%- assign body_key = 'modal_section_' | append: i | append: '_body' -%}
+            {%- assign sec_heading = block.settings[heading_key] -%}
+            {%- assign sec_body = block.settings[body_key] -%}
+            {%- if sec_heading != blank or sec_body != blank -%}
+              <div class="bi-modal__section">
+                {%- if sec_heading != blank -%}<h4 class="bi-modal__section-heading">{{ sec_heading }}</h4>{%- endif -%}
+                {%- if sec_body != blank -%}<p class="bi-modal__section-body">{{ sec_body | newline_to_br }}</p>{%- endif -%}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- if block.settings.modal_link_url != blank -%}
+            <a href="{{ block.settings.modal_link_url }}" class="bi-modal__link">{{ block.settings.modal_link_label | default: 'Learn more' }} &rarr;</a>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+</div>
+
+<style>
+  .bi-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+  }
+  .bi-modal[data-bi-modal-open] { display: block; }
+  .bi-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .bi-modal__panel {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    width: calc(100% - 32px);
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    margin: 32px auto;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 40px 32px 32px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+  .bi-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f5f5f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #1d1d1f;
+  }
+  .bi-modal__close:hover { background: #e8e8ed; }
+  .bi-modal__heading {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    color: #1d1d1f;
+  }
+  .bi-modal__intro {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #1d1d1f;
+    margin: 0 0 24px;
+  }
+  .bi-modal__section { margin-bottom: 20px; }
+  .bi-modal__section-heading {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #1d1d1f;
+  }
+  .bi-modal__section-body {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #444448;
+    margin: 0;
+  }
+  .bi-modal__link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 14px;
+    color: #0071e3;
+    text-decoration: none;
+  }
+  .bi-modal__link:hover { text-decoration: underline; }
+  body.bi-modal-open { overflow: hidden; }
+</style>
+
+<script>
+  (function () {
+    document.addEventListener('click', function (e) {
+      var opener = e.target.closest('[data-bi-modal-open]');
+      if (opener) {
+        var modal = document.getElementById(opener.getAttribute('data-bi-modal-open'));
+        if (modal) {
+          modal.setAttribute('data-bi-modal-open', '');
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('bi-modal-open');
+          var closeBtn = modal.querySelector('.bi-modal__close');
+          if (closeBtn) closeBtn.focus();
+        }
         return;
       }
 
-      this.dotsWrapper.hidden = false;
-      this.dots = [];
-
-      for (let i = 0; i < pageCount; i++) {
-        const dot = document.createElement('button');
-        dot.type = 'button';
-        dot.className = 'banner-iconset__dot';
-        dot.setAttribute('aria-label', `Go to card group ${i + 1}`);
-        if (i === 0) dot.classList.add('is-active');
-        dot.addEventListener('click', () => this.goToPage(i));
-        this.dotsWrapper.appendChild(dot);
-        this.dots.push(dot);
-      }
-    }
-
-    bindEvents() {
-      if (this.prevBtn) this.prevBtn.addEventListener('click', this.onPrevClick);
-      if (this.nextBtn) this.nextBtn.addEventListener('click', this.onNextClick);
-
-      this.track.addEventListener('scroll', this.onScroll, { passive: true });
-      this.track.addEventListener('keydown', this.onKeydown);
-      window.addEventListener('resize', this.onResize);
-
-      // Re-check overflow once layout has actually settled (fonts loading,
-      // theme-editor re-renders, etc.) — the constructor's update() call
-      // can run before scrollWidth/clientWidth are accurate.
-      window.addEventListener('load', () => this.update());
-
-      if ('ResizeObserver' in window) {
-        this.resizeObserver = new ResizeObserver(() => this.update());
-        this.resizeObserver.observe(this.track);
-      }
-
-      ['pointerdown', 'focusin', 'mouseenter'].forEach((evt) => {
-        this.root.addEventListener(evt, this.stopAutoplay);
-      });
-      ['pointerup', 'focusout', 'mouseleave'].forEach((evt) => {
-        this.root.addEventListener(evt, this.maybeStartAutoplay);
-      });
-    }
-
-    onKeydown(event) {
-      if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        this.onNextClick();
-      } else if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        this.onPrevClick();
-      }
-    }
-
-    /* ---------- Navigation ---------- */
-
-    getStep() {
-      const slide = this.slides[0];
-      const styles = getComputedStyle(this.track);
-      const gap = parseFloat(styles.columnGap || styles.gap || '0');
-      return slide.getBoundingClientRect().width + gap;
-    }
-
-    onPrevClick() {
-      const perView = Math.max(1, Math.floor(this.getSlidesPerView()));
-      this.track.scrollBy({ left: -this.getStep() * perView, behavior: this.reducedMotion ? 'auto' : 'smooth' });
-    }
-
-    onNextClick() {
-      const perView = Math.max(1, Math.floor(this.getSlidesPerView()));
-      this.track.scrollBy({ left: this.getStep() * perView, behavior: this.reducedMotion ? 'auto' : 'smooth' });
-    }
-
-    goToPage(pageIndex) {
-      const perView = this.getSlidesPerView();
-      const slideIndex = Math.round(pageIndex * perView);
-      const target = this.slides[slideIndex];
-      if (!target) return;
-      this.track.scrollTo({
-        left: target.offsetLeft - this.track.offsetLeft,
-        behavior: this.reducedMotion ? 'auto' : 'smooth',
-      });
-    }
-
-    onScroll() {
-      if (this.scrollRaf) return;
-      this.scrollRaf = requestAnimationFrame(() => {
-        this.update();
-        this.scrollRaf = null;
-      });
-    }
-
-    onResize() {
-      this.buildDots();
-      this.update();
-    }
-
-    observeSlides() {
-      this.slideObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-              const index = this.slides.indexOf(entry.target);
-              if (index !== -1) this.setActivePage(index);
-            }
-          });
-        },
-        { root: this.track, threshold: [0.6] }
-      );
-      this.slides.forEach((slide) => this.slideObserver.observe(slide));
-    }
-
-    setActivePage(slideIndex) {
-      const perView = this.getSlidesPerView();
-      const pageIndex = Math.floor(slideIndex / perView);
-      if (pageIndex === this.activeIndex) return;
-      this.activeIndex = pageIndex;
-
-      if (this.dots) {
-        this.dots.forEach((dot, i) => dot.classList.toggle('is-active', i === pageIndex));
-      }
-    }
-
-    /* ---------- Overflow / fade edges + disabled arrow state ---------- */
-
-    update() {
-      const { scrollLeft, scrollWidth, clientWidth } = this.track;
-      const maxScroll = scrollWidth - clientWidth;
-      const atStart = scrollLeft <= 1;
-      const atEnd = scrollLeft >= maxScroll - 1;
-      const hasOverflow = maxScroll > 1;
-
-      if (this.prevBtn) this.prevBtn.disabled = !hasOverflow || atStart;
-      if (this.nextBtn) this.nextBtn.disabled = !hasOverflow || atEnd;
-
-      this.root.classList.toggle('has-overflow-start', hasOverflow && !atStart);
-      this.root.classList.toggle('has-overflow-end', hasOverflow && !atEnd);
-    }
-
-    /* ---------- Autoplay ---------- */
-
-    startAutoplay() {
-      this.stopAutoplay();
-      this.autoplayTimer = setInterval(() => {
-        const { scrollLeft, scrollWidth, clientWidth } = this.track;
-        if (scrollLeft + clientWidth >= scrollWidth - 1) {
-          this.track.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          this.onNextClick();
+      var closer = e.target.closest('[data-bi-modal-close]');
+      if (closer) {
+        var openModal = closer.closest('[data-bi-modal]');
+        if (openModal) {
+          openModal.removeAttribute('data-bi-modal-open');
+          openModal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('bi-modal-open');
         }
-      }, this.autoplaySpeed);
-    }
-
-    stopAutoplay() {
-      if (this.autoplayTimer) {
-        clearInterval(this.autoplayTimer);
-        this.autoplayTimer = null;
       }
-    }
-
-    maybeStartAutoplay() {
-      if (this.autoplayEnabled && !this.reducedMotion) this.startAutoplay();
-    }
-  }
-
-  function init() {
-    document.querySelectorAll(SELECTOR).forEach((root) => {
-      if (root.__bannerIconset) return;
-      root.__bannerIconset = new BannerIconset(root);
     });
-  }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        var open = document.querySelector('[data-bi-modal][data-bi-modal-open]');
+        if (open) {
+          open.removeAttribute('data-bi-modal-open');
+          open.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('bi-modal-open');
+        }
+      }
+    });
+  })();
+</script>
 
-  // Re-init when Shopify theme editor injects/re-renders a section
-  document.addEventListener('shopify:section:load', (event) => {
-    const root = event.target.querySelector(SELECTOR);
-    if (root) new BannerIconset(root);
-  });
-})();
+<script src="{{ 'banner-iconset.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Icon feature banner",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Header"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "The Apple Store difference."
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "info": "Appears inline right after the heading, in a lighter color — not on its own line.",
+      "default": "Even more reasons to shop with us."
+    },
+    {
+      "type": "select",
+      "id": "heading_align",
+      "label": "Heading alignment",
+      "options": [
+        { "value": "start",  "label": "Left"   },
+        { "value": "center", "label": "Center" },
+        { "value": "end",    "label": "Right"  }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color",
+      "default": "#1d1d1f"
+    },
+    {
+      "type": "color",
+      "id": "subheading_color",
+      "label": "Subheading color",
+      "default": "#6e6e73"
+    },
+    {
+      "type": "header",
+      "content": "Animation"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animations",
+      "label": "Enable hover animations",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 1,
+      "max": 8,
+      "step": 0.5,
+      "label": "Cards per view (desktop)",
+      "info": "Used for dot pagination and arrow step distance. Actual visible count is also affected by the fixed card width below.",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "card_width_desktop",
+      "min": 140,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card width (desktop/tablet)",
+      "default": 220
+    },
+    {
+      "type": "range",
+      "id": "columns_tablet",
+      "min": 1,
+      "max": 6,
+      "step": 0.5,
+      "label": "Cards per view (tablet)",
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile",
+      "min": 1,
+      "max": 3,
+      "step": 0.1,
+      "label": "Cards per view (mobile)",
+      "info": "A value above 1 (e.g. 1.2) shows a peek of the next card as a scroll hint",
+      "default": 1.2
+    },
+    {
+      "type": "range",
+      "id": "slide_gap",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Gap between cards",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "card_padding",
+      "min": 8,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Card padding",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "card_min_height_desktop",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card min height (desktop/tablet)",
+      "default": 220
+    },
+    {
+      "type": "range",
+      "id": "card_min_height_mobile",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card min height (mobile)",
+      "default": 200
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Card corner radius",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dots",
+      "label": "Show pagination dots",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Show arrows",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Auto-rotate cards",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Change cards every",
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Section background color",
+      "default": "#f5f5f7"
+    },
+    {
+      "type": "color",
+      "id": "card_bg_color",
+      "label": "Card background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Default card text color",
+      "info": "Use inline HTML in each card's text (e.g. a <span style=\"color:#0071e3\">) to color individual words differently.",
+      "default": "#1d1d1f"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "card",
+      "name": "Card",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "icon",
+          "label": "Icon"
+        },
+        {
+          "type": "range",
+          "id": "icon_width",
+          "min": 16,
+          "max": 80,
+          "step": 2,
+          "unit": "px",
+          "label": "Icon size",
+          "default": 32
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Card text",
+          "info": "Basic HTML is allowed and not escaped — e.g. <span style=\"color:#0071e3\">colored words</span>, <b>bold</b>, or <sup>1</sup> for a footnote mark.",
+          "default": "Enjoy this feature. It only takes a moment to set up."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Makes the whole card clickable. Leave blank for a non-clickable card."
+        },
+        {
+          "type": "header",
+          "content": "Popup (optional)"
+        },
+        {
+          "type": "checkbox",
+          "id": "modal_enable",
+          "label": "Open a popup when this card is clicked",
+          "info": "Overrides the link above — the popup opens instead.",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "modal_heading",
+          "label": "Popup heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_intro",
+          "label": "Popup intro text"
+        },
+        {
+          "type": "text",
+          "id": "modal_section_1_heading",
+          "label": "Section 1 heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_section_1_body",
+          "label": "Section 1 body"
+        },
+        {
+          "type": "text",
+          "id": "modal_section_2_heading",
+          "label": "Section 2 heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_section_2_body",
+          "label": "Section 2 body"
+        },
+        {
+          "type": "text",
+          "id": "modal_section_3_heading",
+          "label": "Section 3 heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_section_3_body",
+          "label": "Section 3 body"
+        },
+        {
+          "type": "url",
+          "id": "modal_link_url",
+          "label": "Popup \"Learn more\" link"
+        },
+        {
+          "type": "text",
+          "id": "modal_link_label",
+          "label": "Popup link label",
+          "default": "Learn more"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Icon feature banner",
+      "blocks": [
+        { "type": "card" },
+        { "type": "card" },
+        { "type": "card" },
+        { "type": "card" },
+        { "type": "card" }
+      ]
+    }
+  ]
+}
+{% endschema %}
