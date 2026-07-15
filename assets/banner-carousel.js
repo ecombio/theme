@@ -82,6 +82,17 @@
       this.track.addEventListener('keydown', this.onKeydown);
       window.addEventListener('resize', this.onResize);
 
+      // Re-check overflow once layout has actually settled (images/fonts
+      // loading, theme-editor re-renders, etc.) — the constructor's
+      // update() call can run before scrollWidth/clientWidth are accurate,
+      // which was causing the end fade to silently never appear on load.
+      window.addEventListener('load', () => this.update());
+
+      if ('ResizeObserver' in window) {
+        this.resizeObserver = new ResizeObserver(() => this.update());
+        this.resizeObserver.observe(this.track);
+      }
+
       ['pointerdown', 'focusin', 'mouseenter'].forEach((evt) => {
         this.root.addEventListener(evt, this.stopAutoplay);
       });
