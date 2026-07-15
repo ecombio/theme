@@ -63,15 +63,26 @@
   }
 }
 
-/* Scrollable row: same "how many fit per view" as the grid above
-   (2 / 3 / 4 at the same breakpoints), but flowing horizontally with
-   scroll-snap instead of wrapping onto new lines. grid-template-columns
-   is reset to none so it doesn't fight grid-auto-columns below. Side
-   padding leaves a gutter for the overlaid arrows (see below). */
+/* Scrollable row: fluid card width instead of a fixed 2/3/4-per-view
+   count. grid-auto-columns now resolves off container query width
+   (cqw), which tracks the actual rendered width of
+   .featured-collection__scroll-region (see container-type: inline-size
+   on that class below) — not the viewport, and not a hardcoded count.
+   This is deliberately NOT container-width / N: dividing evenly always
+   lands on a whole number of cards flush with the edge, which is
+   exactly why the old breakpoint version never showed a partial card.
+   clamp(200px, 24cqw, 320px) instead gives cards their own intrinsic
+   width, so however many fit (plus a leftover sliver of the next one)
+   is just whatever falls out of the math — same principle as Apple's
+   store carousel. That sliver is what the has-overflow-start/-end
+   mask-image fade below is designed to sit next to.
+   grid-template-columns is reset to none so it doesn't fight
+   grid-auto-columns. Side padding leaves a gutter for the overlaid
+   arrows (see below). */
 .featured-collection__grid--row {
   grid-template-columns: none;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 1.2rem) / 2);
+  grid-auto-columns: clamp(200px, 24cqw, 320px);
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
@@ -105,18 +116,6 @@
   scroll-snap-align: start;
 }
 
-@media (min-width: 600px) {
-  .featured-collection__grid--row {
-    grid-auto-columns: calc((100% - (1.2rem * 2)) / 3);
-  }
-}
-
-@media (min-width: 1024px) {
-  .featured-collection__grid--row {
-    grid-auto-columns: calc((100% - (1.2rem * 3)) / 4);
-  }
-}
-
 /* Promo card cell: image-card fills whatever grid cell it lands in
    (last position, grid or row). image-card itself supplies its own
    fixed image-wrap height (--ic-height-mobile/desktop) — this wrapper
@@ -147,15 +146,6 @@
   }
 }
 
-/* Mobile override for row layout: cancel every carousel-specific
-   property (scroll-snap, horizontal auto-flow, side padding for the
-   arrow gutter) and fall back to the exact same wrapping 2-column
-   grid used above 600px anyway (.featured-collection__grid's own
-   grid-template-columns), so row and grid render identically on
-   phones. Arrows/dots/edge-fade are hidden below since there's
-   nothing left to scroll through, and the wrapper's negative margin
-   (added only to cancel the row track's shadow-clearance padding) is
-   zeroed out for the same reason. */
 /* Mobile override for row layout: cancel every carousel-specific
    property (scroll-snap, horizontal auto-flow, side padding for the
    arrow gutter) and fall back to the exact same wrapping 2-column
@@ -203,31 +193,25 @@
      product track side by side. The promo card no longer lives inside
      the scroll track (see featured-collection.liquid) — it's a fixed
      flex sibling now, so clicking the arrows scrolls only the products
-     next to it instead of carrying the promo card along too. */
+     next to it instead of carrying the promo card along too.
+     container-type: inline-size lets .featured-collection__promo-pinned
+     size itself off this wrapper's own rendered width via cqw, the
+     same fluid approach as the scroll track below — see the note on
+     .featured-collection__grid--row. */
   display: flex;
   align-items: stretch;
   gap: 1.2rem;
+  container-type: inline-size;
 }
 
-/* Sized to match one column's worth of the grid at each breakpoint
-   (same 2/3/4-per-view numbers as .featured-collection__grid--row's
-   own grid-auto-columns), so the pinned card reads as "the first
-   card" even though it's structurally outside the scrolling grid. */
+/* Fluid width, matching the track's own clamp() formula (see
+   .featured-collection__grid--row) so the pinned card reads as "the
+   first card" even though it's structurally outside the scrolling
+   grid. Resolves off the wrapper's cqw rather than a fixed 2/3/4
+   count — same reasoning as the track. */
 .featured-collection__promo-pinned {
   flex: 0 0 auto;
-  width: calc((100% - 1.2rem) / 2);
-}
-
-@media (min-width: 600px) {
-  .featured-collection__promo-pinned {
-    width: calc((100% - (1.2rem * 2)) / 3);
-  }
-}
-
-@media (min-width: 1024px) {
-  .featured-collection__promo-pinned {
-    width: calc((100% - (1.2rem * 3)) / 4);
-  }
+  width: clamp(200px, 24cqw, 320px);
 }
 
 .featured-collection__scroll-region {
@@ -243,6 +227,12 @@
      edge — same overlay look as banner-carousel's arrows, just scoped
      to the product area instead of the whole wrapper now. */
   margin: -22px -16px -16px;
+  /* Establishes the containment context that .featured-collection__grid--row's
+     grid-auto-columns: clamp(200px, 24cqw, 320px) resolves cqw against.
+     Without this, cqw would resolve against the nearest ancestor
+     container instead — likely the whole section — which would break
+     the "card width tracks the scroll region, not the viewport" goal. */
+  container-type: inline-size;
 }
 
 /* Edge fade — hints there's more to scroll in a given direction, and
@@ -250,7 +240,11 @@
    banner-carousel.css's has-overflow-start/-end system, which this
    section never had. Classes are toggled on the section root
    ([data-featured-collection]) by featured-collection.js based on
-   scroll position — see updateOverflow() there. */
+   scroll position — see updateOverflow() there. Now that card width
+   is fluid (see .featured-collection__grid--row above), there's
+   reliably a partial card at the trailing edge for this fade to sit
+   next to, instead of the old fixed-count layout which usually ended
+   flush with no partial card to hint at. */
 .featured-collection {
   --fc-fade-width: 28px;
 }
