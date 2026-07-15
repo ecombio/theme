@@ -8,19 +8,31 @@
   --cc-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Matches the site's header layout system (main-header.css / utility-bar.css)
-   rather than relying on .page-width, which currently has no rules. */
+/* Section layout (width + side padding)
+   ------------------------------------------------------------------
+   Local variables only — set inline per-instance from this section's
+   own schema settings (section_width / custom_width / section_padding).
+   Never reads from the global --page-margin / --page-width, so this
+   section stays independent of Theme settings > Layout > Body side
+   padding. See sections/example-width-section.liquid for the
+   canonical pattern this implements. */
 .cc-section__inner {
   position: relative;
-  max-width: 1184px;
-  margin-inline: auto;
-  padding-inline: 24px;
+  padding-inline: var(--section-padding, 24px);
 }
 
-@media (max-width: 639px) {
-  .cc-section__inner {
-    padding-inline: 12px;
-  }
+.cc-section__inner.cc-section__default-width {
+  max-width: 1184px;
+  margin-inline: auto;
+}
+
+.cc-section__inner.cc-section__full-width {
+  max-width: 100%;
+}
+
+.cc-section__inner.cc-section__custom-width {
+  max-width: var(--custom-width, 1184px);
+  margin-inline: auto;
 }
 
 /* Header
@@ -171,6 +183,12 @@
   border-radius: 0;
 }
 
+.cc-carousel__image-wrap--landscape {
+  aspect-ratio: 3 / 2;
+  border-radius: 12px;
+  background: transparent;
+}
+
 .cc-carousel__image,
 .cc-carousel__placeholder,
 .cc-carousel__placeholder-svg {
@@ -178,6 +196,10 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.cc-carousel__image-wrap--landscape .cc-carousel__image {
+  object-fit: contain;
 }
 
 .cc-carousel__placeholder {
