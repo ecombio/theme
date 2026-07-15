@@ -8,17 +8,22 @@
      subheading/price/button) was dropped. Alignment now follows the
      content_position value directly (7 positions, each implying its
      own text-align + align-items).
-   - Per-field font-size settings were dropped in favor of CSS variable
-     defaults (--ic-heading-size etc.) — easy to re-expose as section
-     settings later if needed.
    - --ic-card-ease has a real fallback (`ease`) since the original
      --bc-card-ease was never defined in banner-card.css itself (it
      depended on the parent banner-carousel.liquid setting it inline).
+
+   Sizing: --ic-width, --ic-height-mobile/-desktop, and the four
+   --ic-*-size font variables all have defaults below so the card
+   renders exactly as before for any caller that doesn't pass the new
+   image-card.liquid params (width, height_mobile, height_desktop,
+   heading_size, subheading_size, price_size, button_size). Callers
+   that do pass them get an inline custom property from the liquid
+   file that overrides the default here.
 */
 
 .image-card {
   display: block;
-  width: 100%;
+  width: var(--ic-width, 100%);
   height: 100%;
 }
 
