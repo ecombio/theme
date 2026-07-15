@@ -23,6 +23,16 @@
     instead of wrapping — default false
   - loading: {String} 'lazy' (default) or 'eager' — pass 'eager' for
     a card the host expects to render above the fold
+
+  Sizing overrides (all optional — each falls back to the default set
+  in image-card.css if not passed):
+  - heading_size, subheading_size, price_size, button_size: {Number}
+    font size in px for each text element
+  - height_mobile, height_desktop: {Number} image-wrap height in px
+  - width: {String} card width — any valid CSS width value (e.g.
+    '100%', '400px', '24rem'). Defaults to 100% (fills its container,
+    same as before this option existed) so passing nothing preserves
+    the old fill-the-grid-cell behavior.
 {%- endcomment -%}
 
 {%- liquid
@@ -30,9 +40,32 @@
   assign img_scale = image_scale | default: 100 | divided_by: 100.0
   assign position = content_position | default: 'center'
   assign color = text_color | default: '#ffffff'
+
+  assign card_style = ''
+  if width != blank
+    assign card_style = card_style | append: '--ic-width: ' | append: width | append: ';'
+  endif
+  if height_mobile != blank
+    assign card_style = card_style | append: '--ic-height-mobile: ' | append: height_mobile | append: 'px;'
+  endif
+  if height_desktop != blank
+    assign card_style = card_style | append: '--ic-height-desktop: ' | append: height_desktop | append: 'px;'
+  endif
+  if heading_size != blank
+    assign card_style = card_style | append: '--ic-heading-size: ' | append: heading_size | append: 'px;'
+  endif
+  if subheading_size != blank
+    assign card_style = card_style | append: '--ic-subheading-size: ' | append: subheading_size | append: 'px;'
+  endif
+  if price_size != blank
+    assign card_style = card_style | append: '--ic-price-size: ' | append: price_size | append: 'px;'
+  endif
+  if button_size != blank
+    assign card_style = card_style | append: '--ic-button-size: ' | append: button_size | append: 'px;'
+  endif
 -%}
 
-<div class="image-card">
+<div class="image-card"{% if card_style != blank %} style="{{ card_style }}"{% endif %}>
   <a href="{{ link | default: '#' }}" class="image-card__link" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
     <span class="image-card__image-wrap">
       {%- if image != blank -%}
