@@ -46,11 +46,25 @@
     if section.settings.promo_custom_width_mobile
       assign promo_width_mobile = section.settings.promo_width_px_mobile | append: 'px'
     endif
+
+    assign mobile_layout = section.settings.mobile_layout_style | default: 'grid'
+
+    # True only when the promo card is a literal child of
+    # .featured-collection__grid (the non-Row desktop branch). In the
+    # Row desktop branch the promo card is a separate pinned sibling,
+    # not a grid child, so the mobile 8-product nth-child cap needs a
+    # different offset — see featured-collection.css.
+    assign promo_in_track = false
+    if show_promo and is_row == false
+      assign promo_in_track = true
+    endif
   -%}
 
   <div
     class="featured-collection {{ width_class }}"
     {% if is_row %}data-featured-collection data-layout="row"{% endif %}
+    data-mobile-layout="{{ mobile_layout }}"
+    {% if promo_in_track %}data-promo-in-track="true"{% endif %}
     style="
       --section-padding: {{ section.settings.section_padding }}px;
       {%- if width_type == 'custom-width' %}
@@ -226,7 +240,7 @@
         { "value": "row", "label": "Scrollable row" }
       ],
       "default": "grid",
-      "info": "Grid wraps products onto multiple lines. Scrollable row keeps them on one line the person can scroll through horizontally."
+      "info": "Grid wraps products onto multiple lines. Scrollable row keeps them on one line the person can scroll through horizontally. This controls desktop/tablet only — see \"Mobile layout\" below for phone widths."
     },
     {
       "type": "checkbox",
@@ -241,6 +255,19 @@
       "label": "Show dots",
       "default": true,
       "visible_if": "{{ section.settings.layout_style == 'row' }}"
+    },
+    { "type": "header", "content": "Mobile layout" },
+    {
+      "type": "select",
+      "id": "mobile_layout_style",
+      "label": "Mobile layout",
+      "options": [
+        { "value": "grid", "label": "Grid (2 columns)" },
+        { "value": "row", "label": "Scrollable row" },
+        { "value": "row_two_rows", "label": "Scrollable row (2 rows)" }
+      ],
+      "default": "grid",
+      "info": "Controls the products area on mobile only, independent of the Layout setting above. Grid wraps products two per row and caps at 8. Both row options scroll horizontally through everything \"Products to show\" allows; the 2-row option stacks two products per scroll-page instead of one."
     },
     { "type": "header", "content": "Promo card" },
     {
