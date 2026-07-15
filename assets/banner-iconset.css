@@ -70,15 +70,18 @@
   overflow-x: auto;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
   -ms-overflow-style: none;
   scrollbar-width: none;
   /* overflow-x: auto forces overflow-y to compute to a non-visible value
      too, which would hard-clip the card box-shadow since shadows don't
      count toward scrollWidth/scrollHeight. This padding gives the shadow
-     room to render; the negative margin on .banner-iconset below cancels
-     it back out so surrounding spacing is unaffected. Same fix as the
-     banner carousel section. */
-  padding: 10px 6px;
+     room to render (16px blur + 4px hover lift = 20px top, 16px sides/
+     bottom); the negative margin on .banner-iconset below cancels it
+     back out so surrounding spacing is unaffected. scroll-padding-inline
+     keeps scroll-snap-type: x mandatory from collapsing this padding on
+     load. Same fix as the banner carousel section. */
+  padding: 20px 16px 16px;
 }
 
 .banner-iconset__track::-webkit-scrollbar {
@@ -86,7 +89,7 @@
 }
 
 .banner-iconset {
-  margin: -10px -6px;
+  margin: -20px -16px -16px;
 }
 
 .banner-iconset__slide {
@@ -107,13 +110,7 @@
     flex: 0 0 var(--card-width-desktop, 220px);
   }
 }
-.banner-iconset__card {
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);        /* rest */
-}
-.banner-iconset__card:hover {
-  box-shadow: 0 0 16px rgba(0, 0, 0, 0.12);         /* hover */
-  transform: translateY(-4px);                      /* lift */
-}
+
 .banner-iconset__card {
   position: relative;
   display: flex;
