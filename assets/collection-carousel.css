@@ -304,30 +304,27 @@
   outline-offset: 2px;
 }
 
-/* Fade edges to hint at overflow */
+/* Fade edges to hint at overflow — masks the track's own content
+   (image + label) so it visually fades out at the edge, rather than
+   layering a solid-color gradient rectangle on top of it (which is
+   what caused the "shadow cutting across the image" look). */
 .cc-carousel[data-cc-carousel] {
   --cc-fade-width: 28px;
 }
 
-.cc-carousel.has-overflow-start::before,
-.cc-carousel.has-overflow-end::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 14px;
-  width: var(--cc-fade-width);
-  z-index: 1;
-  pointer-events: none;
+.cc-carousel.has-overflow-start .cc-carousel__track {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--cc-fade-width));
+  mask-image: linear-gradient(to right, transparent, black var(--cc-fade-width));
 }
 
-.cc-carousel.has-overflow-start::before {
-  left: 0;
-  background: linear-gradient(to right, var(--cc-fade-color, #fff), transparent);
+.cc-carousel.has-overflow-end .cc-carousel__track {
+  -webkit-mask-image: linear-gradient(to left, transparent, black var(--cc-fade-width));
+  mask-image: linear-gradient(to left, transparent, black var(--cc-fade-width));
 }
 
-.cc-carousel.has-overflow-end::after {
-  right: 0;
-  background: linear-gradient(to left, var(--cc-fade-color, #fff), transparent);
+.cc-carousel.has-overflow-start.has-overflow-end .cc-carousel__track {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--cc-fade-width), black calc(100% - var(--cc-fade-width)), transparent);
+  mask-image: linear-gradient(to right, transparent, black var(--cc-fade-width), black calc(100% - var(--cc-fade-width)), transparent);
 }
 
 /* Responsive
@@ -343,9 +340,8 @@
     display: none;
   }
 
-  .cc-carousel.has-overflow-start::before,
-  .cc-carousel.has-overflow-end::after {
-    width: 20px;
+  .cc-carousel[data-cc-carousel] {
+    --cc-fade-width: 20px;
   }
 }
 
