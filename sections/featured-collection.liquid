@@ -58,6 +58,16 @@
     if show_promo and is_row == false
       assign promo_in_track = true
     endif
+
+    # Product card toggles — section-level controls (see "Product card"
+    # schema header below). Passed through to every render 'product-card'
+    # call so merchants can hide the ATC button, Compare checkbox,
+    # wishlist button, and/or Quick view button for this section without
+    # touching other places product-card.liquid is used.
+    assign show_atc_button = section.settings.show_atc_button
+    assign show_compare_checkbox = section.settings.show_compare_checkbox
+    assign show_wishlist_button = section.settings.show_wishlist_button
+    assign show_quickview_button = section.settings.show_quickview_button
   -%}
 
   <div
@@ -144,7 +154,7 @@
                 {%- for product in section.settings.collection.products limit: section.settings.limit -%}
                   {%- assign is_even_index = forloop.index0 | modulo: 2 -%}
                   {%- if is_even_index == 0 -%}
-                    {%- render 'product-card', product: product -%}
+                    {%- render 'product-card', product: product, show_atc: show_atc_button, show_compare: show_compare_checkbox, show_wishlist: show_wishlist_button, show_quickview: show_quickview_button -%}
                   {%- endif -%}
                 {%- endfor -%}
               </div>
@@ -152,13 +162,13 @@
                 {%- for product in section.settings.collection.products limit: section.settings.limit -%}
                   {%- assign is_even_index = forloop.index0 | modulo: 2 -%}
                   {%- if is_even_index == 1 -%}
-                    {%- render 'product-card', product: product -%}
+                    {%- render 'product-card', product: product, show_atc: show_atc_button, show_compare: show_compare_checkbox, show_wishlist: show_wishlist_button, show_quickview: show_quickview_button -%}
                   {%- endif -%}
                 {%- endfor -%}
               </div>
             {%- else -%}
               {%- for product in section.settings.collection.products limit: section.settings.limit -%}
-                {%- render 'product-card', product: product -%}
+                {%- render 'product-card', product: product, show_atc: show_atc_button, show_compare: show_compare_checkbox, show_wishlist: show_wishlist_button, show_quickview: show_quickview_button -%}
               {%- endfor -%}
             {%- endif -%}
           </div>
@@ -238,7 +248,7 @@
             {%- for product in section.settings.collection.products limit: section.settings.limit -%}
               {%- assign is_even_index = forloop.index0 | modulo: 2 -%}
               {%- if is_even_index == 0 -%}
-                {%- render 'product-card', product: product -%}
+                {%- render 'product-card', product: product, show_atc: show_atc_button, show_compare: show_compare_checkbox, show_wishlist: show_wishlist_button, show_quickview: show_quickview_button -%}
               {%- endif -%}
             {%- endfor -%}
           </div>
@@ -246,13 +256,13 @@
             {%- for product in section.settings.collection.products limit: section.settings.limit -%}
               {%- assign is_even_index = forloop.index0 | modulo: 2 -%}
               {%- if is_even_index == 1 -%}
-                {%- render 'product-card', product: product -%}
+                {%- render 'product-card', product: product, show_atc: show_atc_button, show_compare: show_compare_checkbox, show_wishlist: show_wishlist_button, show_quickview: show_quickview_button -%}
               {%- endif -%}
             {%- endfor -%}
           </div>
         {%- else -%}
           {%- for product in section.settings.collection.products limit: section.settings.limit -%}
-            {%- render 'product-card', product: product -%}
+            {%- render 'product-card', product: product, show_atc: show_atc_button, show_compare: show_compare_checkbox, show_wishlist: show_wishlist_button, show_quickview: show_quickview_button -%}
           {%- endfor -%}
         {%- endif -%}
       </div>
@@ -298,6 +308,34 @@
       "id": "view_all_text",
       "label": "Link text",
       "default": "View all"
+    },
+    { "type": "header", "content": "Product card" },
+    {
+      "type": "checkbox",
+      "id": "show_atc_button",
+      "label": "Show \"Add to cart\" button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_compare_checkbox",
+      "label": "Show \"Compare\" checkbox",
+      "default": true,
+      "info": "Lets shoppers select products to compare side by side."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_wishlist_button",
+      "label": "Show wishlist button",
+      "default": true,
+      "info": "The heart icon in the top-right corner of the product image."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quickview_button",
+      "label": "Show \"Quick view\" button",
+      "default": true,
+      "info": "Appears on hover over the product image."
     },
     { "type": "header", "content": "Grid" },
     {

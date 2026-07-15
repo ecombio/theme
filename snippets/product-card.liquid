@@ -21,9 +21,8 @@
   assign variant_id    = first_variant.id
   assign eta_text      = card_product.metafields.custom.eta_text
 
-  assign show_quickview = show_quickview | default: true
-  assign is_sponsored   = is_sponsored   | default: false
-  assign show_eta       = show_eta       | default: true
+  assign is_sponsored = is_sponsored | default: false
+  assign show_eta     = show_eta     | default: true
 
   # NOTE: the `default` filter treats `false` as blank and silently
   # swaps it back to the fallback — so `show_atc | default: true` was
@@ -31,12 +30,19 @@
   # `true`. That's why unchecking the toggles in the theme editor
   # didn't hide anything. Checking for `nil` instead only fills in the
   # default when the param wasn't passed at all, and leaves an
-  # explicit `false` alone.
+  # explicit `false` alone. show_quickview and show_wishlist now use
+  # the same pattern since they're wired to real settings too.
   if show_atc == nil
     assign show_atc = true
   endif
   if show_compare == nil
     assign show_compare = true
+  endif
+  if show_wishlist == nil
+    assign show_wishlist = true
+  endif
+  if show_quickview == nil
+    assign show_quickview = true
   endif
 
   assign card_image_sizes = '(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
@@ -89,18 +95,20 @@
       {%- endif -%}
     </a>
 
-    <button
-      class="product-card__wishlist-btn"
-      type="button"
-      aria-label="Add {{ card_title | escape }} to wishlist"
-      aria-pressed="false"
-      data-wishlist-btn
-      data-product-id="{{ card_product.id }}"
-    >
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-        <path class="product-card__wishlist-path" d="M9 15.5S2 11 2 6a4 4 0 0 1 7-2.65A4 4 0 0 1 16 6c0 5-7 9.5-7 9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      </svg>
-    </button>
+    {%- if show_wishlist -%}
+      <button
+        class="product-card__wishlist-btn"
+        type="button"
+        aria-label="Add {{ card_title | escape }} to wishlist"
+        aria-pressed="false"
+        data-wishlist-btn
+        data-product-id="{{ card_product.id }}"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path class="product-card__wishlist-path" d="M9 15.5S2 11 2 6a4 4 0 0 1 7-2.65A4 4 0 0 1 16 6c0 5-7 9.5-7 9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    {%- endif -%}
 
     {%- if show_quickview -%}
       <button
