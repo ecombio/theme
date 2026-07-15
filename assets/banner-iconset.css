@@ -1,15 +1,14 @@
 .banner-iconset-section {
   --bi-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* The prev/next arrow buttons are deliberately positioned partway
-     outside .banner-iconset (left: -10px / right: -10px, or -20px on
-     desktop), and .banner-iconset itself already sits on a negative
-     margin (see below). Combined, that content escapes every ancestor
-     up to this section, so without a horizontal clip here the document
-     becomes wider than the viewport and the browser shows a native
-     page-level horizontal scrollbar. overflow-x: hidden (with
-     overflow-y explicitly set to visible as a fallback) trims that;
-     overflow-x: clip does the same without the accessibility focus-trap
-     quirks of hidden, so it's applied on top wherever supported. */
+  /* The prev/next arrow buttons used to sit partway outside
+     .banner-iconset (left: -10px / right: -10px), which combined with
+     .banner-iconset's own negative margin (see below) escaped every
+     ancestor up to this section and produced a page-level horizontal
+     scrollbar. The buttons are now positioned inward instead (see
+     .banner-iconset__btn--prev/--next below), matching
+     banner-carousel.css, so that's fixed at the source. overflow-x is
+     kept clipped here regardless, as a safety net against any other
+     future overflow source. */
   overflow-x: hidden;
   overflow-y: visible;
 }
@@ -182,7 +181,16 @@
   font-size: 0.7em;
 }
 
-/* Arrows */
+/* Arrows
+   ------------------------------------------------------------------
+   Positioned as positive insets (inward from the edge) at every
+   breakpoint, matching banner-carousel.css's .banner-carousel__btn — not
+   the negative offsets this used to have. Negative offsets pushed the
+   buttons outside .banner-iconset's box, which (combined with
+   .banner-iconset's own negative margin) escaped the section and
+   triggered a page-level horizontal scrollbar; positioning inward keeps
+   the buttons within bounds, which fixes that at the source and also
+   stops them overlapping the last visible card's text. */
 .banner-iconset__btn {
   position: absolute;
   top: 50%;
@@ -224,20 +232,49 @@
 }
 
 .banner-iconset__btn--prev {
-  left: -10px;
+  left: 12px;
 }
 
 .banner-iconset__btn--next {
-  right: -10px;
+  right: 12px;
 }
 
 @media screen and (min-width: 990px) {
   .banner-iconset__btn--prev {
-    left: -20px;
+    left: 24px;
   }
 
   .banner-iconset__btn--next {
-    right: -20px;
+    right: 24px;
+  }
+}
+
+/* Hover-reveal — banner-carousel's arrows are always visible; this is an
+   iconset-specific addition on top of that reference, since the cards
+   here sit directly against a section background rather than a full-
+   bleed image, so idle arrows read as more visually intrusive. Scoped to
+   (hover: hover) and (pointer: fine) so touch devices — which have no
+   hover state to reveal the buttons with — always show them instead of
+   getting an arrow that's invisible and untappable. Disabled buttons
+   (at either end of the track) stay dimmed via the existing [disabled]
+   opacity rule regardless of hover state. */
+@media (hover: hover) and (pointer: fine) {
+  .banner-iconset__btn {
+    opacity: 0;
+  }
+
+  .banner-iconset:hover .banner-iconset__btn,
+  .banner-iconset:focus-within .banner-iconset__btn {
+    opacity: 1;
+  }
+
+  .banner-iconset__btn[disabled] {
+    opacity: 0;
+  }
+
+  .banner-iconset:hover .banner-iconset__btn[disabled],
+  .banner-iconset:focus-within .banner-iconset__btn[disabled] {
+    opacity: 0.35;
   }
 }
 
@@ -298,6 +335,14 @@
   .banner-iconset__btn svg {
     width: 15px;
     height: 15px;
+  }
+
+  .banner-iconset__btn--prev {
+    left: 8px;
+  }
+
+  .banner-iconset__btn--next {
+    right: 8px;
   }
 
   .banner-iconset {
