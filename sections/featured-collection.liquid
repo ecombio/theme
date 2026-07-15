@@ -36,6 +36,8 @@
     if section.settings.enable_promo_card and section.settings.promo_image != blank
       assign show_promo = true
     endif
+
+    assign promo_width = section.settings.promo_width | append: '%'
   -%}
 
   <div
@@ -99,6 +101,7 @@
                 button_size: section.settings.promo_button_size,
                 height_mobile: section.settings.promo_height_mobile,
                 height_desktop: section.settings.promo_height_desktop,
+                width: promo_width,
                 loading: 'eager'
               -%}
             </div>
@@ -148,6 +151,7 @@
               button_size: section.settings.promo_button_size,
               height_mobile: section.settings.promo_height_mobile,
               height_desktop: section.settings.promo_height_desktop,
+              width: promo_width,
               loading: 'eager'
             -%}
           </div>
@@ -363,7 +367,19 @@
       "default": 14,
       "visible_if": "{{ section.settings.enable_promo_card }}"
     },
-    { "type": "header", "content": "Promo card image height" },
+    { "type": "header", "content": "Promo card sizing" },
+    {
+      "type": "range",
+      "id": "promo_width",
+      "label": "Card width",
+      "min": 40,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100,
+      "info": "Narrower than 100% centers the card within its grid cell instead of filling it.",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
     {
       "type": "range",
       "id": "promo_height_mobile",
