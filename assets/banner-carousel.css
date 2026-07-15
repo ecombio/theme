@@ -166,6 +166,13 @@
      6px hover lift (translateY(-6px) on .banner-carousel__link), which
      needs the extra clearance on top: 16px blur + 6px lift = 22px. */
   padding: 22px 16px 16px;
+  /* Without this, scroll-snap-type: x mandatory (below) can silently
+     correct scrollLeft to 0-past-padding on load so slide 1's edge sits
+     flush against the scrollport — collapsing the horizontal buffer
+     above and making the JS's atStart check in banner-carousel.js think
+     the user has scrolled when they haven't, which incorrectly flips on
+     the has-overflow-start fade mask against the very first card. */
+  scroll-padding-inline: 16px;
 }
 
 .banner-carousel__track::-webkit-scrollbar {
