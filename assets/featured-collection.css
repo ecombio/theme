@@ -176,6 +176,11 @@
 
   .featured-collection__promo-pinned {
     width: 100%;
+    /* Without this, .image-card would still inherit the desktop
+       clamp(200px, 24cqw, 320px) set on .featured-collection__promo-pinned
+       above and render narrow, instead of filling this full-width
+       mobile banner. */
+    --ic-width: 100%;
   }
 
   .featured-collection__scroll-region {
@@ -207,11 +212,44 @@
 /* Fluid width, matching the track's own clamp() formula (see
    .featured-collection__grid--row) so the pinned card reads as "the
    first card" even though it's structurally outside the scrolling
-   grid. Resolves off the wrapper's cqw rather than a fixed 2/3/4
-   count — same reasoning as the track. */
+   grid.
+
+   This used to set width: clamp(...) directly on THIS element — but
+   that made promo-pinned's box size completely independent of the
+   .image-card actually rendered inside it. Works fine while the
+   image-card is left at its default size, but the moment a merchant
+   enables image-card.liquid's "custom width" option (any pixel value
+   passed through as an inline --ic-width on the .image-card element
+   itself), the image-card would render at that width regardless of
+   this box, overflowing it — and .featured-collection__scroll-region
+   (flex: 1 1 0%) next to it had no way to know that happened, so it
+   never contracted to compensate.
+
+   Fixed by inverting the relationship: this element no longer sets
+   its own width at all (flex: 0 0 auto below lets it size to
+   content), and instead sets --ic-width as an ordinary CSS custom
+   property. image-card.css reads that via
+   `width: var(--ic-width, 100%)` on .image-card — so when
+   image-card.liquid does NOT pass a custom width, .image-card
+   inherits this clamp() value from its ancestor and promo-pinned
+   sizes itself to match, same visual result as before. When
+   image-card.liquid DOES pass a custom width, that's set as an
+   inline style directly on the .image-card element, which — same
+   element beats inherited value — wins over this inherited default,
+   AND because promo-pinned is now sized off its actual child rather
+   than a fixed formula, it grows or shrinks to match that custom
+   width automatically. The flex: 1 1 0% track next to it then
+   naturally absorbs whatever space is left, growing when the promo
+   card shrinks and contracting when it grows — the gap between them
+   stays fixed at the wrapper's own `gap: 1.2rem`, untouched either
+   way. Only .featured-collection__promo-pinned needs this — the grid
+   (non-row) layout's .featured-collection__promo-cell already lets
+   image-card fill or overflow its cell on purpose (see the "custom
+   width" setting's info text in featured-collection.liquid), so it's
+   deliberately left as-is. */
 .featured-collection__promo-pinned {
   flex: 0 0 auto;
-  width: clamp(200px, 24cqw, 320px);
+  --ic-width: clamp(200px, 24cqw, 320px);
 }
 
 .featured-collection__scroll-region {
