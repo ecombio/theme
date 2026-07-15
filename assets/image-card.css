@@ -21,6 +21,28 @@
    file that overrides the default here.
 */
 
+/* Universal box-sizing reset, scoped to this component — same pattern
+   product-card.css already uses. Without this, .image-card__content
+   (and any other padded/bordered child) sits in the browser's default
+   content-box mode, where padding is added ON TOP of a computed width
+   instead of being included in it. .image-card__content has
+   max-width: 100% plus 16–40px of padding per side; in content-box
+   mode that pushes its real rendered width ~32–80px past the card's
+   edge, where .image-card__link's overflow: hidden then clips it —
+   visible as text getting cut off mid-word rather than wrapping.
+   This went unnoticed while card width was a large fixed fraction of
+   a wide container, but became visible once the featured-collection
+   promo card started sizing itself fluidly off a narrower clamp() —
+   see featured-collection.css. border-box makes max-width: 100% (and
+   any future --ic-width) include padding, so content always fits
+   inside the card regardless of how wide or narrow it renders. */
+.image-card,
+.image-card *,
+.image-card *::before,
+.image-card *::after {
+  box-sizing: border-box;
+}
+
 .image-card {
   display: block;
   width: var(--ic-width, 100%);
