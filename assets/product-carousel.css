@@ -239,7 +239,12 @@
   transition: none;
 }
 
-/* ── Slides ── */
+/* ── Slides ──
+   The min-width floor is intentionally MOBILE-ONLY. On desktop, the
+   cards_per_row_desktop setting must be the sole authority over card
+   width — a floor here would silently override the setting (e.g. a
+   5-column layout in a narrow viewport would get clamped back down
+   to ~4 columns because 160px no longer divides evenly). */
 .product-carousel__slide {
   flex: 0 0 calc(
     (100% - var(--carousel-gap) * (var(--_cols-mobile) - 1)) / var(--_cols-mobile)
@@ -253,6 +258,7 @@
     flex: 0 0 calc(
       (100% - var(--carousel-gap) * (var(--_cols-desktop) - 1)) / var(--_cols-desktop)
     );
+    min-width: 0;
   }
 }
 
