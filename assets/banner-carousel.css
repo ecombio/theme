@@ -2,6 +2,10 @@
   /* Same easing curve as the collection carousel so hover/interaction
      motion feels consistent across carousel sections site-wide. */
   --bc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* A separate, springier curve just for the card lift/shadow/zoom below —
+     deliberately its own thing rather than reusing --bc-ease, so this
+     section doesn't just feel like a reskinned collection carousel. */
+  --bc-card-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .banner-carousel-section__header {
@@ -331,6 +335,22 @@
   border-radius: var(--slide-radius, 0px);
   overflow: hidden;
   box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.4s var(--bc-card-ease), box-shadow 0.4s var(--bc-card-ease);
+}
+
+.banner-carousel__link--stacked:hover,
+.banner-carousel__link--stacked:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 44px -14px rgba(0, 0, 0, 0.5);
+}
+
+.banner-carousel__link--stacked .banner-carousel__image {
+  transition: transform 0.6s var(--bc-card-ease);
+}
+
+.banner-carousel__link--stacked:hover .banner-carousel__image,
+.banner-carousel__link--stacked:focus-visible .banner-carousel__image {
+  transform: scale(1.05);
 }
 
 .banner-carousel__link--stacked .banner-carousel__image-wrap {
@@ -487,6 +507,22 @@
   transform: none;
 }
 
+.banner-carousel-section[data-animations="off"] .banner-carousel__link--stacked,
+.banner-carousel-section[data-animations="off"] .banner-carousel__link--stacked .banner-carousel__image {
+  transition: none;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel__link--stacked:hover,
+.banner-carousel-section[data-animations="off"] .banner-carousel__link--stacked:focus-visible {
+  transform: none;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35);
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel__link--stacked:hover .banner-carousel__image,
+.banner-carousel-section[data-animations="off"] .banner-carousel__link--stacked:focus-visible .banner-carousel__image {
+  transform: none;
+}
+
 /* Tablet */
 @media screen and (min-width: 750px) {
   .banner-carousel__image-wrap {
@@ -561,5 +597,20 @@
   .banner-carousel__btn,
   .banner-carousel__dot {
     transition: none !important;
+  }
+
+  .banner-carousel__link--stacked,
+  .banner-carousel__link--stacked .banner-carousel__image {
+    transition: none !important;
+  }
+
+  .banner-carousel__link--stacked:hover,
+  .banner-carousel__link--stacked:focus-visible {
+    transform: none !important;
+  }
+
+  .banner-carousel__link--stacked:hover .banner-carousel__image,
+  .banner-carousel__link--stacked:focus-visible .banner-carousel__image {
+    transform: none !important;
   }
 }
