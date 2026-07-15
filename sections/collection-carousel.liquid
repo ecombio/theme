@@ -10,7 +10,11 @@
   assign width_class = 'cc-section__' | append: width_suffix
 -%}
 
-<div class="cc-section" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }}; color: {{ section.settings.text_color }};">
+<div
+  class="cc-section"
+  {% unless section.settings.enable_animations %}data-animations="off"{% endunless %}
+  style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }}; color: {{ section.settings.text_color }};"
+>
   <div
     class="cc-section__inner {{ width_class }}"
     style="
@@ -185,6 +189,17 @@
         { "value": "landscape", "label": "Landscape (uncropped)" }
       ],
       "default": "circle"
+    },
+    {
+      "type": "header",
+      "content": "Animation"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animations",
+      "label": "Enable hover animations",
+      "info": "Card lift, image zoom, and label underline on hover",
+      "default": true
     },
     {
       "type": "header",
