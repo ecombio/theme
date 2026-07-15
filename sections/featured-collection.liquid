@@ -4,8 +4,12 @@
   in that file) — it expects the host page to have loaded it already.
   This section renders product-card for every product in the grid, so
   load it here explicitly (same convention used in video-carousel.liquid).
+  image-card.liquid follows the same convention when the promo card is on.
 {%- endcomment -%}
 {{ 'product-card.css' | asset_url | stylesheet_tag }}
+{%- if section.settings.enable_promo_card -%}
+  {{ 'image-card.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
 
 {%- if section.settings.collection != blank -%}
   {%- comment -%}
@@ -26,6 +30,11 @@
     assign is_row = false
     if section.settings.layout_style == 'row'
       assign is_row = true
+    endif
+
+    assign show_promo = false
+    if section.settings.enable_promo_card and section.settings.promo_image != blank
+      assign show_promo = true
     endif
   -%}
 
@@ -73,6 +82,25 @@
           {%- for product in section.settings.collection.products limit: section.settings.limit -%}
             {%- render 'product-card', product: product -%}
           {%- endfor -%}
+
+          {%- if show_promo -%}
+            <div class="featured-collection__promo-cell">
+              {%- render 'image-card',
+                image: section.settings.promo_image,
+                mobile_image: section.settings.promo_mobile_image,
+                link: section.settings.promo_link,
+                heading: section.settings.promo_heading,
+                subheading: section.settings.promo_subheading,
+                price_text: section.settings.promo_price_text,
+                price_truncate: section.settings.promo_price_truncate,
+                button_label: section.settings.promo_button_label,
+                content_position: section.settings.promo_content_position,
+                image_scale: section.settings.promo_image_scale,
+                text_color: section.settings.promo_text_color,
+                loading: 'lazy'
+              -%}
+            </div>
+          {%- endif -%}
         </div>
 
         {%- if section.settings.show_arrows -%}
@@ -97,6 +125,25 @@
         {%- for product in section.settings.collection.products limit: section.settings.limit -%}
           {%- render 'product-card', product: product -%}
         {%- endfor -%}
+
+        {%- if show_promo -%}
+          <div class="featured-collection__promo-cell">
+            {%- render 'image-card',
+              image: section.settings.promo_image,
+              mobile_image: section.settings.promo_mobile_image,
+              link: section.settings.promo_link,
+              heading: section.settings.promo_heading,
+              subheading: section.settings.promo_subheading,
+              price_text: section.settings.promo_price_text,
+              price_truncate: section.settings.promo_price_truncate,
+              button_label: section.settings.promo_button_label,
+              content_position: section.settings.promo_content_position,
+              image_scale: section.settings.promo_image_scale,
+              text_color: section.settings.promo_text_color,
+              loading: 'lazy'
+            -%}
+          </div>
+        {%- endif -%}
       </div>
     {%- endif -%}
   </div>
@@ -166,6 +213,98 @@
       "label": "Show dots",
       "default": true,
       "visible_if": "{{ section.settings.layout_style == 'row' }}"
+    },
+    { "type": "header", "content": "Promo card" },
+    {
+      "type": "checkbox",
+      "id": "enable_promo_card",
+      "label": "Show promo card",
+      "default": false,
+      "info": "Adds one extra image card at the end of the grid, after the products above. Doesn't count against \"Products to show\"."
+    },
+    {
+      "type": "image_picker",
+      "id": "promo_image",
+      "label": "Image",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "promo_mobile_image",
+      "label": "Mobile image (optional)",
+      "info": "Falls back to the image above on small screens if not set.",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "url",
+      "id": "promo_link",
+      "label": "Link",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "text",
+      "id": "promo_heading",
+      "label": "Heading",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "text",
+      "id": "promo_subheading",
+      "label": "Subheading",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "text",
+      "id": "promo_price_text",
+      "label": "Price text",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "promo_price_truncate",
+      "label": "Truncate price text",
+      "default": false,
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "text",
+      "id": "promo_button_label",
+      "label": "Button label",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "select",
+      "id": "promo_content_position",
+      "label": "Content position",
+      "options": [
+        { "value": "top-left", "label": "Top left" },
+        { "value": "top-center", "label": "Top center" },
+        { "value": "top-right", "label": "Top right" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom-left", "label": "Bottom left" },
+        { "value": "bottom-center", "label": "Bottom center" },
+        { "value": "bottom-right", "label": "Bottom right" }
+      ],
+      "default": "center",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "range",
+      "id": "promo_image_scale",
+      "label": "Image zoom",
+      "min": 100,
+      "max": 130,
+      "step": 5,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "color",
+      "id": "promo_text_color",
+      "label": "Text color",
+      "default": "#ffffff",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
     },
     { "type": "header", "content": "Section layout" },
     {
