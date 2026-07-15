@@ -29,41 +29,22 @@
         {%- for block in section.blocks -%}
           {%- liquid
             assign collection = block.settings.collection
-            assign label      = block.settings.title
-            assign image      = block.settings.image
-
-            if collection != blank
-              if label == blank
-                assign label = collection.title
-              endif
-              if image == blank
-                assign image = collection.featured_image
-              endif
-              assign link = collection.url
-            else
-              assign link = block.settings.link
-            endif
-
-            if label == blank
-              assign label = 'Collection'
-            endif
-
             assign shape = section.settings.image_shape
           -%}
 
           <div class="cc-carousel__item" {{ block.shopify_attributes }}>
-            <a href="{{ link | default: '#' }}" class="cc-carousel__link" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
+            <a href="{{ collection.url | default: '#' }}" class="cc-carousel__link" {% if collection == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
               <span class="cc-carousel__image-wrap cc-carousel__image-wrap--{{ shape }}">
-                {%- if image != blank -%}
+                {%- if collection.featured_image != blank -%}
                   <img
                     class="cc-carousel__image"
-                    src="{{ image | image_url: width: 400 }}"
-                    srcset="{{ image | image_url: width: 200 }} 200w, {{ image | image_url: width: 400 }} 400w, {{ image | image_url: width: 600 }} 600w"
+                    src="{{ collection.featured_image | image_url: width: 400 }}"
+                    srcset="{{ collection.featured_image | image_url: width: 200 }} 200w, {{ collection.featured_image | image_url: width: 400 }} 400w, {{ collection.featured_image | image_url: width: 600 }} 600w"
                     sizes="(min-width: 990px) 160px, (min-width: 750px) 130px, 100px"
-                    alt="{{ image.alt | default: label | escape }}"
+                    alt="{{ collection.featured_image.alt | default: collection.title | escape }}"
                     loading="lazy"
-                    width="{{ image.width }}"
-                    height="{{ image.height }}"
+                    width="{{ collection.featured_image.width }}"
+                    height="{{ collection.featured_image.height }}"
                   >
                 {%- else -%}
                   <span class="cc-carousel__placeholder">
@@ -71,7 +52,7 @@
                   </span>
                 {%- endif -%}
               </span>
-              <span class="cc-carousel__label">{{ label }}</span>
+              <span class="cc-carousel__label">{{ collection.title | default: 'Collection' }}</span>
             </a>
           </div>
 
@@ -223,24 +204,6 @@
           "type": "collection",
           "id": "collection",
           "label": "Collection"
-        },
-        {
-          "type": "text",
-          "id": "title",
-          "label": "Custom title",
-          "info": "Leave blank to use the collection's title"
-        },
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Custom image",
-          "info": "Leave blank to use the collection's featured image"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Custom link",
-          "info": "Only used if no collection is selected"
         }
       ]
     }
