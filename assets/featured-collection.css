@@ -156,6 +156,19 @@
    nothing left to scroll through, and the wrapper's negative margin
    (added only to cancel the row track's shadow-clearance padding) is
    zeroed out for the same reason. */
+/* Mobile override for row layout: cancel every carousel-specific
+   property (scroll-snap, horizontal auto-flow, side padding for the
+   arrow gutter) and fall back to the exact same wrapping 2-column
+   grid used above 600px anyway (.featured-collection__grid's own
+   grid-template-columns), so row and grid render identically on
+   phones. The wrapper — flex row on tablet/desktop, pinning the promo
+   card beside the scroll region — switches to a plain vertical stack
+   here instead, so the promo card sits full-width above the products,
+   same "image on top" behavior as the true Grid layout. Arrows/dots/
+   edge-fade are hidden below since there's nothing left to scroll
+   through, and the scroll-region's negative margin (added only to
+   cancel the track's shadow-clearance padding) is zeroed out for the
+   same reason. */
 @media screen and (max-width: 599px) {
   .featured-collection__grid--row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -168,6 +181,14 @@
   }
 
   .featured-collection__wrapper {
+    flex-direction: column;
+  }
+
+  .featured-collection__promo-pinned {
+    width: 100%;
+  }
+
+  .featured-collection__scroll-region {
     margin: 0;
   }
 
@@ -177,22 +198,50 @@
   }
 }
 
-.featured-collection__grid--row > .featured-collection__promo-cell {
-  scroll-snap-align: start;
+.featured-collection__wrapper {
+  /* Row layout only: lays the pinned promo card and the scrollable
+     product track side by side. The promo card no longer lives inside
+     the scroll track (see featured-collection.liquid) — it's a fixed
+     flex sibling now, so clicking the arrows scrolls only the products
+     next to it instead of carrying the promo card along too. */
+  display: flex;
+  align-items: stretch;
+  gap: 1.2rem;
 }
 
-.featured-collection__wrapper {
+/* Sized to match one column's worth of the grid at each breakpoint
+   (same 2/3/4-per-view numbers as .featured-collection__grid--row's
+   own grid-auto-columns), so the pinned card reads as "the first
+   card" even though it's structurally outside the scrolling grid. */
+.featured-collection__promo-pinned {
+  flex: 0 0 auto;
+  width: calc((100% - 1.2rem) / 2);
+}
+
+@media (min-width: 600px) {
+  .featured-collection__promo-pinned {
+    width: calc((100% - (1.2rem * 2)) / 3);
+  }
+}
+
+@media (min-width: 1024px) {
+  .featured-collection__promo-pinned {
+    width: calc((100% - (1.2rem * 3)) / 4);
+  }
+}
+
+.featured-collection__scroll-region {
   position: relative;
+  flex: 1 1 0%;
+  min-width: 0;
   /* Cancels the track's shadow-clearance padding on all sides — top/
      bottom so it doesn't push the header/dots apart, and left/right so
-     the first/last card aligns flush with the heading above it instead
-     of sitting indented by the padding amount. Exact same three-value
-     shorthand as .banner-carousel's negative margin; I'd previously
-     only mirrored the vertical half of this and left sides at 0,
-     which is what caused the residual left gap. Arrows, positioned
-     absolute within this now-larger wrapper box, end up inset 12–24px
-     from the same edge the heading sits on — same overlay look as
-     banner-carousel's arrows. */
+     the last card aligns flush with the promo card's edge instead of
+     sitting indented by the padding amount. Exact same three-value
+     shorthand as .banner-carousel's negative margin. Arrows, positioned
+     absolute within this now-larger box, end up inset 12–24px from its
+     edge — same overlay look as banner-carousel's arrows, just scoped
+     to the product area instead of the whole wrapper now. */
   margin: -22px -16px -16px;
 }
 

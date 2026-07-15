@@ -64,69 +64,71 @@
 
     {%- if is_row -%}
       <div class="featured-collection__wrapper" data-featured-collection-wrapper>
-        {%- if section.settings.show_arrows -%}
-          <button
-            type="button"
-            class="featured-collection__arrow featured-collection__arrow--prev"
-            aria-label="Previous products"
-            data-fc-prev
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-              <path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
+        {%- if show_promo -%}
+          <div class="featured-collection__promo-pinned">
+            {%- render 'image-card',
+              image: section.settings.promo_image,
+              mobile_image: section.settings.promo_mobile_image,
+              link: section.settings.promo_link,
+              heading: section.settings.promo_heading,
+              subheading: section.settings.promo_subheading,
+              price_text: section.settings.promo_price_text,
+              price_truncate: section.settings.promo_price_truncate,
+              button_label: section.settings.promo_button_label,
+              content_position: section.settings.promo_content_position,
+              image_scale: section.settings.promo_image_scale,
+              text_color: section.settings.promo_text_color,
+              heading_size: section.settings.promo_heading_size,
+              subheading_size: section.settings.promo_subheading_size,
+              price_size: section.settings.promo_price_size,
+              button_size: section.settings.promo_button_size,
+              height_mobile: section.settings.promo_height_mobile,
+              height_desktop: section.settings.promo_height_desktop,
+              width: promo_width,
+              loading: 'eager'
+            -%}
+          </div>
         {%- endif -%}
 
-        <div
-          class="featured-collection__grid featured-collection__grid--row"
-          data-fc-track
-          tabindex="0"
-          role="region"
-          aria-label="{{ section.settings.heading | default: section.settings.collection.title }}"
-        >
-          {%- if show_promo -%}
-            <div class="featured-collection__promo-cell">
-              {%- render 'image-card',
-                image: section.settings.promo_image,
-                mobile_image: section.settings.promo_mobile_image,
-                link: section.settings.promo_link,
-                heading: section.settings.promo_heading,
-                subheading: section.settings.promo_subheading,
-                price_text: section.settings.promo_price_text,
-                price_truncate: section.settings.promo_price_truncate,
-                button_label: section.settings.promo_button_label,
-                content_position: section.settings.promo_content_position,
-                image_scale: section.settings.promo_image_scale,
-                text_color: section.settings.promo_text_color,
-                heading_size: section.settings.promo_heading_size,
-                subheading_size: section.settings.promo_subheading_size,
-                price_size: section.settings.promo_price_size,
-                button_size: section.settings.promo_button_size,
-                height_mobile: section.settings.promo_height_mobile,
-                height_desktop: section.settings.promo_height_desktop,
-                width: promo_width,
-                loading: 'eager'
-              -%}
-            </div>
+        <div class="featured-collection__scroll-region">
+          {%- if section.settings.show_arrows -%}
+            <button
+              type="button"
+              class="featured-collection__arrow featured-collection__arrow--prev"
+              aria-label="Previous products"
+              data-fc-prev
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           {%- endif -%}
 
-          {%- for product in section.settings.collection.products limit: section.settings.limit -%}
-            {%- render 'product-card', product: product -%}
-          {%- endfor -%}
-        </div>
-
-        {%- if section.settings.show_arrows -%}
-          <button
-            type="button"
-            class="featured-collection__arrow featured-collection__arrow--next"
-            aria-label="Next products"
-            data-fc-next
+          <div
+            class="featured-collection__grid featured-collection__grid--row"
+            data-fc-track
+            tabindex="0"
+            role="region"
+            aria-label="{{ section.settings.heading | default: section.settings.collection.title }}"
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-              <path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        {%- endif -%}
+            {%- for product in section.settings.collection.products limit: section.settings.limit -%}
+              {%- render 'product-card', product: product -%}
+            {%- endfor -%}
+          </div>
+
+          {%- if section.settings.show_arrows -%}
+            <button
+              type="button"
+              class="featured-collection__arrow featured-collection__arrow--next"
+              aria-label="Next products"
+              data-fc-next
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          {%- endif -%}
+        </div>
       </div>
 
       {%- if section.settings.show_dots -%}
