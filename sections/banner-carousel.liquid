@@ -54,6 +54,7 @@
                     loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
                     width="{{ image.width }}"
                     height="{{ image.height }}"
+                    style="--bc-img-scale: {{ block.settings.image_scale | default: 100 | divided_by: 100.0 }};"
                   >
                 {%- else -%}
                   <span class="banner-carousel__placeholder banner-carousel__placeholder--desktop">
@@ -71,6 +72,7 @@
                     loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
                     width="{{ mobile_image.width }}"
                     height="{{ mobile_image.height }}"
+                    style="--bc-img-scale: {{ block.settings.image_scale | default: 100 | divided_by: 100.0 }};"
                   >
                 {%- elsif image == blank -%}
                   <span class="banner-carousel__placeholder banner-carousel__placeholder--mobile">
@@ -271,7 +273,7 @@
       "step": 10,
       "unit": "px",
       "label": "Image height (desktop/tablet)",
-      "default": 500
+      "default": 380
     },
     {
       "type": "range",
@@ -281,7 +283,7 @@
       "step": 10,
       "unit": "px",
       "label": "Image height (mobile)",
-      "default": 320
+      "default": 240
     },
     {
       "type": "range",
@@ -368,6 +370,17 @@
           "id": "mobile_image",
           "label": "Mobile image",
           "info": "Optional. Used on small screens instead of the image above"
+        },
+        {
+          "type": "range",
+          "id": "image_scale",
+          "min": 100,
+          "max": 200,
+          "step": 5,
+          "unit": "%",
+          "label": "Image zoom",
+          "info": "Zooms into the image, cropping out empty/whitespace margins baked into the source file",
+          "default": 100
         },
         {
           "type": "url",
