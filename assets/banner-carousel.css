@@ -92,33 +92,28 @@
   }
 }
 
-.banner-carousel-section__inner--full {
+/* Section width control — implements the pattern from
+   sections/example-width-section.liquid. Each class uses this section's
+   own local --section-padding / --custom-width variables (set inline via
+   the "Section layout" schema settings on the section root), independent
+   of the theme's global --page-margin / --page-width variables, so this
+   section can't be knocked out of alignment by unrelated global changes
+   elsewhere in the theme. */
+.banner-carousel-section__default-width {
+  max-width: 1184px;
+  margin-inline: auto;
+  padding-inline: var(--section-padding, 24px);
+}
+
+.banner-carousel-section__full-width {
   max-width: none;
-  padding-left: 0;
-  padding-right: 0;
+  padding-inline: 0;
 }
 
-/* Matches the site's header layout system (main-header.css / utility-bar.css)
-   rather than relying on .page-width, which currently has no rules. */
-.banner-carousel-section__inner:not(.banner-carousel-section__inner--full) {
-  max-width: 1184px;
+.banner-carousel-section__custom-width {
+  max-width: var(--custom-width, 80rem);
   margin-inline: auto;
-  padding-inline: 24px;
-}
-
-/* Full-width mode still insets the heading/view-all row even though the
-   slide images themselves stretch edge-to-edge. */
-.banner-carousel-section__header.page-width {
-  max-width: 1184px;
-  margin-inline: auto;
-  padding-inline: 24px;
-}
-
-@media (max-width: 639px) {
-  .banner-carousel-section__inner:not(.banner-carousel-section__inner--full),
-  .banner-carousel-section__header.page-width {
-    padding-inline: 12px;
-  }
+  padding-inline: var(--section-padding, 24px);
 }
 
 .banner-carousel {
@@ -142,7 +137,7 @@
   mask-image: linear-gradient(to right, transparent, black var(--bc-fade-width), black calc(100% - var(--bc-fade-width)), transparent);
 }
 
-.banner-carousel-section__inner:not(.banner-carousel-section__inner--full) .banner-carousel {
+.banner-carousel-section__inner:not(.banner-carousel-section__full-width) .banner-carousel {
   border-radius: 12px;
 }
 
