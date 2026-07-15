@@ -12,13 +12,13 @@
      --bc-card-ease was never defined in banner-card.css itself (it
      depended on the parent banner-carousel.liquid setting it inline).
 
-   Sizing: --ic-width, --ic-height-mobile/-desktop, and the four
-   --ic-*-size font variables all have defaults below so the card
-   renders exactly as before for any caller that doesn't pass the new
-   image-card.liquid params (width, height_mobile, height_desktop,
-   heading_size, subheading_size, price_size, button_size). Callers
-   that do pass them get an inline custom property from the liquid
-   file that overrides the default here.
+   Sizing: --ic-width, --ic-width-mobile, --ic-height-mobile/-desktop,
+   and the four --ic-*-size font variables all have defaults below so
+   the card renders exactly as before for any caller that doesn't pass
+   the new image-card.liquid params (width, width_mobile, height_mobile,
+   height_desktop, heading_size, subheading_size, price_size,
+   button_size). Callers that do pass them get an inline custom
+   property from the liquid file that overrides the default here.
 */
 
 /* Universal box-sizing reset, scoped to this component — same pattern
@@ -50,6 +50,23 @@
   /* No-op at the 100% default; only visibly centers the card within
      its grid cell when a merchant sets --ic-width below 100%. */
   margin: 0 auto;
+}
+
+/* Mobile width is its own axis, not an inherited/capped version of
+   the desktop --ic-width above. Deliberately does NOT fall back to
+   --ic-width here — falling back to the desktop custom value was the
+   exact bug this rule fixes (a merchant's 250px desktop card silently
+   becoming a 250px mobile card too, with no way to opt out, because an
+   inline --ic-width set directly on this element always wins over an
+   ancestor's inherited override — see the note in featured-collection.css
+   on .featured-collection__promo-pinned).
+   No --ic-width-mobile passed → falls straight to 100%, i.e. the
+   pre-existing "fill the mobile banner" default, completely
+   independent of whatever desktop width is set. */
+@media screen and (max-width: 599px) {
+  .image-card {
+    width: var(--ic-width-mobile, 100%);
+  }
 }
 
 .image-card__link {
