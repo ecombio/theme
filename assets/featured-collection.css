@@ -133,12 +133,47 @@
    Spanning both columns pushes it onto its own row, and grid's normal
    auto-flow drops the product cards into a fresh row underneath —
    still 2-per-row, no extra markup or JS needed.
-   Grid-only — the scrollable row layout keeps the promo cell inline
-   as just another swipeable item, since "on top" doesn't apply to a
-   horizontal carousel. */
+
+   Applies to BOTH layout modes. Below, .featured-collection__grid--row
+   is first converted back into a plain wrapping grid for this same
+   breakpoint (see next rule) — a merchant's "Scrollable row" choice is
+   meant for tablet/desktop; on phones we always want the simple
+   stacked layout instead of a horizontal carousel, so the promo-cell
+   span rule can just target both classes here rather than needing two
+   separate versions. */
 @media screen and (max-width: 599px) {
-  .featured-collection__grid:not(.featured-collection__grid--row) .featured-collection__promo-cell {
+  .featured-collection__grid .featured-collection__promo-cell {
     grid-column: 1 / -1;
+  }
+}
+
+/* Mobile override for row layout: cancel every carousel-specific
+   property (scroll-snap, horizontal auto-flow, side padding for the
+   arrow gutter) and fall back to the exact same wrapping 2-column
+   grid used above 600px anyway (.featured-collection__grid's own
+   grid-template-columns), so row and grid render identically on
+   phones. Arrows/dots/edge-fade are hidden below since there's
+   nothing left to scroll through, and the wrapper's negative margin
+   (added only to cancel the row track's shadow-clearance padding) is
+   zeroed out for the same reason. */
+@media screen and (max-width: 599px) {
+  .featured-collection__grid--row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    overflow: visible;
+    scroll-snap-type: none;
+    padding: 0;
+    scroll-padding-inline: 0;
+  }
+
+  .featured-collection__wrapper {
+    margin: 0;
+  }
+
+  .featured-collection__arrow,
+  .featured-collection__dots {
+    display: none;
   }
 }
 
