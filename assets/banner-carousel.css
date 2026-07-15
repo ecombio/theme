@@ -2,9 +2,10 @@
   /* Same easing curve as the collection carousel so hover/interaction
      motion feels consistent across carousel sections site-wide. */
   --bc-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* A separate, springier curve just for the card lift/shadow/zoom below —
-     deliberately its own thing rather than reusing --bc-ease, so this
-     section doesn't just feel like a reskinned collection carousel. */
+  /* A separate, springier curve just for the card lift/shadow/zoom (see
+     assets/banner-card.css) — deliberately its own thing rather than
+     reusing --bc-ease, so this section doesn't just feel like a reskinned
+     collection carousel. */
   --bc-card-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -155,200 +156,21 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
   transition: none;
+  /* overflow-x: auto forces overflow-y to compute to a non-visible value
+     too, which hard-clips box-shadow on the slide links since shadows
+     don't count toward scrollWidth/scrollHeight. This padding gives the
+     shadow room to render instead of getting clipped flush at the edge;
+     the negative margin on .banner-carousel below cancels it back out
+     so surrounding layout/spacing is unaffected. */
+  padding: 12px 6px;
 }
 
 .banner-carousel__track::-webkit-scrollbar {
   display: none;
 }
 
-.banner-carousel__slide {
-  flex: 0 0 calc((100% - (var(--slides-mobile, 1) - 1) * var(--slide-gap, 0px)) / var(--slides-mobile, 1));
-  min-width: 0;
-  scroll-snap-align: start;
-}
-
-@media screen and (min-width: 750px) {
-  .banner-carousel__slide {
-    flex: 0 0 var(--slide-width-desktop, 400px);
-  }
-}
-
-@media screen and (min-width: 990px) {
-  .banner-carousel__slide {
-    flex: 0 0 var(--slide-width-desktop, 400px);
-  }
-}
-
-.banner-carousel__link {
-  position: relative;
-  display: block;
-  text-decoration: none;
-  border-radius: var(--slide-radius, 0px);
-  overflow: hidden;
-  box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
-  transition: transform 0.4s var(--bc-card-ease), box-shadow 0.4s var(--bc-card-ease);
-}
-
-.banner-carousel__link:hover,
-.banner-carousel__link:focus-visible {
-  transform: translateY(-6px);
-  box-shadow: 0 0 28px rgba(0, 0, 0, 0.4);
-}
-
-.banner-carousel__image-wrap {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: var(--slide-height-mobile, 320px);
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: var(--slide-radius, 0px);
-}
-
-.banner-carousel__image,
-.banner-carousel__placeholder,
-.banner-carousel__placeholder-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.banner-carousel__image {
-  transform: scale(var(--bc-img-scale, 1));
-  transition: transform 0.6s var(--bc-card-ease);
-}
-
-.banner-carousel__link:hover .banner-carousel__image,
-.banner-carousel__link:focus-visible .banner-carousel__image {
-  transform: scale(calc(var(--bc-img-scale, 1) * 1.05));
-}
-
-.banner-carousel__placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.banner-carousel__placeholder-svg {
-  width: auto;
-  height: 50%;
-  max-width: 50%;
-  object-fit: contain;
-  opacity: 0.55;
-}
-
-.banner-carousel__image--mobile,
-.banner-carousel__placeholder--mobile {
-  display: none;
-}
-
-.banner-carousel__content {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 100%;
-  padding: 16px;
-}
-
-/* Content block position (placement of the whole text block on the image).
-   Per-line text alignment is handled separately by the
-   .banner-carousel__text--left/center/right modifiers below, via align-self,
-   so each field can be positioned independently of the others. */
-.banner-carousel__content--top-left,
-.banner-carousel__content--top-center,
-.banner-carousel__content--top-right {
-  top: 0;
-  padding-top: 12px;
-}
-
-.banner-carousel__content--bottom-left,
-.banner-carousel__content--bottom-center,
-.banner-carousel__content--bottom-right {
-  bottom: 0;
-}
-
-.banner-carousel__content--center {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.banner-carousel__content--top-left,
-.banner-carousel__content--bottom-left {
-  left: 0;
-}
-
-.banner-carousel__content--top-right,
-.banner-carousel__content--bottom-right {
-  right: 0;
-}
-
-.banner-carousel__content--top-center,
-.banner-carousel__content--bottom-center {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Per-field text alignment. Applied directly to each heading/subheading/
-   price/button span so every field can have its own alignment regardless
-   of what the others are set to. align-self positions the field's own box
-   within the content column; text-align handles wrapping within that box
-   (relevant for multi-line headings/subheadings). */
-.banner-carousel__text--left {
-  align-self: flex-start;
-  text-align: left;
-}
-
-.banner-carousel__text--center {
-  align-self: center;
-  text-align: center;
-}
-
-.banner-carousel__text--right {
-  align-self: flex-end;
-  text-align: right;
-}
-
-.banner-carousel__heading {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.banner-carousel__subheading {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  opacity: 0.95;
-}
-
-.banner-carousel__price {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  opacity: 0.9;
-}
-
-.banner-carousel__price--truncate {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.banner-carousel__button {
-  margin-top: 6px;
-  display: inline-block;
-  padding: 8px 18px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-weight: 600;
+.banner-carousel {
+  margin: -12px -6px;
 }
 
 /* Arrows — visible at every breakpoint (not just tablet/desktop), same
@@ -414,6 +236,13 @@
   z-index: 3;
 }
 
+/* Author display:flex above beats the UA [hidden]{display:none} rule at
+   equal specificity, so the JS setting dotsWrapper.hidden = true did
+   nothing without this explicit override. */
+.banner-carousel__dots[hidden] {
+  display: none;
+}
+
 .banner-carousel__dot {
   width: 8px;
   height: 8px;
@@ -435,7 +264,9 @@
    When section.settings.enable_animations is off, the section root
    renders with data-animations="off". Cancels the View all hover
    motion, arrow hover feedback, and dot scale — same pattern as the
-   collection carousel's toggle. */
+   collection carousel's toggle. Card-level animation toggling (link
+   lift + image zoom) lives in banner-card.css next to the rules it
+   cancels. */
 
 .banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all,
 .banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all svg,
@@ -456,42 +287,8 @@
   transform: none;
 }
 
-.banner-carousel-section[data-animations="off"] .banner-carousel__link,
-.banner-carousel-section[data-animations="off"] .banner-carousel__link .banner-carousel__image {
-  transition: none;
-}
-
-.banner-carousel-section[data-animations="off"] .banner-carousel__link:hover,
-.banner-carousel-section[data-animations="off"] .banner-carousel__link:focus-visible {
-  transform: none;
-  box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
-}
-
-.banner-carousel-section[data-animations="off"] .banner-carousel__link:hover .banner-carousel__image,
-.banner-carousel-section[data-animations="off"] .banner-carousel__link:focus-visible .banner-carousel__image {
-  transform: scale(var(--bc-img-scale, 1));
-}
-
-/* Tablet */
-@media screen and (min-width: 750px) {
-  .banner-carousel__image-wrap {
-    height: var(--slide-height-desktop, 500px);
-  }
-}
-
 /* Desktop */
 @media screen and (min-width: 990px) {
-  .banner-carousel__content {
-    max-width: 100%;
-    padding: 40px;
-  }
-
-  .banner-carousel__content--top-left,
-  .banner-carousel__content--top-center,
-  .banner-carousel__content--top-right {
-    padding-top: 20px;
-  }
-
   .banner-carousel__btn--prev {
     left: 24px;
   }
@@ -501,24 +298,8 @@
   }
 }
 
-/* Mobile-specific image swap + smaller nav buttons */
+/* Mobile-specific smaller nav buttons + tighter fade */
 @media screen and (max-width: 749px) {
-  .banner-carousel__image--desktop {
-    display: none;
-  }
-
-  .banner-carousel__image--mobile {
-    display: block;
-  }
-
-  .banner-carousel__placeholder--desktop {
-    display: none;
-  }
-
-  .banner-carousel__placeholder--mobile {
-    display: flex;
-  }
-
   .banner-carousel__btn {
     width: 34px;
     height: 34px;
@@ -552,20 +333,5 @@
   .banner-carousel__btn,
   .banner-carousel__dot {
     transition: none !important;
-  }
-
-  .banner-carousel__link,
-  .banner-carousel__link .banner-carousel__image {
-    transition: none !important;
-  }
-
-  .banner-carousel__link:hover,
-  .banner-carousel__link:focus-visible {
-    transform: none !important;
-  }
-
-  .banner-carousel__link:hover .banner-carousel__image,
-  .banner-carousel__link:focus-visible .banner-carousel__image {
-    transform: scale(var(--bc-img-scale, 1)) !important;
   }
 }
