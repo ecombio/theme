@@ -25,6 +25,20 @@
       }
     }
 
+    // Toggles the edge-fade classes (see the has-overflow-start/-end
+    // mask rules in featured-collection.css, ported from
+    // banner-carousel.css). The fade should hint "there's more to
+    // scroll" in a direction, and disappear once you're actually at
+    // that end — same <= 1 / >= maxScroll - 1 tolerance as
+    // updateArrows(), for the same subpixel-rounding reason.
+    function updateOverflow() {
+      var atStart = track.scrollLeft <= 1;
+      var maxScroll = track.scrollWidth - track.clientWidth;
+      var atEnd = track.scrollLeft >= maxScroll - 1;
+      root.classList.toggle('has-overflow-start', !atStart);
+      root.classList.toggle('has-overflow-end', !atEnd);
+    }
+
     function updateDots() {
       if (!dotsWrap) return;
       var dots = dotsWrap.querySelectorAll('[data-fc-dot]');
@@ -58,6 +72,7 @@
     var scrollTimeout;
     function onScroll() {
       updateArrows();
+      updateOverflow();
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(updateDots, 80);
     }
@@ -82,11 +97,13 @@
       resizeTimeout = setTimeout(function () {
         buildDots();
         updateArrows();
+        updateOverflow();
       }, 150);
     });
 
     buildDots();
     updateArrows();
+    updateOverflow();
   }
 
   document

@@ -77,26 +77,24 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  /* overflow-x: auto forces overflow-y to compute as non-visible too
-     (already explicit above, but it'd happen either way), which hard-
-     clips anything that paints past a card's own edge — specifically
-     image-card's hover box-shadow (0 0 16px) and its translateY(-6px)
-     lift, since shadows/transforms don't count toward scrollWidth/
-     scrollHeight. Same issue and fix as banner-carousel.css's track.
-     Top/bottom padding gives the shadow+lift room to render (16px blur
-     + 6px lift = 22px on top; 16px blur alone on bottom, no lift to
-     clear there). Side padding was already 44px for the arrow gutter,
-     which comfortably covers the same 16px need, so it's unchanged.
-     The negative margin on .featured-collection__wrapper below cancels
-     only the new top/bottom space back out — side spacing/arrows are
-     untouched since that padding already existed on purpose. */
-  padding: 22px 44px 16px;
+  /* overflow-x: auto forces overflow-y non-visible too, which clips
+     anything painting past a card's edge — image-card's hover shadow
+     (0 0 16px blur) and its translateY(-6px) lift. 22px top clears
+     blur+lift; 16px sides/bottom clears blur alone. Same fix as
+     banner-carousel__track, sized for image-card's numbers instead.
+     Side padding was previously 44px, meant as a dedicated arrow gutter —
+     but the section itself already has side padding (--section-padding),
+     so the two stacked into a large dead-space band before the first
+     card. Dropped to 16px — just enough for shadow clearance — with the
+     arrows now inset to overlay the card edge instead of floating in
+     open space. The negative margin on .featured-collection__wrapper
+     below still cancels only the top/bottom addition. */
+  padding: 22px 16px 16px;
   box-sizing: border-box;
   /* Prevents scroll-snap-type from silently correcting scrollLeft on
-     load so the first card sits flush against the scrollport, which
-     would collapse this padding in practice and reintroduce the clip
-     for the first card specifically. */
-  scroll-padding-inline: 44px;
+     load so the first card sits flush, which would collapse this
+     padding and reintroduce the clip for the first card specifically. */
+  scroll-padding-inline: 16px;
 }
 
 .featured-collection__grid--row::-webkit-scrollbar {
@@ -140,9 +138,40 @@
      .featured-collection__grid--row above, so it doesn't push the
      header/dots apart from the track — matches the negative margin on
      .banner-carousel for the same reason. Side margin is left at 0
-     since the track's side padding (44px) is intentional spacing for
-     the arrow gutter, not clearance to cancel out. */
+     since the track's side padding is intentional spacing, not
+     clearance to cancel out. */
   margin-block: -22px -16px;
+}
+
+/* Edge fade — hints there's more to scroll in a given direction, and
+   disappears once you actually reach that end. Ported from
+   banner-carousel.css's has-overflow-start/-end system, which this
+   section never had. Classes are toggled on the section root
+   ([data-featured-collection]) by featured-collection.js based on
+   scroll position — see updateOverflow() there. */
+.featured-collection {
+  --fc-fade-width: 28px;
+}
+
+.featured-collection.has-overflow-start .featured-collection__grid--row {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--fc-fade-width));
+  mask-image: linear-gradient(to right, transparent, black var(--fc-fade-width));
+}
+
+.featured-collection.has-overflow-end .featured-collection__grid--row {
+  -webkit-mask-image: linear-gradient(to left, transparent, black var(--fc-fade-width));
+  mask-image: linear-gradient(to left, transparent, black var(--fc-fade-width));
+}
+
+.featured-collection.has-overflow-start.has-overflow-end .featured-collection__grid--row {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--fc-fade-width), black calc(100% - var(--fc-fade-width)), transparent);
+  mask-image: linear-gradient(to right, transparent, black var(--fc-fade-width), black calc(100% - var(--fc-fade-width)), transparent);
+}
+
+@media screen and (max-width: 749px) {
+  .featured-collection {
+    --fc-fade-width: 20px;
+  }
 }
 
 .featured-collection__arrow {
@@ -168,11 +197,21 @@
 }
 
 .featured-collection__arrow--prev {
-  left: 0;
+  left: 12px;
 }
 
 .featured-collection__arrow--next {
-  right: 0;
+  right: 12px;
+}
+
+@media (min-width: 990px) {
+  .featured-collection__arrow--prev {
+    left: 24px;
+  }
+
+  .featured-collection__arrow--next {
+    right: 24px;
+  }
 }
 
 .featured-collection__arrow:hover:not(:disabled) {
