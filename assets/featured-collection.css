@@ -189,7 +189,20 @@
    .featured-collection__wrapper further down — but never on phones),
    and the arrows/dots always hide on mobile, regardless of which
    mobile layout is chosen below. Touch users scroll directly; arrow
-   buttons don't add much at this width. */
+   buttons don't add much at this width.
+
+   .featured-collection__arrow/.featured-collection__dots are
+   qualified with the .featured-collection ancestor here (rather than
+   just the bare class) so this hide rule has strictly higher
+   specificity (0-0-2-0) than their own unconditional base-style
+   definitions further down this file (0-0-1-0, e.g.
+   `.featured-collection__arrow { display: inline-flex; ... }`). Two
+   rules of EQUAL specificity resolve by source order — later wins —
+   regardless of whether one is gated behind a media query. Since the
+   unconditional definitions are declared after this block, a bare
+   `display: none` here previously lost that tie at every viewport
+   width, and the arrows/dots never actually hid on mobile. The extra
+   ancestor selector removes the tie entirely. */
 @media screen and (max-width: 599px) {
   .featured-collection__wrapper {
     flex-direction: column;
@@ -223,8 +236,8 @@
     margin: 0;
   }
 
-  .featured-collection__arrow,
-  .featured-collection__dots {
+  .featured-collection .featured-collection__arrow,
+  .featured-collection .featured-collection__dots {
     display: none;
   }
 }
