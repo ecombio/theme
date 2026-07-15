@@ -1,0 +1,375 @@
+{{ 'banner-iconset.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="banner-iconset-section"
+  {% unless section.settings.enable_animations %}data-animations="off"{% endunless %}
+  style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }};"
+>
+  <div class="banner-iconset-section__inner">
+
+    {%- if section.settings.heading != blank or section.settings.subheading != blank -%}
+      <h2 class="banner-iconset-section__heading banner-iconset-section__heading--align-{{ section.settings.heading_align }}">
+        {%- if section.settings.heading != blank -%}
+          <span class="banner-iconset-section__heading-main" style="color: {{ section.settings.heading_color }};">{{ section.settings.heading }}</span>
+        {%- endif -%}
+        {%- if section.settings.subheading != blank -%}
+          <span class="banner-iconset-section__heading-sub" style="color: {{ section.settings.subheading_color }};">{{ section.settings.subheading }}</span>
+        {%- endif -%}
+      </h2>
+    {%- endif -%}
+
+    <div
+      class="banner-iconset"
+      data-banner-iconset
+      data-autoplay="{{ section.settings.autoplay }}"
+      data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
+      style="
+        --slides-mobile: {{ section.settings.columns_mobile }};
+        --slides-tablet: {{ section.settings.columns_tablet }};
+        --slides-desktop: {{ section.settings.columns_desktop }};
+        --slide-gap: {{ section.settings.slide_gap }}px;
+        --card-width-desktop: {{ section.settings.card_width_desktop }}px;
+        --card-radius: {{ section.settings.card_radius }}px;
+        --card-padding: {{ section.settings.card_padding }}px;
+        --card-min-height-desktop: {{ section.settings.card_min_height_desktop }}px;
+        --card-min-height-mobile: {{ section.settings.card_min_height_mobile }}px;
+        --card-bg: {{ section.settings.card_bg_color }};
+        --bc-btn-bg: {{ section.settings.bg_color }};
+      "
+    >
+      <div class="banner-iconset__track" data-banner-iconset-track>
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign icon = block.settings.icon
+            assign icon_width = block.settings.icon_width
+            assign text = block.settings.text
+            assign link = block.settings.link
+          -%}
+
+          <div class="banner-iconset__slide" data-banner-iconset-slide {{ block.shopify_attributes }}>
+            <a href="{{ link | default: '#' }}" class="banner-iconset__card" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
+              {%- if icon != blank -%}
+                <span class="banner-iconset__icon" style="width: {{ icon_width | default: 32 }}px; height: {{ icon_width | default: 32 }}px;">
+                  <img
+                    src="{{ icon | image_url: width: 160 }}"
+                    srcset="{{ icon | image_url: width: 80 }} 80w, {{ icon | image_url: width: 160 }} 160w"
+                    alt=""
+                    width="{{ icon.width }}"
+                    height="{{ icon.height }}"
+                    loading="lazy"
+                  >
+                </span>
+              {%- endif -%}
+
+              {%- if text != blank -%}
+                <span class="banner-iconset__text" style="color: {{ section.settings.text_color | default: '#1d1d1f' }};">{{ text | newline_to_br }}</span>
+              {%- endif -%}
+            </a>
+          </div>
+        {%- else -%}
+          <div class="banner-iconset__slide" data-banner-iconset-slide>
+            <a href="#" class="banner-iconset__card" tabindex="-1" aria-disabled="true">
+              <span class="banner-iconset__text">Add cards in the section settings</span>
+            </a>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      {%- if section.blocks.size > 1 and section.settings.show_arrows -%}
+        <button type="button" class="banner-iconset__btn banner-iconset__btn--prev" data-banner-iconset-prev aria-label="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button type="button" class="banner-iconset__btn banner-iconset__btn--next" data-banner-iconset-next aria-label="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      {%- endif -%}
+
+      {%- if section.blocks.size > 1 and section.settings.show_dots -%}
+        <div class="banner-iconset__dots" data-banner-iconset-dots></div>
+      {%- endif -%}
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ 'banner-iconset.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Icon feature banner",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Header"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "The Apple Store difference."
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "info": "Appears inline right after the heading, in a lighter color — not on its own line.",
+      "default": "Even more reasons to shop with us."
+    },
+    {
+      "type": "select",
+      "id": "heading_align",
+      "label": "Heading alignment",
+      "options": [
+        { "value": "start",  "label": "Left"   },
+        { "value": "center", "label": "Center" },
+        { "value": "end",    "label": "Right"  }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color",
+      "default": "#1d1d1f"
+    },
+    {
+      "type": "color",
+      "id": "subheading_color",
+      "label": "Subheading color",
+      "default": "#6e6e73"
+    },
+    {
+      "type": "header",
+      "content": "Animation"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animations",
+      "label": "Enable hover animations",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 1,
+      "max": 8,
+      "step": 0.5,
+      "label": "Cards per view (desktop)",
+      "info": "Used for dot pagination and arrow step distance. Actual visible count is also affected by the fixed card width below.",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "card_width_desktop",
+      "min": 140,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card width (desktop/tablet)",
+      "default": 220
+    },
+    {
+      "type": "range",
+      "id": "columns_tablet",
+      "min": 1,
+      "max": 6,
+      "step": 0.5,
+      "label": "Cards per view (tablet)",
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile",
+      "min": 1,
+      "max": 3,
+      "step": 0.1,
+      "label": "Cards per view (mobile)",
+      "info": "A value above 1 (e.g. 1.2) shows a peek of the next card as a scroll hint",
+      "default": 1.2
+    },
+    {
+      "type": "range",
+      "id": "slide_gap",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Gap between cards",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "card_padding",
+      "min": 8,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Card padding",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "card_min_height_desktop",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card min height (desktop/tablet)",
+      "default": 220
+    },
+    {
+      "type": "range",
+      "id": "card_min_height_mobile",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card min height (mobile)",
+      "default": 200
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Card corner radius",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dots",
+      "label": "Show pagination dots",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Show arrows",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Auto-rotate cards",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Change cards every",
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Section background color",
+      "default": "#f5f5f7"
+    },
+    {
+      "type": "color",
+      "id": "card_bg_color",
+      "label": "Card background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Default card text color",
+      "info": "Use inline HTML in each card's text (e.g. a <span style=\"color:#0071e3\">) to color individual words differently.",
+      "default": "#1d1d1f"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "card",
+      "name": "Card",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "icon",
+          "label": "Icon"
+        },
+        {
+          "type": "range",
+          "id": "icon_width",
+          "min": 16,
+          "max": 80,
+          "step": 2,
+          "unit": "px",
+          "label": "Icon size",
+          "default": 32
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Card text",
+          "info": "Basic HTML is allowed and not escaped — e.g. <span style=\"color:#0071e3\">colored words</span>, <b>bold</b>, or <sup>1</sup> for a footnote mark.",
+          "default": "Enjoy this feature. It only takes a moment to set up."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Makes the whole card clickable. Leave blank for a non-clickable card."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Icon feature banner",
+      "blocks": [
+        { "type": "card" },
+        { "type": "card" },
+        { "type": "card" },
+        { "type": "card" },
+        { "type": "card" }
+      ]
+    }
+  ]
+}
+{% endschema %}
