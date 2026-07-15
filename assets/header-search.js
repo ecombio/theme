@@ -682,6 +682,7 @@
       self.voiceBtn.classList.remove('header-search__voice--listening');
       self.root.classList.remove('header-search--listening');
       self.voiceBtn.setAttribute('aria-label', 'Search by voice');
+      console.error('Voice search error:', e.error);
       if (e.error === 'not-allowed') self.voiceBtn.hidden = true;
       if (self._typewriter && !self.input.value) self._typewriter.resume();
     });
@@ -689,7 +690,8 @@
     this.voiceBtn.addEventListener('click', function () {
       try {
         recognition.start();
-      } catch (_) {
+      } catch (err) {
+        console.error('Voice search failed to start:', err);
       }
     });
   };
