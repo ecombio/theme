@@ -29,7 +29,29 @@
       </div>
     {%- endif -%}
 
-    <div class="banner-carousel" data-banner-carousel data-autoplay="{{ section.settings.autoplay }}" data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}" style="--slides-mobile: {{ section.settings.columns_mobile }}; --slides-tablet: {{ section.settings.columns_tablet }}; --slides-desktop: {{ section.settings.columns_desktop }}; --slide-gap: {{ section.settings.slide_gap }}px; --slide-radius: {{ section.settings.slide_radius }}px; --slide-width-desktop: {{ section.settings.card_width_desktop }}px; --slide-height-desktop: {{ section.settings.height_desktop }}px; --slide-height-mobile: {{ section.settings.height_mobile }}px; --bc-btn-bg: {{ section.settings.bg_color }};">
+    <div
+      class="banner-carousel"
+      data-banner-carousel
+      data-autoplay="{{ section.settings.autoplay }}"
+      data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
+      style="
+        --slides-mobile: {{ section.settings.columns_mobile }};
+        --slides-tablet: {{ section.settings.columns_tablet }};
+        --slides-desktop: {{ section.settings.columns_desktop }};
+        --slide-gap: {{ section.settings.slide_gap }}px;
+        --slide-radius: {{ section.settings.slide_radius }}px;
+        --slide-width-desktop: {{ section.settings.card_width_desktop }}px;
+        --slide-height-desktop: {{ section.settings.height_desktop }}px;
+        --slide-height-mobile: {{ section.settings.height_mobile }}px;
+        --bc-btn-bg: {{ section.settings.bg_color }};
+        --icon-card-bg: {{ section.settings.icon_card_bg_color }};
+        --icon-card-text: {{ section.settings.icon_card_text_color }};
+        --icon-card-padding: {{ section.settings.icon_card_padding }}px;
+        --icon-card-min-height-mobile: {{ section.settings.icon_card_min_height_mobile }}px;
+        --icon-card-min-height-desktop: {{ section.settings.icon_card_min_height_desktop }}px;
+        --icon-card-radius: {{ section.settings.icon_card_radius }}px;
+      "
+    >
       <div class="banner-carousel__track" data-banner-carousel-track>
         {%- for block in section.blocks -%}
           {%- render 'banner-card', block: block, is_first: forloop.first -%}
@@ -76,6 +98,64 @@
     </div>
 
   </div>
+
+  {%- comment -%}
+    Icon-card popups. Rendered once per block at the section level (not
+    inside banner-card.liquid) so the dialog isn't a descendant of the
+    scroll-snap track — matches how banner-iconset.liquid rendered its
+    modals. modal_id here must stay in sync with the 'bcModal-' | append:
+    block.id format banner-card.liquid uses for the trigger button's
+    data-bc-modal-open value.
+  {%- endcomment -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'icon_card' and block.settings.modal_enable -%}
+      {%- assign modal_id = 'bcModal-' | append: block.id -%}
+      <div
+        class="bc-modal"
+        id="{{ modal_id }}"
+        data-bc-modal
+        aria-hidden="true"
+        role="dialog"
+        aria-modal="true"
+        {% if block.settings.modal_heading != blank %}aria-labelledby="{{ modal_id }}-heading"{% endif %}
+      >
+        <div class="bc-modal__backdrop" data-bc-modal-close tabindex="-1"></div>
+        <div class="bc-modal__panel">
+          <button type="button" class="bc-modal__close" data-bc-modal-close aria-label="Close">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+
+          {%- if block.settings.modal_heading != blank -%}
+            <h3 class="bc-modal__heading" id="{{ modal_id }}-heading">{{ block.settings.modal_heading }}</h3>
+          {%- endif -%}
+
+          {%- if block.settings.modal_intro != blank -%}
+            <p class="bc-modal__intro">{{ block.settings.modal_intro | newline_to_br }}</p>
+          {%- endif -%}
+
+          {%- for i in (1..3) -%}
+            {%- assign heading_key = 'modal_section_' | append: i | append: '_heading' -%}
+            {%- assign body_key = 'modal_section_' | append: i | append: '_body' -%}
+            {%- assign sec_heading = block.settings[heading_key] -%}
+            {%- assign sec_body = block.settings[body_key] -%}
+            {%- if sec_heading != blank or sec_body != blank -%}
+              <div class="bc-modal__section">
+                {%- if sec_heading != blank -%}<h4 class="bc-modal__section-heading">{{ sec_heading }}</h4>{%- endif -%}
+                {%- if sec_body != blank -%}<p class="bc-modal__section-body">{{ sec_body | newline_to_br }}</p>{%- endif -%}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- if block.settings.modal_link_url != blank -%}
+            <a href="{{ block.settings.modal_link_url }}" class="bc-modal__link">{{ block.settings.modal_link_label | default: 'Learn more' }} &rarr;</a>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
 </div>
 
 <script src="{{ 'banner-carousel.js' | asset_url }}" defer="defer"></script>
@@ -262,6 +342,62 @@
       "id": "bg_color",
       "label": "Section background color",
       "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Icon card style"
+    },
+    {
+      "type": "color",
+      "id": "icon_card_bg_color",
+      "label": "Icon card background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "icon_card_text_color",
+      "label": "Icon card text color",
+      "default": "#1d1d1f"
+    },
+    {
+      "type": "range",
+      "id": "icon_card_padding",
+      "min": 8,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Icon card padding",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "icon_card_min_height_mobile",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Icon card min height (mobile)",
+      "default": 200
+    },
+    {
+      "type": "range",
+      "id": "icon_card_min_height_desktop",
+      "min": 120,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Icon card min height (desktop/tablet)",
+      "default": 220
+    },
+    {
+      "type": "range",
+      "id": "icon_card_radius",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Icon card corner radius",
+      "default": 16
     },
     {
       "type": "header",
@@ -462,6 +598,102 @@
           "default": "top-left"
         }
       ]
+    },
+    {
+      "type": "icon_card",
+      "name": "Icon card",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "icon",
+          "label": "Icon"
+        },
+        {
+          "type": "range",
+          "id": "icon_width",
+          "min": 16,
+          "max": 80,
+          "step": 2,
+          "unit": "px",
+          "label": "Icon size",
+          "default": 32
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Card text",
+          "info": "Basic HTML is allowed and not escaped — e.g. <span style=\"color:#0071e3\">colored words</span>, <b>bold</b>, or <sup>1</sup> for a footnote mark.",
+          "default": "Enjoy this feature. It only takes a moment to set up."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Makes the whole card clickable. Leave blank for a non-clickable card."
+        },
+        {
+          "type": "header",
+          "content": "Popup (optional)"
+        },
+        {
+          "type": "checkbox",
+          "id": "modal_enable",
+          "label": "Open a popup when this card is clicked",
+          "info": "Overrides the link above — the popup opens instead.",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "modal_heading",
+          "label": "Popup heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_intro",
+          "label": "Popup intro text"
+        },
+        {
+          "type": "text",
+          "id": "modal_section_1_heading",
+          "label": "Section 1 heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_section_1_body",
+          "label": "Section 1 body"
+        },
+        {
+          "type": "text",
+          "id": "modal_section_2_heading",
+          "label": "Section 2 heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_section_2_body",
+          "label": "Section 2 body"
+        },
+        {
+          "type": "text",
+          "id": "modal_section_3_heading",
+          "label": "Section 3 heading"
+        },
+        {
+          "type": "textarea",
+          "id": "modal_section_3_body",
+          "label": "Section 3 body"
+        },
+        {
+          "type": "url",
+          "id": "modal_link_url",
+          "label": "Popup \"Learn more\" link"
+        },
+        {
+          "type": "text",
+          "id": "modal_link_label",
+          "label": "Popup link label",
+          "default": "Learn more"
+        }
+      ]
     }
   ],
   "presets": [
@@ -471,6 +703,15 @@
         { "type": "slide" },
         { "type": "slide" },
         { "type": "slide" }
+      ]
+    },
+    {
+      "name": "Icon card row",
+      "blocks": [
+        { "type": "icon_card" },
+        { "type": "icon_card" },
+        { "type": "icon_card" },
+        { "type": "icon_card" }
       ]
     }
   ]
