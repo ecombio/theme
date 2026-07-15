@@ -1,0 +1,239 @@
+/* Styles for a single, standalone image card (snippets/image-card.liquid).
+   Derived from banner-card.css, with carousel/track-specific sizing
+   (flex-basis off --slides-mobile/--slide-width-desktop, scroll-snap)
+   removed — this card is sized by its container instead.
+
+   Simplifications made vs. the original banner-card:
+   - Per-field text alignment (separate left/center/right per heading/
+     subheading/price/button) was dropped. Alignment now follows the
+     content_position value directly (7 positions, each implying its
+     own text-align + align-items).
+   - Per-field font-size settings were dropped in favor of CSS variable
+     defaults (--ic-heading-size etc.) — easy to re-expose as section
+     settings later if needed.
+   - --ic-card-ease has a real fallback (`ease`) since the original
+     --bc-card-ease was never defined in banner-card.css itself (it
+     depended on the parent banner-carousel.liquid setting it inline).
+*/
+
+.image-card {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.image-card__link {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  border-radius: var(--ic-radius, 0px);
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.4s var(--ic-card-ease, ease), box-shadow 0.4s var(--ic-card-ease, ease);
+}
+
+.image-card__link:hover,
+.image-card__link:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.2);
+}
+
+.image-card__image-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: var(--ic-height-mobile, 320px);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: var(--ic-radius, 0px);
+}
+
+@media screen and (min-width: 600px) {
+  .image-card__image-wrap {
+    height: var(--ic-height-desktop, 500px);
+  }
+}
+
+.image-card__image,
+.image-card__placeholder,
+.image-card__placeholder-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-card__image {
+  transform: scale(var(--ic-img-scale, 1));
+  transition: transform 0.6s var(--ic-card-ease, ease);
+}
+
+.image-card__link:hover .image-card__image,
+.image-card__link:focus-visible .image-card__image {
+  transform: scale(calc(var(--ic-img-scale, 1) * 1.05));
+}
+
+.image-card__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.image-card__placeholder-svg {
+  width: auto;
+  height: 50%;
+  max-width: 50%;
+  object-fit: contain;
+  opacity: 0.55;
+}
+
+.image-card__image--mobile,
+.image-card__placeholder--mobile {
+  display: none;
+}
+
+@media screen and (max-width: 599px) {
+  .image-card__image--desktop,
+  .image-card__placeholder--desktop {
+    display: none;
+  }
+  .image-card__image--mobile,
+  .image-card__placeholder--mobile {
+    display: flex;
+  }
+}
+
+.image-card__content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  padding: 16px;
+}
+
+@media screen and (min-width: 1024px) {
+  .image-card__content {
+    padding: 40px;
+  }
+}
+
+/* Position + alignment travel together — see file header note. */
+.image-card__content--top-left,
+.image-card__content--top-center,
+.image-card__content--top-right {
+  top: 0;
+  padding-top: 12px;
+}
+
+.image-card__content--bottom-left,
+.image-card__content--bottom-center,
+.image-card__content--bottom-right {
+  bottom: 0;
+}
+
+.image-card__content--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  align-items: center;
+}
+
+.image-card__content--top-left,
+.image-card__content--bottom-left {
+  left: 0;
+  text-align: left;
+  align-items: flex-start;
+}
+
+.image-card__content--top-right,
+.image-card__content--bottom-right {
+  right: 0;
+  text-align: right;
+  align-items: flex-end;
+}
+
+.image-card__content--top-center,
+.image-card__content--bottom-center {
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  align-items: center;
+}
+
+.image-card__heading {
+  display: block;
+  width: 100%;
+  font-weight: 700;
+  line-height: 1.2;
+  font-size: var(--ic-heading-size, 32px);
+}
+
+.image-card__subheading {
+  display: block;
+  width: 100%;
+  opacity: 0.95;
+  font-size: var(--ic-subheading-size, 16px);
+}
+
+.image-card__price {
+  display: block;
+  width: 100%;
+  opacity: 0.9;
+  font-size: var(--ic-price-size, 14px);
+}
+
+.image-card__price--truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.image-card__button {
+  margin-top: 6px;
+  display: inline-block;
+  padding: 8px 18px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: var(--ic-button-size, 14px);
+}
+
+/* Animation kill-switch, scoped to the card itself (not a parent
+   section class) so image-card is self-contained wherever it's used. */
+.image-card[data-animations="off"] .image-card__link,
+.image-card[data-animations="off"] .image-card__image {
+  transition: none;
+}
+
+.image-card[data-animations="off"] .image-card__link:hover,
+.image-card[data-animations="off"] .image-card__link:focus-visible {
+  transform: none;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+}
+
+.image-card[data-animations="off"] .image-card__link:hover .image-card__image,
+.image-card[data-animations="off"] .image-card__link:focus-visible .image-card__image {
+  transform: scale(var(--ic-img-scale, 1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-card__link,
+  .image-card__link .image-card__image {
+    transition: none !important;
+  }
+  .image-card__link:hover,
+  .image-card__link:focus-visible {
+    transform: none !important;
+  }
+  .image-card__link:hover .image-card__image,
+  .image-card__link:focus-visible .image-card__image {
+    transform: scale(var(--ic-img-scale, 1)) !important;
+  }
+}
