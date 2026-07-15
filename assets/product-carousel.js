@@ -4,7 +4,8 @@
    Tabs toggle panel visibility + (re)start that panel's carousel.
    Features: arrow nav · dot nav (pill active) · drag/swipe ·
              autoplay · reduced-motion · keyboard ·
-             side-arrow mode (greyed-out vs hidden when exhausted)
+             side-arrow mode (greyed-out vs hidden when exhausted) ·
+             banner width sync (banner-card matches product-card width)
    ============================================================ */
 
 (function () {
@@ -218,6 +219,30 @@
     section.style.setProperty('--_cols-desktop', opts.colsDesktop);
     section.style.setProperty('--_cols-mobile',  opts.colsMobile);
 
+    /* ── Banner width sync ──
+       Makes the banner-card's rendered width match one product-card's
+       rendered width, so the layout reads as one visual "column" per
+       item: [banner-card][product-card][product-card][product-card].
+       Skipped on mobile, where the banner stacks full-width above the
+       carousel (see product-carousel.css). */
+    function syncBannerWidth() {
+      var banner = section.querySelector('.product-carousel__banner');
+      if (!banner) return;
+      if (window.innerWidth < 768) {
+        section.style.removeProperty('--pc-banner-width');
+        return;
+      }
+      var slide = section.querySelector(
+        '.product-carousel__panel:not(.is-hidden) [data-carousel-slide], ' +
+        '.product-carousel__carousel-col > .product-carousel__stage [data-carousel-slide]'
+      );
+      if (!slide) return;
+      var w = slide.getBoundingClientRect().width;
+      if (w > 0) section.style.setProperty('--pc-banner-width', w + 'px');
+    }
+
+    syncBannerWidth();
+
     /* No tab blocks → fallback single carousel directly in section */
     if (panels.length === 0) {
       var fallback = initPanelCarousel(section, opts);
@@ -227,6 +252,17 @@
         if (topNextBtn) topNextBtn.addEventListener('click', function () { fallback.goTo('next'); });
         fallback.startAutoplay();
       }
+      syncBannerWidth();
+
+      var fallbackResizeTimer;
+      window.addEventListener('resize', function () {
+        clearTimeout(fallbackResizeTimer);
+        fallbackResizeTimer = setTimeout(function () {
+          if (fallback) fallback.rebuild(true);
+          syncBannerWidth();
+        }, 150);
+      });
+
       return;
     }
 
@@ -286,6 +322,8 @@
               c.stopAutoplay();
             }
           });
+
+          syncBannerWidth();
         });
       });
     }
@@ -304,6 +342,7 @@
             carousels[i].rebuild(true);
           }
         });
+        syncBannerWidth();
       }, 150);
     });
   }
