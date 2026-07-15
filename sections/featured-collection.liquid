@@ -41,6 +41,11 @@
     if section.settings.promo_custom_width
       assign promo_width = section.settings.promo_width_px | append: 'px'
     endif
+
+    assign promo_width_mobile = blank
+    if section.settings.promo_custom_width_mobile
+      assign promo_width_mobile = section.settings.promo_width_px_mobile | append: 'px'
+    endif
   -%}
 
   <div
@@ -85,6 +90,7 @@
               height_mobile: section.settings.promo_height_mobile,
               height_desktop: section.settings.promo_height_desktop,
               width: promo_width,
+              width_mobile: promo_width_mobile,
               loading: 'eager'
             -%}
           </div>
@@ -157,6 +163,7 @@
               height_mobile: section.settings.promo_height_mobile,
               height_desktop: section.settings.promo_height_desktop,
               width: promo_width,
+              width_mobile: promo_width_mobile,
               loading: 'eager'
             -%}
           </div>
@@ -391,6 +398,26 @@
       "unit": "px",
       "default": 400,
       "visible_if": "{{ section.settings.enable_promo_card and section.settings.promo_custom_width }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "promo_custom_width_mobile",
+      "label": "Use a custom width (mobile)",
+      "default": false,
+      "info": "Independent of the desktop width above. Off: card fills the mobile banner width, same as before. On: set an exact pixel width below.",
+      "visible_if": "{{ section.settings.enable_promo_card }}"
+    },
+    {
+      "type": "range",
+      "id": "promo_width_px_mobile",
+      "label": "Card width (mobile)",
+      "min": 120,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 160,
+      "info": "Mobile cards sit two-per-row, so this is scaled for a landscape card rather than the wider desktop range.",
+      "visible_if": "{{ section.settings.enable_promo_card and section.settings.promo_custom_width_mobile }}"
     },
     {
       "type": "range",
