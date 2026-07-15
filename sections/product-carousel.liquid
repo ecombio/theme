@@ -14,6 +14,13 @@
   is section-local (set inline from this section's own "Side padding"
   setting) and intentionally does NOT read the global --page-margin,
   so it is unaffected by Theme Settings > Layout > Body side padding.
+
+  BANNER: the banner column reuses snippets/banner-card.liquid (see the
+  "banner" block type in the schema below, whose settings are copied
+  field-for-field from banner-carousel.liquid's "slide" block) instead
+  of a bespoke image/link markup. This gets the banner the same ambient
+  shadow, hover lift/zoom, and optional heading/subheading/price/button
+  overlay that banner-carousel slides have, for free.
 {%- endcomment -%}
 
 {%- liquid
@@ -26,11 +33,13 @@
   assign autoplay       = section.settings.autoplay
   assign autoplay_ms    = section.settings.autoplay_interval | default: 4 | times: 1000
   assign banner_show    = section.settings.show_banner
-  assign banner_image   = section.settings.banner_image
-  assign banner_link    = section.settings.banner_link
   assign products_limit = section.settings.products_per_tab | default: 12
   assign sort_by        = section.settings.sort_by | default: 'best-selling'
   assign tab_blocks     = section.blocks | where: 'type', 'tab'
+
+  # Only the first "banner" block is rendered — this section has one banner
+  # slot (matches the prior single banner_image/banner_link behavior).
+  assign banner_block = section.blocks | where: 'type', 'banner' | first
 
   assign show_top_arrows    = false
   assign show_bottom_arrows = false
@@ -52,6 +61,7 @@
 -%}
 
 {{ 'product-carousel.css' | asset_url | stylesheet_tag }}
+{{ 'banner-card.css' | asset_url | stylesheet_tag }}
 
 <section
   class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %} {{ width_class }}"
@@ -93,25 +103,22 @@
 
     {%- comment -%}── BANNER ──{%- endcomment -%}
     {%- if banner_show -%}
-      <div class="product-carousel__banner">
-        {%- if banner_link != blank -%}<a href="{{ banner_link }}" class="product-carousel__banner-link">{%- endif -%}
-        {%- if banner_image != blank -%}
-          {{
-            banner_image
-            | image_url: width: 800
-            | image_tag:
-              class: 'product-carousel__banner-img',
-              loading: 'lazy',
-              widths: '200, 300, 400, 600',
-              sizes: '(max-width: 767px) 100vw, 220px',
-              alt: banner_image.alt | default: heading | escape
-          }}
+      <div
+        class="product-carousel__banner"
+        style="
+          --bc-card-ease: cubic-bezier(0.16, 1, 0.3, 1);
+          --slide-radius: 12px;
+          --slide-height-desktop: 260px;
+          --slide-height-mobile: 160px;
+        "
+      >
+        {%- if banner_block -%}
+          {%- render 'banner-card', block: banner_block, is_first: true -%}
         {%- else -%}
           <div class="product-carousel__banner-placeholder" aria-hidden="true">
             {{ 'collection-1' | placeholder_svg_tag: 'product-carousel__banner-placeholder-svg' }}
           </div>
         {%- endif -%}
-        {%- if banner_link != blank -%}</a>{%- endif -%}
       </div>
     {%- endif -%}
 
@@ -325,17 +332,8 @@
       "type": "checkbox",
       "id": "show_banner",
       "label": "Show banner",
+      "info": "Add a \"Banner\" block below to set its image, link, and optional text overlay.",
       "default": false
-    },
-    {
-      "type": "image_picker",
-      "id": "banner_image",
-      "label": "Banner image"
-    },
-    {
-      "type": "url",
-      "id": "banner_link",
-      "label": "Banner link"
     },
     {
       "type": "header",
@@ -481,6 +479,180 @@
           "id": "tab_icon",
           "label": "Icon SVG (optional)",
           "info": "Paste a small inline SVG or leave blank."
+        }
+      ]
+    },
+    {
+      "type": "banner",
+      "name": "Banner",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image",
+          "info": "A placeholder image is shown if blank"
+        },
+        {
+          "type": "image_picker",
+          "id": "mobile_image",
+          "label": "Mobile image",
+          "info": "Optional. Used on small screens instead of the image above"
+        },
+        {
+          "type": "range",
+          "id": "image_scale",
+          "min": 100,
+          "max": 200,
+          "step": 5,
+          "unit": "%",
+          "label": "Image zoom",
+          "info": "Zooms into the image, cropping out empty/whitespace margins baked into the source file",
+          "default": 100
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Link to a product, collection, blog, page, or any URL"
+        },
+        {
+          "type": "header",
+          "content": "Text"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "range",
+          "id": "heading_font_size",
+          "min": 14,
+          "max": 72,
+          "step": 1,
+          "unit": "px",
+          "label": "Heading font size",
+          "default": 32
+        },
+        {
+          "type": "select",
+          "id": "heading_align",
+          "label": "Heading alignment",
+          "options": [
+            { "value": "left",   "label": "Left"   },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right"  }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "range",
+          "id": "subheading_font_size",
+          "min": 10,
+          "max": 32,
+          "step": 1,
+          "unit": "px",
+          "label": "Subheading font size",
+          "default": 16
+        },
+        {
+          "type": "select",
+          "id": "subheading_align",
+          "label": "Subheading alignment",
+          "options": [
+            { "value": "left",   "label": "Left"   },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right"  }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "text",
+          "id": "price_text",
+          "label": "Price / details text",
+          "info": "e.g. \"From $399 or $33.25/mo. for 12 mo.\""
+        },
+        {
+          "type": "range",
+          "id": "price_font_size",
+          "min": 10,
+          "max": 28,
+          "step": 1,
+          "unit": "px",
+          "label": "Price / details font size",
+          "default": 14
+        },
+        {
+          "type": "select",
+          "id": "price_align",
+          "label": "Price / details alignment",
+          "options": [
+            { "value": "left",   "label": "Left"   },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right"  }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "checkbox",
+          "id": "price_truncate",
+          "label": "Keep price / details on one line",
+          "info": "Truncates with an ellipsis (...) instead of wrapping to a second line",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "range",
+          "id": "button_font_size",
+          "min": 10,
+          "max": 24,
+          "step": 1,
+          "unit": "px",
+          "label": "Button font size",
+          "default": 14
+        },
+        {
+          "type": "select",
+          "id": "button_align",
+          "label": "Button alignment",
+          "options": [
+            { "value": "left",   "label": "Left"   },
+            { "value": "center", "label": "Center" },
+            { "value": "right",  "label": "Right"  }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "color",
+          "id": "text_color",
+          "label": "Text color",
+          "info": "Applies to the heading, subheading, price/details, and button label. Use a dark color (like #1d1d1f) when the image/background is light, or white when it's dark.",
+          "default": "#1d1d1f"
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Content block position",
+          "info": "Controls where the text block sits on the image; use the alignment settings above to control how each line of text aligns within that block.",
+          "options": [
+            { "value": "top-left", "label": "Top left" },
+            { "value": "top-center", "label": "Top center" },
+            { "value": "top-right", "label": "Top right" },
+            { "value": "center", "label": "Center" },
+            { "value": "bottom-left", "label": "Bottom left" },
+            { "value": "bottom-center", "label": "Bottom center" },
+            { "value": "bottom-right", "label": "Bottom right" }
+          ],
+          "default": "top-left"
         }
       ]
     }
