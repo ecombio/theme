@@ -74,7 +74,26 @@
                     height="{{ mobile_image.height }}"
                     style="--bc-img-scale: {{ block.settings.image_scale | default: 100 | divided_by: 100.0 }};"
                   >
-                {%- elsif image == blank -%}
+                {%- elsif image != blank -%}
+                  {%- comment -%}
+                    No dedicated mobile image uploaded — fall back to the
+                    desktop image at mobile-appropriate widths instead of
+                    leaving the mobile slot empty (image--desktop is hidden
+                    via CSS below 750px, so without this the slide is blank
+                    on phones for any block that only sets "Image").
+                  {%- endcomment -%}
+                  <img
+                    class="banner-carousel__image banner-carousel__image--mobile"
+                    src="{{ image | image_url: width: 750 }}"
+                    srcset="{{ image | image_url: width: 450 }} 450w, {{ image | image_url: width: 750 }} 750w, {{ image | image_url: width: 1000 }} 1000w"
+                    sizes="100vw"
+                    alt="{{ image.alt | default: heading | escape }}"
+                    loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                    width="{{ image.width }}"
+                    height="{{ image.height }}"
+                    style="--bc-img-scale: {{ block.settings.image_scale | default: 100 | divided_by: 100.0 }};"
+                  >
+                {%- else -%}
                   <span class="banner-carousel__placeholder banner-carousel__placeholder--mobile">
                     {{ 'lifestyle-2' | placeholder_svg_tag: 'banner-carousel__placeholder-svg' }}
                   </span>
