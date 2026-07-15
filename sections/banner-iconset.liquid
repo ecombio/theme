@@ -17,6 +17,16 @@
   else
     assign width_class = width_type
   endif
+
+  # Arrow visibility — "always" (default) keeps the prev/next arrows
+  # visible at all times; "hover" reveals them only on wrapper
+  # hover/focus (desktop pointer devices — always shown on touch
+  # regardless, since there's no hover state to reveal them with). See
+  # the [data-arrow-visibility="hover"]-scoped media query in
+  # banner-iconset.css. Same setting/pattern as featured-collection's
+  # arrow_visibility, just with the default flipped: featured-collection
+  # defaults to "hover", this defaults to "always".
+  assign arrow_visibility = section.settings.arrow_visibility | default: 'always'
 -%}
 
 <div
@@ -48,6 +58,7 @@
     <div
       class="banner-iconset"
       data-banner-iconset
+      data-arrow-visibility="{{ arrow_visibility }}"
       data-autoplay="{{ section.settings.autoplay }}"
       data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
       style="
@@ -509,6 +520,18 @@
       "id": "show_arrows",
       "label": "Show arrows",
       "default": true
+    },
+    {
+      "type": "select",
+      "id": "arrow_visibility",
+      "label": "Arrow visibility",
+      "options": [
+        { "value": "always", "label": "Always" },
+        { "value": "hover", "label": "On hover" }
+      ],
+      "default": "always",
+      "info": "Always: arrows stay visible at all times. On hover: arrows fade + scale in only when hovering the card row (desktop pointer devices only — always shown on touch).",
+      "visible_if": "{{ section.settings.show_arrows }}"
     },
     {
       "type": "checkbox",

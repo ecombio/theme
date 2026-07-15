@@ -212,6 +212,7 @@
 
 .banner-iconset__btn:hover {
   border-color: currentColor;
+  transform: translateY(-50%) scale(1.08);
 }
 
 .banner-iconset__btn[disabled] {
@@ -258,23 +259,50 @@
    getting an arrow that's invisible and untappable. Disabled buttons
    (at either end of the track) stay dimmed via the existing [disabled]
    opacity rule regardless of hover state. */
+/* Hover-reveal — opt-in via this section's "Arrow visibility" setting
+   (default "always" — arrows stay visible at all times, same as before
+   this setting existed). Only applies when a merchant switches it to
+   "On hover", via data-arrow-visibility="hover" set on .banner-iconset
+   in banner-iconset.liquid. banner-carousel's arrows have no such
+   setting and are always visible; this brings the same opt-in pattern
+   featured-collection.css already uses for its own arrow_visibility
+   setting, so the two stay consistent. Scoped to
+   (hover: hover) and (pointer: fine) so touch devices — which have no
+   hover state to reveal the buttons with — always show them regardless
+   of this setting, instead of getting an arrow that's invisible and
+   untappable. Disabled buttons (at either end of the track) stay
+   dimmed via the existing [disabled] opacity rule regardless of hover
+   state.
+   Combines opacity with a scale(0.85 -> 1) pop instead of a flat fade,
+   matching featured-collection.css's own hover-reveal treatment so
+   both components read the same way. transform is layered on top of
+   the existing translateY(-50%) (needed for vertical centering) rather
+   than replacing it — same pattern as the :hover scale(1.08) rule
+   above. */
 @media (hover: hover) and (pointer: fine) {
-  .banner-iconset__btn {
+  .banner-iconset[data-arrow-visibility="hover"] .banner-iconset__btn {
     opacity: 0;
+    transform: translateY(-50%) scale(0.85);
   }
 
-  .banner-iconset:hover .banner-iconset__btn,
-  .banner-iconset:focus-within .banner-iconset__btn {
+  .banner-iconset[data-arrow-visibility="hover"]:hover .banner-iconset__btn,
+  .banner-iconset[data-arrow-visibility="hover"]:focus-within .banner-iconset__btn {
     opacity: 1;
+    transform: translateY(-50%) scale(1);
   }
 
-  .banner-iconset__btn[disabled] {
+  .banner-iconset[data-arrow-visibility="hover"]:hover .banner-iconset__btn:hover {
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  .banner-iconset[data-arrow-visibility="hover"] .banner-iconset__btn[disabled] {
     opacity: 0;
   }
 
-  .banner-iconset:hover .banner-iconset__btn[disabled],
-  .banner-iconset:focus-within .banner-iconset__btn[disabled] {
+  .banner-iconset[data-arrow-visibility="hover"]:hover .banner-iconset__btn[disabled],
+  .banner-iconset[data-arrow-visibility="hover"]:focus-within .banner-iconset__btn[disabled] {
     opacity: 0.35;
+    transform: translateY(-50%) scale(1);
   }
 }
 
