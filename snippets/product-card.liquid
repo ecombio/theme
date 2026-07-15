@@ -22,7 +22,6 @@
   assign eta_text      = card_product.metafields.custom.eta_text
 
   assign is_sponsored = is_sponsored | default: false
-  assign show_eta     = show_eta     | default: true
 
   # NOTE: the `default` filter treats `false` as blank and silently
   # swaps it back to the fallback — so `show_atc | default: true` was
@@ -30,8 +29,8 @@
   # `true`. That's why unchecking the toggles in the theme editor
   # didn't hide anything. Checking for `nil` instead only fills in the
   # default when the param wasn't passed at all, and leaves an
-  # explicit `false` alone. show_quickview and show_wishlist now use
-  # the same pattern since they're wired to real settings too.
+  # explicit `false` alone. Every toggle below now uses this pattern
+  # since they're all wired to real settings.
   if show_atc == nil
     assign show_atc = true
   endif
@@ -43,6 +42,21 @@
   endif
   if show_quickview == nil
     assign show_quickview = true
+  endif
+  if show_vendor == nil
+    assign show_vendor = true
+  endif
+  if show_reviews == nil
+    assign show_reviews = true
+  endif
+  if show_sale_badge == nil
+    assign show_sale_badge = true
+  endif
+  if show_savings_row == nil
+    assign show_savings_row = true
+  endif
+  if show_eta == nil
+    assign show_eta = true
   endif
 
   assign card_image_sizes = '(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
@@ -127,37 +141,50 @@
       </button>
     {%- endif -%}
 
-    {%- if on_sale -%}
+    {%- if show_sale_badge and on_sale -%}
       <span class="product-card__badge">Save {{ save_pct }}%</span>
     {%- endif -%}
   </div>
 
   <div class="product-card__body">
 
-    {%- if card_vendor != blank -%}
+    {%- if show_vendor and card_vendor != blank -%}
       <span class="product-card__vendor">{{ card_vendor }}</span>
     {%- endif -%}
 
-    <a href="{{ card_url }}" class="product-card__title">{{ card_title }}</a>
+    <a href="{{ card_url }}" class="product-card__title" title="{{ card_title | escape }}">{{ card_title }}</a>
 
-    <div class="product-card__reviews">
-      <div
-        class="jdgm-widget jdgm-preview-badge"
-        data-id="{{ card_product.id }}"
-        data-auto-install="false"
-      ></div>
-    </div>
+    {%- if show_reviews -%}
+      <div class="product-card__reviews">
+        <div
+          class="jdgm-widget jdgm-preview-badge"
+          data-id="{{ card_product.id }}"
+          data-auto-install="false"
+        ></div>
+      </div>
+    {%- endif -%}
 
     <div class="product-card__pricing">
       {%- if on_sale -%}
+        {%- if show_savings_row -%}
+          <span class="product-card__price product-card__price--compare">
+            <s>{{ card_comp | money }}</s>
+          </span>
+        {%- else -%}
+          <span class="product-card__price product-card__price--compare is-hidden" aria-hidden="true"><s></s></span>
+        {%- endif -%}
+
         <span class="product-card__price product-card__price--sale">{{ card_price | money }}</span>
-        <div class="product-card__savings-row">
+
+        {%- if show_savings_row -%}
           <span class="product-card__save-badge">Save {{ save_amount | money_without_trailing_zeros }}</span>
-          <span class="product-card__comp-value">Comp. Value: <s>{{ card_comp | money }}</s></span>
-        </div>
+        {%- else -%}
+          <span class="product-card__save-badge is-hidden" aria-hidden="true"></span>
+        {%- endif -%}
       {%- else -%}
+        <span class="product-card__price product-card__price--compare is-hidden" aria-hidden="true"><s></s></span>
         <span class="product-card__price">{{ card_price | money }}</span>
-        <div class="product-card__savings-row" aria-hidden="true"></div>
+        <span class="product-card__save-badge is-hidden" aria-hidden="true"></span>
       {%- endif -%}
     </div>
 
