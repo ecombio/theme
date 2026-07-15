@@ -29,10 +29,16 @@
   - heading_size, subheading_size, price_size, button_size: {Number}
     font size in px for each text element
   - height_mobile, height_desktop: {Number} image-wrap height in px
-  - width: {String} card width — any valid CSS width value (e.g.
-    '100%', '400px', '24rem'). Defaults to 100% (fills its container,
-    same as before this option existed) so passing nothing preserves
-    the old fill-the-grid-cell behavior.
+  - width: {String} card width at tablet/desktop widths (≥600px) — any
+    valid CSS width value (e.g. '100%', '400px', '24rem'). Defaults to
+    100% (fills its container, same as before this option existed) so
+    passing nothing preserves the old fill-the-grid-cell behavior.
+  - width_mobile: {String} card width at mobile widths (≤599px), set
+    independently of `width` above. Any valid CSS width value. If not
+    passed, image-card.css falls back to 100% at mobile widths — it
+    does NOT inherit `width`, so a merchant's desktop custom width
+    never silently carries over to mobile. See the mobile media query
+    in image-card.css for the exact fallback chain.
 {%- endcomment -%}
 
 {%- liquid
@@ -44,6 +50,9 @@
   assign card_style = ''
   if width != blank
     assign card_style = card_style | append: '--ic-width: ' | append: width | append: ';'
+  endif
+  if width_mobile != blank
+    assign card_style = card_style | append: '--ic-width-mobile: ' | append: width_mobile | append: ';'
   endif
   if height_mobile != blank
     assign card_style = card_style | append: '--ic-height-mobile: ' | append: height_mobile | append: 'px;'
