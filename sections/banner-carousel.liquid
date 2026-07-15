@@ -1,468 +1,565 @@
-{{ 'banner-carousel.css' | asset_url | stylesheet_tag }}
-
-<div
-  class="banner-carousel-section"
-  {% unless section.settings.enable_animations %}data-animations="off"{% endunless %}
-  style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; background-color: {{ section.settings.bg_color }};"
->
-  <div class="banner-carousel-section__inner{% if section.settings.full_width %} banner-carousel-section__inner--full{% else %} page-width{% endif %}">
-
-    {%- if section.settings.heading != blank or section.settings.subheading != blank or section.settings.view_all_link != blank -%}
-      <div class="banner-carousel-section__header banner-carousel-section__header--align-{{ section.settings.heading_align }}{% if section.settings.full_width %} page-width{% endif %}">
-        <div class="banner-carousel-section__heading-group">
-          {%- if section.settings.heading != blank -%}
-            <h2 class="banner-carousel-section__heading">{{ section.settings.heading }}</h2>
-          {%- endif -%}
-          {%- if section.settings.subheading != blank -%}
-            <p class="banner-carousel-section__subheading">{{ section.settings.subheading }}</p>
-          {%- endif -%}
-        </div>
-        {%- if section.settings.view_all_link != blank -%}
-          <a href="{{ section.settings.view_all_link }}" class="banner-carousel-section__view-all">
-            {{- section.settings.view_all_label | default: 'View all' -}}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="16" height="16">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </a>
-        {%- endif -%}
-      </div>
-    {%- endif -%}
-
-    <div class="banner-carousel" data-banner-carousel data-autoplay="{{ section.settings.autoplay }}" data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}" style="--slides-mobile: {{ section.settings.columns_mobile }}; --slides-tablet: {{ section.settings.columns_tablet }}; --slides-desktop: {{ section.settings.columns_desktop }}; --slide-gap: {{ section.settings.slide_gap }}px; --slide-radius: {{ section.settings.slide_radius }}px; --slide-width-desktop: {{ section.settings.card_width_desktop }}px; --slide-height-desktop: {{ section.settings.height_desktop }}px; --slide-height-mobile: {{ section.settings.height_mobile }}px; --bc-btn-bg: {{ section.settings.bg_color }};">
-      <div class="banner-carousel__track" data-banner-carousel-track>
-        {%- for block in section.blocks -%}
-          {%- liquid
-            assign image = block.settings.image
-            assign mobile_image = block.settings.mobile_image
-            assign link = block.settings.link
-            assign heading = block.settings.heading
-            assign subheading = block.settings.subheading
-            assign price_text = block.settings.price_text
-            assign button_label = block.settings.button_label
-          -%}
-
-          <div class="banner-carousel__slide" data-banner-carousel-slide {{ block.shopify_attributes }}>
-            <a href="{{ link | default: '#' }}" class="banner-carousel__link{% if block.settings.card_style == 'stacked' %} banner-carousel__link--stacked{% endif %}" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %} {% if block.settings.card_style == 'stacked' %}style="background-color: {{ block.settings.card_bg_color | default: '#ffffff' }};"{% endif %}>
-              <span class="banner-carousel__image-wrap">
-                {%- if image != blank -%}
-                  <img
-                    class="banner-carousel__image banner-carousel__image--desktop"
-                    src="{{ image | image_url: width: 1500 }}"
-                    srcset="{{ image | image_url: width: 750 }} 750w, {{ image | image_url: width: 1100 }} 1100w, {{ image | image_url: width: 1500 }} 1500w, {{ image | image_url: width: 2000 }} 2000w"
-                    sizes="100vw"
-                    alt="{{ image.alt | default: heading | escape }}"
-                    loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
-                    width="{{ image.width }}"
-                    height="{{ image.height }}"
-                  >
-                {%- else -%}
-                  <span class="banner-carousel__placeholder banner-carousel__placeholder--desktop">
-                    {{ 'lifestyle-1' | placeholder_svg_tag: 'banner-carousel__placeholder-svg' }}
-                  </span>
-                {%- endif -%}
-
-                {%- if mobile_image != blank -%}
-                  <img
-                    class="banner-carousel__image banner-carousel__image--mobile"
-                    src="{{ mobile_image | image_url: width: 750 }}"
-                    srcset="{{ mobile_image | image_url: width: 450 }} 450w, {{ mobile_image | image_url: width: 750 }} 750w, {{ mobile_image | image_url: width: 1000 }} 1000w"
-                    sizes="100vw"
-                    alt="{{ mobile_image.alt | default: heading | escape }}"
-                    loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
-                    width="{{ mobile_image.width }}"
-                    height="{{ mobile_image.height }}"
-                  >
-                {%- elsif image == blank -%}
-                  <span class="banner-carousel__placeholder banner-carousel__placeholder--mobile">
-                    {{ 'lifestyle-2' | placeholder_svg_tag: 'banner-carousel__placeholder-svg' }}
-                  </span>
-                {%- endif -%}
-              </span>
-
-              {%- if heading != blank or subheading != blank or price_text != blank or button_label != blank -%}
-                <span class="banner-carousel__content banner-carousel__content--{{ block.settings.content_position }} banner-carousel__content--align-{{ block.settings.text_align }}" style="color: {{ block.settings.text_color | default: '#ffffff' }};">
-                  {%- if heading != blank -%}
-                    <span class="banner-carousel__heading">{{ heading }}</span>
-                  {%- endif -%}
-                  {%- if subheading != blank -%}
-                    <span class="banner-carousel__subheading">{{ subheading }}</span>
-                  {%- endif -%}
-                  {%- if price_text != blank -%}
-                    <span class="banner-carousel__price">{{ price_text }}</span>
-                  {%- endif -%}
-                  {%- if button_label != blank -%}
-                    <span class="banner-carousel__button">{{ button_label }}</span>
-                  {%- endif -%}
-                </span>
-              {%- endif -%}
-            </a>
-          </div>
-        {%- else -%}
-          <div class="banner-carousel__slide" data-banner-carousel-slide>
-            <a href="#" class="banner-carousel__link" tabindex="-1" aria-disabled="true">
-              <span class="banner-carousel__image-wrap">
-                <span class="banner-carousel__placeholder banner-carousel__placeholder--desktop">
-                  {{ 'lifestyle-1' | placeholder_svg_tag: 'banner-carousel__placeholder-svg' }}
-                </span>
-                <span class="banner-carousel__placeholder banner-carousel__placeholder--mobile">
-                  {{ 'lifestyle-2' | placeholder_svg_tag: 'banner-carousel__placeholder-svg' }}
-                </span>
-              </span>
-              <span class="banner-carousel__content banner-carousel__content--center banner-carousel__content--align-center">
-                <span class="banner-carousel__heading">Add a banner</span>
-                <span class="banner-carousel__subheading">Add slides in the section settings</span>
-              </span>
-            </a>
-          </div>
-        {%- endfor -%}
-      </div>
-
-      {%- if section.blocks.size > 1 and section.settings.show_arrows -%}
-        <button type="button" class="banner-carousel__btn banner-carousel__btn--prev" data-banner-carousel-prev aria-label="Previous slide">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </button>
-        <button type="button" class="banner-carousel__btn banner-carousel__btn--next" data-banner-carousel-next aria-label="Next slide">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
-      {%- endif -%}
-
-      {%- if section.blocks.size > 1 and section.settings.show_dots -%}
-        <div class="banner-carousel__dots" data-banner-carousel-dots>
-          {%- for block in section.blocks -%}
-            <button type="button" class="banner-carousel__dot" data-banner-carousel-dot aria-label="Go to slide {{ forloop.index }}"></button>
-          {%- endfor -%}
-        </div>
-      {%- endif -%}
-    </div>
-
-  </div>
-</div>
-
-<script src="{{ 'banner-carousel.js' | asset_url }}" defer="defer"></script>
-
-{% schema %}
-{
-  "name": "Banner carousel",
-  "tag": "section",
-  "class": "section",
-  "settings": [
-    {
-      "type": "header",
-      "content": "Header"
-    },
-    {
-      "type": "text",
-      "id": "heading",
-      "label": "Heading"
-    },
-    {
-      "type": "text",
-      "id": "subheading",
-      "label": "Subheading"
-    },
-    {
-      "type": "select",
-      "id": "heading_align",
-      "label": "Heading alignment",
-      "options": [
-        { "value": "start",  "label": "Left"   },
-        { "value": "center", "label": "Center" },
-        { "value": "end",    "label": "Right"  }
-      ],
-      "default": "start"
-    },
-    {
-      "type": "header",
-      "content": "View all link"
-    },
-    {
-      "type": "text",
-      "id": "view_all_label",
-      "label": "View all label",
-      "default": "View all"
-    },
-    {
-      "type": "url",
-      "id": "view_all_link",
-      "label": "View all link",
-      "info": "Leave blank to hide the view all link"
-    },
-    {
-      "type": "checkbox",
-      "id": "full_width",
-      "label": "Make section full width",
-      "info": "Off by default to match the site's contained page layout. Turn on for an edge-to-edge hero banner.",
-      "default": false
-    },
-    {
-      "type": "header",
-      "content": "Animation"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_animations",
-      "label": "Enable hover animations",
-      "info": "View all hover, arrow hover, and dot scale effects",
-      "default": true
-    },
-    {
-      "type": "header",
-      "content": "Layout"
-    },
-    {
-      "type": "range",
-      "id": "columns_desktop",
-      "min": 1,
-      "max": 6,
-      "step": 0.5,
-      "label": "Slides per view (desktop)",
-      "info": "Used for dot pagination and arrow step distance. Actual visible count is also affected by the fixed card width below.",
-      "default": 1
-    },
-    {
-      "type": "range",
-      "id": "card_width_desktop",
-      "min": 200,
-      "max": 600,
-      "step": 10,
-      "unit": "px",
-      "label": "Card width (desktop/tablet)",
-      "info": "Fixed width per card at tablet and desktop sizes, instead of stretching to fill the row",
-      "default": 400
-    },
-    {
-      "type": "range",
-      "id": "columns_tablet",
-      "min": 1,
-      "max": 4,
-      "step": 0.5,
-      "label": "Slides per view (tablet)",
-      "default": 1
-    },
-    {
-      "type": "range",
-      "id": "columns_mobile",
-      "min": 1,
-      "max": 3,
-      "step": 0.5,
-      "label": "Slides per view (mobile)",
-      "info": "A value above 1 (e.g. 1.5) shows a peek of the next slide as a scroll hint",
-      "default": 1.5
-    },
-    {
-      "type": "range",
-      "id": "slide_gap",
-      "min": 0,
-      "max": 40,
-      "step": 2,
-      "unit": "px",
-      "label": "Gap between slides",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "height_desktop",
-      "min": 200,
-      "max": 800,
-      "step": 10,
-      "unit": "px",
-      "label": "Image height (desktop/tablet)",
-      "default": 500
-    },
-    {
-      "type": "range",
-      "id": "height_mobile",
-      "min": 150,
-      "max": 600,
-      "step": 10,
-      "unit": "px",
-      "label": "Image height (mobile)",
-      "default": 320
-    },
-    {
-      "type": "range",
-      "id": "slide_radius",
-      "min": 0,
-      "max": 40,
-      "step": 2,
-      "unit": "px",
-      "label": "Slide corner radius",
-      "default": 0
-    },
-    {
-      "type": "checkbox",
-      "id": "show_dots",
-      "label": "Show pagination dots",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_arrows",
-      "label": "Show arrows",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "autoplay",
-      "label": "Auto-rotate slides",
-      "default": true
-    },
-    {
-      "type": "range",
-      "id": "autoplay_speed",
-      "min": 3,
-      "max": 10,
-      "step": 1,
-      "unit": "s",
-      "label": "Change slides every",
-      "default": 5
-    },
-    {
-      "type": "color",
-      "id": "bg_color",
-      "label": "Section background color",
-      "default": "#ffffff"
-    },
-    {
-      "type": "header",
-      "content": "Section padding"
-    },
-    {
-      "type": "range",
-      "id": "padding_top",
-      "min": 0,
-      "max": 100,
-      "step": 4,
-      "unit": "px",
-      "label": "Top padding",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "padding_bottom",
-      "min": 0,
-      "max": 100,
-      "step": 4,
-      "unit": "px",
-      "label": "Bottom padding",
-      "default": 0
-    }
-  ],
-  "blocks": [
-    {
-      "type": "slide",
-      "name": "Slide",
-      "settings": [
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image",
-          "info": "A placeholder image is shown if blank"
-        },
-        {
-          "type": "image_picker",
-          "id": "mobile_image",
-          "label": "Mobile image",
-          "info": "Optional. Used on small screens instead of the image above"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Link",
-          "info": "Link to a product, collection, blog, page, or any URL"
-        },
-        {
-          "type": "header",
-          "content": "Text"
-        },
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading"
-        },
-        {
-          "type": "text",
-          "id": "subheading",
-          "label": "Subheading"
-        },
-        {
-          "type": "text",
-          "id": "price_text",
-          "label": "Price / details text",
-          "info": "e.g. \"From $399 or $33.25/mo. for 12 mo.\""
-        },
-        {
-          "type": "text",
-          "id": "button_label",
-          "label": "Button label"
-        },
-        {
-          "type": "color",
-          "id": "text_color",
-          "label": "Text color",
-          "info": "Applies to the heading, subheading, and button label. For the card layout, use a dark color since the background is light by default.",
-          "default": "#ffffff"
-        },
-        {
-          "type": "select",
-          "id": "card_style",
-          "label": "Layout",
-          "options": [
-            { "value": "overlay", "label": "Image overlay (text on top of image)" },
-            { "value": "stacked", "label": "Card (text above image)" }
-          ],
-          "default": "overlay"
-        },
-        {
-          "type": "color",
-          "id": "card_bg_color",
-          "label": "Card background color",
-          "info": "Only used for the Card layout",
-          "default": "#ffffff"
-        },
-        {
-          "type": "select",
-          "id": "content_position",
-          "label": "Content position",
-          "info": "Only used for the Image overlay layout",
-          "options": [
-            { "value": "top-left", "label": "Top left" },
-            { "value": "top-center", "label": "Top center" },
-            { "value": "top-right", "label": "Top right" },
-            { "value": "center", "label": "Center" },
-            { "value": "bottom-left", "label": "Bottom left" },
-            { "value": "bottom-center", "label": "Bottom center" },
-            { "value": "bottom-right", "label": "Bottom right" }
-          ],
-          "default": "center"
-        },
-        {
-          "type": "select",
-          "id": "text_align",
-          "label": "Text alignment",
-          "options": [
-            { "value": "left", "label": "Left" },
-            { "value": "center", "label": "Center" },
-            { "value": "right", "label": "Right" }
-          ],
-          "default": "center"
-        }
-      ]
-    }
-  ],
-  "presets": [
-    {
-      "name": "Banner carousel",
-      "blocks": [
-        { "type": "slide" },
-        { "type": "slide" },
-        { "type": "slide" }
-      ]
-    }
-  ]
+.banner-carousel-section {
+  /* Same easing curve as the collection carousel so hover/interaction
+     motion feels consistent across carousel sections site-wide. */
+  --bc-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
-{% endschema %}
+
+.banner-carousel-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.banner-carousel-section__header--align-center {
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+.banner-carousel-section__header--align-end {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.banner-carousel-section__heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.banner-carousel-section__heading {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.banner-carousel-section__subheading {
+  margin: 0;
+  font-size: 1.4rem;
+  opacity: 0.7;
+}
+
+/* View all — same chevron + animated underline treatment as the
+   collection carousel's "View all" link. */
+.banner-carousel-section__view-all,
+.banner-carousel-section__view-all:visited {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  white-space: nowrap;
+  color: inherit !important;
+  padding-bottom: 2px;
+  border-bottom: 1px solid currentColor;
+  opacity: 0.85;
+  transition: opacity 0.2s var(--bc-ease), gap 0.2s var(--bc-ease);
+}
+
+.banner-carousel-section__view-all:hover {
+  opacity: 1;
+  gap: 10px;
+}
+
+.banner-carousel-section__view-all svg {
+  transition: transform 0.2s var(--bc-ease);
+}
+
+.banner-carousel-section__view-all:hover svg {
+  transform: translateX(2px);
+}
+
+@media screen and (min-width: 750px) {
+  .banner-carousel-section__heading {
+    font-size: 2.6rem;
+  }
+}
+
+@media screen and (min-width: 990px) {
+  .banner-carousel-section__heading {
+    font-size: 3rem;
+  }
+}
+
+.banner-carousel-section__inner--full {
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Matches the site's header layout system (main-header.css / utility-bar.css)
+   rather than relying on .page-width, which currently has no rules. */
+.banner-carousel-section__inner:not(.banner-carousel-section__inner--full) {
+  max-width: 1184px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* Full-width mode still insets the heading/view-all row even though the
+   slide images themselves stretch edge-to-edge. */
+.banner-carousel-section__header.page-width {
+  max-width: 1184px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+@media (max-width: 639px) {
+  .banner-carousel-section__inner:not(.banner-carousel-section__inner--full),
+  .banner-carousel-section__header.page-width {
+    padding-inline: 12px;
+  }
+}
+
+.banner-carousel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+  --bc-fade-width: 28px;
+}
+
+.banner-carousel.has-overflow-start .banner-carousel__track {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--bc-fade-width));
+  mask-image: linear-gradient(to right, transparent, black var(--bc-fade-width));
+}
+
+.banner-carousel.has-overflow-end .banner-carousel__track {
+  -webkit-mask-image: linear-gradient(to left, transparent, black var(--bc-fade-width));
+  mask-image: linear-gradient(to left, transparent, black var(--bc-fade-width));
+}
+
+.banner-carousel.has-overflow-start.has-overflow-end .banner-carousel__track {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--bc-fade-width), black calc(100% - var(--bc-fade-width)), transparent);
+  mask-image: linear-gradient(to right, transparent, black var(--bc-fade-width), black calc(100% - var(--bc-fade-width)), transparent);
+}
+
+.banner-carousel-section__inner:not(.banner-carousel-section__inner--full) .banner-carousel {
+  border-radius: 12px;
+}
+
+.banner-carousel__track {
+  display: flex;
+  width: 100%;
+  gap: var(--slide-gap, 0px);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  transition: none;
+}
+
+.banner-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.banner-carousel__slide {
+  flex: 0 0 calc((100% - (var(--slides-mobile, 1) - 1) * var(--slide-gap, 0px)) / var(--slides-mobile, 1));
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+@media screen and (min-width: 750px) {
+  .banner-carousel__slide {
+    flex: 0 0 var(--slide-width-desktop, 400px);
+  }
+}
+
+@media screen and (min-width: 990px) {
+  .banner-carousel__slide {
+    flex: 0 0 var(--slide-width-desktop, 400px);
+  }
+}
+
+.banner-carousel__link {
+  position: relative;
+  display: block;
+  text-decoration: none;
+}
+
+.banner-carousel__image-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: var(--slide-height-mobile, 320px);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: var(--slide-radius, 0px);
+}
+
+.banner-carousel__image,
+.banner-carousel__placeholder,
+.banner-carousel__placeholder-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.banner-carousel__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.banner-carousel__placeholder-svg {
+  width: auto;
+  height: 50%;
+  max-width: 50%;
+  object-fit: contain;
+  opacity: 0.55;
+}
+
+.banner-carousel__image--mobile,
+.banner-carousel__placeholder--mobile {
+  display: none;
+}
+
+.banner-carousel__content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 90%;
+  padding: 16px;
+}
+
+/* Content block position (placement of the whole text block on the image).
+   Per-line text alignment is handled separately by the
+   .banner-carousel__text--left/center/right modifiers below, via align-self,
+   so each field can be positioned independently of the others. */
+.banner-carousel__content--top-left,
+.banner-carousel__content--top-center,
+.banner-carousel__content--top-right {
+  top: 0;
+}
+
+.banner-carousel__content--bottom-left,
+.banner-carousel__content--bottom-center,
+.banner-carousel__content--bottom-right {
+  bottom: 0;
+}
+
+.banner-carousel__content--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.banner-carousel__content--top-left,
+.banner-carousel__content--bottom-left {
+  left: 0;
+}
+
+.banner-carousel__content--top-right,
+.banner-carousel__content--bottom-right {
+  right: 0;
+}
+
+.banner-carousel__content--top-center,
+.banner-carousel__content--bottom-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Per-field text alignment. Applied directly to each heading/subheading/
+   price/button span so every field can have its own alignment regardless
+   of what the others are set to. align-self positions the field's own box
+   within the content column; text-align handles wrapping within that box
+   (relevant for multi-line headings/subheadings). */
+.banner-carousel__text--left {
+  align-self: flex-start;
+  text-align: left;
+}
+
+.banner-carousel__text--center {
+  align-self: center;
+  text-align: center;
+}
+
+.banner-carousel__text--right {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.banner-carousel__heading {
+  display: block;
+  max-width: 100%;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.banner-carousel__subheading {
+  display: block;
+  max-width: 100%;
+  opacity: 0.95;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.banner-carousel__price {
+  display: block;
+  max-width: 100%;
+  opacity: 0.9;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.banner-carousel__button {
+  margin-top: 6px;
+  display: inline-block;
+  padding: 8px 18px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Card layout — text sits above a flat card background, image fills the
+   remaining space below (not overlaid). Modeled after product cards like
+   apple.com/shop's "related" cards. */
+.banner-carousel__link--stacked {
+  display: flex;
+  flex-direction: column;
+  height: var(--slide-height-mobile, 320px);
+  border-radius: var(--slide-radius, 0px);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.banner-carousel__link--stacked .banner-carousel__image-wrap {
+  order: 2;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.banner-carousel__link--stacked .banner-carousel__content {
+  order: 1;
+  position: static;
+  transform: none;
+  max-width: 100%;
+  width: 100%;
+  gap: 6px;
+  padding: 28px 24px 16px;
+}
+
+.banner-carousel__link--stacked .banner-carousel__heading {
+  text-shadow: none;
+}
+
+.banner-carousel__link--stacked .banner-carousel__subheading {
+  opacity: 0.75;
+  text-shadow: none;
+}
+
+.banner-carousel__link--stacked .banner-carousel__price {
+  opacity: 0.75;
+  text-shadow: none;
+  margin-top: 4px;
+}
+
+.banner-carousel__link--stacked .banner-carousel__button {
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+@media screen and (min-width: 750px) {
+  .banner-carousel__link--stacked {
+    height: var(--slide-height-desktop, 500px);
+  }
+}
+
+/* Arrows — visible at every breakpoint (not just tablet/desktop), same
+   as the collection carousel's nav buttons, with matching disabled and
+   hover-feedback states. */
+.banner-carousel__btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  background: var(--bc-btn-bg, #fff);
+  color: #121212;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s var(--bc-ease), opacity 0.2s var(--bc-ease), transform 0.2s var(--bc-ease);
+}
+
+.banner-carousel__btn:hover {
+  border-color: currentColor;
+}
+
+.banner-carousel__btn[disabled] {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: default;
+  box-shadow: none;
+}
+
+.banner-carousel__btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.banner-carousel__btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.banner-carousel__btn--prev {
+  left: 12px;
+}
+
+.banner-carousel__btn--next {
+  right: 12px;
+}
+
+/* Dots */
+.banner-carousel__dots {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 3;
+}
+
+.banner-carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s var(--bc-ease), transform 0.2s var(--bc-ease);
+}
+
+.banner-carousel__dot.is-active {
+  background: #fff;
+  transform: scale(1.2);
+}
+
+/* Animation toggle
+   ------------------------------------------------------------------
+   When section.settings.enable_animations is off, the section root
+   renders with data-animations="off". Cancels the View all hover
+   motion, arrow hover feedback, and dot scale — same pattern as the
+   collection carousel's toggle. */
+
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all,
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all svg,
+.banner-carousel-section[data-animations="off"] .banner-carousel__btn,
+.banner-carousel-section[data-animations="off"] .banner-carousel__dot {
+  transition: none;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all:hover {
+  gap: 6px;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all:hover svg {
+  transform: none;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel__dot.is-active {
+  transform: none;
+}
+
+/* Tablet */
+@media screen and (min-width: 750px) {
+  .banner-carousel__image-wrap {
+    height: var(--slide-height-desktop, 500px);
+  }
+}
+
+/* Desktop */
+@media screen and (min-width: 990px) {
+  .banner-carousel__content {
+    max-width: 50%;
+    padding: 40px;
+  }
+
+  .banner-carousel__btn--prev {
+    left: 24px;
+  }
+
+  .banner-carousel__btn--next {
+    right: 24px;
+  }
+}
+
+/* Mobile-specific image swap + smaller nav buttons */
+@media screen and (max-width: 749px) {
+  .banner-carousel__image--desktop {
+    display: none;
+  }
+
+  .banner-carousel__image--mobile {
+    display: block;
+  }
+
+  .banner-carousel__placeholder--desktop {
+    display: none;
+  }
+
+  .banner-carousel__placeholder--mobile {
+    display: flex;
+  }
+
+  .banner-carousel__btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .banner-carousel__btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .banner-carousel__btn--prev {
+    left: 8px;
+  }
+
+  .banner-carousel__btn--next {
+    right: 8px;
+  }
+
+  .banner-carousel {
+    --bc-fade-width: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner-carousel__track {
+    transition: none;
+  }
+
+  .banner-carousel-section__view-all,
+  .banner-carousel-section__view-all svg,
+  .banner-carousel__btn,
+  .banner-carousel__dot {
+    transition: none !important;
+  }
+}

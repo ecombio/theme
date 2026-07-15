@@ -232,7 +232,10 @@
   padding: 16px;
 }
 
-/* Content position */
+/* Content block position (placement of the whole text block on the image).
+   Per-line text alignment is handled separately by the
+   .banner-carousel__text--left/center/right modifiers below, via align-self,
+   so each field can be positioned independently of the others. */
 .banner-carousel__content--top-left,
 .banner-carousel__content--top-center,
 .banner-carousel__content--top-right {
@@ -249,8 +252,6 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  text-align: center;
-  align-items: center;
 }
 
 .banner-carousel__content--top-left,
@@ -269,31 +270,45 @@
   transform: translateX(-50%);
 }
 
-.banner-carousel__content--align-left {
-  align-items: flex-start;
+/* Per-field text alignment. Applied directly to each heading/subheading/
+   price/button span so every field can have its own alignment regardless
+   of what the others are set to. align-self positions the field's own box
+   within the content column; text-align handles wrapping within that box
+   (relevant for multi-line headings/subheadings). */
+.banner-carousel__text--left {
+  align-self: flex-start;
   text-align: left;
 }
 
-.banner-carousel__content--align-center {
-  align-items: center;
+.banner-carousel__text--center {
+  align-self: center;
   text-align: center;
 }
 
-.banner-carousel__content--align-right {
-  align-items: flex-end;
+.banner-carousel__text--right {
+  align-self: flex-end;
   text-align: right;
 }
 
 .banner-carousel__heading {
-  font-size: 2rem;
+  display: block;
+  max-width: 100%;
   font-weight: 700;
   line-height: 1.2;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .banner-carousel__subheading {
-  font-size: 1.3rem;
+  display: block;
+  max-width: 100%;
   opacity: 0.95;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.banner-carousel__price {
+  display: block;
+  max-width: 100%;
+  opacity: 0.9;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
@@ -303,8 +318,68 @@
   padding: 8px 18px;
   border: 1px solid currentColor;
   border-radius: 999px;
-  font-size: 1.2rem;
   font-weight: 600;
+}
+
+/* Card layout — text sits above a flat card background, image fills the
+   remaining space below (not overlaid). Modeled after product cards like
+   apple.com/shop's "related" cards. */
+.banner-carousel__link--stacked {
+  display: flex;
+  flex-direction: column;
+  height: var(--slide-height-mobile, 320px);
+  border-radius: var(--slide-radius, 0px);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.banner-carousel__link--stacked .banner-carousel__image-wrap {
+  order: 2;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.banner-carousel__link--stacked .banner-carousel__content {
+  order: 1;
+  position: static;
+  transform: none;
+  max-width: 100%;
+  width: 100%;
+  gap: 6px;
+  padding: 28px 24px 16px;
+}
+
+.banner-carousel__link--stacked .banner-carousel__heading {
+  text-shadow: none;
+}
+
+.banner-carousel__link--stacked .banner-carousel__subheading {
+  opacity: 0.75;
+  text-shadow: none;
+}
+
+.banner-carousel__link--stacked .banner-carousel__price {
+  opacity: 0.75;
+  text-shadow: none;
+  margin-top: 4px;
+}
+
+.banner-carousel__link--stacked .banner-carousel__button {
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+@media screen and (min-width: 750px) {
+  .banner-carousel__link--stacked {
+    height: var(--slide-height-desktop, 500px);
+  }
 }
 
 /* Arrows — visible at every breakpoint (not just tablet/desktop), same
@@ -417,22 +492,10 @@
   .banner-carousel__image-wrap {
     height: var(--slide-height-desktop, 500px);
   }
-
-  .banner-carousel__heading {
-    font-size: 2.8rem;
-  }
-
-  .banner-carousel__subheading {
-    font-size: 1.5rem;
-  }
 }
 
 /* Desktop */
 @media screen and (min-width: 990px) {
-  .banner-carousel__heading {
-    font-size: 3.6rem;
-  }
-
   .banner-carousel__content {
     max-width: 50%;
     padding: 40px;
