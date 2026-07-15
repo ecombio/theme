@@ -41,7 +41,7 @@
           -%}
 
           <div class="banner-carousel__slide" data-banner-carousel-slide {{ block.shopify_attributes }}>
-            <a href="{{ link | default: '#' }}" class="banner-carousel__link" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %}>
+            <a href="{{ link | default: '#' }}" class="banner-carousel__link{% if block.settings.card_style == 'stacked' %} banner-carousel__link--stacked{% endif %}" {% if link == blank %}tabindex="-1" aria-disabled="true"{% endif %} {% if block.settings.card_style == 'stacked' %}style="background-color: {{ block.settings.card_bg_color | default: '#ffffff' }};"{% endif %}>
               <span class="banner-carousel__image-wrap">
                 {%- if image != blank -%}
                   <img
@@ -394,13 +394,31 @@
           "type": "color",
           "id": "text_color",
           "label": "Text color",
-          "info": "Applies to the heading, subheading, and button label",
+          "info": "Applies to the heading, subheading, and button label. For the card layout, use a dark color since the background is light by default.",
+          "default": "#ffffff"
+        },
+        {
+          "type": "select",
+          "id": "card_style",
+          "label": "Layout",
+          "options": [
+            { "value": "overlay", "label": "Image overlay (text on top of image)" },
+            { "value": "stacked", "label": "Card (text above image)" }
+          ],
+          "default": "overlay"
+        },
+        {
+          "type": "color",
+          "id": "card_bg_color",
+          "label": "Card background color",
+          "info": "Only used for the Card layout",
           "default": "#ffffff"
         },
         {
           "type": "select",
           "id": "content_position",
           "label": "Content position",
+          "info": "Only used for the Image overlay layout",
           "options": [
             { "value": "top-left", "label": "Top left" },
             { "value": "top-center", "label": "Top center" },
