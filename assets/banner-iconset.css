@@ -1,5 +1,23 @@
 .banner-iconset-section {
   --bi-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* The prev/next arrow buttons are deliberately positioned partway
+     outside .banner-iconset (left: -10px / right: -10px, or -20px on
+     desktop), and .banner-iconset itself already sits on a negative
+     margin (see below). Combined, that content escapes every ancestor
+     up to this section, so without a horizontal clip here the document
+     becomes wider than the viewport and the browser shows a native
+     page-level horizontal scrollbar. overflow-x: hidden (with
+     overflow-y explicitly set to visible as a fallback) trims that;
+     overflow-x: clip does the same without the accessibility focus-trap
+     quirks of hidden, so it's applied on top wherever supported. */
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+@supports (overflow-x: clip) {
+  .banner-iconset-section {
+    overflow-x: clip;
+  }
 }
 
 /* Content width/padding is handled entirely by the theme's global
