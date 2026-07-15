@@ -79,10 +79,6 @@
           role="region"
           aria-label="{{ section.settings.heading | default: section.settings.collection.title }}"
         >
-          {%- for product in section.settings.collection.products limit: section.settings.limit -%}
-            {%- render 'product-card', product: product -%}
-          {%- endfor -%}
-
           {%- if show_promo -%}
             <div class="featured-collection__promo-cell">
               {%- render 'image-card',
@@ -97,10 +93,14 @@
                 content_position: section.settings.promo_content_position,
                 image_scale: section.settings.promo_image_scale,
                 text_color: section.settings.promo_text_color,
-                loading: 'lazy'
+                loading: 'eager'
               -%}
             </div>
           {%- endif -%}
+
+          {%- for product in section.settings.collection.products limit: section.settings.limit -%}
+            {%- render 'product-card', product: product -%}
+          {%- endfor -%}
         </div>
 
         {%- if section.settings.show_arrows -%}
@@ -122,10 +122,6 @@
       {%- endif -%}
     {%- else -%}
       <div class="featured-collection__grid">
-        {%- for product in section.settings.collection.products limit: section.settings.limit -%}
-          {%- render 'product-card', product: product -%}
-        {%- endfor -%}
-
         {%- if show_promo -%}
           <div class="featured-collection__promo-cell">
             {%- render 'image-card',
@@ -140,10 +136,14 @@
               content_position: section.settings.promo_content_position,
               image_scale: section.settings.promo_image_scale,
               text_color: section.settings.promo_text_color,
-              loading: 'lazy'
+              loading: 'eager'
             -%}
           </div>
         {%- endif -%}
+
+        {%- for product in section.settings.collection.products limit: section.settings.limit -%}
+          {%- render 'product-card', product: product -%}
+        {%- endfor -%}
       </div>
     {%- endif -%}
   </div>
@@ -220,7 +220,7 @@
       "id": "enable_promo_card",
       "label": "Show promo card",
       "default": false,
-      "info": "Adds one extra image card at the end of the grid, after the products above. Doesn't count against \"Products to show\"."
+      "info": "Adds one extra image card as the first item in the grid, before the products. Doesn't count against \"Products to show\"."
     },
     {
       "type": "image_picker",
