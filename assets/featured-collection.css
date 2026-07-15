@@ -380,6 +380,21 @@
   align-items: stretch;
   gap: 1.2rem;
   container-type: inline-size;
+  /* Reserves, on BOTH sides, the same 16px that
+     .featured-collection__scroll-region below bleeds back out via its
+     own negative margin (see the comment on that rule). Without this,
+     scroll-region's flex-allocated box gets 16px wider than the space
+     the wrapper actually has on its right — the last flex child has
+     no sibling gap to absorb that overflow into, unlike the left edge
+     where it lands inside the 1.2rem gap next to the promo card. That
+     pushed the right edge (and the next-arrow positioned relative to
+     it) past the wrapper's true boundary, where it got clipped by
+     page-level overflow handling — the "missing" right arrow. Padding
+     the wrapper by the same 16px on both sides means the bleed always
+     lands back exactly at the wrapper's real edge instead of past it,
+     regardless of section width/padding settings. Net visual result
+     is unchanged: cards still sit flush, shadow still has room. */
+  padding-inline: 16px;
 }
 
 /* Fluid width, matching the track's own clamp() formula (see
@@ -436,7 +451,12 @@
      shorthand as .banner-carousel's negative margin. Arrows, positioned
      absolute within this now-larger box, end up inset 12–24px from its
      edge — same overlay look as banner-carousel's arrows, just scoped
-     to the product area instead of the whole wrapper now. */
+     to the product area instead of the whole wrapper now.
+     The left/right bleed this produces is now reserved for by
+     .featured-collection__wrapper's own padding-inline: 16px above,
+     so this box's true edge lands back at the wrapper's real boundary
+     on both sides instead of overflowing past it — see the comment
+     there for why the right edge specifically needed this. */
   margin: -22px -16px -16px;
   /* Establishes the containment context that .featured-collection__grid--row's
      grid-auto-columns: clamp(200px, 24cqw, 320px) resolves cqw against.
@@ -535,28 +555,38 @@
   background: var(--color-atc-soldout-bg, transparent);
 }
 
-/* Same reveal-on-hover treatment as video-carousel: keep arrows out of
-   the way on devices with real hover, always visible on touch. */
+/* Arrow visibility — controlled by the section's "Arrow visibility"
+   setting (see data-arrow-visibility on the section root in
+   featured-collection.liquid). Two modes:
+   - "always" (data-arrow-visibility="always"): no extra rules needed —
+     the base .featured-collection__arrow rule above already keeps
+     opacity: 1 at all times, on every device.
+   - "hover" (data-arrow-visibility="hover", the default): reveal-on-
+     hover treatment, same as video-carousel — arrows stay hidden until
+     the wrapper is hovered/focused, and only on devices with real
+     hover (touch always shows them, since there's no hover state to
+     reveal on). Scoped to [data-arrow-visibility="hover"] so switching
+     the setting to "always" fully opts out of this block. */
 @media (hover: hover) and (pointer: fine) {
-  .featured-collection__arrow {
+  [data-arrow-visibility="hover"] .featured-collection__arrow {
     opacity: 0;
     transform: translateY(-50%) scale(0.85);
     pointer-events: none;
   }
 
-  .featured-collection__wrapper:hover .featured-collection__arrow,
-  .featured-collection__arrow:focus-visible {
+  [data-arrow-visibility="hover"] .featured-collection__wrapper:hover .featured-collection__arrow,
+  [data-arrow-visibility="hover"] .featured-collection__arrow:focus-visible {
     opacity: 1;
     transform: translateY(-50%) scale(1);
     pointer-events: auto;
   }
 
-  .featured-collection__wrapper:hover .featured-collection__arrow:hover:not(:disabled) {
+  [data-arrow-visibility="hover"] .featured-collection__wrapper:hover .featured-collection__arrow:hover:not(:disabled) {
     transform: translateY(-50%) scale(1.08);
   }
 
-  .featured-collection__wrapper:hover .featured-collection__arrow:disabled,
-  .featured-collection__arrow:disabled:focus-visible {
+  [data-arrow-visibility="hover"] .featured-collection__wrapper:hover .featured-collection__arrow:disabled,
+  [data-arrow-visibility="hover"] .featured-collection__arrow:disabled:focus-visible {
     opacity: 0.6;
     transform: translateY(-50%) scale(1);
   }

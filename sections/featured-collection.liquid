@@ -59,6 +59,13 @@
       assign promo_in_track = true
     endif
 
+    # Arrow visibility — "hover" (default) reveals the prev/next
+    # arrows only on wrapper hover/focus (desktop pointer devices),
+    # "always" keeps them visible at all times. Only meaningful for
+    # the Row layout, since Grid never renders arrows. See the
+    # data-arrow-visibility-scoped media query in featured-collection.css.
+    assign arrow_visibility = section.settings.arrow_visibility | default: 'hover'
+
     # Product card toggles — section-level controls (see "Product card"
     # schema header below). Passed through to every render 'product-card'
     # call so merchants can hide any of these for this section without
@@ -79,6 +86,7 @@
     {% if is_row %}data-featured-collection data-layout="row"{% endif %}
     data-mobile-layout="{{ mobile_layout }}"
     {% if promo_in_track %}data-promo-in-track="true"{% endif %}
+    {% if is_row %}data-arrow-visibility="{{ arrow_visibility }}"{% endif %}
     style="
       --section-padding: {{ section.settings.section_padding }}px;
       {%- if width_type == 'custom-width' %}
@@ -393,6 +401,18 @@
       "label": "Show navigation arrows",
       "default": true,
       "visible_if": "{{ section.settings.layout_style == 'row' }}"
+    },
+    {
+      "type": "select",
+      "id": "arrow_visibility",
+      "label": "Arrow visibility",
+      "options": [
+        { "value": "hover", "label": "On hover" },
+        { "value": "always", "label": "Always" }
+      ],
+      "default": "hover",
+      "info": "On hover: arrows fade in only when hovering the product row (desktop pointer devices only — always shown on touch). Always: arrows stay visible at all times.",
+      "visible_if": "{{ section.settings.layout_style == 'row' and section.settings.show_arrows }}"
     },
     {
       "type": "checkbox",
