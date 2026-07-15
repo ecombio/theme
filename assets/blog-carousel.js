@@ -1,28 +1,34 @@
-if (!customElements.get('blog-carousel')) {
-  class BlogCarousel extends HTMLElement {
-    constructor() {
-      super();
-      this.track = this.querySelector('.blog-carousel__track');
-      this.viewport = this.querySelector('.blog-carousel__viewport');
-      this.prevButton = this.querySelector('.blog-carousel__nav-button--prev');
-      this.nextButton = this.querySelector('.blog-carousel__nav-button--next');
-      this.dotsWrapper = this.querySelector('.blog-carousel__dots');
-      this.slides = Array.from(this.querySelectorAll('.blog-carousel__slide'));
+(() => {
+  const SELECTOR = '[data-banner-carousel]';
 
-      this.autoplayEnabled = this.dataset.autoplay === 'true';
-      this.autoplaySpeed = parseInt(this.dataset.autoplaySpeed, 10) || 5000;
+  class BannerCarousel {
+    constructor(root) {
+      this.root = root;
+      this.track = root.querySelector('[data-banner-carousel-track]');
+      this.prevBtn = root.querySelector('[data-banner-carousel-prev]');
+      this.nextBtn = root.querySelector('[data-banner-carousel-next]');
+      this.dotsWrapper = root.querySelector('[data-banner-carousel-dots]');
+      this.slides = Array.from(root.querySelectorAll('[data-banner-carousel-slide]'));
+
+      if (!this.track || this.slides.length === 0) return;
+
+      this.autoplayEnabled = root.dataset.autoplay === 'true';
+      this.autoplaySpeed = parseInt(root.dataset.autoplaySpeed, 10) || 5000;
       this.autoplayTimer = null;
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
       this.activeIndex = 0;
-    }
 
-    connectedCallback() {
-      if (!this.track || this.slides.length === 0) return;
+      this.onPrevClick = this.onPrevClick.bind(this);
+      this.onNextClick = this.onNextClick.bind(this);
+      this.onScroll = this.onScroll.bind(this);
+      this.onResize = this.onResize.bind(this);
+      this.onKeydown = this.onKeydown.bind(this);
+      this.stopAutoplay = this.stopAutoplay.bind(this);
+      this.maybeStartAutoplay = this.maybeStartAutoplay.bind(this);
 
       this.buildDots();
       this.bindEvents();
-      this.updateNavState();
+      this.update();
       this.observeSlides();
 
       if (this.autoplayEnabled && !this.reducedMotion) {
@@ -30,20 +36,14 @@ if (!customElements.get('blog-carousel')) {
       }
     }
 
-    disconnectedCallback() {
-      this.stopAutoplay();
-      if (this.slideObserver) this.slideObserver.disconnect();
-      if (this.resizeObserver) this.resizeObserver.disconnect();
-    }
-
     /* ---------- Setup ---------- */
 
     getSlidesPerView() {
       const width = window.innerWidth;
-      const styles = getComputedStyle(this);
-      if (width >= 990) return parseInt(styles.getPropertyValue('--slides-desktop'), 10) || 4;
-      if (width >= 750) return parseInt(styles.getPropertyValue('--slides-tablet'), 10) || 2;
-      return parseInt(styles.getPropertyValue('--slides-mobile'), 10) || 1;
+      const styles = getComputedStyle(this.root);
+      if (width >= 990) return parseFloat(styles.getPropertyValue('--slides-desktop')) || 1;
+      if (width >= 750) return parseFloat(styles.getPropertyValue('--slides-tablet')) || 1;
+      return parseFloat(styles.getPropertyValue('--slides-mobile')) || 1;
     }
 
     buildDots() {
@@ -55,6 +55,7 @@ if (!customElements.get('blog-carousel')) {
 
       if (pageCount <= 1) {
         this.dotsWrapper.hidden = true;
+        this.dots = [];
         return;
       }
 
@@ -64,10 +65,9 @@ if (!customElements.get('blog-carousel')) {
       for (let i = 0; i < pageCount; i++) {
         const dot = document.createElement('button');
         dot.type = 'button';
-        dot.className = 'blog-carousel__dot';
-        dot.setAttribute('role', 'tab');
+        dot.className = 'banner-carousel__dot';
         dot.setAttribute('aria-label', `Go to slide group ${i + 1}`);
-        dot.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+        if (i === 0) dot.classList.add('is-active');
         dot.addEventListener('click', () => this.goToPage(i));
         this.dotsWrapper.appendChild(dot);
         this.dots.push(dot);
@@ -75,43 +75,72 @@ if (!customElements.get('blog-carousel')) {
     }
 
     bindEvents() {
-      if (this.prevButton) {
-        this.prevButton.addEventListener('click', () => this.scrollByDirection(-1));
-      }
-      if (this.nextButton) {
-        this.nextButton.addEventListener('click', () => this.scrollByDirection(1));
-      }
+      if (this.prevBtn) this.prevBtn.addEventListener('click', this.onPrevClick);
+      if (this.nextBtn) this.nextBtn.addEventListener('click', this.onNextClick);
 
-      this.track.addEventListener('keydown', (event) => {
-        if (event.key === 'ArrowRight') {
-          event.preventDefault();
-          this.scrollByDirection(1);
-        } else if (event.key === 'ArrowLeft') {
-          event.preventDefault();
-          this.scrollByDirection(-1);
-        }
-      });
-
-      this.track.addEventListener('scroll', () => this.updateNavState(), { passive: true });
+      this.track.addEventListener('scroll', this.onScroll, { passive: true });
+      this.track.addEventListener('keydown', this.onKeydown);
+      window.addEventListener('resize', this.onResize);
 
       ['pointerdown', 'focusin', 'mouseenter'].forEach((evt) => {
-        this.addEventListener(evt, () => this.stopAutoplay());
+        this.root.addEventListener(evt, this.stopAutoplay);
       });
       ['pointerup', 'focusout', 'mouseleave'].forEach((evt) => {
-        this.addEventListener(evt, () => {
-          if (this.autoplayEnabled && !this.reducedMotion) this.startAutoplay();
-        });
+        this.root.addEventListener(evt, this.maybeStartAutoplay);
       });
+    }
 
-      let resizeTimeout;
-      this.resizeObserver = new ResizeObserver(() => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          this.buildDots();
-          this.updateNavState();
-        }, 150);
+    onKeydown(event) {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        this.onNextClick();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        this.onPrevClick();
+      }
+    }
+
+    /* ---------- Navigation ---------- */
+
+    getStep() {
+      const slide = this.slides[0];
+      const styles = getComputedStyle(this.track);
+      const gap = parseFloat(styles.columnGap || styles.gap || '0');
+      return slide.getBoundingClientRect().width + gap;
+    }
+
+    onPrevClick() {
+      const perView = Math.max(1, Math.floor(this.getSlidesPerView()));
+      this.track.scrollBy({ left: -this.getStep() * perView, behavior: this.reducedMotion ? 'auto' : 'smooth' });
+    }
+
+    onNextClick() {
+      const perView = Math.max(1, Math.floor(this.getSlidesPerView()));
+      this.track.scrollBy({ left: this.getStep() * perView, behavior: this.reducedMotion ? 'auto' : 'smooth' });
+    }
+
+    goToPage(pageIndex) {
+      const perView = this.getSlidesPerView();
+      const slideIndex = Math.round(pageIndex * perView);
+      const target = this.slides[slideIndex];
+      if (!target) return;
+      this.track.scrollTo({
+        left: target.offsetLeft - this.track.offsetLeft,
+        behavior: this.reducedMotion ? 'auto' : 'smooth',
       });
-      this.resizeObserver.observe(this);
+    }
+
+    onScroll() {
+      if (this.scrollRaf) return;
+      this.scrollRaf = requestAnimationFrame(() => {
+        this.update();
+        this.scrollRaf = null;
+      });
+    }
+
+    onResize() {
+      this.buildDots();
+      this.update();
     }
 
     observeSlides() {
@@ -129,31 +158,6 @@ if (!customElements.get('blog-carousel')) {
       this.slides.forEach((slide) => this.slideObserver.observe(slide));
     }
 
-    /* ---------- Navigation ---------- */
-
-    getSlideStep() {
-      const firstSlide = this.slides[0];
-      const gap = parseFloat(getComputedStyle(this).getPropertyValue('--carousel-gap')) || 0;
-      return firstSlide.getBoundingClientRect().width + gap;
-    }
-
-    scrollByDirection(direction) {
-      const perView = this.getSlidesPerView();
-      const step = this.getSlideStep() * perView;
-      this.track.scrollBy({ left: step * direction, behavior: this.reducedMotion ? 'auto' : 'smooth' });
-    }
-
-    goToPage(pageIndex) {
-      const perView = this.getSlidesPerView();
-      const slideIndex = pageIndex * perView;
-      const target = this.slides[slideIndex];
-      if (!target) return;
-      this.track.scrollTo({
-        left: target.offsetLeft - this.track.offsetLeft,
-        behavior: this.reducedMotion ? 'auto' : 'smooth',
-      });
-    }
-
     setActivePage(slideIndex) {
       const perView = this.getSlidesPerView();
       const pageIndex = Math.floor(slideIndex / perView);
@@ -161,20 +165,24 @@ if (!customElements.get('blog-carousel')) {
       this.activeIndex = pageIndex;
 
       if (this.dots) {
-        this.dots.forEach((dot, i) => {
-          dot.setAttribute('aria-selected', i === pageIndex ? 'true' : 'false');
-        });
+        this.dots.forEach((dot, i) => dot.classList.toggle('is-active', i === pageIndex));
       }
     }
 
-    updateNavState() {
-      if (!this.prevButton && !this.nextButton) return;
-      const { scrollLeft, scrollWidth, clientWidth } = this.track;
-      const atStart = scrollLeft <= 1;
-      const atEnd = scrollLeft + clientWidth >= scrollWidth - 1;
+    /* ---------- Overflow / fade edges + disabled arrow state ---------- */
 
-      if (this.prevButton) this.prevButton.disabled = atStart;
-      if (this.nextButton) this.nextButton.disabled = atEnd;
+    update() {
+      const { scrollLeft, scrollWidth, clientWidth } = this.track;
+      const maxScroll = scrollWidth - clientWidth;
+      const atStart = scrollLeft <= 1;
+      const atEnd = scrollLeft >= maxScroll - 1;
+      const hasOverflow = maxScroll > 1;
+
+      if (this.prevBtn) this.prevBtn.disabled = !hasOverflow || atStart;
+      if (this.nextBtn) this.nextBtn.disabled = !hasOverflow || atEnd;
+
+      this.root.classList.toggle('has-overflow-start', hasOverflow && !atStart);
+      this.root.classList.toggle('has-overflow-end', hasOverflow && !atEnd);
     }
 
     /* ---------- Autoplay ---------- */
@@ -186,7 +194,7 @@ if (!customElements.get('blog-carousel')) {
         if (scrollLeft + clientWidth >= scrollWidth - 1) {
           this.track.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          this.scrollByDirection(1);
+          this.onNextClick();
         }
       }, this.autoplaySpeed);
     }
@@ -197,7 +205,28 @@ if (!customElements.get('blog-carousel')) {
         this.autoplayTimer = null;
       }
     }
+
+    maybeStartAutoplay() {
+      if (this.autoplayEnabled && !this.reducedMotion) this.startAutoplay();
+    }
   }
 
-  customElements.define('blog-carousel', BlogCarousel);
-}
+  function init() {
+    document.querySelectorAll(SELECTOR).forEach((root) => {
+      if (root.__bannerCarousel) return;
+      root.__bannerCarousel = new BannerCarousel(root);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Re-init when Shopify theme editor injects/re-renders a section
+  document.addEventListener('shopify:section:load', (event) => {
+    const root = event.target.querySelector(SELECTOR);
+    if (root) new BannerCarousel(root);
+  });
+})();
