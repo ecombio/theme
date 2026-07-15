@@ -1,9 +1,27 @@
+.banner-carousel-section {
+  /* Same easing curve as the collection carousel so hover/interaction
+     motion feels consistent across carousel sections site-wide. */
+  --bc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .banner-carousel-section__header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.banner-carousel-section__header--align-center {
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+.banner-carousel-section__header--align-end {
+  flex-direction: row-reverse;
+  text-align: right;
 }
 
 .banner-carousel-section__heading-group {
@@ -24,13 +42,37 @@
   opacity: 0.7;
 }
 
-.banner-carousel-section__view-all {
+/* View all — same chevron + animated underline treatment as the
+   collection carousel's "View all" link. */
+.banner-carousel-section__view-all,
+.banner-carousel-section__view-all:visited {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 1.3rem;
   font-weight: 600;
-  text-decoration: underline;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
   white-space: nowrap;
-  color: inherit;
+  color: inherit !important;
+  padding-bottom: 2px;
+  border-bottom: 1px solid currentColor;
+  opacity: 0.85;
+  transition: opacity 0.2s var(--bc-ease), gap 0.2s var(--bc-ease);
+}
+
+.banner-carousel-section__view-all:hover {
+  opacity: 1;
+  gap: 10px;
+}
+
+.banner-carousel-section__view-all svg {
+  transition: transform 0.2s var(--bc-ease);
+}
+
+.banner-carousel-section__view-all:hover svg {
+  transform: translateX(2px);
 }
 
 @media screen and (min-width: 750px) {
@@ -250,9 +292,10 @@
   font-weight: 600;
 }
 
-/* Arrows */
+/* Arrows — visible at every breakpoint (not just tablet/desktop), same
+   as the collection carousel's nav buttons, with matching disabled and
+   hover-feedback states. */
 .banner-carousel__btn {
-  display: none;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -262,15 +305,30 @@
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 3;
-  transition: background 0.15s ease;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.45);
+  transition: background 0.2s var(--bc-ease), border-color 0.2s var(--bc-ease), opacity 0.2s var(--bc-ease);
 }
 
 .banner-carousel__btn:hover {
   background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.banner-carousel__btn[disabled] {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: default;
+  box-shadow: none;
+}
+
+.banner-carousel__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .banner-carousel__btn svg {
@@ -306,12 +364,38 @@
   padding: 0;
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.2s var(--bc-ease), transform 0.2s var(--bc-ease);
 }
 
 .banner-carousel__dot.is-active {
   background: #fff;
   transform: scale(1.2);
+}
+
+/* Animation toggle
+   ------------------------------------------------------------------
+   When section.settings.enable_animations is off, the section root
+   renders with data-animations="off". Cancels the View all hover
+   motion, arrow hover feedback, and dot scale — same pattern as the
+   collection carousel's toggle. */
+
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all,
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all svg,
+.banner-carousel-section[data-animations="off"] .banner-carousel__btn,
+.banner-carousel-section[data-animations="off"] .banner-carousel__dot {
+  transition: none;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all:hover {
+  gap: 6px;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel-section__view-all:hover svg {
+  transform: none;
+}
+
+.banner-carousel-section[data-animations="off"] .banner-carousel__dot.is-active {
+  transform: none;
 }
 
 /* Tablet */
@@ -326,10 +410,6 @@
 
   .banner-carousel__subheading {
     font-size: 1.5rem;
-  }
-
-  .banner-carousel__btn {
-    display: flex;
   }
 }
 
@@ -353,7 +433,7 @@
   }
 }
 
-/* Mobile-specific image swap */
+/* Mobile-specific image swap + smaller nav buttons */
 @media screen and (max-width: 749px) {
   .banner-carousel__image--desktop {
     display: none;
@@ -370,10 +450,35 @@
   .banner-carousel__placeholder--mobile {
     display: flex;
   }
+
+  .banner-carousel__btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .banner-carousel__btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .banner-carousel__btn--prev {
+    left: 8px;
+  }
+
+  .banner-carousel__btn--next {
+    right: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .banner-carousel__track {
     transition: none;
+  }
+
+  .banner-carousel-section__view-all,
+  .banner-carousel-section__view-all svg,
+  .banner-carousel__btn,
+  .banner-carousel__dot {
+    transition: none !important;
   }
 }
