@@ -1,0 +1,140 @@
+{% comment %}
+  snippets/blog-menu.liquid
+  Sticky tag-filter + sort navigation for the blog, rendered directly
+  beneath #header-group-wrapper. Mirrors collection-toolbar.liquid's
+  contract with header-group.js/css:
+    - sticky top: var(--header-group-height), collapsing to top: 0
+      when header-group.js adds .header-group-hidden to :root
+    - real <a href> tags for tag links (works with JS off; blog
+      "/tagged/x" filtering is native Shopify routing, not a fetch)
+    - horizontally-scrollable pill track w/ prev/next nav buttons
+    - mobile bottom bar + bottom sheets for tags and sort, matching
+      collection-toolbar's mobile-bar / mobile-sort-sheet pattern
+
+  Params:
+    blog          - required, the blog object
+    current_tag   - optional string, the currently active tag ('' = All)
+    show_tag_menu - optional boolean, default true
+    show_sort     - optional boolean, default true
+{% endcomment %}
+
+{{ 'blog-menu.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  if show_tag_menu == blank
+    assign show_tag_menu = true
+  endif
+  if show_sort == blank
+    assign show_sort = true
+  endif
+-%}
+
+<div
+  class="blog-menu"
+  id="blog-menu"
+  role="navigation"
+  aria-label="Blog navigation"
+  data-active-tag="{{ current_tag }}"
+>
+
+  {%- if show_tag_menu -%}
+    <div class="blog-menu__scroll" id="blog-menu-tags">
+      <button
+        type="button"
+        class="blog-menu__nav blog-menu__nav--prev"
+        aria-label="Scroll tags left"
+        data-blog-tags-prev
+        hidden
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="blog-menu__track" data-blog-tags-track role="tablist" aria-label="Blog tags">
+        <a
+          href="{{ blog.url }}"
+          class="blog-menu__pill{% if current_tag == '' %} blog-menu__pill--active{% endif %}"
+          role="tab"
+          aria-selected="{% if current_tag == '' %}true{% else %}false{% endif %}"
+          tabindex="{% if current_tag == '' %}0{% else %}-1{% endif %}"
+          data-tag=""
+        >{{ 'blog.general.all_tags' | t | default: 'All' }}</a>
+
+        {%- for tag in blog.all_tags -%}
+          <a
+            href="{{ blog.url }}/tagged/{{ tag | url_encode }}"
+            class="blog-menu__pill{% if current_tag == tag %} blog-menu__pill--active{% endif %}"
+            role="tab"
+            aria-selected="{% if current_tag == tag %}true{% else %}false{% endif %}"
+            tabindex="{% if current_tag == tag %}0{% else %}-1{% endif %}"
+            data-tag="{{ tag | escape }}"
+          >{{ tag }}</a>
+        {%- endfor -%}
+      </div>
+
+      <button
+        type="button"
+        class="blog-menu__nav blog-menu__nav--next"
+        aria-label="Scroll tags right"
+        data-blog-tags-next
+        hidden
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  {%- endif -%}
+
+  {%- if show_sort -%}
+    <div class="blog-menu__sort">
+      <label for="BlogSortBy" class="visually-hidden">Sort</label>
+      <select id="BlogSortBy" data-blog-sort>
+        <option value="date-desc">{{ 'blog.sort.newest' | t | default: 'Newest' }}</option>
+        <option value="date-asc">{{ 'blog.sort.oldest' | t | default: 'Oldest' }}</option>
+        <option value="title-asc">{{ 'blog.sort.title_az' | t | default: 'Title A-Z' }}</option>
+        <option value="title-desc">{{ 'blog.sort.title_za' | t | default: 'Title Z-A' }}</option>
+      </select>
+    </div>
+  {%- endif -%}
+
+</div>
+
+{%- if show_tag_menu or show_sort -%}
+  <div class="blog-menu-mobile-bar" aria-label="Blog controls" role="toolbar">
+    {%- if show_tag_menu -%}
+      <button
+        class="blog-menu-mobile-bar__btn"
+        type="button"
+        aria-expanded="false"
+        aria-controls="blog-menu-tag-sheet"
+        aria-label="Toggle tags"
+        data-blog-tag-toggle
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        {{ 'blog.general.tags' | t | default: 'Tags' }}
+      </button>
+    {%- endif -%}
+
+    {%- if show_sort -%}
+      <button
+        class="blog-menu-mobile-bar__btn"
+        type="button"
+        aria-expanded="false"
+        aria-label="Sort articles"
+        data-blog-mobile-sort-toggle
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        {{ 'blog.general.sort' | t | default: 'Sort' }}
+      </button>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{{ 'blog-menu.js' | asset_url | script_tag }}
