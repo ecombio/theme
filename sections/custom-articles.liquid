@@ -20,7 +20,7 @@
 -%}
 
 <nav
-  class="blog-menu {{ menu_width_class }}{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
+  class="blog-menu {{ menu_width_class }} blog-menu--align-{{ section.settings.menu_alignment | default: 'left' }}{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
   data-blog-menu
   aria-label="{{ section.settings.menu_heading | default: 'Blog navigation' | escape }}"
   style="
@@ -250,6 +250,18 @@
       "id": "menu_sticky",
       "label": "Make menu sticky on scroll",
       "default": false
+    },
+    {
+      "type": "select",
+      "id": "menu_alignment",
+      "label": "Menu alignment",
+      "info": "Aligns the nav items within the available space. Has no effect once items overflow into the scrollable/edge-fade state.",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
     },
     {
       "type": "link_list",
