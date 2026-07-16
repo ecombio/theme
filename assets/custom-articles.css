@@ -1,0 +1,469 @@
+.blog-menu {
+  background: var(--blog-menu-bg, #ffffff);
+  color: var(--blog-menu-text, var(--color-black));
+  border-bottom: 1px solid var(--blog-menu-border, #e5e5e5);
+  width: 100%;
+  z-index: 20;
+}
+
+.blog-menu.blog-menu--sticky {
+  position: relative;
+}
+
+.blog-menu.blog-menu--sticky.is-stuck {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--header-group-height, 68px);
+  z-index: 20;
+  transition: top var(--transition-slow);
+}
+
+:root.header-group-hidden .blog-menu.blog-menu--sticky.is-stuck {
+  top: 0;
+}
+
+.blog-menu__spacer {
+  display: none;
+}
+
+.blog-menu__spacer.is-active {
+  display: block;
+}
+
+.blog-menu__inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding-block: 0.75rem;
+  padding-inline: var(--section-padding, 24px);
+  box-sizing: border-box;
+}
+
+/* FIX — this row was hardcoded to max-width:1200px/centered, so it never
+   matched whatever "Section layout" width was chosen for the posts grid
+   below (main-header.css has the identical fix for #main-header__inner
+   vs .menu-bar drifting apart). Both rows now read the same
+   posts_section_width / posts_custom_width / posts_section_padding
+   settings — applied here via --section-padding / --custom-width and the
+   blog-menu--default-width / --full-width / --custom-width modifier class
+   set in custom-articles.liquid.
+
+   justify-self is included on top of margin-inline:auto because <nav
+   class="blog-menu"> — the parent of .blog-menu__inner — is a grid item
+   in this theme's base styles. Without it, .blog-menu__inner shrinks to
+   its own content width inside that grid track before max-width/auto-
+   margins ever get a chance to act, which is what was squeezing/
+   misaligning the row (confirmed via DevTools). It's a no-op in a
+   non-grid ancestor, so it's safe to keep either way. */
+.blog-menu--default-width .blog-menu__inner {
+  max-width: 1200px;
+  margin-inline: auto;
+  justify-self: center;
+}
+
+.blog-menu--full-width .blog-menu__inner {
+  max-width: 100%;
+  margin-inline: 0;
+  justify-self: stretch;
+}
+
+.blog-menu--custom-width .blog-menu__inner {
+  max-width: var(--custom-width, 80rem);
+  margin-inline: auto;
+  justify-self: center;
+}
+
+.blog-menu__heading {
+  font-family: var(--font-primary--family);
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+/* Scroll viewport for the nav list — mirrors main-header's .menu-bar
+   overflow pattern: this wrapper is the positioning context for the
+   edge-fade shadows, and shrinks to the remaining row width (flex:1 1
+   auto + min-width:0) so overflow can kick in instead of the list
+   pushing the toggle button out of view. */
+.blog-menu__scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.blog-menu__list {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: nowrap;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.blog-menu__list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Alignment is a plain justify-content on the list's main axis — "left"
+   needs no rule since flex-start is the default. Once items overflow and
+   the row actually needs to scroll, browsers fall back to start-aligned
+   scrollable content automatically, so this only has a visible effect
+   while everything still fits (i.e. before the edge-fade/scroll state
+   kicks in). */
+.blog-menu--align-center .blog-menu__list {
+  justify-content: center;
+}
+
+.blog-menu--align-right .blog-menu__list {
+  justify-content: flex-end;
+}
+
+.blog-menu__item {
+  position: relative;
+}
+
+.blog-menu__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.85rem;
+  color: var(--blog-menu-text, var(--color-black));
+  text-decoration: none;
+  font-family: var(--font-primary--family);
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.blog-menu__link:hover,
+.blog-menu__link--parent[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--blog-menu-accent, var(--color-blue)) 10%, transparent);
+  color: var(--blog-menu-accent, var(--color-blue));
+}
+
+.blog-menu__link--active {
+  color: var(--blog-menu-accent, var(--color-blue));
+  font-weight: 600;
+}
+
+.blog-menu__caret {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--transition-fast);
+  margin-top: -2px;
+}
+
+.blog-menu__link--parent[aria-expanded="true"] .blog-menu__caret {
+  transform: rotate(-135deg);
+  margin-top: 2px;
+}
+
+.blog-menu__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background: var(--blog-menu-bg, #ffffff);
+  border: 1px solid var(--blog-menu-border, #e5e5e5);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0.35rem;
+  display: none;
+  z-index: 30;
+}
+
+.blog-menu__item--list.is-open .blog-menu__dropdown {
+  display: block;
+}
+
+.blog-menu__dropdown-link {
+  display: block;
+  padding: 0.5rem 0.65rem;
+  color: var(--blog-menu-text, var(--color-black));
+  text-decoration: none;
+  font-family: var(--font-primary--family);
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.blog-menu__dropdown-link:hover {
+  background: color-mix(in srgb, var(--blog-menu-accent, var(--color-blue)) 10%, transparent);
+}
+
+.blog-menu__dropdown-link--active {
+  color: var(--blog-menu-accent, var(--color-blue));
+  font-weight: 600;
+}
+
+/* Edge-fade shadows — same idea as main-header's .menu-bar__edge-fade
+   (JS toggles has-scroll-left / has-scroll-right on .blog-menu__scroll
+   based on scroll position, see custom-articles.js), but tinted from
+   --blog-menu-bg via color-mix instead of a hardcoded white, so the
+   fade stays correct for whatever background color is set on this
+   section rather than only working against a white bar. */
+.blog-menu__edge-fade {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.blog-menu__edge-fade--left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--blog-menu-bg, #ffffff) 0%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 85%, transparent) 30%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 40%, transparent) 65%,
+    transparent 100%
+  );
+}
+.blog-menu__edge-fade--right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--blog-menu-bg, #ffffff) 0%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 85%, transparent) 30%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 40%, transparent) 65%,
+    transparent 100%
+  );
+}
+
+.blog-menu__scroll.has-scroll-left .blog-menu__edge-fade--left,
+.blog-menu__scroll.has-scroll-right .blog-menu__edge-fade--right {
+  opacity: 1;
+}
+
+.blog-menu__toggle {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--blog-menu-border, #e5e5e5);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.75rem;
+  font-family: var(--font-primary--family);
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--blog-menu-text, var(--color-black));
+  transition: border-color var(--transition-fast);
+}
+
+.blog-menu__toggle:hover {
+  border-color: var(--blog-menu-accent, var(--color-blue));
+}
+
+.blog-menu__toggle-icon {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.blog-menu__toggle-icon span {
+  width: 16px;
+  height: 2px;
+  background: currentColor;
+  display: block;
+}
+
+@media screen and (max-width: 749px) {
+  .blog-menu__toggle {
+    display: inline-flex;
+  }
+
+  .blog-menu__scroll {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  /* Below 750px the nav collapses into a vertical stacked list (unchanged
+     behavior) rather than a horizontal scroller, so the overflow/edge-fade
+     effect only applies at the desktop breakpoint above. */
+  .blog-menu__edge-fade {
+    display: none;
+  }
+
+  .blog-menu__list {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0;
+    overflow-x: visible;
+    border-top: 1px solid var(--blog-menu-border, #e5e5e5);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .blog-menu__list.is-open {
+    display: flex;
+  }
+
+  .blog-menu__inner {
+    flex-wrap: wrap;
+  }
+
+  .blog-menu__dropdown {
+    position: static;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding-left: 0.75rem;
+  }
+}
+
+.blog-posts-section {
+  margin-bottom: 80px;
+}
+
+.blog-posts__header {
+  margin-bottom: 24px;
+}
+
+.blog-posts__title {
+  font-family: var(--font-primary--family);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-black);
+  margin: 0;
+}
+
+.blog-posts__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.blog-posts__tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: var(--color-pill-bg);
+  color: var(--color-pill-text);
+  border-radius: var(--radius-base);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--transition-base), transform var(--transition-fast);
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.blog-posts__tag-pill:hover {
+  transform: translateY(-1px);
+}
+
+.blog-posts__tag-pill.is-active {
+  background: var(--color-red);
+  color: var(--color-pill-text-active);
+  border-color: var(--color-red);
+}
+
+.blog-posts__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--blog-posts-columns, 3), 1fr);
+  gap: 32px;
+}
+
+.blog-posts__empty {
+  color: var(--color-pill-text);
+  font-size: 0.95rem;
+}
+
+.blog-posts__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.blog-posts__page-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.blog-posts__page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-pill-text);
+  text-decoration: none;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+a.blog-posts__page-link:hover {
+  background: var(--color-pill-bg);
+}
+
+.blog-posts__page-link.is-active {
+  background: var(--color-red);
+  color: var(--color-pill-text-active);
+}
+
+.blog-posts__page-link--gap {
+  color: var(--color-pill-text);
+  cursor: default;
+}
+
+.blog-posts__page-link--prev,
+.blog-posts__page-link--next {
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+@media (max-width: 480px) {
+  .blog-posts__pagination {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 989px) {
+  .blog-posts__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .blog-posts__grid {
+    grid-template-columns: 1fr;
+  }
+}
