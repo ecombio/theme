@@ -1,0 +1,238 @@
+{%- comment -%}
+  sections/custom-articles.liquid
+
+  Combines two formerly-standalone sections into one, for use on
+  templates/article.json:
+    - Blog menu   (sticky nav, single links + dropdown link lists)
+    - Blog posts  (tag-filterable, paginated article grid)
+
+  Each half now lives as its own snippet, reusing its original
+  section name (two words max, per naming convention) so the
+  logic/markup stays unchanged from the originals:
+    snippets/blog-menu.liquid
+    snippets/blog-posts.liquid
+
+  This section's schema settings are prefixed `menu_` / `posts_` to
+  keep the two halves' settings unambiguous in the theme editor, and
+  its `blocks` array belongs to the menu half only (single_link /
+  link_list) — the blog-posts half has no block-based content, it's
+  driven entirely by real article data + the posts_custom_tags
+  setting, same as before.
+
+  NOTE: named custom-articles.liquid rather than main-blog.liquid —
+  it is not the primary/required section for a template (that role
+  belongs to whatever main-article section already exists on
+  article.json), so it doesn't carry the `main-` convention.
+{%- endcomment -%}
+
+{% render 'blog-menu',
+  heading: section.settings.menu_heading,
+  mobile_label: section.settings.menu_mobile_label,
+  sticky: section.settings.menu_sticky,
+  background_color: section.settings.menu_background_color,
+  text_color: section.settings.menu_text_color,
+  accent_color: section.settings.menu_accent_color,
+  border_color: section.settings.menu_border_color,
+  blocks: section.blocks,
+  section_id: section.id
+%}
+
+{% render 'blog-posts',
+  heading: section.settings.posts_heading,
+  custom_tags: section.settings.posts_custom_tags,
+  limit: section.settings.posts_limit,
+  columns: section.settings.posts_columns,
+  section_width: section.settings.posts_section_width,
+  custom_width: section.settings.posts_custom_width,
+  section_padding: section.settings.posts_section_padding,
+  section_id: section.id
+%}
+
+{% schema %}
+{
+  "name": "Custom articles",
+  "tag": "section",
+  "class": "section-custom-articles",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Blog menu"
+    },
+    {
+      "type": "text",
+      "id": "menu_heading",
+      "label": "Menu heading",
+      "info": "Optional label shown before the nav items."
+    },
+    {
+      "type": "text",
+      "id": "menu_mobile_label",
+      "label": "Mobile toggle label",
+      "default": "Menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "menu_sticky",
+      "label": "Make menu sticky on scroll",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Blog menu colors"
+    },
+    {
+      "type": "color",
+      "id": "menu_background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "menu_text_color",
+      "label": "Text",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "menu_accent_color",
+      "label": "Accent (hover / active)",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "menu_border_color",
+      "label": "Border",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "header",
+      "content": "Blog posts"
+    },
+    {
+      "type": "text",
+      "id": "posts_heading",
+      "label": "Heading",
+      "default": "Latest Articles"
+    },
+    {
+      "type": "text",
+      "id": "posts_custom_tags",
+      "label": "Tags (comma-separated)",
+      "info": "Type tags however you'd like them displayed (e.g. \"Electric Scooters\"). The /tagged/ URL and article matching auto-use the hyphenated, lowercased form behind the scenes — no need to type hyphens yourself.",
+      "default": "Electric Scooters, Batteries, Accessories"
+    },
+    {
+      "type": "range",
+      "id": "posts_limit",
+      "min": 3,
+      "max": 24,
+      "step": 1,
+      "default": 12,
+      "label": "Articles per page"
+    },
+    {
+      "type": "range",
+      "id": "posts_columns",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "label": "Columns (desktop)"
+    },
+    {
+      "type": "header",
+      "content": "Blog posts section layout"
+    },
+    {
+      "type": "select",
+      "id": "posts_section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "posts_custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.posts_section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "posts_section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    }
+  ],
+  "blocks": [
+    {
+      "type": "single_link",
+      "name": "Single Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Link"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_in_new_tab",
+          "label": "Open in new tab",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "link_list",
+      "name": "Link List",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "info": "Shown as the dropdown's clickable title. Defaults to the menu's own title if left blank."
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu",
+          "info": "Choose a navigation menu from Online Store > Navigation. Its links become the dropdown items."
+        }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "Custom articles",
+      "category": "Blog",
+      "blocks": [
+        {
+          "type": "single_link"
+        },
+        {
+          "type": "link_list"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
