@@ -1,60 +1,3 @@
-{%- comment -%}
-  snippets/blog-posts.liquid
-
-  Rendered by sections/custom-articles.liquid. Layout CSS lives in
-  assets/custom-articles.css (loaded once by the parent section).
-  article-card.css remains loaded here since article-card.liquid is
-  a separate, independently-reusable component, not part of this
-  merge.
-
-  Always pulls from blogs['articles'] (i.e. /blogs/articles).
-  Renders each article using snippets/article-card.liquid.
-
-  Required params (passed in via {% render %} since render scope is
-  isolated — this snippet cannot reach `section` on its own):
-    heading           - string
-    custom_tags       - string, comma-separated (raw display text)
-    limit             - number, articles per page
-    columns           - number, desktop grid columns
-    section_width     - '', 'full-width', or 'custom-width'
-    custom_width      - number (rem), only used when section_width == 'custom-width'
-    section_padding   - number (px)
-    section_id        - unique id string, used for CSS scoping (pass section.id)
-
-  TAGS (custom_tags param):
-  A comma-separated "Tags" string drives two things at once. Type
-  tags in whatever readable form you want displayed (e.g. "Electric
-  Scooters") — the raw typed text is used ONLY for the visible pill
-  label:
-
-  1. Pills — the URL slug and the active-state check both use
-     `tag | handle` (lowercases, replaces spaces/special chars with
-     hyphens), matching this store's actual article tag format
-     (e.g. "electric-scooters"). So "Electric Scooters" displays as
-     typed but links to /tagged/electric-scooters and correctly
-     detects the active pill.
-  2. Card rendering — the article grid is filtered down to only
-     articles whose native article.tags contains the same handleized
-     slug (not the raw display text). If custom_tags is blank, all
-     articles show as before (no filtering).
-
-  This assumes real article tags in admin are stored in the
-  hyphenated/lowercased handle form. If a store instead tags articles
-  with natural casing/spacing (e.g. "Electric Scooters" verbatim as
-  the actual tag), this matching would need to compare against the
-  raw text instead of the handleized slug — flag if that's the case.
-
-  PAGINATION CAVEAT:
-  {% paginate %} slices target_blog.articles by `limit` BEFORE this
-  filter runs. That means a page of `limit` articles may render fewer
-  than `limit` cards if some articles on that page don't match any
-  custom_tags value — the page-count math (paginate.pages, prev/next)
-  reflects the full unfiltered article count, not the filtered
-  visible count. Acceptable for now per current scope, but flagging
-  since it means the last page (or any page) can look sparse or even
-  empty despite paginate.pages saying there's more.
-{%- endcomment -%}
-
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -121,7 +64,6 @@
 
             {% if show_article %}
               {%- assign visible_index = visible_index | plus: 1 -%}
-              {% comment %} Eager-load the first row so LCP isn't hurt by lazy-loading above-the-fold images {% endcomment %}
               {% assign loading = 'lazy' %}
               {% if visible_index <= columns %}
                 {% assign loading = 'eager' %}
