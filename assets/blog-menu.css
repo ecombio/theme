@@ -1,15 +1,3 @@
-/**
- * assets/blog-menu.css
- * Structural + color styling for the Blog Menu (snippets/blog-menu.liquid).
- *
- * Colors are NOT hardcoded here — they're read off the four custom
- * properties (--blog-menu-bg / --blog-menu-text / --blog-menu-accent /
- * --blog-menu-border) that the snippet sets inline on <nav> per
- * instance. This file only ever needs one copy of each rule since
- * every selector below targets an element by its own state classes,
- * which never leak across separate <nav data-blog-menu> instances.
- */
-
 .blog-menu {
   background: var(--blog-menu-bg, #ffffff);
   color: var(--blog-menu-text, #1a1a1a);
@@ -18,41 +6,23 @@
   z-index: 20;
 }
 
-/* Stays in normal document flow until blog-menu.js adds .is-stuck.
-   Plain `position: sticky` only sticks within its own containing
-   block — Shopify wraps each section in a content-sized
-   .shopify-section div, leaving almost no room to travel before the
-   wrapper's bottom edge scrolls past. blog-menu.js watches scroll
-   position and swaps to `position: fixed` instead once that happens,
-   so the nav stays visible for the rest of the page. */
 .blog-menu.blog-menu--sticky {
   position: relative;
 }
 
-/* Offsets from the header's real height (published by header-group.js
-   as --header-group-height) instead of top: 0, so this doesn't
-   compete with #header-group-wrapper for the same viewport slot.
-   z-index stays below the header's so there's no stacking fight while
-   both are visible. */
 .blog-menu.blog-menu--sticky.is-stuck {
   position: fixed;
   left: 0;
   right: 0;
   top: var(--header-group-height, 68px);
   z-index: 20;
-  transition: top 0.3s ease; /* matches header-group-wrapper's 0.3s hide transition */
+  transition: top 0.3s ease;
 }
 
-/* When header-group.js hides the header (adds .header-group-hidden to
-   :root), collapse the offset so the blog menu slides up to fill the
-   gap and remains permanently visible on its own. */
 :root.header-group-hidden .blog-menu.blog-menu--sticky.is-stuck {
   top: 0;
 }
 
-/* Reserves the nav's height in normal flow once it goes fixed, so
-   whatever follows doesn't jump underneath it. Height is set inline
-   by blog-menu.js to match the nav's real height. */
 .blog-menu__spacer {
   display: none;
 }
