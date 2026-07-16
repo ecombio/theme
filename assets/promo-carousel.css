@@ -22,8 +22,31 @@
   margin: 0;
 }
 
+.promo-carousel__wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: var(--pc-gap);
+  container-type: inline-size;
+}
+
+.promo-carousel__promo-pinned {
+  flex: 0 0 auto;
+  /* Only takes effect when the merchant hasn't set a custom width —
+     a --ic-width/--ic-width-mobile set inline by image-card.liquid
+     on the .image-card element itself always overrides this. */
+  --ic-width: calc((100cqw - (var(--pc-cards-desktop, 3) - 1) * var(--pc-gap)) / var(--pc-cards-desktop, 3));
+}
+
+@media screen and (max-width: 599px) {
+  .promo-carousel__promo-pinned {
+    --ic-width-mobile: calc((100cqw - (var(--pc-cards-mobile, 2) - 1) * var(--pc-gap)) / var(--pc-cards-mobile, 2));
+  }
+}
+
 .promo-carousel__scroll-region {
   position: relative;
+  flex: 1 1 0%;
+  min-width: 0;
   margin: -22px -16px -16px;
   container-type: inline-size;
 }
@@ -31,7 +54,7 @@
 .promo-carousel__track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - (var(--pc-cards-desktop, 3) - 1) * var(--pc-gap)) / var(--pc-cards-desktop, 3));
+  grid-auto-columns: calc((100% - (var(--pc-track-cards-desktop, 3) - 1) * var(--pc-gap)) / var(--pc-track-cards-desktop, 3));
   gap: var(--pc-gap);
   overflow-x: auto;
   overflow-y: hidden;
@@ -51,15 +74,9 @@
   scroll-snap-align: start;
 }
 
-.promo-carousel__promo-cell {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 @media screen and (max-width: 599px) {
   .promo-carousel__track {
-    grid-auto-columns: calc((100% - (var(--pc-cards-mobile, 2) - 1) * var(--pc-gap)) / var(--pc-cards-mobile, 2));
+    grid-auto-columns: calc((100% - (var(--pc-track-cards-mobile, 2) - 1) * var(--pc-gap)) / var(--pc-track-cards-mobile, 2));
     padding: 20px 16px 16px;
   }
 
