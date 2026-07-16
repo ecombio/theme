@@ -4,10 +4,23 @@
 {%- liquid
   assign nav_menu = section.settings.menu
   assign nav_items_total = nav_menu.links.size
+
+  assign section_width = section.settings.posts_section_width
+  case section_width
+    when 'full-width'
+      assign width_class = 'full-width'
+      assign menu_width_class = 'blog-menu--full-width'
+    when 'custom-width'
+      assign width_class = 'custom-width'
+      assign menu_width_class = 'blog-menu--custom-width'
+    else
+      assign width_class = 'default-width'
+      assign menu_width_class = 'blog-menu--default-width'
+  endcase
 -%}
 
 <nav
-  class="blog-menu{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
+  class="blog-menu {{ menu_width_class }}{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
   data-blog-menu
   aria-label="{{ section.settings.menu_heading | default: 'Blog navigation' | escape }}"
   style="
@@ -15,9 +28,13 @@
     --blog-menu-text: {{ section.settings.menu_text_color | default: '#111111' }};
     --blog-menu-accent: {{ section.settings.menu_accent_color | default: '#0A3161' }};
     --blog-menu-border: {{ section.settings.menu_border_color | default: '#e5e5e5' }};
+    --section-padding: {{ section.settings.posts_section_padding }}px;
+    {%- if section_width == 'custom-width' %}
+      --custom-width: {{ section.settings.posts_custom_width }}rem;
+    {%- endif %}
   "
 >
-  <div class="blog-menu__inner page-width">
+  <div class="blog-menu__inner">
 
     {%- if section.settings.menu_heading != blank -%}
       <div class="blog-menu__heading">{{ section.settings.menu_heading | escape }}</div>
@@ -96,11 +113,6 @@
 
 {%- liquid
   assign target_blog = blogs['articles']
-  if section.settings.posts_section_width == blank
-    assign width_class = 'default-width'
-  else
-    assign width_class = section.settings.posts_section_width
-  endif
   assign custom_tags_list = section.settings.posts_custom_tags | split: ','
 -%}
 
@@ -310,7 +322,11 @@
     },
     {
       "type": "header",
-      "content": "Blog posts section layout"
+      "content": "Section layout"
+    },
+    {
+      "type": "paragraph",
+      "content": "Controls both the blog nav bar above and the article grid below, so they stay aligned."
     },
     {
       "type": "select",

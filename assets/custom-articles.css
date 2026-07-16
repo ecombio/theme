@@ -35,9 +35,31 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  padding: 0.75rem 1.5rem;
+  padding-block: 0.75rem;
+  padding-inline: var(--section-padding, 24px);
+}
+
+/* FIX — this row was hardcoded to max-width:1200px/centered, so it never
+   matched whatever "Section layout" width was chosen for the posts grid
+   below (main-header.css has the identical fix for #main-header__inner
+   vs .menu-bar drifting apart). Both rows now read the same
+   posts_section_width / posts_custom_width / posts_section_padding
+   settings — applied here via --section-padding / --custom-width and the
+   blog-menu--default-width / --full-width / --custom-width modifier class
+   set in custom-articles.liquid. */
+.blog-menu--default-width .blog-menu__inner {
   max-width: 1200px;
-  margin: 0 auto;
+  margin-inline: auto;
+}
+
+.blog-menu--full-width .blog-menu__inner {
+  max-width: 100%;
+  margin-inline: 0;
+}
+
+.blog-menu--custom-width .blog-menu__inner {
+  max-width: var(--custom-width, 80rem);
+  margin-inline: auto;
 }
 
 .blog-menu__heading {
@@ -48,6 +70,17 @@
   margin-right: 0.5rem;
 }
 
+/* Scroll viewport for the nav list — mirrors main-header's .menu-bar
+   overflow pattern: this wrapper is the positioning context for the
+   edge-fade shadows, and shrinks to the remaining row width (flex:1 1
+   auto + min-width:0) so overflow can kick in instead of the list
+   pushing the toggle button out of view. */
+.blog-menu__scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .blog-menu__list {
   display: flex;
   align-items: center;
@@ -55,7 +88,16 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.blog-menu__list::-webkit-scrollbar {
+  display: none;
 }
 
 .blog-menu__item {
@@ -77,6 +119,7 @@
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: background-color var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
 }
 
 .blog-menu__link:hover,
@@ -146,6 +189,49 @@
   font-weight: 600;
 }
 
+/* Edge-fade shadows — same idea as main-header's .menu-bar__edge-fade
+   (JS toggles has-scroll-left / has-scroll-right on .blog-menu__scroll
+   based on scroll position, see custom-articles.js), but tinted from
+   --blog-menu-bg via color-mix instead of a hardcoded white, so the
+   fade stays correct for whatever background color is set on this
+   section rather than only working against a white bar. */
+.blog-menu__edge-fade {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.blog-menu__edge-fade--left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--blog-menu-bg, #ffffff) 0%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 85%, transparent) 30%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 40%, transparent) 65%,
+    transparent 100%
+  );
+}
+.blog-menu__edge-fade--right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--blog-menu-bg, #ffffff) 0%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 85%, transparent) 30%,
+    color-mix(in srgb, var(--blog-menu-bg, #ffffff) 40%, transparent) 65%,
+    transparent 100%
+  );
+}
+
+.blog-menu__scroll.has-scroll-left .blog-menu__edge-fade--left,
+.blog-menu__scroll.has-scroll-right .blog-menu__edge-fade--right {
+  opacity: 1;
+}
+
 .blog-menu__toggle {
   display: none;
   align-items: center;
@@ -184,12 +270,25 @@
     display: inline-flex;
   }
 
+  .blog-menu__scroll {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  /* Below 750px the nav collapses into a vertical stacked list (unchanged
+     behavior) rather than a horizontal scroller, so the overflow/edge-fade
+     effect only applies at the desktop breakpoint above. */
+  .blog-menu__edge-fade {
+    display: none;
+  }
+
   .blog-menu__list {
     display: none;
     flex-direction: column;
     align-items: stretch;
     width: 100%;
     gap: 0;
+    overflow-x: visible;
     border-top: 1px solid var(--blog-menu-border, #e5e5e5);
     margin-top: 0.5rem;
     padding-top: 0.5rem;
