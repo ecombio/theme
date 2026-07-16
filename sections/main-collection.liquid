@@ -1,13 +1,3 @@
-{%- comment -%}
- sections/main-collection.liquid
-
- Now a thin shell: page hero, the two-column body grid, the shared
- mobile backdrop, and after-items rich text. All toolbar behavior
- lives in snippets/collection-toolbar.liquid, and all feed behavior
- lives in snippets/collection-feed.liquid — each fully self-contained
- with its own CSS/JS.
-{%- endcomment -%}
-
 {{ 'main-collection.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -80,18 +70,15 @@
 
     </section>
 
-    {%- comment -%} after-items: read the metafield definition itself (not just .value) so we can branch on its type {%- endcomment -%}
     {%- assign after_items_field = collection.metafields.custom.after_item_lists -%}
 
     {%- if after_items_field.value != blank -%}
       <div class="after-items rte">
         {%- if after_items_field.type contains 'list' -%}
-          {%- comment -%} List-type metafield (e.g. list.page_reference) — .value is an array, so loop and read .content on each item {%- endcomment -%}
           {%- for after_page in after_items_field.value -%}
             {{ after_page.content }}
           {%- endfor -%}
         {%- else -%}
-          {%- comment -%} Single-reference metafield — .value is one object, read .content directly {%- endcomment -%}
           {{ after_items_field.value.content }}
         {%- endif -%}
       </div>
@@ -411,10 +398,84 @@
           "default": true
         },
         {
+          "type": "select",
+          "id": "arrow_visibility",
+          "label": "Arrow visibility",
+          "options": [
+            { "value": "hover", "label": "On hover" },
+            { "value": "always", "label": "Always" }
+          ],
+          "default": "hover",
+          "info": "On hover: arrows fade in only when hovering the carousel (desktop pointer devices only — always shown on touch). Always: arrows stay visible at all times.",
+          "visible_if": "{{ block.settings.show_arrows }}"
+        },
+        {
           "type": "checkbox",
           "id": "show_dots",
           "label": "Show dots",
           "default": true
+        },
+        { "type": "header", "content": "Product card" },
+        {
+          "type": "checkbox",
+          "id": "show_atc_button",
+          "label": "Show \"Add to cart\" button",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_compare_checkbox",
+          "label": "Show \"Compare\" checkbox",
+          "default": true,
+          "info": "Lets shoppers select products to compare side by side."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_wishlist_button",
+          "label": "Show wishlist button",
+          "default": true,
+          "info": "The heart icon in the top-right corner of the product image."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_quickview_button",
+          "label": "Show \"Quick view\" button",
+          "default": true,
+          "info": "Appears on hover over the product image."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_sale_badge",
+          "label": "Show sale badge",
+          "default": true,
+          "info": "The \"Save X%\" ribbon on the product image, shown when an item has a compare-at price."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_vendor_label",
+          "label": "Show vendor",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_reviews_badge",
+          "label": "Show review stars",
+          "default": true,
+          "info": "Judge.me review widget."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_savings_row",
+          "label": "Show savings row",
+          "default": true,
+          "info": "The \"Save $X / Comp. Value\" line shown under the price when an item has a compare-at price."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_eta_badge",
+          "label": "Show estimated delivery",
+          "default": true,
+          "info": "Only appears for products with delivery-estimate text set."
         },
         { "type": "header", "content": "Promo card" },
         {
