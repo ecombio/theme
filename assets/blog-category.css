@@ -30,11 +30,38 @@
   text-align: center;
 }
 
+/* FIX: this is the actual "nav bar" treatment — sticks under your
+   fixed header (same var/collapse contract as blog-nav and
+   brand-directory's alpha-nav), gets a background + border so it
+   reads as a distinct bar rather than page content, and vertical
+   padding instead of relying on pill padding alone for its height. */
 .blog-category-pills {
+  position: sticky;
+  top: var(--header-group-height, 0px);
+  transition: top 0.3s ease;
+  z-index: 50;
+
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: var(--pill-alignment, center);
+
+  padding: 14px 0;
+  background: var(--color-background, #fff);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Collapses the offset to 0 the moment header-group.js hides the
+   fixed header, so there's no dead gap at the top of the viewport
+   while scrolling down. Mirrors the header's own 0.3s transition. */
+:root.header-group-hidden .blog-category-pills {
+  top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-category-pills {
+    transition: none;
+  }
 }
 
 .blog-category-pill {
