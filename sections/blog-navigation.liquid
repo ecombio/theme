@@ -1,48 +1,5 @@
 {% comment %}
-  ============================================================
   Blog Navigation — sticky under sticky header
-  ============================================================
-  WHY THIS IS A SNIPPET, NOT A SECTION:
-  Shopify auto-wraps every {% section %} in its own
-  <div class="shopify-section"> that contains ONLY that
-  section's markup. For a `position: sticky` element, the
-  browser only lets it "stick" while its containing block still
-  has unscrolled height left to give it — and a section-wrapper
-  that contains nothing but the nav itself is exactly as tall as
-  the nav, so there's no room to stick. It just scrolls off like
-  a static element, even though the CSS is correct.
-
-  Rendering this as a {% render %} INSIDE the section that
-  already contains the blog post list / article body gives it a
-  much taller shared containing block (mirrors how
-  collection-toolbar.liquid shares a containing block with the
-  product grid) — so it can actually stick.
-
-  HOW TO ADD IT
-  1. Save this file as: snippets/blog-navigation.liquid
-     (replaces sections/blog-navigation.liquid — delete that
-     old section file and remove it from templates/blog.json /
-     templates/article.json if it's referenced there)
-  2. Open your blog content section (commonly
-     sections/main-blog.liquid and sections/main-article.liquid)
-     and add, near the very top of the markup, right after the
-     section's opening wrapper div:
-
-       {% render 'blog-navigation', menu: section.settings.blog_nav_menu %}
-
-  3. Add a matching setting to that section's {% schema %} so
-     editors can still pick the menu in the theme editor:
-
-       {
-         "type": "link_list",
-         "id": "blog_nav_menu",
-         "label": "Blog navigation menu",
-         "info": "Choose the menu to display as blog navigation links."
-       }
-
-  This still reads --header-group-height and .header-group-hidden
-  off :root exactly as before — that contract was already correct.
-  Only the DOM placement changes.
 {% endcomment %}
  {{ 'blog-navigation.css'       | asset_url | stylesheet_tag }}
 
