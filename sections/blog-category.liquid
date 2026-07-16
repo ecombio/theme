@@ -20,7 +20,7 @@
     {%- endif %}
   "
 >
-  <div class="blog-category-section">
+  <div class="blog-category-section{% unless section.settings.show_title %} blog-category-section--no-title{% endunless %}">
 
     {%- if section.settings.show_title -%}
       <h2 class="blog-category-title">
@@ -28,28 +28,44 @@
       </h2>
     {%- endif -%}
 
-    {%- if section.blocks.size > 0 -%}
-      <nav class="blog-category-pills" aria-label="Blog categories" style="--pill-alignment: {{ section.settings.alignment }};">
-        {%- for block in section.blocks -%}
-          {%- if block.settings.post != blank -%}
-            <a
-              href="{{ block.settings.post.url }}"
-              class="blog-category-pill{% if block.settings.post.url == request.path %} is-active{% endif %}"
-              {{ block.shopify_attributes }}
-            >
-              {{ block.settings.post.title }}
-            </a>
-          {%- endif -%}
-        {%- endfor -%}
-      </nav>
-    {%- else -%}
-      <p class="blog-category-empty">
-        {{ section.settings.empty_text }}
-      </p>
-    {%- endif -%}
-
   </div>
 </div>
+
+{%- if section.blocks.size > 0 -%}
+  <nav class="blog-category-pills" aria-label="Blog categories">
+    <div
+      class="blog-category-pills__inner {{ width_class }}"
+      style="
+        --section-padding: {{ section.settings.section_padding }}px;
+        --pill-alignment: {{ section.settings.alignment }};
+        {%- if width_type == 'custom-width' %}
+          --custom-width: {{ section.settings.custom_width }}rem;
+        {%- endif %}
+      "
+    >
+      {%- for block in section.blocks -%}
+        {%- if block.settings.post != blank -%}
+          <a
+            href="{{ block.settings.post.url }}"
+            class="blog-category-pill{% if block.settings.post.url == request.path %} is-active{% endif %}"
+            {{ block.shopify_attributes }}
+          >
+            {{ block.settings.post.title }}
+          </a>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </nav>
+{%- else -%}
+  <div
+    class="{{ width_class }}"
+    style="--section-padding: {{ section.settings.section_padding }}px;"
+  >
+    <p class="blog-category-empty">
+      {{ section.settings.empty_text }}
+    </p>
+  </div>
+{%- endif -%}
 
 {% schema %}
 {

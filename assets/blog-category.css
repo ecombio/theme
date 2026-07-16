@@ -22,7 +22,13 @@
 
 .blog-category-section {
   padding-top: 40px;
-  padding-bottom: 40px;
+}
+
+/* When there's no heading, don't leave 40px of dead air above the
+   nav bar — let it sit flush under whatever's above it (your site
+   nav / header) instead of floating. */
+.blog-category-section--no-title {
+  padding-top: 0;
 }
 
 .blog-category-title {
@@ -30,24 +36,25 @@
   text-align: center;
 }
 
-/* FIX: this is the actual "nav bar" treatment — sticks under your
-   fixed header (same var/collapse contract as blog-nav and
-   brand-directory's alpha-nav), gets a background + border so it
-   reads as a distinct bar rather than page content, and vertical
-   padding instead of relying on pill padding alone for its height. */
+/* FIX: true nav-bar treatment. `width: 100vw` + the negative
+   margin-left bleeds the background edge-to-edge across the
+   viewport regardless of how deeply this sits inside a
+   width-constrained ancestor — same trick used to break a
+   centered container open to full width. The pill links
+   themselves live in .blog-category-pills__inner, which keeps
+   its own max-width/centering so the *content* still respects
+   the section's width setting even though the *bar* doesn't. */
 .blog-category-pills {
   position: sticky;
   top: var(--header-group-height, 0px);
   transition: top 0.3s ease;
   z-index: 50;
 
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: var(--pill-alignment, center);
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
 
-  padding: 14px 0;
-  background: var(--color-background, #fff);
+  background: var(--color-background-secondary, #f7f7f5);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
@@ -64,6 +71,14 @@
   }
 }
 
+.blog-category-pills__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: var(--pill-alignment, center);
+  padding-block: 14px;
+}
+
 .blog-category-pill {
   display: inline-flex;
   align-items: center;
@@ -75,6 +90,7 @@
   text-decoration: none;
   color: inherit;
   white-space: nowrap;
+  background: var(--color-background, #fff);
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
