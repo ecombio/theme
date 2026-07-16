@@ -4,6 +4,17 @@
   Supports two block types:
     - single_link : a single <a> nav item
     - link_list   : a dropdown nav item backed by a native Shopify menu (Navigation resource)
+
+  FIX (sticky offset): the sticky rule below now offsets from
+  var(--header-group-height) instead of top: 0, so it no longer
+  fights the fixed #header-group-wrapper for the same slot (that
+  collision is what made the menu look like it was "autohiding" —
+  it was actually just sitting underneath the header at all times).
+  When header-group.js hides the header it adds a
+  `header-group-hidden` class to :root; we key off that same class
+  to collapse the offset to 0, so the blog menu slides up to fill
+  the gap instead of leaving empty space, and stays visible at all
+  times as its own persistent bar.
 {%- endcomment -%}
 
 {%- assign section_id = section.id -%}
@@ -112,8 +123,22 @@
     z-index: 20;
   }
 
+  /* FIX: offset from the header's real height (published by
+     header-group.js as --header-group-height) instead of top: 0,
+     so this section stops competing with #header-group-wrapper for
+     the same viewport slot. z-index stays below the header's so
+     there's no stacking fight while both are visible. */
   #blog-menu-{{ section_id }}.blog-menu--sticky {
     position: sticky;
+    top: var(--header-group-height, 68px);
+    z-index: 20;
+    transition: top 0.3s ease; /* matches header-group-wrapper's 0.3s hide transition */
+  }
+
+  /* When header-group.js hides the header (adds .header-group-hidden
+     to :root), collapse the offset so the blog menu slides up to
+     fill the gap and remains permanently visible on its own. */
+  :root.header-group-hidden #blog-menu-{{ section_id }}.blog-menu--sticky {
     top: 0;
   }
 
