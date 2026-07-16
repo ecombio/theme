@@ -1,4 +1,25 @@
-{{ 'blog-menu.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  snippets/blog-menu.liquid
+
+  Rendered by sections/custom-articles.liquid. CSS lives in
+  assets/custom-articles.css (loaded once by the parent section).
+
+  JS behavior (toggle, dropdown, sticky-scroll) lives in
+  assets/custom-articles.js, loaded once by the parent section — this
+  snippet no longer has its own script tag.
+
+  Required params (passed in via {% render %} since render scope is
+  isolated — this snippet cannot reach `section` on its own):
+    heading           - string, optional label before the nav items
+    mobile_label      - string, mobile toggle button label
+    sticky            - boolean, make nav sticky on scroll
+    background_color  - string (hex), nav background
+    text_color        - string (hex), nav text
+    accent_color      - string (hex), hover/active accent
+    border_color      - string (hex), nav border
+    blocks            - section.blocks (single_link / link_list)
+    section_id        - unique id string, used for the mobile list's ARIA id
+{%- endcomment -%}
 
 <nav
   class="blog-menu{% if sticky %} blog-menu--sticky{% endif %}"
@@ -6,8 +27,8 @@
   aria-label="{{ heading | default: 'Blog navigation' | escape }}"
   style="
     --blog-menu-bg: {{ background_color | default: '#ffffff' }};
-    --blog-menu-text: {{ text_color | default: '#1a1a1a' }};
-    --blog-menu-accent: {{ accent_color | default: '#1a1a1a' }};
+    --blog-menu-text: {{ text_color | default: '#111111' }};
+    --blog-menu-accent: {{ accent_color | default: '#0A3161' }};
     --blog-menu-border: {{ border_color | default: '#e5e5e5' }};
   "
 >
@@ -94,5 +115,3 @@
 
   </div>
 </nav>
-
-<script src="{{ 'blog-menu.js' | asset_url }}" defer="defer"></script>

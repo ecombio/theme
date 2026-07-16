@@ -1,13 +1,14 @@
 {%- comment -%}
   snippets/blog-posts.liquid
 
-  Converted from the standalone sections/blog-posts.liquid section
-  (same filename, moved to snippets/) so it can be rendered inside
-  sections/custom-articles.liquid alongside the blog menu.
+  Rendered by sections/custom-articles.liquid. Layout CSS lives in
+  assets/custom-articles.css (loaded once by the parent section).
+  article-card.css remains loaded here since article-card.liquid is
+  a separate, independently-reusable component, not part of this
+  merge.
 
   Always pulls from blogs['articles'] (i.e. /blogs/articles).
-  Renders each article using snippets/article-card.liquid (which pulls
-  in its own article-card.css).
+  Renders each article using snippets/article-card.liquid.
 
   Required params (passed in via {% render %} since render scope is
   isolated — this snippet cannot reach `section` on its own):
@@ -55,7 +56,6 @@
 {%- endcomment -%}
 
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
-{{ 'blog-posts.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign target_blog = blogs['articles']
