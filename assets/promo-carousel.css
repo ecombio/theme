@@ -1,363 +1,197 @@
-/* ============================================================
-   promo-carousel.css
-   In-feed product carousel for collection pages.
-   Native CSS scroll — pairs with snippets/promo-carousel.liquid
-   and assets/promo-carousel.js.
-   ============================================================ */
-
-/* ── Custom properties ── */
 .promo-carousel {
-  --pc-gap:          12px;
-  --pc-arrow-size:   30px;
-  --pc-dot-size:     5px;
-  --pc-dot-gap:      4px;
-  --pc-dot-color:    rgba(0, 0, 0, 0.15);
-  --pc-dot-active:   #111;
-  --pc-arrow-bg:     #fff;
-  --pc-arrow-border: #ddd;
-  --pc-arrow-hover:  #f4f4f4;
-  --pc-fade-width:   28px;
-
-  /* Set via inline style in Liquid — JS never needs to write these. */
-  --_cols-desktop: 3;
-  --_cols-mobile:  2;
-
-  padding-block: 40px;
-  padding-inline: 16px;
-  box-sizing: border-box;
+  grid-column: 1 / -1;
+  --pc-gap: 1.2rem;
+  --pc-fade-width: 28px;
 }
 
-.promo-carousel--side-arrows {
-  padding-inline: 32px;
-}
-
-/* ── Banner + carousel side-by-side ── */
-.promo-carousel__layout {
-  display: block;
-}
-.promo-carousel__layout--has-banner {
-  display: flex;
-  align-items: stretch;
-  gap: 20px;
-}
-.promo-carousel__carousel-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* ── Banner ── */
-.promo-carousel__banner {
-  flex-shrink: 0;
-  width: var(--pc-banner-width, 220px);
-  position: relative;
-}
-.promo-carousel__banner-link {
-  display: block;
-  height: 100%;
-}
-.promo-carousel__banner-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 12px;
-}
-.promo-carousel__banner-placeholder {
-  width: 100%;
-  height: 100%;
-  min-height: 260px;
-  background: #e8f0e8;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.promo-carousel__banner-placeholder-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-@media (max-width: 767px) {
-  .promo-carousel__layout--has-banner {
-    flex-direction: column;
-  }
-  .promo-carousel__banner {
-    width: 100%;
-    max-width: 100%;
-  }
-  .promo-carousel__banner-placeholder {
-    min-height: 160px;
-  }
-}
-
-/* ── Header ── */
 .promo-carousel__header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
 }
-.promo-carousel__heading-group {
-  flex: 1;
-  min-width: 0;
-}
+
 .promo-carousel__heading {
-  margin: 0 0 4px;
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  font-weight: 500;
-  line-height: 1.2;
-}
-.promo-carousel__subheading {
+  font-size: 1.25rem;
   margin: 0;
-  font-size: 0.875rem;
-  color: #666;
 }
 
-/* ── Stage ── */
-.promo-carousel__stage {
+.promo-carousel__subheading {
+  font-size: 0.9rem;
+  color: #6b6b6b;
+  margin: 0;
+}
+
+.promo-carousel__scroll-region {
   position: relative;
-  /* overflow: visible so absolutely-positioned side arrows
-     at ±18px don't get clipped. The track clips itself. */
+  margin: -22px -16px -16px;
+  container-type: inline-size;
 }
 
-/* ── Track — native CSS scroll ── */
 .promo-carousel__track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc(
-    (100% - var(--pc-gap) * (var(--_cols-mobile) - 1)) / var(--_cols-mobile)
-  );
+  grid-auto-columns: calc((100% - (var(--pc-cards-desktop, 3) - 1) * var(--pc-gap)) / var(--pc-cards-desktop, 3));
   gap: var(--pc-gap);
-  list-style: none;
-  margin: 0;
-  /* Vertical padding gives product-card hover shadows room before
-     overflow:hidden would clip them. */
-  padding: 4px 0;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  cursor: grab;
+  padding: 22px 16px 16px;
+  box-sizing: border-box;
+  scroll-padding-inline: 16px;
 }
+
 .promo-carousel__track::-webkit-scrollbar {
   display: none;
 }
-/* Disable snap while dragging so the track follows the pointer
-   freely; JS re-snaps to nearest page on pointer-up. */
-.promo-carousel__track.is-dragging {
-  cursor: grabbing;
-  scroll-snap-type: none;
+
+.promo-carousel__track > * {
+  scroll-snap-align: start;
 }
 
-@media (min-width: 768px) {
+.promo-carousel__promo-cell {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media screen and (max-width: 599px) {
   .promo-carousel__track {
-    grid-auto-columns: calc(
-      (100% - var(--pc-gap) * (var(--_cols-desktop) - 1)) / var(--_cols-desktop)
-    );
+    grid-auto-columns: calc((100% - (var(--pc-cards-mobile, 2) - 1) * var(--pc-gap)) / var(--pc-cards-mobile, 2));
+    padding: 20px 16px 16px;
+  }
+
+  .promo-carousel .promo-carousel__arrow,
+  .promo-carousel .promo-carousel__dots {
+    display: none;
   }
 }
 
-/* ── Slides ── */
-.promo-carousel__slide {
-  scroll-snap-align: start;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-/* ── Overflow fade masks (toggled by JS) ── */
 .promo-carousel.has-overflow-start .promo-carousel__track {
   -webkit-mask-image: linear-gradient(to right, transparent, black var(--pc-fade-width));
   mask-image: linear-gradient(to right, transparent, black var(--pc-fade-width));
 }
+
 .promo-carousel.has-overflow-end .promo-carousel__track {
   -webkit-mask-image: linear-gradient(to left, transparent, black var(--pc-fade-width));
   mask-image: linear-gradient(to left, transparent, black var(--pc-fade-width));
 }
+
 .promo-carousel.has-overflow-start.has-overflow-end .promo-carousel__track {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    black var(--pc-fade-width),
-    black calc(100% - var(--pc-fade-width)),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black var(--pc-fade-width),
-    black calc(100% - var(--pc-fade-width)),
-    transparent
-  );
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--pc-fade-width), black calc(100% - var(--pc-fade-width)), transparent);
+  mask-image: linear-gradient(to right, transparent, black var(--pc-fade-width), black calc(100% - var(--pc-fade-width)), transparent);
 }
 
-/* ── Bottom nav row (dots + arrows) ── */
-.promo-carousel__nav {
-  display: flex;
+@media screen and (max-width: 599px) {
+  .promo-carousel {
+    --pc-fade-width: 20px;
+  }
+}
+
+.promo-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(1);
+  z-index: 2;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-blue, currentColor);
+  background: var(--color-white, #fff);
+  color: var(--color-blue, inherit);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity var(--transition-slow, 0.35s ease),
+    transform var(--transition-base, 0.2s ease),
+    background var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease);
 }
 
-/* ── Dots ── */
+.promo-carousel__arrow--prev {
+  left: 12px;
+}
+
+.promo-carousel__arrow--next {
+  right: 12px;
+}
+
+@media (min-width: 1024px) {
+  .promo-carousel__arrow--prev {
+    left: 24px;
+  }
+
+  .promo-carousel__arrow--next {
+    right: 24px;
+  }
+}
+
+.promo-carousel__arrow:hover:not(:disabled) {
+  background: var(--color-blue, currentColor);
+  color: var(--color-white, #fff);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.promo-carousel__arrow:disabled {
+  opacity: 0.6;
+  cursor: default;
+  border-color: var(--color-atc-soldout-text, currentColor);
+  color: var(--color-atc-soldout-text, currentColor);
+  background: var(--color-atc-soldout-bg, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .promo-carousel__arrow {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.85);
+    pointer-events: none;
+  }
+
+  .promo-carousel__scroll-region:hover .promo-carousel__arrow,
+  .promo-carousel__arrow:focus-visible {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+  }
+
+  .promo-carousel__scroll-region:hover .promo-carousel__arrow:hover:not(:disabled) {
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  .promo-carousel__scroll-region:hover .promo-carousel__arrow:disabled,
+  .promo-carousel__arrow:disabled:focus-visible {
+    opacity: 0.6;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 .promo-carousel__dots {
   display: flex;
-  align-items: center;
-  gap: var(--pc-dot-gap);
-  flex-wrap: wrap;
-}
-.promo-carousel__dots--standalone {
   justify-content: center;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 16px;
 }
+
 .promo-carousel__dot {
-  width: var(--pc-dot-size);
-  height: var(--pc-dot-size);
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   border: none;
   padding: 0;
-  background: var(--pc-dot-color);
+  background: var(--color-blue, currentColor);
+  opacity: 0.3;
   cursor: pointer;
-  transition: background 0.2s, width 0.2s, border-radius 0.2s;
-}
-.promo-carousel__dot.is-active {
-  background: var(--pc-dot-active);
-  width: 14px;
-  border-radius: 3px;
+  transition: opacity var(--transition-fast, 0.15s ease),
+    transform var(--transition-fast, 0.15s ease),
+    background var(--transition-fast, 0.15s ease);
 }
 
-/* ── Arrows ── */
-.promo-carousel__arrows--top {
-  display: flex;
-  gap: 5px;
-  flex-shrink: 0;
-}
-.promo-carousel__arrows {
-  display: flex;
-  gap: 5px;
-}
-.promo-carousel__arrow {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--pc-arrow-size);
-  height: var(--pc-arrow-size);
-  border-radius: 50%;
-  border: 0.5px solid var(--pc-arrow-border);
-  background: var(--pc-arrow-bg);
-  color: #222;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s, box-shadow 0.15s;
-}
-.promo-carousel__arrow:hover {
-  background: var(--pc-arrow-hover);
-}
-.promo-carousel__arrow:focus-visible {
-  outline: 2px solid #111;
-  outline-offset: 2px;
-}
-.promo-carousel__arrow[disabled] {
-  opacity: 0.28;
-  pointer-events: none;
-}
-
-/* ── Side arrows ── */
-.promo-carousel__arrow--side {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 36px;
-  height: 36px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
-}
-.promo-carousel__arrow--side-prev { left:  -18px; }
-.promo-carousel__arrow--side-next { right: -18px; }
-.promo-carousel__arrow--side:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
-}
-.promo-carousel__arrow--side[disabled] {
-  opacity: 0.28;
-  pointer-events: none;
-  box-shadow: none;
-}
-
-/* ── Reduced motion ── */
-@media (prefers-reduced-motion: reduce) {
-  .promo-carousel__dot { transition: none; }
-}
-
-/* ============================================================
-   PLACEHOLDER CARDS
-   ============================================================ */
-.pc-placeholder-card {
-  border-radius: 10px;
-  overflow: hidden;
-  background: #fff;
-  border: 0.5px solid #eee;
-}
-.pc-placeholder-card__image {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background: #f5f5f5;
-  overflow: hidden;
-}
-.pc-placeholder-card__svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.pc-placeholder-card__image svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-@keyframes pc-shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position:  400px 0; }
-}
-.pc-placeholder-card__body {
-  padding: 10px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pc-placeholder-card__line {
-  height: 12px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #e8e8e8 25%, #d4d4d4 50%, #e8e8e8 75%);
-  background-size: 400px 100%;
-  animation: pc-shimmer 1.4s ease-in-out infinite;
-}
-.pc-placeholder-card__line--title       { width: 85%; height: 14px; }
-.pc-placeholder-card__line--title-short { width: 60%; }
-.pc-placeholder-card__line--price       { width: 35%; height: 14px; margin-top: 4px; }
-@media (prefers-reduced-motion: reduce) {
-  .pc-placeholder-card__line { animation: none; }
-}
-
-/* ============================================================
-   IN-FEED GRID OVERRIDES
-   The parent grid is .product-feed__grid (product-feed.css).
-   These rules make the carousel span the full grid width and
-   strip the section-level padding that the surrounding grid
-   gap already provides.
-   ============================================================ */
-.product-feed__grid > .promo-carousel-cell {
-  grid-column: 1 / -1;
-}
-.product-feed__grid .promo-carousel {
-  padding-block: 0;
-  padding-inline: 0;
-}
-.product-feed__grid .promo-carousel--side-arrows {
-  padding-inline: 18px;
+.promo-carousel__dot[aria-current="true"] {
+  background: var(--color-red, currentColor);
+  opacity: 1;
+  transform: scale(1.2);
 }
