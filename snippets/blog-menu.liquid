@@ -1,140 +1,359 @@
-{% comment %}
+{%- comment -%}
   snippets/blog-menu.liquid
-  Sticky tag-filter + sort navigation for the blog, rendered directly
-  beneath #header-group-wrapper. Mirrors collection-toolbar.liquid's
-  contract with header-group.js/css:
-    - sticky top: var(--header-group-height), collapsing to top: 0
-      when header-group.js adds .header-group-hidden to :root
-    - real <a href> tags for tag links (works with JS off; blog
-      "/tagged/x" filtering is native Shopify routing, not a fetch)
-    - horizontally-scrollable pill track w/ prev/next nav buttons
-    - mobile bottom bar + bottom sheets for tags and sort, matching
-      collection-toolbar's mobile-bar / mobile-sort-sheet pattern
 
-  Params:
-    blog          - required, the blog object
-    current_tag   - optional string, the currently active tag ('' = All)
-    show_tag_menu - optional boolean, default true
-    show_sort     - optional boolean, default true
-{% endcomment %}
+  Converted from the standalone sections/blog-menu.liquid section
+  (same filename, moved to snippets/) so it can be rendered inside
+  sections/custom-articles.liquid alongside the blog posts grid.
 
-{{ 'blog-menu.css' | asset_url | stylesheet_tag }}
+  Required params (passed in via {% render %} since render scope is
+  isolated — this snippet cannot reach `section` on its own):
+    heading             - string, optional label before nav items
+    mobile_label        - string, mobile toggle button label
+    sticky              - boolean
+    background_color    - string (hex)
+    text_color          - string (hex)
+    accent_color        - string (hex)
+    border_color        - string (hex)
+    blocks              - the block list (pass section.blocks) — only
+                           'single_link' and 'link_list' block types
+                           are rendered here
+    section_id          - unique id string, used for CSS scoping (pass section.id)
 
-{%- liquid
-  if show_tag_menu == blank
-    assign show_tag_menu = true
-  endif
-  if show_sort == blank
-    assign show_sort = true
-  endif
--%}
+  FIX 1 (offset collision): sticky/fixed state offsets from
+  var(--header-group-height) instead of top: 0, so it no longer
+  fights the fixed #header-group-wrapper for the same slot (that
+  collision is what made the menu look like it was "autohiding" —
+  it was actually just sitting underneath the header at all times).
+  When header-group.js hides the header it adds a
+  `header-group-hidden` class to :root; we key off that same class
+  to collapse the offset to 0.
 
-<div
-  class="blog-menu"
-  id="blog-menu"
-  role="navigation"
-  aria-label="Blog navigation"
-  data-active-tag="{{ current_tag }}"
+  FIX 2 (unsticks past the section): CSS `position: sticky` can only
+  stick within its own containing block. Shopify wraps this section
+  in its own content-sized `.shopify-section` div, so the nav has
+  almost no room to travel before its own wrapper's bottom edge
+  scrolls past and sticky detaches. blog-menu-sticky.js watches
+  scroll position and swaps the nav to `position: fixed` (`.is-stuck`)
+  once you scroll past its natural resting position, so it stays
+  visible for the rest of the page instead of only within its own
+  section. A spacer element (inserted by that script) reserves the
+  nav's height in the flow so nothing jumps when it goes fixed.
+{%- endcomment -%}
+
+<nav
+  class="blog-menu{% if sticky %} blog-menu--sticky{% endif %}"
+  id="blog-menu-{{ section_id }}"
+  data-blog-menu
+  aria-label="{{ heading | default: 'Blog navigation' | escape }}"
 >
+  <div class="blog-menu__inner page-width">
 
-  {%- if show_tag_menu -%}
-    <div class="blog-menu__scroll" id="blog-menu-tags">
+    {%- if heading != blank -%}
+      <div class="blog-menu__heading">{{ heading | escape }}</div>
+    {%- endif -%}
+
+    {%- if blocks.size > 0 -%}
       <button
         type="button"
-        class="blog-menu__nav blog-menu__nav--prev"
-        aria-label="Scroll tags left"
-        data-blog-tags-prev
-        hidden
+        class="blog-menu__toggle"
+        data-blog-menu-toggle
+        aria-expanded="false"
+        aria-controls="blog-menu-list-{{ section_id }}"
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <span class="blog-menu__toggle-label">{{ mobile_label | default: 'Menu' | escape }}</span>
+        <span class="blog-menu__toggle-icon" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
       </button>
 
-      <div class="blog-menu__track" data-blog-tags-track role="tablist" aria-label="Blog tags">
-        <a
-          href="{{ blog.url }}"
-          class="blog-menu__pill{% if current_tag == '' %} blog-menu__pill--active{% endif %}"
-          role="tab"
-          aria-selected="{% if current_tag == '' %}true{% else %}false{% endif %}"
-          tabindex="{% if current_tag == '' %}0{% else %}-1{% endif %}"
-          data-tag=""
-        >{{ 'blog.general.all_tags' | t | default: 'All' }}</a>
+      <ul class="blog-menu__list" id="blog-menu-list-{{ section_id }}" data-blog-menu-list>
+        {%- for block in blocks -%}
 
-        {%- for tag in blog.all_tags -%}
-          <a
-            href="{{ blog.url }}/tagged/{{ tag | url_encode }}"
-            class="blog-menu__pill{% if current_tag == tag %} blog-menu__pill--active{% endif %}"
-            role="tab"
-            aria-selected="{% if current_tag == tag %}true{% else %}false{% endif %}"
-            tabindex="{% if current_tag == tag %}0{% else %}-1{% endif %}"
-            data-tag="{{ tag | escape }}"
-          >{{ tag }}</a>
+          {%- case block.type -%}
+
+            {%- when 'single_link' -%}
+              <li class="blog-menu__item blog-menu__item--single" {{ block.shopify_attributes }}>
+                {%- if block.settings.url != blank -%}
+                  <a
+                    href="{{ block.settings.url }}"
+                    class="blog-menu__link"
+                    {% if block.settings.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}
+                  >
+                    {{ block.settings.label | default: 'Link' | escape }}
+                  </a>
+                {%- else -%}
+                  <span class="blog-menu__link blog-menu__link--disabled">
+                    {{ block.settings.label | default: 'Link' | escape }}
+                  </span>
+                {%- endif -%}
+              </li>
+
+            {%- when 'link_list' -%}
+              {%- assign menu_handle = block.settings.menu -%}
+              {%- assign menu = linklists[menu_handle] -%}
+              <li class="blog-menu__item blog-menu__item--list{% if menu.links.size == 0 %} blog-menu__item--empty{% endif %}" {{ block.shopify_attributes }}>
+                <button
+                  type="button"
+                  class="blog-menu__link blog-menu__link--parent"
+                  data-blog-menu-dropdown-toggle
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                >
+                  {{ block.settings.label | default: menu.title | default: 'More' | escape }}
+                  <span class="blog-menu__caret" aria-hidden="true"></span>
+                </button>
+
+                {%- if menu != blank and menu.links.size > 0 -%}
+                  <ul class="blog-menu__dropdown" data-blog-menu-dropdown>
+                    {%- for link in menu.links -%}
+                      <li class="blog-menu__dropdown-item">
+                        <a
+                          href="{{ link.url }}"
+                          class="blog-menu__dropdown-link{% if link.active %} blog-menu__dropdown-link--active{% endif %}"
+                        >
+                          {{ link.title | escape }}
+                        </a>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </li>
+
+          {%- endcase -%}
+
         {%- endfor -%}
-      </div>
-
-      <button
-        type="button"
-        class="blog-menu__nav blog-menu__nav--next"
-        aria-label="Scroll tags right"
-        data-blog-tags-next
-        hidden
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
-  {%- endif -%}
-
-  {%- if show_sort -%}
-    <div class="blog-menu__sort">
-      <label for="BlogSortBy" class="visually-hidden">Sort</label>
-      <select id="BlogSortBy" data-blog-sort>
-        <option value="date-desc">{{ 'blog.sort.newest' | t | default: 'Newest' }}</option>
-        <option value="date-asc">{{ 'blog.sort.oldest' | t | default: 'Oldest' }}</option>
-        <option value="title-asc">{{ 'blog.sort.title_az' | t | default: 'Title A-Z' }}</option>
-        <option value="title-desc">{{ 'blog.sort.title_za' | t | default: 'Title Z-A' }}</option>
-      </select>
-    </div>
-  {%- endif -%}
-
-</div>
-
-{%- if show_tag_menu or show_sort -%}
-  <div class="blog-menu-mobile-bar" aria-label="Blog controls" role="toolbar">
-    {%- if show_tag_menu -%}
-      <button
-        class="blog-menu-mobile-bar__btn"
-        type="button"
-        aria-expanded="false"
-        aria-controls="blog-menu-tag-sheet"
-        aria-label="Toggle tags"
-        data-blog-tag-toggle
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        {{ 'blog.general.tags' | t | default: 'Tags' }}
-      </button>
+      </ul>
     {%- endif -%}
 
-    {%- if show_sort -%}
-      <button
-        class="blog-menu-mobile-bar__btn"
-        type="button"
-        aria-expanded="false"
-        aria-label="Sort articles"
-        data-blog-mobile-sort-toggle
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M2 4h8M2 8h6M2 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M12 3v10M9.5 10.5L12 13l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ 'blog.general.sort' | t | default: 'Sort' }}
-      </button>
-    {%- endif -%}
   </div>
-{%- endif -%}
+</nav>
 
-{{ 'blog-menu.js' | asset_url | script_tag }}
+{%- style -%}
+  #blog-menu-{{ section_id }} {
+    --blog-menu-bg: {{ background_color | default: '#ffffff' }};
+    --blog-menu-text: {{ text_color | default: '#1a1a1a' }};
+    --blog-menu-accent: {{ accent_color | default: '#1a1a1a' }};
+    --blog-menu-border: {{ border_color | default: '#e5e5e5' }};
+
+    background: var(--blog-menu-bg);
+    color: var(--blog-menu-text);
+    border-bottom: 1px solid var(--blog-menu-border);
+    width: 100%;
+    z-index: 20;
+  }
+
+  /* Stays in normal document flow until blog-menu-sticky.js adds
+     .is-stuck (see FIX 2 in the comment above for why plain
+     position: sticky isn't enough here). */
+  #blog-menu-{{ section_id }}.blog-menu--sticky {
+    position: relative;
+  }
+
+  /* FIX: offset from the header's real height (published by
+     header-group.js as --header-group-height) instead of top: 0,
+     so this section stops competing with #header-group-wrapper for
+     the same viewport slot. z-index stays below the header's so
+     there's no stacking fight while both are visible. */
+  #blog-menu-{{ section_id }}.blog-menu--sticky.is-stuck {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--header-group-height, 68px);
+    z-index: 20;
+    transition: top 0.3s ease; /* matches header-group-wrapper's 0.3s hide transition */
+  }
+
+  /* When header-group.js hides the header (adds .header-group-hidden
+     to :root), collapse the offset so the blog menu slides up to
+     fill the gap and remains permanently visible on its own. */
+  :root.header-group-hidden #blog-menu-{{ section_id }}.blog-menu--sticky.is-stuck {
+    top: 0;
+  }
+
+  /* Reserves the nav's height in normal flow once it goes fixed, so
+     the article grid below doesn't jump up underneath it. Height is
+     set inline by blog-menu-sticky.js to match the nav's real height. */
+  #blog-menu-{{ section_id }} + .blog-menu__spacer {
+    display: none;
+  }
+
+  #blog-menu-{{ section_id }} + .blog-menu__spacer.is-active {
+    display: block;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__heading {
+    font-weight: 600;
+    font-size: 1rem;
+    white-space: nowrap;
+    margin-right: 0.5rem;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__list {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__item {
+    position: relative;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.6rem 0.85rem;
+    color: var(--blog-menu-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__link:hover,
+  #blog-menu-{{ section_id }} .blog-menu__link--parent[aria-expanded="true"] {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--blog-menu-accent);
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__link--disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__caret {
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.15s ease;
+    margin-top: -2px;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__link--parent[aria-expanded="true"] .blog-menu__caret {
+    transform: rotate(-135deg);
+    margin-top: 2px;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 200px;
+    background: var(--blog-menu-bg);
+    border: 1px solid var(--blog-menu-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0.35rem;
+    display: none;
+    z-index: 30;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__item--list.is-open .blog-menu__dropdown {
+    display: block;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__dropdown-link {
+    display: block;
+    padding: 0.5rem 0.65rem;
+    color: var(--blog-menu-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__dropdown-link:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__dropdown-link--active {
+    color: var(--blog-menu-accent);
+    font-weight: 600;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__toggle {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--blog-menu-border);
+    border-radius: 4px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--blog-menu-text);
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__toggle-icon {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  #blog-menu-{{ section_id }} .blog-menu__toggle-icon span {
+    width: 16px;
+    height: 2px;
+    background: currentColor;
+    display: block;
+  }
+
+  @media screen and (max-width: 749px) {
+    #blog-menu-{{ section_id }} .blog-menu__toggle {
+      display: inline-flex;
+    }
+
+    #blog-menu-{{ section_id }} .blog-menu__list {
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      gap: 0;
+      border-top: 1px solid var(--blog-menu-border);
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+
+    #blog-menu-{{ section_id }} .blog-menu__list.is-open {
+      display: flex;
+    }
+
+    #blog-menu-{{ section_id }} .blog-menu__inner {
+      flex-wrap: wrap;
+    }
+
+    #blog-menu-{{ section_id }} .blog-menu__dropdown {
+      position: static;
+      box-shadow: none;
+      border: none;
+      margin: 0;
+      padding-left: 0.75rem;
+    }
+  }
+{%- endstyle -%}
+
+<script src="{{ 'blog-menu.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'blog-menu-sticky.js' | asset_url }}" defer="defer"></script>
