@@ -1,184 +1,132 @@
 {%- comment -%}
   snippets/promo-carousel.liquid
-  In-feed promo carousel — native CSS scroll implementation.
-  Renders as one full-width row inside .product-feed__grid
-  (via .promo-carousel-cell, grid-column: 1 / -1 in promo-carousel.css).
 
-  Expects:
-    block → a `promo_carousel` block from section.blocks (see
-            main-collection.liquid schema), with settings:
-              position, heading, subheading, collection,
-              products_limit, cards_per_row_desktop, cards_per_row_mobile,
-              show_arrows, arrow_position, autoplay, autoplay_interval,
-              show_banner, banner_image, banner_link
+  Full-width scrollable product row for the collection grid. Direct
+  port of sections/featured-collection.liquid's "row" layout, minus
+  autoplay, drag, the pinned-outside-track banner mode, and the
+  placeholder shimmer state (obsolete). Same image-card promo slot,
+  same product-card cards, same arrow/dot scroll mechanics — just
+  invoked as a block inside snippets/collection-feed.liquid instead
+  of standing alone as a section.
 
-  NOTE: product-card.js is loaded globally in theme.liquid.
-  Do NOT re-load it here — double-registration duplicates ATC/Wishlist/
-  Compare/QuickView handlers.
+  Accepts:
+    block - a `promo_carousel` block (see main-collection.liquid schema)
+
+  Placement (position-in-grid) is handled by the caller
+  (collection-feed.liquid); this snippet only renders the row itself,
+  and is responsible for spanning the full grid width via CSS so it
+  never collides with sibling cells.
 {%- endcomment -%}
 
 {%- liquid
-  assign heading        = block.settings.heading
-  assign subheading     = block.settings.subheading
-  assign collection_ref = block.settings.collection
-  assign cards_desk     = block.settings.cards_per_row_desktop | default: 3
-  assign cards_mob      = block.settings.cards_per_row_mobile  | default: 2
-  assign show_arrows    = block.settings.show_arrows
-  assign arrow_position = block.settings.arrow_position | default: 'bottom'
-  assign autoplay       = block.settings.autoplay
-  assign autoplay_ms    = block.settings.autoplay_interval | default: 4 | times: 1000
-  assign banner_show    = block.settings.show_banner
-  assign banner_image   = block.settings.banner_image
-  assign banner_link    = block.settings.banner_link
-  assign products_limit = block.settings.products_limit | default: 12
+  assign settings = block.settings
 
-  assign show_top_arrows    = false
-  assign show_bottom_arrows = false
-  assign show_side_arrows   = false
-  if show_arrows and arrow_position == 'top'
-    assign show_top_arrows = true
-  elsif show_arrows and arrow_position == 'side'
-    assign show_side_arrows = true
-  elsif show_arrows
-    assign show_bottom_arrows = true
+  assign show_promo = false
+  if settings.enable_promo_card and settings.promo_image != blank
+    assign show_promo = true
   endif
+
+  assign promo_width = blank
+  if settings.promo_custom_width
+    assign promo_width = settings.promo_width_px | append: 'px'
+  endif
+
+  assign promo_width_mobile = blank
+  if settings.promo_custom_width_mobile
+    assign promo_width_mobile = settings.promo_width_px_mobile | append: 'px'
+  endif
+
+  assign cards_desktop = settings.cards_per_row_desktop | default: 3
+  assign cards_mobile = settings.cards_per_row_mobile | default: 2
+  assign row_label = settings.heading | default: settings.collection.title
 -%}
 
-<div class="promo-carousel-cell" {{ block.shopify_attributes }}>
-  <section
-    class="promo-carousel{% if show_side_arrows %} promo-carousel--side-arrows{% endif %}"
-    id="pc-block-{{ block.id }}"
+{%- if settings.collection != blank -%}
+  <div
+    class="promo-carousel"
     data-promo-carousel
-    data-autoplay="{{ autoplay }}"
-    data-autoplay-interval="{{ autoplay_ms }}"
-    style="--_cols-desktop: {{ cards_desk }}; --_cols-mobile: {{ cards_mob }};"
+    style="--pc-cards-desktop: {{ cards_desktop }}; --pc-cards-mobile: {{ cards_mobile }};"
   >
-
-    {%- if heading != blank or subheading != blank or show_top_arrows -%}
+    {%- if settings.heading != blank or settings.subheading != blank -%}
       <div class="promo-carousel__header">
-        <div class="promo-carousel__heading-group">
-          {%- if heading != blank -%}
-            <h2 class="promo-carousel__heading">{{ heading }}</h2>
-          {%- endif -%}
-          {%- if subheading != blank -%}
-            <p class="promo-carousel__subheading">{{ subheading }}</p>
-          {%- endif -%}
-        </div>
-        {%- if show_top_arrows -%}
-          <div class="promo-carousel__arrows promo-carousel__arrows--top">
-            <button class="promo-carousel__arrow promo-carousel__arrow--prev" type="button" aria-label="Previous" data-pc-prev disabled>
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button class="promo-carousel__arrow promo-carousel__arrow--next" type="button" aria-label="Next" data-pc-next>
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
+        {%- if settings.heading != blank -%}
+          <h2 class="promo-carousel__heading">{{ settings.heading }}</h2>
+        {%- endif -%}
+        {%- if settings.subheading != blank -%}
+          <p class="promo-carousel__subheading">{{ settings.subheading }}</p>
         {%- endif -%}
       </div>
     {%- endif -%}
 
-    <div class="promo-carousel__layout{% if banner_show %} promo-carousel__layout--has-banner{% endif %}">
-
-      {%- if banner_show -%}
-        <div class="promo-carousel__banner">
-          {%- if banner_link != blank -%}<a href="{{ banner_link }}" class="promo-carousel__banner-link">{%- endif -%}
-          {%- if banner_image != blank -%}
-            {{
-              banner_image
-              | image_url: width: 800
-              | image_tag:
-                class: 'promo-carousel__banner-img',
-                loading: 'lazy',
-                widths: '200, 300, 400, 600',
-                sizes: '(max-width: 767px) 100vw, 220px',
-                alt: banner_image.alt | default: heading | escape
-            }}
-          {%- else -%}
-            <div class="promo-carousel__banner-placeholder" aria-hidden="true">
-              {{ 'collection-1' | placeholder_svg_tag: 'promo-carousel__banner-placeholder-svg' }}
-            </div>
-          {%- endif -%}
-          {%- if banner_link != blank -%}</a>{%- endif -%}
-        </div>
+    <div class="promo-carousel__scroll-region">
+      {%- if settings.show_arrows -%}
+        <button
+          type="button"
+          class="promo-carousel__arrow promo-carousel__arrow--prev"
+          aria-label="Previous products"
+          data-pc-prev
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       {%- endif -%}
 
-      <div class="promo-carousel__carousel-col">
-
-        <div class="promo-carousel__stage{% if show_side_arrows %} promo-carousel__stage--side-arrows{% endif %}">
-
-          {%- if show_side_arrows -%}
-            <button
-              class="promo-carousel__arrow promo-carousel__arrow--side promo-carousel__arrow--side-prev"
-              type="button"
-              aria-label="Previous"
-              data-pc-prev
-              disabled
-            >
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          {%- endif -%}
-
-          <ul
-            class="promo-carousel__track"
-            data-pc-track
-            role="list"
-            aria-label="{{ heading | default: collection_ref.title | escape }}"
-          >
-            {%- if collection_ref != blank and collection_ref.products_count > 0 -%}
-              {%- for product in collection_ref.products limit: products_limit -%}
-                <li class="promo-carousel__slide" data-pc-slide>
-                  {%- render 'product-card', product: product -%}
-                </li>
-              {%- endfor -%}
-            {%- else -%}
-              {%- for i in (1..4) -%}
-                <li class="promo-carousel__slide" data-pc-slide>
-                  <div class="pc-placeholder-card">
-                    <div class="pc-placeholder-card__image">
-                      {{ 'product-' | append: i | placeholder_svg_tag: 'pc-placeholder-card__svg' }}
-                    </div>
-                    <div class="pc-placeholder-card__body">
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--title pc-placeholder-card__line--title-short"></div>
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
-                    </div>
-                  </div>
-                </li>
-              {%- endfor -%}
-            {%- endif -%}
-          </ul>
-
-          {%- if show_side_arrows -%}
-            <button
-              class="promo-carousel__arrow promo-carousel__arrow--side promo-carousel__arrow--side-next"
-              type="button"
-              aria-label="Next"
-              data-pc-next
-            >
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          {%- endif -%}
-
-        </div>
-
-        {%- if show_bottom_arrows -%}
-          <div class="promo-carousel__nav">
-            <div class="promo-carousel__dots" data-pc-dots></div>
-            <div class="promo-carousel__arrows">
-              <button class="promo-carousel__arrow promo-carousel__arrow--prev" type="button" aria-label="Previous" data-pc-prev disabled>
-                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <button class="promo-carousel__arrow promo-carousel__arrow--next" type="button" aria-label="Next" data-pc-next>
-                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-            </div>
+      <div
+        class="promo-carousel__track"
+        data-pc-track
+        tabindex="0"
+        role="region"
+        aria-label="{{ row_label }}"
+      >
+        {%- if show_promo -%}
+          <div class="promo-carousel__promo-cell">
+            {%- render 'image-card',
+              image: settings.promo_image,
+              mobile_image: settings.promo_mobile_image,
+              link: settings.promo_link,
+              heading: settings.promo_heading,
+              subheading: settings.promo_subheading,
+              price_text: settings.promo_price_text,
+              price_truncate: settings.promo_price_truncate,
+              button_label: settings.promo_button_label,
+              content_position: settings.promo_content_position,
+              image_scale: settings.promo_image_scale,
+              text_color: settings.promo_text_color,
+              heading_size: settings.promo_heading_size,
+              subheading_size: settings.promo_subheading_size,
+              price_size: settings.promo_price_size,
+              button_size: settings.promo_button_size,
+              height_mobile: settings.promo_height_mobile,
+              height_desktop: settings.promo_height_desktop,
+              width: promo_width,
+              width_mobile: promo_width_mobile,
+              loading: 'lazy'
+            -%}
           </div>
-        {%- else -%}
-          <div class="promo-carousel__dots promo-carousel__dots--standalone" data-pc-dots></div>
         {%- endif -%}
 
+        {%- for product in settings.collection.products limit: settings.products_limit -%}
+          {%- render 'product-card', product: product -%}
+        {%- endfor -%}
       </div>
+
+      {%- if settings.show_arrows -%}
+        <button
+          type="button"
+          class="promo-carousel__arrow promo-carousel__arrow--next"
+          aria-label="Next products"
+          data-pc-next
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      {%- endif -%}
     </div>
 
-  </section>
-</div>
+    {%- if settings.show_dots -%}
+      <div class="promo-carousel__dots" data-pc-dots role="tablist" aria-label="{{ row_label }} page navigation"></div>
+    {%- endif -%}
+  </div>
+{%- endif -%}
