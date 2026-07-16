@@ -1,0 +1,151 @@
+{% comment %}
+  ============================================================
+  Blog Navigation Bar — sticky under sticky header
+  ============================================================
+  UPDATED: this theme's sticky header is #header-group-wrapper
+  (position: fixed), managed by header-group.js / header-group.css.
+  That script already measures the real header height live and
+  publishes it as --header-group-height on :root, and toggles a
+  .header-group-hidden class on :root when the header slides away
+  on scroll. This section now just reads those — no separate
+  ResizeObserver needed, so the old <script> block is gone.
+
+  ADD TO THEME
+  1. Save this file as: sections/blog-navigation.liquid
+  2. Add it to templates/blog.json and templates/article.json
+     (Theme editor → Blog pages / Article pages → Add section
+     → "Blog navigation"), OR render it directly in
+     layout/theme.liquid guarded by a template check — see
+     the snippet at the bottom of this comment block.
+  3. In the theme editor, pick which menu (linklist) to use
+     for the section's "Menu" setting.
+
+  MANUAL TEMPLATE-GUARD OPTION (skip the section-block route)
+  If you'd rather hardcode it into theme.liquid right after
+  #header-group-wrapper, wrap it like this:
+
+    {% if template contains 'blog' or template contains 'article' %}
+      {% section 'blog-navigation' %}
+    {% endif %}
+{% endcomment %}
+
+{% if template contains 'blog' or template contains 'article' %}
+  {% assign nav_menu = section.settings.menu %}
+
+  <nav
+    class="blog-nav"
+    id="BlogNav-{{ section.id }}"
+    data-blog-nav
+    aria-label="{{ section.settings.menu.title | default: 'Blog navigation' }}"
+  >
+    <ul class="blog-nav__list" role="list">
+      {% for link in nav_menu.links %}
+        <li class="blog-nav__item">
+          <a
+            href="{{ link.url }}"
+            class="blog-nav__link{% if link.active %} blog-nav__link--active{% endif %}"
+            {% if link.active %}aria-current="page"{% endif %}
+          >
+            {{ link.title }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  <style>
+    .blog-nav {
+      position: sticky;
+      top: var(--header-group-height, 0px);
+      transition: top 0.3s ease;
+      z-index: 3; /* stays below header's 2147483647, above page content */
+
+      width: 100%;
+      background: var(--color-background, #fff);
+      border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+    }
+
+    /* Collapses the offset to 0 the instant header-group.js hides
+       the header, so there's no dead gap at the top of the viewport
+       while scrolling down. Mirrors the header's own 0.3s transition
+       so the two stay in lockstep. */
+    :root.header-group-hidden .blog-nav {
+      top: 0;
+    }
+
+    .blog-nav__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      max-width: var(--page-width, 1200px);
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      list-style: none;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .blog-nav__list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .blog-nav__link {
+      display: inline-block;
+      white-space: nowrap;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: var(--color-text, #1a1a1a);
+      opacity: 0.7;
+      padding-bottom: 0.25rem;
+      border-bottom: 2px solid transparent;
+      transition: opacity 0.15s ease, border-color 0.15s ease;
+    }
+
+    .blog-nav__link:hover,
+    .blog-nav__link:focus-visible {
+      opacity: 1;
+    }
+
+    .blog-nav__link--active {
+      opacity: 1;
+      border-bottom-color: currentColor;
+      font-weight: 600;
+    }
+
+    @media (max-width: 749px) {
+      .blog-nav__list {
+        gap: 1rem;
+        padding: 0.65rem 1rem;
+      }
+      .blog-nav__link {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .blog-nav {
+        transition: none;
+      }
+    }
+  </style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Blog navigation",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "info": "Choose the menu to display as blog navigation links."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog navigation"
+    }
+  ]
+}
+{% endschema %}
