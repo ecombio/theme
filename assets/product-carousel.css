@@ -1,48 +1,47 @@
 /* ============================================================
-   promo-carousel.css
-   In-feed product carousel for collection pages.
-   Native CSS scroll — pairs with snippets/promo-carousel.liquid
-   and assets/promo-carousel.js.
+   product-carousel.css
+   Pairs with sections/product-carousel.liquid
    ============================================================ */
 
 /* ── Custom properties ── */
-.promo-carousel {
-  --pc-gap:          12px;
-  --pc-arrow-size:   30px;
-  --pc-dot-size:     5px;
-  --pc-dot-gap:      4px;
-  --pc-dot-color:    rgba(0, 0, 0, 0.15);
-  --pc-dot-active:   #111;
-  --pc-arrow-bg:     #fff;
-  --pc-arrow-border: #ddd;
-  --pc-arrow-hover:  #f4f4f4;
-  --pc-fade-width:   28px;
+.product-carousel {
+  --carousel-gap:          12px;
+  --carousel-card-min:     160px;
+  --carousel-arrow-size:   30px;
+  --carousel-dot-size:     5px;
+  --carousel-dot-gap:      4px;
+  --carousel-dot-color:    rgba(0,0,0,.15);
+  --carousel-dot-active:   #111;
+  --carousel-arrow-bg:     #fff;
+  --carousel-arrow-border: #ddd;
+  --carousel-arrow-hover:  #f4f4f4;
 
-  /* Set via inline style in the Liquid so CSS knows the
-     column count without JS needing to write it at runtime. */
-  --_cols-desktop: 3;
+  --_cols-desktop: 3; /* default; overridden per-section by product-carousel.js from the "Cards visible — desktop" setting */
   --_cols-mobile:  2;
+}
 
+/* ── Section wrapper ── */
+.product-carousel {
   padding-block: 40px;
   padding-inline: 16px;
   box-sizing: border-box;
 }
 
 /* Extra horizontal room so side arrows don't clip */
-.promo-carousel--side-arrows {
+.product-carousel--side-arrows {
   padding-inline: 32px;
 }
 
-/* ── Banner + carousel side-by-side ── */
-.promo-carousel__layout {
+/* ── Side-by-side layout ── */
+.product-carousel__layout {
   display: block;
 }
-.promo-carousel__layout--has-banner {
+.product-carousel__layout--has-banner {
   display: flex;
   align-items: stretch;
   gap: 20px;
 }
-.promo-carousel__carousel-col {
+.product-carousel__carousel-col {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -50,24 +49,49 @@
   gap: 14px;
 }
 
-/* ── Banner ── */
-.promo-carousel__banner {
+/* ── Banner ──
+   .product-carousel__banner handles sizing/flex only. The actual
+   clip (overflow + border-radius) lives on the inner
+   .product-carousel__banner-clip element — see below.
+
+   WIDTH: --pc-banner-width is set by product-carousel.js to match the
+   real rendered width of one product card, so the banner reads as
+   "one column" alongside the product cards (matches the merchandising
+   reference: [banner-card][product-card][product-card][product-card]).
+   The 220px fallback only applies before JS has run on first paint. */
+.product-carousel__banner {
   flex-shrink: 0;
   width: var(--pc-banner-width, 220px);
   position: relative;
 }
-.promo-carousel__banner-link {
+
+/* Same technique as banner-carousel.css's .banner-carousel__track /
+   .banner-carousel pairing: pad the inside of the clipping box so
+   banner-card's hover shadow (16px blur) + 6px hover lift have room to
+   render before overflow:hidden cuts them off, then cancel the padding
+   back out with a matching negative margin on the outer element so the
+   banner's footprint and surrounding layout are unaffected.
+   22px top = 16px blur + 6px lift, matching banner-carousel.css. */
+.product-carousel__banner-clip {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 22px 16px 16px;
+  margin: -22px -16px -16px;
+}
+
+.product-carousel__banner-link {
   display: block;
   height: 100%;
 }
-.promo-carousel__banner-img {
+.product-carousel__banner-img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 12px;
 }
-.promo-carousel__banner-placeholder {
+.product-carousel__banner-placeholder {
   width: 100%;
   height: 100%;
   min-height: 260px;
@@ -77,202 +101,212 @@
   align-items: center;
   justify-content: center;
 }
-.promo-carousel__banner-placeholder-svg {
+.product-carousel__banner-placeholder-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.product-carousel__banner-placeholder svg {
   width: 100%;
   height: 100%;
   display: block;
 }
 
+/* Stack banner above carousel on mobile */
 @media (max-width: 767px) {
-  .promo-carousel__layout--has-banner {
+  .product-carousel__layout--has-banner {
     flex-direction: column;
   }
-  .promo-carousel__banner {
+  .product-carousel__banner {
     width: 100%;
     max-width: 100%;
   }
-  .promo-carousel__banner-placeholder {
+  .product-carousel__banner-clip {
+    min-height: 160px;
+  }
+  .product-carousel__banner-placeholder {
     min-height: 160px;
   }
 }
 
 /* ── Header ── */
-.promo-carousel__header {
+.product-carousel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
 }
-.promo-carousel__heading-group {
+.product-carousel__heading-group {
   flex: 1;
   min-width: 0;
 }
-.promo-carousel__heading {
+.product-carousel__arrows--top {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.product-carousel__heading {
   margin: 0 0 4px;
   font-size: clamp(1rem, 2vw, 1.25rem);
   font-weight: 500;
   line-height: 1.2;
 }
-.promo-carousel__subheading {
+.product-carousel__subheading {
   margin: 0;
   font-size: 0.875rem;
   color: #666;
 }
 
-/* ── Stage — wraps the track + optional side arrows ── */
-.promo-carousel__stage {
-  position: relative;
-  /* overflow: visible so absolutely-positioned side arrows
-     at -18px don't get clipped. The track clips its own overflow. */
-}
-
-/* ── Track — native CSS scroll ── */
-.promo-carousel__track {
-  display: grid;
-  grid-auto-flow: column;
-  /* Mobile column width — gap * (cols - 1) distributed across cols */
-  grid-auto-columns: calc(
-    (100% - var(--pc-gap) * (var(--_cols-mobile) - 1)) / var(--_cols-mobile)
-  );
-  gap: var(--pc-gap);
-  list-style: none;
-  margin: 0;
-  /* Vertical padding gives product-card hover shadows room to render
-     before the track's overflow: hidden clips them. */
-  padding: 4px 0;
+/* ── Tab bar ── */
+.product-carousel__tabs {
+  display: flex;
+  gap: 6px;
   overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
   scrollbar-width: none;
-  -ms-overflow-style: none;
-  cursor: grab;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
 }
-.promo-carousel__track::-webkit-scrollbar {
+.product-carousel__tabs::-webkit-scrollbar {
   display: none;
 }
-/* While dragging: disable snap so the track follows the pointer
-   freely; JS re-snaps to the nearest page on pointer-up. */
-.promo-carousel__track.is-dragging {
+.product-carousel__tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 0.5px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #666;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.product-carousel__tab:hover {
+  background: #f5f5f5;
+}
+.product-carousel__tab.is-active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+.product-carousel__tab svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* ── Panels ── */
+.product-carousel__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.product-carousel__panel.is-hidden {
+  display: none;
+}
+
+/* ── Stage ── */
+.product-carousel__stage {
+  position: relative;
+}
+
+/* ── Track wrapper ── */
+.product-carousel__track-wrapper {
+  overflow: hidden;
+  padding-block: 4px;
+}
+
+/* ── Track ── */
+.product-carousel__track {
+  display: flex;
+  gap: var(--carousel-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.product-carousel__track.is-dragging {
   cursor: grabbing;
-  scroll-snap-type: none;
+  transition: none;
 }
 
-@media (min-width: 768px) {
-  .promo-carousel__track {
-    grid-auto-columns: calc(
-      (100% - var(--pc-gap) * (var(--_cols-desktop) - 1)) / var(--_cols-desktop)
-    );
-  }
-}
-
-/* ── Slides ── */
-.promo-carousel__slide {
-  scroll-snap-align: start;
-  min-width: 0;
+/* ── Slides ──
+   The min-width floor is intentionally MOBILE-ONLY. On desktop, the
+   cards_per_row_desktop setting must be the sole authority over card
+   width — a floor here would silently override the setting (e.g. a
+   5-column layout in a narrow viewport would get clamped back down
+   to ~4 columns because 160px no longer divides evenly). */
+.product-carousel__slide {
+  flex: 0 0 calc(
+    (100% - var(--carousel-gap) * (var(--_cols-mobile) - 1)) / var(--_cols-mobile)
+  );
+  min-width: var(--carousel-card-min);
   box-sizing: border-box;
 }
 
-/* ── Overflow fade masks (applied via JS classes) ── */
-.promo-carousel.has-overflow-start .promo-carousel__track {
-  -webkit-mask-image: linear-gradient(to right, transparent, black var(--pc-fade-width));
-  mask-image: linear-gradient(to right, transparent, black var(--pc-fade-width));
-}
-.promo-carousel.has-overflow-end .promo-carousel__track {
-  -webkit-mask-image: linear-gradient(to left, transparent, black var(--pc-fade-width));
-  mask-image: linear-gradient(to left, transparent, black var(--pc-fade-width));
-}
-.promo-carousel.has-overflow-start.has-overflow-end .promo-carousel__track {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    black var(--pc-fade-width),
-    black calc(100% - var(--pc-fade-width)),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black var(--pc-fade-width),
-    black calc(100% - var(--pc-fade-width)),
-    transparent
-  );
+@media (min-width: 768px) {
+  .product-carousel__slide {
+    flex: 0 0 calc(
+      (100% - var(--carousel-gap) * (var(--_cols-desktop) - 1)) / var(--_cols-desktop)
+    );
+    min-width: 0;
+  }
 }
 
 /* ── Bottom nav row (dots + arrows together) ── */
-.promo-carousel__nav {
+.product-carousel__nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 12px;
 }
 
-/* ── Dots ── */
-.promo-carousel__dots {
-  display: flex;
-  align-items: center;
-  gap: var(--pc-dot-gap);
-  flex-wrap: wrap;
-}
-/* Standalone variant (top / side arrow modes) */
-.promo-carousel__dots--standalone {
-  justify-content: center;
-  margin-top: 12px;
-}
-.promo-carousel__dot {
-  width: var(--pc-dot-size);
-  height: var(--pc-dot-size);
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  background: var(--pc-dot-color);
-  cursor: pointer;
-  transition: background 0.2s, width 0.2s, border-radius 0.2s;
-}
-.promo-carousel__dot.is-active {
-  background: var(--pc-dot-active);
-  width: 14px;
-  border-radius: 3px;
-}
-
 /* ── Arrows — shared base ── */
-.promo-carousel__arrows--top {
-  display: flex;
-  gap: 5px;
-  flex-shrink: 0;
-}
-.promo-carousel__arrows {
-  display: flex;
-  gap: 5px;
-}
-.promo-carousel__arrow {
+.product-carousel__arrow {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--pc-arrow-size);
-  height: var(--pc-arrow-size);
+  width: var(--carousel-arrow-size);
+  height: var(--carousel-arrow-size);
   border-radius: 50%;
-  border: 0.5px solid var(--pc-arrow-border);
-  background: var(--pc-arrow-bg);
+  border: 0.5px solid var(--carousel-arrow-border);
+  background: var(--carousel-arrow-bg);
   color: #222;
   cursor: pointer;
   transition: background 0.15s, opacity 0.15s, box-shadow 0.15s;
 }
-.promo-carousel__arrow:hover {
-  background: var(--pc-arrow-hover);
+.product-carousel__arrow:hover {
+  background: var(--carousel-arrow-hover);
 }
-.promo-carousel__arrow:focus-visible {
+.product-carousel__arrow:focus-visible {
   outline: 2px solid #111;
   outline-offset: 2px;
 }
-.promo-carousel__arrow[disabled] {
+
+/* All arrows: greyed out when exhausted, never fully hidden */
+.product-carousel__arrow[disabled],
+.product-carousel__arrow.is-hidden {
   opacity: 0.28;
   pointer-events: none;
 }
 
+.product-carousel__arrows {
+  display: flex;
+  gap: 5px;
+}
+
 /* ── Side arrows ── */
-.promo-carousel__arrow--side {
+.product-carousel__arrow--side {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -281,24 +315,49 @@
   height: 36px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
 }
-.promo-carousel__arrow--side-prev { left:  -18px; }
-.promo-carousel__arrow--side-next { right: -18px; }
-.promo-carousel__arrow--side:hover {
+.product-carousel__arrow--side-prev {
+  left: -18px;
+}
+.product-carousel__arrow--side-next {
+  right: -18px;
+}
+.product-carousel__arrow--side:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
-.promo-carousel__arrow--side[disabled] {
+
+/* Side arrows: greyed out (not hidden) when exhausted */
+.product-carousel__arrow--side[disabled],
+.product-carousel__arrow--side.is-hidden {
   opacity: 0.28;
   pointer-events: none;
   box-shadow: none;
 }
 
-/* ── Reduced motion ── */
-@media (prefers-reduced-motion: reduce) {
-  .promo-carousel__dot { transition: none; }
+/* ── Dots ── */
+.product-carousel__dots {
+  display: flex;
+  align-items: center;
+  gap: var(--carousel-dot-gap);
+  flex-wrap: wrap;
+}
+.product-carousel__dot {
+  width: var(--carousel-dot-size);
+  height: var(--carousel-dot-size);
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--carousel-dot-color);
+  cursor: pointer;
+  transition: background 0.2s, width 0.2s, border-radius 0.2s;
+}
+.product-carousel__dot.is-active {
+  background: var(--carousel-dot-active);
+  width: 14px;
+  border-radius: 3px;
 }
 
 /* ============================================================
-   PLACEHOLDER CARDS
+   PLACEHOLDER CARD
    ============================================================ */
 .pc-placeholder-card {
   border-radius: 10px;
@@ -306,6 +365,7 @@
   background: #fff;
   border: 0.5px solid #eee;
 }
+
 .pc-placeholder-card__image {
   position: relative;
   width: 100%;
@@ -324,6 +384,7 @@
   width: 100%;
   height: 100%;
 }
+
 @keyframes pc-shimmer {
   0%   { background-position: -400px 0; }
   100% { background-position:  400px 0; }
@@ -341,9 +402,14 @@
   background-size: 400px 100%;
   animation: pc-shimmer 1.4s ease-in-out infinite;
 }
+.pc-placeholder-card__line--vendor      { width: 40%; height: 10px; opacity: .7; }
 .pc-placeholder-card__line--title       { width: 85%; height: 14px; }
 .pc-placeholder-card__line--title-short { width: 60%; }
 .pc-placeholder-card__line--price       { width: 35%; height: 14px; margin-top: 4px; }
+
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
+  .product-carousel__track { transition: none; }
+  .product-carousel__dot   { transition: none; }
   .pc-placeholder-card__line { animation: none; }
 }
