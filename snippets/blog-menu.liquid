@@ -1,9 +1,22 @@
 {%- comment -%}
   snippets/blog-menu.liquid
 
-  Converted from the standalone sections/blog-menu.liquid section
-  (same filename, moved to snippets/) so it can be rendered inside
-  sections/custom-articles.liquid alongside the blog posts grid.
+  Self-contained: loads its own stylesheet (assets/blog-menu.css) and
+  its own script (assets/blog-menu.js) — same pattern blog-posts.liquid
+  uses for article-card.css / blog-posts.css.
+
+  Previously this snippet had its structural + color CSS inlined in a
+  {%- style -%} block, ID-scoped per section.id so multiple instances
+  wouldn't collide. That's no longer necessary: structural rules moved
+  to assets/blog-menu.css as plain classes (an element's own state
+  classes — .is-stuck, .is-open — only ever affect that element, so no
+  cross-instance leakage), and the only genuinely per-instance data
+  (the 4 color settings) is now set directly as inline custom
+  properties on <nav> itself, which is naturally scoped without an ID
+  hook.
+
+  blog-menu.js and blog-menu-sticky.js are now merged into one
+  assets/blog-menu.js (see that file's header for why).
 
   Required params (passed in via {% render %} since render scope is
   isolated — this snippet cannot reach `section` on its own):
@@ -17,34 +30,23 @@
     blocks              - the block list (pass section.blocks) — only
                            'single_link' and 'link_list' block types
                            are rendered here
-    section_id          - unique id string, used for CSS scoping (pass section.id)
-
-  FIX 1 (offset collision): sticky/fixed state offsets from
-  var(--header-group-height) instead of top: 0, so it no longer
-  fights the fixed #header-group-wrapper for the same slot (that
-  collision is what made the menu look like it was "autohiding" —
-  it was actually just sitting underneath the header at all times).
-  When header-group.js hides the header it adds a
-  `header-group-hidden` class to :root; we key off that same class
-  to collapse the offset to 0.
-
-  FIX 2 (unsticks past the section): CSS `position: sticky` can only
-  stick within its own containing block. Shopify wraps this section
-  in its own content-sized `.shopify-section` div, so the nav has
-  almost no room to travel before its own wrapper's bottom edge
-  scrolls past and sticky detaches. blog-menu-sticky.js watches
-  scroll position and swaps the nav to `position: fixed` (`.is-stuck`)
-  once you scroll past its natural resting position, so it stays
-  visible for the rest of the page instead of only within its own
-  section. A spacer element (inserted by that script) reserves the
-  nav's height in the flow so nothing jumps when it goes fixed.
+    section_id          - unique id string (pass section.id) — still
+                           used for the toggle/list aria-controls pair,
+                           not for CSS scoping anymore
 {%- endcomment -%}
+
+{{ 'blog-menu.css' | asset_url | stylesheet_tag }}
 
 <nav
   class="blog-menu{% if sticky %} blog-menu--sticky{% endif %}"
-  id="blog-menu-{{ section_id }}"
   data-blog-menu
   aria-label="{{ heading | default: 'Blog navigation' | escape }}"
+  style="
+    --blog-menu-bg: {{ background_color | default: '#ffffff' }};
+    --blog-menu-text: {{ text_color | default: '#1a1a1a' }};
+    --blog-menu-accent: {{ accent_color | default: '#1a1a1a' }};
+    --blog-menu-border: {{ border_color | default: '#e5e5e5' }};
+  "
 >
   <div class="blog-menu__inner page-width">
 
@@ -130,230 +132,4 @@
   </div>
 </nav>
 
-{%- style -%}
-  #blog-menu-{{ section_id }} {
-    --blog-menu-bg: {{ background_color | default: '#ffffff' }};
-    --blog-menu-text: {{ text_color | default: '#1a1a1a' }};
-    --blog-menu-accent: {{ accent_color | default: '#1a1a1a' }};
-    --blog-menu-border: {{ border_color | default: '#e5e5e5' }};
-
-    background: var(--blog-menu-bg);
-    color: var(--blog-menu-text);
-    border-bottom: 1px solid var(--blog-menu-border);
-    width: 100%;
-    z-index: 20;
-  }
-
-  /* Stays in normal document flow until blog-menu-sticky.js adds
-     .is-stuck (see FIX 2 in the comment above for why plain
-     position: sticky isn't enough here). */
-  #blog-menu-{{ section_id }}.blog-menu--sticky {
-    position: relative;
-  }
-
-  /* FIX: offset from the header's real height (published by
-     header-group.js as --header-group-height) instead of top: 0,
-     so this section stops competing with #header-group-wrapper for
-     the same viewport slot. z-index stays below the header's so
-     there's no stacking fight while both are visible. */
-  #blog-menu-{{ section_id }}.blog-menu--sticky.is-stuck {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: var(--header-group-height, 68px);
-    z-index: 20;
-    transition: top 0.3s ease; /* matches header-group-wrapper's 0.3s hide transition */
-  }
-
-  /* When header-group.js hides the header (adds .header-group-hidden
-     to :root), collapse the offset so the blog menu slides up to
-     fill the gap and remains permanently visible on its own. */
-  :root.header-group-hidden #blog-menu-{{ section_id }}.blog-menu--sticky.is-stuck {
-    top: 0;
-  }
-
-  /* Reserves the nav's height in normal flow once it goes fixed, so
-     the article grid below doesn't jump up underneath it. Height is
-     set inline by blog-menu-sticky.js to match the nav's real height. */
-  #blog-menu-{{ section_id }} + .blog-menu__spacer {
-    display: none;
-  }
-
-  #blog-menu-{{ section_id }} + .blog-menu__spacer.is-active {
-    display: block;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__inner {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 0.75rem 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__heading {
-    font-weight: 600;
-    font-size: 1rem;
-    white-space: nowrap;
-    margin-right: 0.5rem;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__list {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex-wrap: wrap;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__item {
-    position: relative;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.6rem 0.85rem;
-    color: var(--blog-menu-text);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    background: none;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.15s ease, color 0.15s ease;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__link:hover,
-  #blog-menu-{{ section_id }} .blog-menu__link--parent[aria-expanded="true"] {
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--blog-menu-accent);
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__link--disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__caret {
-    width: 7px;
-    height: 7px;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg);
-    transition: transform 0.15s ease;
-    margin-top: -2px;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__link--parent[aria-expanded="true"] .blog-menu__caret {
-    transform: rotate(-135deg);
-    margin-top: 2px;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    min-width: 200px;
-    background: var(--blog-menu-bg);
-    border: 1px solid var(--blog-menu-border);
-    border-radius: 6px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-    list-style: none;
-    margin: 0.35rem 0 0;
-    padding: 0.35rem;
-    display: none;
-    z-index: 30;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__item--list.is-open .blog-menu__dropdown {
-    display: block;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__dropdown-link {
-    display: block;
-    padding: 0.5rem 0.65rem;
-    color: var(--blog-menu-text);
-    text-decoration: none;
-    font-size: 0.875rem;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__dropdown-link:hover {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__dropdown-link--active {
-    color: var(--blog-menu-accent);
-    font-weight: 600;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__toggle {
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: auto;
-    background: none;
-    border: 1px solid var(--blog-menu-border);
-    border-radius: 4px;
-    padding: 0.45rem 0.75rem;
-    font-size: 0.85rem;
-    cursor: pointer;
-    color: var(--blog-menu-text);
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__toggle-icon {
-    display: inline-flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  #blog-menu-{{ section_id }} .blog-menu__toggle-icon span {
-    width: 16px;
-    height: 2px;
-    background: currentColor;
-    display: block;
-  }
-
-  @media screen and (max-width: 749px) {
-    #blog-menu-{{ section_id }} .blog-menu__toggle {
-      display: inline-flex;
-    }
-
-    #blog-menu-{{ section_id }} .blog-menu__list {
-      display: none;
-      flex-direction: column;
-      align-items: stretch;
-      width: 100%;
-      gap: 0;
-      border-top: 1px solid var(--blog-menu-border);
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
-    }
-
-    #blog-menu-{{ section_id }} .blog-menu__list.is-open {
-      display: flex;
-    }
-
-    #blog-menu-{{ section_id }} .blog-menu__inner {
-      flex-wrap: wrap;
-    }
-
-    #blog-menu-{{ section_id }} .blog-menu__dropdown {
-      position: static;
-      box-shadow: none;
-      border: none;
-      margin: 0;
-      padding-left: 0.75rem;
-    }
-  }
-{%- endstyle -%}
-
 <script src="{{ 'blog-menu.js' | asset_url }}" defer="defer"></script>
-<script src="{{ 'blog-menu-sticky.js' | asset_url }}" defer="defer"></script>
