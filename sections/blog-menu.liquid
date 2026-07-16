@@ -5,16 +5,25 @@
     - single_link : a single <a> nav item
     - link_list   : a dropdown nav item backed by a native Shopify menu (Navigation resource)
 
-  FIX (sticky offset): the sticky rule below now offsets from
+  FIX 1 (offset collision): sticky/fixed state offsets from
   var(--header-group-height) instead of top: 0, so it no longer
   fights the fixed #header-group-wrapper for the same slot (that
   collision is what made the menu look like it was "autohiding" —
   it was actually just sitting underneath the header at all times).
   When header-group.js hides the header it adds a
   `header-group-hidden` class to :root; we key off that same class
-  to collapse the offset to 0, so the blog menu slides up to fill
-  the gap instead of leaving empty space, and stays visible at all
-  times as its own persistent bar.
+  to collapse the offset to 0.
+
+  FIX 2 (unsticks past the section): CSS `position: sticky` can only
+  stick within its own containing block. Shopify wraps this section
+  in its own content-sized `.shopify-section` div, so the nav has
+  almost no room to travel before its own wrapper's bottom edge
+  scrolls past and sticky detaches. blog-menu-sticky.js watches
+  scroll position and swaps the nav to `position: fixed` (`.is-stuck`)
+  once you scroll past its natural resting position, so it stays
+  visible for the rest of the page instead of only within its own
+  section. A spacer element (inserted by that script) reserves the
+  nav's height in the flow so nothing jumps when it goes fixed.
 {%- endcomment -%}
 
 {%- assign section_id = section.id -%}
@@ -123,13 +132,22 @@
     z-index: 20;
   }
 
+  /* Stays in normal document flow until blog-menu-sticky.js adds
+     .is-stuck (see FIX 2 in the comment above for why plain
+     position: sticky isn't enough here). */
+  #blog-menu-{{ section_id }}.blog-menu--sticky {
+    position: relative;
+  }
+
   /* FIX: offset from the header's real height (published by
      header-group.js as --header-group-height) instead of top: 0,
      so this section stops competing with #header-group-wrapper for
      the same viewport slot. z-index stays below the header's so
      there's no stacking fight while both are visible. */
-  #blog-menu-{{ section_id }}.blog-menu--sticky {
-    position: sticky;
+  #blog-menu-{{ section_id }}.blog-menu--sticky.is-stuck {
+    position: fixed;
+    left: 0;
+    right: 0;
     top: var(--header-group-height, 68px);
     z-index: 20;
     transition: top 0.3s ease; /* matches header-group-wrapper's 0.3s hide transition */
@@ -138,8 +156,19 @@
   /* When header-group.js hides the header (adds .header-group-hidden
      to :root), collapse the offset so the blog menu slides up to
      fill the gap and remains permanently visible on its own. */
-  :root.header-group-hidden #blog-menu-{{ section_id }}.blog-menu--sticky {
+  :root.header-group-hidden #blog-menu-{{ section_id }}.blog-menu--sticky.is-stuck {
     top: 0;
+  }
+
+  /* Reserves the nav's height in normal flow once it goes fixed, so
+     the article grid below doesn't jump up underneath it. Height is
+     set inline by blog-menu-sticky.js to match the nav's real height. */
+  #blog-menu-{{ section_id }} + .blog-menu__spacer {
+    display: none;
+  }
+
+  #blog-menu-{{ section_id }} + .blog-menu__spacer.is-active {
+    display: block;
   }
 
   #blog-menu-{{ section_id }} .blog-menu__inner {
@@ -315,6 +344,7 @@
 {%- endstyle -%}
 
 <script src="{{ 'blog-menu.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'blog-menu-sticky.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
 {
