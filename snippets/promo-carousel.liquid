@@ -19,12 +19,14 @@
   assign cards_desktop = settings.cards_per_row_desktop | default: 3
   assign cards_mobile = settings.cards_per_row_mobile | default: 2
   assign row_label = settings.heading | default: settings.collection.title
+  assign arrow_visibility = settings.arrow_visibility | default: 'hover'
 -%}
 
 {%- if settings.collection != blank -%}
   <div
     class="promo-carousel"
     data-promo-carousel
+    data-arrow-visibility="{{ arrow_visibility }}"
     style="--pc-cards-desktop: {{ cards_desktop }}; --pc-cards-mobile: {{ cards_mobile }};"
   >
     {%- if settings.heading != blank or settings.subheading != blank -%}
@@ -87,7 +89,18 @@
         {%- endif -%}
 
         {%- for product in settings.collection.products limit: settings.products_limit -%}
-          {%- render 'product-card', product: product -%}
+          {%- render 'product-card',
+            product: product,
+            show_atc: settings.show_atc_button,
+            show_compare: settings.show_compare_checkbox,
+            show_wishlist: settings.show_wishlist_button,
+            show_quickview: settings.show_quickview_button,
+            show_sale_badge: settings.show_sale_badge,
+            show_vendor: settings.show_vendor_label,
+            show_reviews: settings.show_reviews_badge,
+            show_savings_row: settings.show_savings_row,
+            show_eta: settings.show_eta_badge
+          -%}
         {%- endfor -%}
       </div>
 
