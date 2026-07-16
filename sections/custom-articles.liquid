@@ -1,29 +1,247 @@
 {{ 'custom-articles.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'custom-articles.js' | asset_url }}" defer="defer"></script>
 
-{% render 'blog-menu',
-  heading: section.settings.menu_heading,
-  mobile_label: section.settings.menu_mobile_label,
-  sticky: section.settings.menu_sticky,
-  background_color: section.settings.menu_background_color,
-  text_color: section.settings.menu_text_color,
-  accent_color: section.settings.menu_accent_color,
-  border_color: section.settings.menu_border_color,
-  blocks: section.blocks,
-  custom_links: section.settings.menu_custom_links,
-  section_id: section.id
-%}
+{%- liquid
+  assign custom_links_visible = 0
+  for link in section.settings.menu_custom_links
+    assign cl_label = link.fields.label.value
+    assign cl_url = link.fields.url.value
+    if cl_label != blank and cl_url != blank
+      assign custom_links_visible = custom_links_visible | plus: 1
+    endif
+  endfor
+  assign nav_items_total = section.blocks.size | plus: custom_links_visible
+-%}
 
-{% render 'blog-posts',
-  heading: section.settings.posts_heading,
-  custom_tags: section.settings.posts_custom_tags,
-  limit: section.settings.posts_limit,
-  columns: section.settings.posts_columns,
-  section_width: section.settings.posts_section_width,
-  custom_width: section.settings.posts_custom_width,
-  section_padding: section.settings.posts_section_padding,
-  section_id: section.id
-%}
+<nav
+  class="blog-menu{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
+  data-blog-menu
+  aria-label="{{ section.settings.menu_heading | default: 'Blog navigation' | escape }}"
+  style="
+    --blog-menu-bg: {{ section.settings.menu_background_color | default: '#ffffff' }};
+    --blog-menu-text: {{ section.settings.menu_text_color | default: '#111111' }};
+    --blog-menu-accent: {{ section.settings.menu_accent_color | default: '#0A3161' }};
+    --blog-menu-border: {{ section.settings.menu_border_color | default: '#e5e5e5' }};
+  "
+>
+  <div class="blog-menu__inner page-width">
+
+    {%- if section.settings.menu_heading != blank -%}
+      <div class="blog-menu__heading">{{ section.settings.menu_heading | escape }}</div>
+    {%- endif -%}
+
+    {%- if nav_items_total > 0 -%}
+      <button
+        type="button"
+        class="blog-menu__toggle"
+        data-blog-menu-toggle
+        aria-expanded="false"
+        aria-controls="blog-menu-list-{{ section.id }}"
+      >
+        <span class="blog-menu__toggle-label">{{ section.settings.menu_mobile_label | default: 'Menu' | escape }}</span>
+        <span class="blog-menu__toggle-icon" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+
+      <ul class="blog-menu__list" id="blog-menu-list-{{ section.id }}" data-blog-menu-list>
+        {%- for block in section.blocks -%}
+
+          {%- case block.type -%}
+
+            {%- when 'single_link' -%}
+              <li class="blog-menu__item blog-menu__item--single" {{ block.shopify_attributes }}>
+                {%- if block.settings.url != blank -%}
+                  <a
+                    href="{{ block.settings.url }}"
+                    class="blog-menu__link"
+                    {% if block.settings.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}
+                  >
+                    {{ block.settings.label | default: 'Link' | escape }}
+                  </a>
+                {%- else -%}
+                  <span class="blog-menu__link blog-menu__link--disabled">
+                    {{ block.settings.label | default: 'Link' | escape }}
+                  </span>
+                {%- endif -%}
+              </li>
+
+            {%- when 'link_list' -%}
+              {%- assign menu_handle = block.settings.menu -%}
+              {%- assign menu = linklists[menu_handle] -%}
+              <li class="blog-menu__item blog-menu__item--list{% if menu.links.size == 0 %} blog-menu__item--empty{% endif %}" {{ block.shopify_attributes }}>
+                <button
+                  type="button"
+                  class="blog-menu__link blog-menu__link--parent"
+                  data-blog-menu-dropdown-toggle
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                >
+                  {{ block.settings.label | default: menu.title | default: 'More' | escape }}
+                  <span class="blog-menu__caret" aria-hidden="true"></span>
+                </button>
+
+                {%- if menu != blank and menu.links.size > 0 -%}
+                  <ul class="blog-menu__dropdown" data-blog-menu-dropdown>
+                    {%- for link in menu.links -%}
+                      <li class="blog-menu__dropdown-item">
+                        <a
+                          href="{{ link.url }}"
+                          class="blog-menu__dropdown-link{% if link.active %} blog-menu__dropdown-link--active{% endif %}"
+                        >
+                          {{ link.title | escape }}
+                        </a>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </li>
+
+          {%- endcase -%}
+
+        {%- endfor -%}
+
+        {%- for link in section.settings.menu_custom_links -%}
+          {%- assign cl_label = link.fields.label.value -%}
+          {%- assign cl_url = link.fields.url.value -%}
+          {%- if cl_label != blank and cl_url != blank -%}
+            <li class="blog-menu__item blog-menu__item--single" data-metaobject-link>
+              <a
+                href="{{ cl_url }}"
+                class="blog-menu__link"
+                {% if link.fields.open_in_new_tab.value %}target="_blank" rel="noopener"{% endif %}
+              >
+                {{ cl_label | escape }}
+              </a>
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+  </div>
+</nav>
+
+{{ 'article-card.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign target_blog = blogs['articles']
+  if section.settings.posts_section_width == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = section.settings.posts_section_width
+  endif
+  assign custom_tags_list = section.settings.posts_custom_tags | split: ','
+-%}
+
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.posts_section_padding }}px;
+    {%- if section.settings.posts_section_width == 'custom-width' %}
+      --custom-width: {{ section.settings.posts_custom_width }}rem;
+    {%- endif %}
+  "
+>
+  <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
+
+    {% if section.settings.posts_heading != blank %}
+      <div class="blog-posts__header">
+        <h2 class="blog-posts__title">{{ section.settings.posts_heading }}</h2>
+      </div>
+    {% endif %}
+
+    {% if custom_tags_list.size > 0 %}
+      <div class="blog-posts__tags">
+        <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
+          All
+        </a>
+        {% for tag in custom_tags_list %}
+          {%- assign tag = tag | strip -%}
+          {%- assign tag_slug = tag | handle -%}
+          <a href="{{ target_blog.url }}/tagged/{{ tag_slug }}"
+             class="blog-posts__tag-pill {% if target_blog.current_tags contains tag_slug %}is-active{% endif %}">
+            {{ tag }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% paginate target_blog.articles by section.settings.posts_limit %}
+      {% if target_blog.articles.size > 0 %}
+        <div class="blog-posts__grid" style="--blog-posts-columns: {{ section.settings.posts_columns }};">
+          {%- assign visible_index = 0 -%}
+          {% for article in target_blog.articles %}
+            {%- liquid
+              assign show_article = false
+              if custom_tags_list.size == 0
+                assign show_article = true
+              else
+                for tag in custom_tags_list
+                  assign trimmed_tag = tag | strip | handle
+                  if article.tags contains trimmed_tag
+                    assign show_article = true
+                  endif
+                endfor
+              endif
+            -%}
+
+            {% if show_article %}
+              {%- assign visible_index = visible_index | plus: 1 -%}
+              {% assign loading = 'lazy' %}
+              {% if visible_index <= section.settings.posts_columns %}
+                {% assign loading = 'eager' %}
+              {% endif %}
+
+              {% render 'article-card', article: article, loading: loading %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {% if custom_tags_list.size > 0 and visible_index == 0 %}
+          <p class="blog-posts__empty">No articles match the selected tags on this page.</p>
+        {% endif %}
+
+        {% if paginate.pages > 1 %}
+          <nav class="blog-posts__pagination" role="navigation" aria-label="Pagination">
+            {% if paginate.previous %}
+              <a href="{{ paginate.previous.url }}" class="blog-posts__page-link blog-posts__page-link--prev">
+                ← Previous
+              </a>
+            {% endif %}
+
+            <ul class="blog-posts__page-list">
+              {% for part in paginate.parts %}
+                <li>
+                  {% if part.is_link %}
+                    <a href="{{ part.url }}" class="blog-posts__page-link">{{ part.title }}</a>
+                  {% else %}
+                    {% if part.title == paginate.current_page %}
+                      <span class="blog-posts__page-link is-active" aria-current="page">{{ part.title }}</span>
+                    {% else %}
+                      <span class="blog-posts__page-link blog-posts__page-link--gap">{{ part.title }}</span>
+                    {% endif %}
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+
+            {% if paginate.next %}
+              <a href="{{ paginate.next.url }}" class="blog-posts__page-link blog-posts__page-link--next">
+                Next →
+              </a>
+            {% endif %}
+          </nav>
+        {% endif %}
+      {% else %}
+        <p class="blog-posts__empty">No articles to show yet.</p>
+      {% endif %}
+    {% endpaginate %}
+
+  </div>
+</div>
 
 {% schema %}
 {
