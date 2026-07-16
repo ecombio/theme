@@ -1,22 +1,27 @@
 {%- comment -%}
   snippets/promo-carousel.liquid
-  In-feed promo carousel — native CSS scroll implementation.
-  Mirrors featured-collection.js's scroll-based approach; replaces the
-  old transform-based carousel for simpler, more reliable behaviour.
+  In-feed promo carousel — repurposed from sections/product-carousel.liquid
+  for use inside sections/collection.liquid's product grid.
 
-  Renders as one full-width row inside .product-feed__grid
-  (via .promo-carousel-cell wrapper, grid-column: 1 / -1).
+  Renders as one full-width row inside .collection-feed__grid (via the
+  promo-carousel-cell wrapper, grid-column: 1 / -1), at a merchant-chosen
+  position — same position-number system as the feed_banner block.
+
+  Products come from a SINGLE collection, set on the block via the
+  `collection` setting. (Previous multi-collection tab system removed —
+  see git history if that ever needs to come back.)
 
   Expects:
-    block → a `promo_carousel` block from section.blocks (see
-            main-collection.liquid schema), with settings:
-              position, heading, subheading, collection,
-              products_limit, cards_per_row_desktop, cards_per_row_mobile,
-              show_arrows, arrow_position, autoplay, autoplay_interval,
-              show_banner, banner_image, banner_link
+    block  -> a `promo_carousel` block from section.blocks (see
+              collection.liquid schema), with settings:
+                position, heading, subheading, collection,
+                products_limit, cards_per_row_desktop, cards_per_row_mobile,
+                show_arrows, arrow_position, autoplay, autoplay_interval,
+                show_banner, banner_image, banner_link
 
   NOTE: product-card.js is loaded globally in theme.liquid.
-  Do NOT re-load it here.
+  Do NOT re-load it here — doing so double-registers the click handlers
+  for Add to Cart, Wishlist, Compare, and Quick View.
 {%- endcomment -%}
 
 {%- liquid
@@ -48,30 +53,28 @@
 
 <div class="promo-carousel-cell" {{ block.shopify_attributes }}>
   <section
-    class="promo-carousel{% if show_side_arrows %} promo-carousel--side-arrows{% endif %}"
+    class="product-carousel{% if show_side_arrows %} product-carousel--side-arrows{% endif %}"
     id="pc-block-{{ block.id }}"
-    data-promo-carousel
+    data-section-id="{{ block.id }}"
+    data-cards-desktop="{{ cards_desk }}"
+    data-cards-mobile="{{ cards_mob }}"
     data-autoplay="{{ autoplay }}"
     data-autoplay-interval="{{ autoplay_ms }}"
-    style="--_cols-desktop: {{ cards_desk }}; --_cols-mobile: {{ cards_mob }};"
+    data-arrow-style="{{ arrow_position }}"
   >
 
     {%- if heading != blank or subheading != blank or show_top_arrows -%}
-      <div class="promo-carousel__header">
-        <div class="promo-carousel__heading-group">
-          {%- if heading != blank -%}
-            <h2 class="promo-carousel__heading">{{ heading }}</h2>
-          {%- endif -%}
-          {%- if subheading != blank -%}
-            <p class="promo-carousel__subheading">{{ subheading }}</p>
-          {%- endif -%}
+      <div class="product-carousel__header">
+        <div class="product-carousel__heading-group">
+          {%- if heading != blank -%}<h2 class="product-carousel__heading">{{ heading }}</h2>{%- endif -%}
+          {%- if subheading != blank -%}<p class="product-carousel__subheading">{{ subheading }}</p>{%- endif -%}
         </div>
         {%- if show_top_arrows -%}
-          <div class="promo-carousel__arrows promo-carousel__arrows--top">
-            <button class="promo-carousel__arrow promo-carousel__arrow--prev" type="button" aria-label="Previous" data-pc-prev disabled>
+          <div class="product-carousel__arrows product-carousel__arrows--top" data-carousel-top-arrows>
+            <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-top-prev disabled>
               <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
-            <button class="promo-carousel__arrow promo-carousel__arrow--next" type="button" aria-label="Next" data-pc-next>
+            <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-top-next>
               <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
@@ -79,83 +82,96 @@
       </div>
     {%- endif -%}
 
-    <div class="promo-carousel__layout{% if banner_show %} promo-carousel__layout--has-banner{% endif %}">
+    <div class="product-carousel__layout{% if banner_show %} product-carousel__layout--has-banner{% endif %}">
 
+      {%- comment -%}── BANNER ──{%- endcomment -%}
       {%- if banner_show -%}
-        <div class="promo-carousel__banner">
-          {%- if banner_link != blank -%}<a href="{{ banner_link }}" class="promo-carousel__banner-link">{%- endif -%}
+        <div class="product-carousel__banner">
+          {%- if banner_link != blank -%}<a href="{{ banner_link }}" class="product-carousel__banner-link">{%- endif -%}
           {%- if banner_image != blank -%}
             {{
               banner_image
               | image_url: width: 800
               | image_tag:
-                class: 'promo-carousel__banner-img',
+                class: 'product-carousel__banner-img',
                 loading: 'lazy',
                 widths: '200, 300, 400, 600',
                 sizes: '(max-width: 767px) 100vw, 220px',
                 alt: banner_image.alt | default: heading | escape
             }}
           {%- else -%}
-            <div class="promo-carousel__banner-placeholder" aria-hidden="true">
-              {{ 'collection-1' | placeholder_svg_tag: 'promo-carousel__banner-placeholder-svg' }}
+            <div class="product-carousel__banner-placeholder" aria-hidden="true">
+              {{ 'collection-1' | placeholder_svg_tag: 'product-carousel__banner-placeholder-svg' }}
             </div>
           {%- endif -%}
           {%- if banner_link != blank -%}</a>{%- endif -%}
         </div>
       {%- endif -%}
 
-      <div class="promo-carousel__carousel-col">
+      {%- comment -%}── CAROUSEL COLUMN ──{%- endcomment -%}
+      <div class="product-carousel__carousel-col">
 
-        <div class="promo-carousel__stage{% if show_side_arrows %} promo-carousel__stage--side-arrows{% endif %}">
+        {%- comment -%}
+          promo-carousel.js finds carousel instances via
+          section.querySelectorAll('[data-carousel-panel]') and only
+          wires up sliding/arrows/dots/autoplay/drag inside that loop.
+          Even with a single collection (no tabs), this wrapper must
+          stay or the JS silently initializes nothing.
+        {%- endcomment -%}
+        <div class="product-carousel__panel" data-carousel-panel="{{ block.id }}-1">
+
+        <div class="product-carousel__stage{% if show_side_arrows %} product-carousel__stage--side-arrows{% endif %}">
 
           {%- if show_side_arrows -%}
             <button
-              class="promo-carousel__arrow promo-carousel__arrow--side promo-carousel__arrow--side-prev"
+              class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-prev"
               type="button"
               aria-label="Previous"
-              data-pc-prev
+              data-carousel-prev
               disabled
             >
               <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           {%- endif -%}
 
-          <ul
-            class="promo-carousel__track"
-            data-pc-track
-            role="list"
-            aria-label="{{ heading | default: collection_ref.title | escape }}"
-          >
-            {%- if collection_ref != blank and collection_ref.products_count > 0 -%}
-              {%- for product in collection_ref.products limit: products_limit -%}
-                <li class="promo-carousel__slide" data-pc-slide>
-                  {%- render 'product-card', product: product -%}
-                </li>
-              {%- endfor -%}
-            {%- else -%}
-              {%- for i in (1..4) -%}
-                <li class="promo-carousel__slide" data-pc-slide>
-                  <div class="pc-placeholder-card">
-                    <div class="pc-placeholder-card__image">
-                      {{ 'product-' | append: i | placeholder_svg_tag: 'pc-placeholder-card__svg' }}
+          <div class="product-carousel__track-wrapper" data-carousel-wrapper>
+            <ul
+              class="product-carousel__track"
+              data-carousel-track
+              role="list"
+              aria-label="{{ heading | default: collection_ref.title | escape }}"
+            >
+              {%- if collection_ref != blank and collection_ref.products_count > 0 -%}
+                {%- for product in collection_ref.products limit: products_limit -%}
+                  <li class="product-carousel__slide" data-carousel-slide>
+                    {%- render 'product-card', product: product -%}
+                  </li>
+                {%- endfor -%}
+              {%- else -%}
+                {%- for i in (1..4) -%}
+                  <li class="product-carousel__slide" data-carousel-slide>
+                    <div class="pc-placeholder-card">
+                      <div class="pc-placeholder-card__image">
+                        {{ 'product-' | append: i | placeholder_svg_tag: 'pc-placeholder-card__svg' }}
+                      </div>
+                      <div class="pc-placeholder-card__body">
+                        <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
+                        <div class="pc-placeholder-card__line pc-placeholder-card__line--title pc-placeholder-card__line--title-short"></div>
+                        <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
+                      </div>
                     </div>
-                    <div class="pc-placeholder-card__body">
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--title"></div>
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--title pc-placeholder-card__line--title-short"></div>
-                      <div class="pc-placeholder-card__line pc-placeholder-card__line--price"></div>
-                    </div>
-                  </div>
-                </li>
-              {%- endfor -%}
-            {%- endif -%}
-          </ul>
+                  </li>
+                {%- endfor -%}
+              {%- endif -%}
+            </ul>
+          </div>
 
           {%- if show_side_arrows -%}
             <button
-              class="promo-carousel__arrow promo-carousel__arrow--side promo-carousel__arrow--side-next"
+              class="product-carousel__arrow product-carousel__arrow--side product-carousel__arrow--side-next"
               type="button"
               aria-label="Next"
-              data-pc-next
+              data-carousel-next
             >
               <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
@@ -163,29 +179,24 @@
 
         </div>
 
-        {%- comment -%}
-          Bottom mode: dots + arrows share one nav row.
-          Top/side mode: dots sit standalone below the stage.
-          JS hides the dots container entirely when pageCount ≤ 1.
-        {%- endcomment -%}
         {%- if show_bottom_arrows -%}
-          <div class="promo-carousel__nav">
-            <div class="promo-carousel__dots" data-pc-dots></div>
-            <div class="promo-carousel__arrows">
-              <button class="promo-carousel__arrow promo-carousel__arrow--prev" type="button" aria-label="Previous" data-pc-prev disabled>
+          <div class="product-carousel__nav">
+            <div class="product-carousel__dots" data-carousel-dots></div>
+            <div class="product-carousel__arrows">
+              <button class="product-carousel__arrow product-carousel__arrow--prev" type="button" aria-label="Previous" data-carousel-prev>
                 <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11 14L6 9L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
-              <button class="promo-carousel__arrow promo-carousel__arrow--next" type="button" aria-label="Next" data-pc-next>
+              <button class="product-carousel__arrow product-carousel__arrow--next" type="button" aria-label="Next" data-carousel-next>
                 <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
             </div>
           </div>
-        {%- else -%}
-          <div class="promo-carousel__dots promo-carousel__dots--standalone" data-pc-dots></div>
         {%- endif -%}
 
-      </div>
-    </div>
+        </div><!-- /.product-carousel__panel [data-carousel-panel] -->
+
+      </div><!-- /.product-carousel__carousel-col -->
+    </div><!-- /.product-carousel__layout -->
 
   </section>
-</div>
+</div><!-- /.promo-carousel-cell -->
