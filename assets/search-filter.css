@@ -63,6 +63,19 @@
    rules cover Chrome/Safari/Edge, where an exact width IS settable.
    Uses --hs-border-strong (this file's heavier border token) rather
    than --hs-border, to match the drawer's existing visual weight.
+
+   STICKY OFFSET FIX (2026-07): .search-filter previously read
+   var(--sticky-header-height, 0px) for its top offset. That variable
+   is never set anywhere -- header-group.js (the script that actually
+   measures and publishes the fixed header's height) only ever writes
+   --header-group-height. --sticky-header-height silently fell back
+   to its 0px default 100% of the time, so this sidebar was sticking
+   right under the toolbar with no allowance for the fixed header
+   above it -- same bug collection-filter.css had, fixed the same way
+   here. Also added the :root.header-group-hidden override so this
+   panel collapses its offset in sync with search-toolbar's own
+   toolbar when the header hides on scroll-down, instead of leaving a
+   gap sized for a header that's no longer there.
 */
 
 /* ── Sidebar shell ──────────────────────────────────────────── */
@@ -72,13 +85,21 @@
   flex-shrink: 0;
   padding-right: 24px;
   position: sticky;
-  top: calc(var(--sticky-header-height, 0px) + var(--sticky-toolbar-height, 64px));
+  top: calc(var(--header-group-height, 68px) + var(--sticky-toolbar-height, 64px));
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
 
   /* Firefox: only thin/auto are settable, no exact pixel width */
   scrollbar-width: thin;
   scrollbar-color: var(--hs-border-strong, #ccc) transparent;
+}
+
+/* Mirrors search-toolbar's own header-group-hidden override -- when
+   header-group.js hides the fixed header on scroll-down, drop the
+   header-height portion of our offset so this panel sits right below
+   the toolbar instead of leaving a gap. */
+:root.header-group-hidden .search-filter {
+  top: var(--sticky-toolbar-height, 64px);
 }
 
 /* Chrome, Safari, Edge */
