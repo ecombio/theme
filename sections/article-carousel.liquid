@@ -11,6 +11,13 @@
   - "manual" -> uses the "article" blocks added in the theme editor, in
                the order they're arranged there (use this for a curated
                "Popular Articles" style section)
+
+  SECTION LAYOUT: this section's width/padding controls follow the
+  pattern from sections/example-width-section.liquid — local
+  --section-padding / --custom-width CSS variables set inline from
+  this section's own settings, independent of the global
+  --page-margin / --page-width variables. See that file's header
+  comment for the full rationale.
 {%- endcomment -%}
 
 {%- liquid
@@ -19,10 +26,25 @@
   assign show_view_all = section.settings.show_view_all
   assign view_all_label = section.settings.view_all_label
   assign articles_to_show = section.settings.articles_to_show
+
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'article-carousel__default-width'
+  else
+    assign width_class = 'article-carousel__' | append: width_type
+  endif
 -%}
 
 <section class="article-carousel color-{{ section.settings.color_scheme }}" data-section-id="{{ section.id }}">
-  <div class="article-carousel__container page-width">
+  <div
+    class="article-carousel__container {{ width_class }}"
+    style="
+      --section-padding: {{ section.settings.section_padding }}px;
+      {%- if width_type == 'custom-width' %}
+        --custom-width: {{ section.settings.custom_width }}rem;
+      {%- endif %}
+    "
+  >
 
     {%- if heading != blank or show_view_all -%}
       <div class="article-carousel__header">
@@ -125,6 +147,42 @@
         { "value": "inverse", "label": "Inverse" }
       ],
       "default": "background-1"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     },
     {
       "type": "select",
