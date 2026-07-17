@@ -5,7 +5,21 @@
    regardless of --color-* overrides elsewhere), same sticky toolbar
    behavior, same custom select, same fixed mobile bar. Class names
    are kept as search-* so existing JS hooks in search-toolbar.js are
-   untouched; only the declarations changed. */
+   untouched; only the declarations changed.
+
+   STICKY OFFSET FIX (2026-07): .search-toolbar previously read
+   var(--sticky-header-height, 0) for its top offset. That variable is
+   never set anywhere in this theme -- header-group.js (the script
+   that measures and publishes the fixed header's real height) only
+   ever writes --header-group-height. --sticky-header-height silently
+   fell back to its 0 default 100% of the time, so this toolbar was
+   sticking flush to the very top of the viewport with no allowance
+   for the fixed header above it -- the exact same bug
+   collection-filter.css and search-filter.css both had, fixed the
+   same way here: read --header-group-height instead, and add the
+   :root.header-group-hidden override collection-toolbar.css already
+   has, so this toolbar collapses its offset in sync when
+   header-group.js hides the fixed header on scroll-down. */
 
 .search-toolbar {
   display: flex;
@@ -14,9 +28,18 @@
   margin-bottom: 2rem;
   border-bottom: 1px solid #e5e5e5;
   position: sticky;
-  top: var(--sticky-header-height, 0);
+  top: var(--header-group-height, 68px);
   z-index: 50;
   background: #fff;
+  transition: top 0.3s ease;
+}
+
+/* When header-group.js hides the fixed header on scroll-down, close
+   the gap it leaves behind instead of stranding the toolbar with a
+   header-height offset pointing at nothing -- mirrors
+   collection-toolbar.css's identical rule. */
+:root.header-group-hidden .search-toolbar {
+  top: 0;
 }
 
 /* ---------- Tabs (shares .tab-switcher / .tab-switcher__tab class
