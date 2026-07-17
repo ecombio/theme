@@ -6,8 +6,33 @@
   (snippets/search-filter.liquid and snippets/search-results.liquid
   respectively), so each stays self-contained. Adding either
   stylesheet_tag here as well would load it twice.
+
+  PRODUCT-CARD ASSETS (2026-07 fix): 'product-card.css' and
+  'product-card.js' were previously not loaded anywhere in the
+  search page's render path -- product-card.liquid's markup was
+  rendering with no styling and no interactivity (add to cart,
+  wishlist, quick view, compare all silently did nothing).
+
+  These are loaded HERE rather than self-contained inside
+  product-card.liquid itself, unlike search-filter.css/js and
+  search-results.css/js: product-card.liquid renders once PER
+  PRODUCT in the results grid, so a tag inside it would duplicate
+  once per card. product-card.js binds its listeners via delegated
+  document.body.addEventListener calls with no re-entry guard (unlike
+  this file's own window.__searchFilterLoaded /
+  window.__searchToolbarLoaded pattern below), so duplicate script
+  tags would mean duplicate listeners firing per click -- e.g. one
+  click on Add to cart adding N copies to the cart. Loading both
+  exactly once at the section level, alongside main-search.css/js,
+  avoids that entirely.
+
+  If product-card.liquid is ever rendered from another section
+  (main-collection.liquid, related-products.liquid, etc.), that
+  section needs this same pair of tags too -- product-card.liquid
+  does not carry its own.
 {%- endcomment -%}
 {{ 'main-search.css' | asset_url | stylesheet_tag }}
+{{ 'product-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   # Use search.types as primary source of truth (most reliable)
@@ -124,8 +149,17 @@
   below still loads it. Check assets/main-search.js directly -- if
   it's empty/dead, delete the tag below; if it still does something,
   fix this comment instead.
+
+  This is now more than an open question -- if ajax_navigation is on,
+  this <script> tag will NOT re-execute after search-toolbar.js
+  replaces #main-search via fetch (browsers don't run scripts injected
+  via replaceWith/innerHTML). If main-search.js does any per-load
+  setup, that setup will silently stop running on the 2nd+ tab switch.
+  UNVERIFIED until main-search.js is reviewed -- do not ship
+  ajax_navigation: true as the default until this is checked.
 {%- endcomment -%}
 <script src="{{ 'main-search.js' | asset_url }}" defer></script>
+<script src="{{ 'product-card.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -174,6 +208,17 @@
       "id": "show_sort",
       "label": "Show sort (Products tab only)",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Behavior"
+    },
+    {
+      "type": "checkbox",
+      "id": "ajax_navigation",
+      "label": "Load results without a page refresh",
+      "info": "Switches Products/Articles tabs and sort via AJAX instead of reloading the page. Falls back to normal links if JavaScript is unavailable. Filter pills still trigger a full reload for now.",
+      "default": false
     },
     {
       "type": "header",
