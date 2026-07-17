@@ -40,9 +40,38 @@
   assets/search-filter.css; interactivity is in main-search.js's
   initPriceFilters().
 
+  PRICE VALUE NORMALIZATION (2026-07 fix): previously this block mixed
+  two different source values for "the top of the price range" --
+  filter.range_max (used correctly for the MAX placeholder and the
+  bracket math) and filter.max_value.value (used for the MAX field's
+  actual value), with neither ever passed through a money filter. That
+  let the MIN/MAX fields, the slider, and the bracket radios each show
+  a different, unformatted number for what should be the same range --
+  e.g. a MAX field reading "108990" sitting right above brackets
+  reading "$1,089,900". Fixed by:
+    1. Introducing display_min / display_max below as the SINGLE
+       source of truth for this group's range -- both derived from
+       filter.range_max via money_without_currency, with
+       filter.min_value.value / filter.max_value.value layered on top
+       only for the currently-*applied* filter state (defaulting back
+       to display_min/display_max when nothing's applied).
+    2. Using display_min / display_max consistently in every spot that
+       renders a price: both field values, both placeholders, the
+       slider's min/max/value, and the bracket math -- instead of
+       reading filter.range_max in some places and filter.max_value.value
+       in others.
+  If filter.range_max or filter.min_value.value / filter.max_value.value
+  ever come back in a different unit than expected, this at least
+  guarantees every visible number in this group agrees with every
+  other one, rather than silently mixing scales again.
+
   ACTIVE-FILTER PILLS (2026-07): moved to snippets/search-toolbar.liquid,
   displayed to the right of the Products/Articles tabs, so they're
-  visible without opening the drawer. Not duplicated here.
+  visible without opening the drawer. Not duplicated here. NOTE: if
+  search-toolbar.liquid renders its own copy of these price values (for
+  the "Price: $X - $Y ×" removal pill), it needs this same
+  normalization -- check it separately, since that markup lives outside
+  this file.
 
   Expected params (passed in from sections/main-search.liquid):
     - active_type   : 'product' or 'article'
@@ -111,6 +140,20 @@
                 {%- endfor -%}
 
               {%- when 'price_range' -%}
+                {%- comment -%}
+                  display_min / display_max are the single source of
+                  truth for this group's range, formatted once via
+                  money_without_currency. filter.min_value.value /
+                  filter.max_value.value (the currently-applied
+                  filter, if any) are layered on top of that -- via
+                  `| default:` -- rather than used as an independent,
+                  unformatted number the way they were before.
+                {%- endcomment -%}
+                {%- assign display_min = 0 | money_without_currency -%}
+                {%- assign display_max = filter.range_max | money_without_currency -%}
+                {%- assign applied_min = filter.min_value.value | money_without_currency | default: display_min -%}
+                {%- assign applied_max = filter.max_value.value | money_without_currency | default: display_max -%}
+
                 <div class="search-filter__price-wrap" data-price-filter>
                   <div class="search-filter__price-fields">
                     <div class="search-filter__price-field">
@@ -122,10 +165,10 @@
                           class="search-filter__price-input"
                           id="SearchFilterPriceMin-{{ forloop.index }}"
                           name="{{ filter.min_value.param_name }}"
-                          value="{{ filter.min_value.value }}"
+                          value="{{ applied_min }}"
                           min="0"
-                          max="{{ filter.range_max }}"
-                          placeholder="0"
+                          max="{{ display_max }}"
+                          placeholder="{{ display_min }}"
                           data-price-input="min"
                         >
                       </div>
@@ -142,10 +185,10 @@
                           class="search-filter__price-input"
                           id="SearchFilterPriceMax-{{ forloop.index }}"
                           name="{{ filter.max_value.param_name }}"
-                          value="{{ filter.max_value.value }}"
+                          value="{{ applied_max }}"
                           min="0"
-                          max="{{ filter.range_max }}"
-                          placeholder="{{ filter.range_max }}"
+                          max="{{ display_max }}"
+                          placeholder="{{ display_max }}"
                           data-price-input="max"
                         >
                       </div>
@@ -175,8 +218,8 @@
                       type="range"
                       class="search-filter__range-input search-filter__range-input--min"
                       min="0"
-                      max="{{ filter.range_max }}"
-                      value="{{ filter.min_value.value | default: 0 }}"
+                      max="{{ display_max }}"
+                      value="{{ applied_min }}"
                       data-range-thumb="min"
                       aria-label="Minimum price"
                     >
@@ -184,14 +227,14 @@
                       type="range"
                       class="search-filter__range-input search-filter__range-input--max"
                       min="0"
-                      max="{{ filter.range_max }}"
-                      value="{{ filter.max_value.value | default: filter.range_max }}"
+                      max="{{ display_max }}"
+                      value="{{ applied_max }}"
                       data-range-thumb="max"
                       aria-label="Maximum price"
                     >
                   </div>
 
-                  {%- assign quarter = filter.range_max | divided_by: 4.0 -%}
+                  {%- assign quarter = display_max | divided_by: 4.0 -%}
                   {%- assign b1 = quarter | round -%}
                   {%- assign b2 = quarter | times: 2 | round -%}
                   {%- assign b3 = quarter | times: 3 | round -%}
@@ -209,12 +252,12 @@
                       ${{ b2 }} to ${{ b3 }}
                     </label>
                     <label class="search-filter__price-option">
-                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}">
-                      ${{ b3 }} to ${{ filter.range_max }}
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ display_max }}">
+                      ${{ b3 }} to ${{ display_max }}
                     </label>
                     <label class="search-filter__price-option">
-                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max="">
-                      More than ${{ filter.range_max }}
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ display_max }}" data-max="">
+                      More than ${{ display_max }}
                     </label>
                   </div>
                 </div>
