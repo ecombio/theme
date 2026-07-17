@@ -128,28 +128,6 @@
 >
   <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
-    {% if section.settings.posts_heading != blank %}
-      <div class="blog-posts__header">
-        <h2 class="blog-posts__title">{{ section.settings.posts_heading }}</h2>
-      </div>
-    {% endif %}
-
-    {% if custom_tags_list.size > 0 %}
-      <div class="blog-posts__tags">
-        <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
-          All
-        </a>
-        {% for tag in custom_tags_list %}
-          {%- assign tag = tag | strip -%}
-          {%- assign tag_slug = tag | handle -%}
-          <a href="{{ target_blog.url }}/tagged/{{ tag_slug }}"
-             class="blog-posts__tag-pill {% if target_blog.current_tags contains tag_slug %}is-active{% endif %}">
-            {{ tag }}
-          </a>
-        {% endfor %}
-      </div>
-    {% endif %}
-
     {%- comment -%}
       Featured row: the 2 most recent articles from the blog, rendered
       large via snippets/blog-card.liquid (see the reference screenshot —
@@ -173,6 +151,28 @@
         </div>
       {%- endif -%}
     {%- endif -%}
+
+    {% if section.settings.posts_heading != blank %}
+      <div class="blog-posts__header">
+        <h2 class="blog-posts__title">{{ section.settings.posts_heading }}</h2>
+      </div>
+    {% endif %}
+
+    {% if custom_tags_list.size > 0 %}
+      <div class="blog-posts__tags">
+        <a href="{{ target_blog.url }}" class="blog-posts__tag-pill {% if target_blog.current_tags.size == 0 %}is-active{% endif %}">
+          All
+        </a>
+        {% for tag in custom_tags_list %}
+          {%- assign tag = tag | strip -%}
+          {%- assign tag_slug = tag | handle -%}
+          <a href="{{ target_blog.url }}/tagged/{{ tag_slug }}"
+             class="blog-posts__tag-pill {% if target_blog.current_tags contains tag_slug %}is-active{% endif %}">
+            {{ tag }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
 
     {% paginate target_blog.articles by section.settings.posts_limit %}
       {% if target_blog.articles.size > 0 %}
