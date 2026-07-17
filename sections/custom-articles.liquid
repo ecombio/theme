@@ -110,6 +110,7 @@
 </nav>
 
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
+{{ 'blog-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign target_blog = blogs['articles']
@@ -132,6 +133,30 @@
         <h2 class="blog-posts__title">{{ section.settings.posts_heading }}</h2>
       </div>
     {% endif %}
+
+    {%- comment -%}
+      Featured row: the 2 most recent articles from the blog, rendered
+      large via snippets/blog-card.liquid (see the reference screenshot —
+      these sit above the dense .blog-posts__grid and use a distinct,
+      sparser card style: no excerpt, no "Read article" link).
+
+      Note: these pull straight from target_blog.articles, same source as
+      the paginated grid below, so on page 1 the 2 featured posts will
+      also appear again in the grid. If that duplication isn't wanted,
+      the cleanest fix is tagging the 2 posts (e.g. "featured") and
+      excluding that tag from the grid loop's show_article check below —
+      happy to wire that up if you'd like it.
+    {%- endcomment -%}
+    {%- if section.settings.posts_show_featured -%}
+      {%- assign featured_articles = target_blog.articles | slice: 0, 2 -%}
+      {%- if featured_articles.size > 0 -%}
+        <div class="blog-posts__featured">
+          {%- for article in featured_articles -%}
+            {%- render 'blog-card', article: article, loading: 'eager' -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    {%- endif -%}
 
     {% if custom_tags_list.size > 0 %}
       <div class="blog-posts__tags">
@@ -306,6 +331,13 @@
       "id": "posts_heading",
       "label": "Heading",
       "default": "Latest Articles"
+    },
+    {
+      "type": "checkbox",
+      "id": "posts_show_featured",
+      "label": "Show featured articles",
+      "info": "Displays the 2 most recent articles as large cards above the grid.",
+      "default": true
     },
     {
       "type": "text",
