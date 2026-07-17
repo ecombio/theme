@@ -1,11 +1,20 @@
 .collection-filter {
   position: sticky;
-  top: calc(var(--main-header-bottom, 0px) + var(--sticky-toolbar-height, 64px));
+  top: calc(var(--header-group-height, 68px) + var(--sticky-toolbar-height, 64px));
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
     padding-right: 24px;
   scrollbar-width: thin;
   scrollbar-color: #d4d4d4 transparent;
+}
+
+/* When header-group.js hides the fixed header on scroll-down, the
+   toolbar above us collapses its own offset to 0 (see
+   collection-toolbar.css's :root.header-group-hidden rule) — mirror
+   that here so the filter panel sits right below the toolbar instead
+   of leaving a gap sized for a header that's no longer there. */
+:root.header-group-hidden .collection-filter {
+  top: var(--sticky-toolbar-height, 64px);
 }
 
 .collection-filter::-webkit-scrollbar {
