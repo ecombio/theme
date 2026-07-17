@@ -1,7 +1,7 @@
 {%- comment -%}
   sections/main-athlete.liquid
 
-  REQUIRED SETUP (same mechanism as sections/main-author.liquid):
+  REQUIRED SETUP:
   1. A blog with handle `athletes` must exist.
   2. Each athlete is one Article inside that blog:
        - handle  -> becomes the athlete's URL slug (e.g. "jordan")
@@ -21,6 +21,11 @@
 
   This section renders nothing meaningful unless `article` is in scope
   and lives inside the blog described above.
+
+  Card rendering is delegated to snippets/athlete-grid.liquid (which
+  itself delegates each card to snippets/athlete-card.liquid) — this
+  file only owns the profile header and the author-matching search
+  logic below.
 {%- endcomment -%}
 
 {{ 'main-athlete.css' | asset_url | stylesheet_tag }}
@@ -129,38 +134,20 @@
     {%- comment -%} Hard cap so a prolific athlete doesn't blow up the DOM. {%- endcomment -%}
     {%- assign matched = matched | slice: 0, 60 -%}
 
-    <div class="athlete-section__articles">
-      <h2 class="athlete-section__articles-heading">
-        {{ section.settings.articles_heading }}
-      </h2>
-
-      {%- if matched.size > 0 -%}
-        <div class="athlete-section__grid" data-athlete-grid>
-          {%- for a in matched -%}
-            <div
-              class="athlete-section__grid-item"
-              data-athlete-card
-              {%- if forloop.index > section.settings.per_page %} hidden{% endif -%}
-            >
-              {%- render 'article-card', article: a, loading: forloop.index <= 4 %}
-            </div>
-          {%- endfor -%}
-        </div>
-
-        {%- if matched.size > section.settings.per_page -%}
-          <button
-            type="button"
-            class="athlete-section__load-more"
-            data-athlete-load-more
-            data-increment="{{ section.settings.load_more_increment }}"
-          >
-            Load more
-          </button>
-        {%- endif -%}
-      {%- else -%}
-        <p class="athlete-section__empty">{{ section.settings.empty_state_text }}</p>
-      {%- endif -%}
-    </div>
+    {%- comment -%}
+      Every card here is authored by / about this one athlete, so we
+      pass a single avatar (this athlete's own photo) rather than a
+      per-card avatar_lookup — see snippets/athlete-grid.liquid.
+    {%- endcomment -%}
+    {%- render 'athlete-grid',
+      articles: matched,
+      heading: section.settings.articles_heading,
+      per_page: section.settings.per_page,
+      load_more_increment: section.settings.load_more_increment,
+      empty_state_text: section.settings.empty_state_text,
+      avatar: article.image,
+      avatar_alt: athlete_name
+    -%}
   {%- else -%}
     <div class="athlete-section__empty athlete-section__empty--config">
       This section only works on an Athlete page — an article inside the
@@ -168,8 +155,6 @@
     </div>
   {%- endif -%}
 </div>
-
-<script src="{{ 'main-athlete.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
 {
