@@ -1,45 +1,3 @@
-{%- comment -%}
-  sections/main-athletes.liquid
-
-  REQUIRED SETUP:
-  1. A blog with handle `athletes` must exist.
-  2. Each athlete is one Article inside that blog:
-       - handle  -> becomes the athlete's URL slug (e.g. "jordan")
-       - title   -> the athlete's display name AND the matching key
-       - image   -> athlete photo
-       - content -> athlete bio (rich text)
-     Optional metafields (all safe to leave unset):
-       - custom.athlete_match_name (string) — decouples the matching
-         key from the display title
-       - custom.athlete_sport (string)
-       - custom.athlete_team (string)
-       - custom.athlete_position (string)
-       - custom.athlete_action_photo (image) — used only in the
-         roster view below, as a card's background photo instead of
-         the headshot
-  3. This ONE section file handles two contexts:
-       - PROFILE: assign it to templates/article.athletes.json.
-         `article` is in scope -> renders one athlete's header + the
-         articles matched to them across the store.
-       - ROSTER: assign it to templates/blog.athletes.json.
-         `article` is NOT in scope but `blog` is -> renders every
-         athlete in the `athletes` blog as a grid, linking to each
-         athlete's profile page.
-  4. On every real blog post, the native "Author" field must match the
-     athlete's title (or athlete_match_name) EXACTLY — this is how
-     the PROFILE context finds an athlete's articles.
-
-  Card rendering is delegated to snippets/athletes-grid.liquid (which
-  itself delegates each card to snippets/athletes-card.liquid) — this
-  file only owns the profile header, the author-matching search, and
-  the roster query below.
-
-  No main-athletes.js exists — there's no behavior owned at this
-  level. All interactivity (the "Load more" button) lives in
-  athletes-grid.js, since that's the component that actually owns the
-  hide/reveal state.
-{%- endcomment -%}
-
 {{ 'main-athletes.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -120,7 +78,6 @@
       </div>
     </header>
 
-    {%- comment -%} ---- Gather this athlete's articles across the store ---- {%- endcomment -%}
     {%- assign matched = blank -%}
     {%- assign has_seed = false -%}
 
@@ -143,14 +100,8 @@
     {%- endif -%}
 
     {%- assign matched = matched | sort: "published_at" | reverse -%}
-    {%- comment -%} Hard cap so a prolific athlete doesn't blow up the DOM. {%- endcomment -%}
     {%- assign matched = matched | slice: 0, 60 -%}
 
-    {%- comment -%}
-      Every card here is authored by / about this one athlete, so we
-      pass a single avatar (this athlete's own photo) rather than a
-      per-card avatar_lookup — see snippets/athletes-grid.liquid.
-    {%- endcomment -%}
     {%- render 'athletes-grid',
       articles: matched,
       heading: section.settings.articles_heading,
@@ -173,24 +124,19 @@
       assign roster = roster | slice: 0, 120
     -%}
 
-    {%- comment -%}
-      Roster context: `articles` IS the list of athletes themselves,
-      so each card uses its own photo as the avatar — see
-      snippets/athletes-grid.liquid's use_own_photo mode.
-    {%- endcomment -%}
     {%- render 'athletes-grid',
       articles: roster,
       heading: section.settings.roster_heading,
       per_page: section.settings.roster_per_page,
       load_more_increment: section.settings.roster_load_more_increment,
       empty_state_text: section.settings.roster_empty_state_text,
-      use_own_photo: true
+      use_own_photo: true,
+      demo_count: section.settings.roster_demo_count
     -%}
   {%- else -%}
     <div class="athletes-section__empty athletes-section__empty--config">
-      This section only works on an Athlete page (an article inside the
-      blog described in the setup comment at the top of this file) or
-      on that blog's own listing page.
+      This section only works on an athlete's article page or on the
+      athletes blog's own listing page.
     </div>
   {%- endif -%}
 </div>
@@ -338,6 +284,16 @@
       "id": "roster_empty_state_text",
       "label": "Roster empty state message",
       "default": "No athletes published yet."
+    },
+    {
+      "type": "range",
+      "id": "roster_demo_count",
+      "min": 0,
+      "max": 8,
+      "step": 1,
+      "label": "Placeholder cards to show when the blog is empty",
+      "info": "Set to 0 to hide placeholders and show the empty state message instead.",
+      "default": 6
     }
   ],
   "presets": [
