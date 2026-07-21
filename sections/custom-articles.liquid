@@ -142,11 +142,16 @@
   <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
     {%- comment -%}
-      Featured row: merchant-selected via a single "Featured blog posts"
-      article_list setting (see schema below) — one field with a proper
-      multi-select article picker in the theme editor, no blocks needed.
-      Falls back to the 2 most recent posts in target_blog if nothing is
-      selected. Rendered as a horizontally-scrolling carousel (see
+      Featured row, three-tier source (first match wins):
+        1. The "Featured blog posts" article_list setting below — either
+           filled in manually, or connected in the theme editor to the
+           "Featured Blog Posts" metafield (featured.blog_posts) via a
+           dynamic source connection.
+        2. If that setting is empty, read the metafield directly off the
+           current article (covers stores/themes where the dynamic
+           source connector isn't available yet for article_list).
+        3. Otherwise, the 2 most recent posts in target_blog.
+      Rendered as a horizontally-scrolling carousel (see
       custom-articles.css/.js) since a merchant may select more than fit
       on screen at once — each slide uses snippets/blog-card.liquid, the
       same sparser/bulkier card style as before (no excerpt, no "Read
@@ -157,10 +162,12 @@
     {%- endcomment -%}
     {%- liquid
       assign featured_articles = section.settings.featured_articles
-      assign use_fallback = false
+
+      if featured_articles.size == 0 and request.page_type == 'article' and article.metafields.featured.blog_posts.value.size > 0
+        assign featured_articles = article.metafields.featured.blog_posts.value
+      endif
 
       if featured_articles.size == 0 and section.settings.posts_show_featured
-        assign use_fallback = true
         assign featured_articles = target_blog.articles | slice: 0, 2
       endif
 
@@ -389,7 +396,7 @@
       "type": "checkbox",
       "id": "posts_show_featured",
       "label": "Show featured articles",
-      "info": "Displays large cards above the grid. Choose specific posts below with \"Featured blog posts\". If none are selected, falls back to the 2 most recent posts.",
+      "info": "Displays large cards above the grid. Uses \"Featured blog posts\" below (which can be connected to your Featured Blog Posts metafield via the theme editor's dynamic source icon, or filled in manually). Falls back to the metafield directly, then to the 2 most recent posts, if left empty.",
       "default": true
     },
     {
