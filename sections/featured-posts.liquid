@@ -1,43 +1,21 @@
 {%- liquid
-  assign selection_type = section.settings.selection_type
-
-  if selection_type == 'automatic' and section.settings.articles_blog != blank and section.settings.articles_tags != blank
-    assign tag_list = section.settings.articles_tags | split: ','
-    assign matched_articles = blank
-    for raw_tag in tag_list
-      assign clean_tag = raw_tag | strip
-      assign tag_matches = section.settings.articles_blog.articles | where: 'tags', clean_tag
-      if matched_articles == blank
-        assign matched_articles = tag_matches
-      else
-        assign matched_articles = matched_articles | concat: tag_matches
-      endif
-    endfor
-    if matched_articles != blank
-      assign matched_articles = matched_articles | uniq
-    endif
-    assign articles_limit = section.settings.articles_limit
-    assign featured_articles = matched_articles | slice: 0, articles_limit
-  else
-    assign featured_articles = section.settings.featured_articles
-  endif
-
+  assign featured_articles = section.settings.featured_articles
   assign featured_count = featured_articles.size
 -%}
 
-{%- if featured_count > 0 -%}
-  {{ 'featured-posts.css' | asset_url | stylesheet_tag }}
-  <script src="{{ 'featured-posts.js' | asset_url }}" defer="defer"></script>
+<div
+  class="featured-posts section-{{ section.id }}"
+  style="--section-padding: {{ section.settings.section_padding }}px;"
+>
+  {%- if section.settings.heading != blank -%}
+    <div class="featured-posts__header">
+      <h2 class="featured-posts__title">{{ section.settings.heading }}</h2>
+    </div>
+  {%- endif -%}
 
-  <div
-    class="featured-posts section-{{ section.id }}"
-    style="--section-padding: {{ section.settings.section_padding }}px;"
-  >
-    {%- if section.settings.heading != blank -%}
-      <div class="featured-posts__header">
-        <h2 class="featured-posts__title">{{ section.settings.heading }}</h2>
-      </div>
-    {%- endif -%}
+  {%- if featured_count > 0 -%}
+    {{ 'featured-posts.css' | asset_url | stylesheet_tag }}
+    <script src="{{ 'featured-posts.js' | asset_url }}" defer="defer"></script>
 
     <div class="featured-posts__carousel" data-featured-carousel>
       <div class="featured-posts__track" data-featured-track>
@@ -88,8 +66,12 @@
         </button>
       {%- endif -%}
     </div>
-  </div>
-{%- endif -%}
+  {%- else -%}
+    {%- if request.design_mode -%}
+      <p class="featured-posts__empty">No articles selected yet. Choose articles in the section settings.</p>
+    {%- endif -%}
+  {%- endif -%}
+</div>
 
 {% schema %}
 {
@@ -114,44 +96,11 @@
       "default": 28
     },
     {
-      "type": "select",
-      "id": "selection_type",
-      "label": "Selection method",
-      "options": [
-        { "value": "manual", "label": "Manual — choose specific articles" },
-        { "value": "automatic", "label": "Automatic — by blog tag" }
-      ],
-      "default": "manual"
-    },
-    {
       "type": "article_list",
       "id": "featured_articles",
       "label": "Featured articles",
       "limit": 12,
-      "info": "Choose which published articles to feature, and drag to reorder. Only used when Selection method is set to Manual."
-    },
-    {
-      "type": "blog",
-      "id": "articles_blog",
-      "label": "Blog",
-      "info": "Only used when Selection method is set to Automatic."
-    },
-    {
-      "type": "text",
-      "id": "articles_tags",
-      "label": "Tags",
-      "info": "Comma-separated (e.g. skateboarding, scootering). Shows articles matching any of these tags.",
-      "visible_if": "{{ section.settings.selection_type == 'automatic' }}"
-    },
-    {
-      "type": "range",
-      "id": "articles_limit",
-      "label": "Maximum articles to show",
-      "min": 1,
-      "max": 12,
-      "step": 1,
-      "default": 6,
-      "visible_if": "{{ section.settings.selection_type == 'automatic' }}"
+      "info": "Choose which published articles to feature, and drag to reorder."
     }
   ],
   "presets": [
