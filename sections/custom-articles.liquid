@@ -142,13 +142,11 @@
   <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
     {%- comment -%}
-      Featured row, three-tier source (first match wins):
-        1. "Blog post" blocks below — add/remove/reorder in the theme
-           editor, each one an article picker.
-        2. If no blocks are added, read the "Featured Blog Posts"
-           metafield (custom.featured_blog_posts) directly off the current
-           article, if set there.
-        3. Otherwise, the 2 most recent posts in target_blog.
+      Featured row — sourced entirely from the "Featured Blog Posts"
+      metafield (custom.featured_blog_posts) on the current article. No
+      block picker, no "recent posts" fallback: if the metafield is blank
+      (or we're not on an article page), featured_count stays 0 and the
+      whole featured block — heading included — doesn't render at all.
       Rendered as a horizontally-scrolling carousel (see
       custom-articles.css/.js) since a merchant may select more than fit
       on screen at once — each slide uses snippets/blog-card.liquid, the
@@ -161,29 +159,11 @@
     {%- liquid
       assign featured_count = 0
       assign featured_ids = ''
-      assign featured_source = 'blocks'
 
-      for block in section.blocks
-        if block.type == 'featured_post' and block.settings.article != blank
-          assign featured_count = featured_count | plus: 1
-          assign featured_ids = featured_ids | append: ',' | append: block.settings.article.id | append: ','
-        endif
-      endfor
-
-      if featured_count == 0 and request.page_type == 'article' and article.metafields.custom.featured_blog_posts.value.size > 0
-        assign featured_source = 'metafield'
+      if request.page_type == 'article' and article.metafields.custom.featured_blog_posts.value.size > 0
         assign metafield_articles = article.metafields.custom.featured_blog_posts.value
         assign featured_count = metafield_articles.size
         for feat in metafield_articles
-          assign featured_ids = featured_ids | append: ',' | append: feat.id | append: ','
-        endfor
-      endif
-
-      if featured_count == 0 and section.settings.posts_show_featured
-        assign featured_source = 'recent'
-        assign recent_articles = target_blog.articles | slice: 0, 2
-        assign featured_count = recent_articles.size
-        for feat in recent_articles
           assign featured_ids = featured_ids | append: ',' | append: feat.id | append: ','
         endfor
       endif
@@ -196,28 +176,11 @@
       {%- endif -%}
       <div class="blog-posts__featured-carousel" data-featured-carousel>
         <div class="blog-posts__featured-track" data-featured-track>
-          {%- case featured_source -%}
-            {%- when 'blocks' -%}
-              {%- for block in section.blocks -%}
-                {%- if block.type == 'featured_post' and block.settings.article != blank -%}
-                  <div class="blog-posts__featured-item" data-featured-item {{ block.shopify_attributes }}>
-                    {%- render 'blog-card', article: block.settings.article, loading: 'eager' -%}
-                  </div>
-                {%- endif -%}
-              {%- endfor -%}
-            {%- when 'metafield' -%}
-              {%- for featured_article in metafield_articles -%}
-                <div class="blog-posts__featured-item" data-featured-item>
-                  {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
-                </div>
-              {%- endfor -%}
-            {%- when 'recent' -%}
-              {%- for featured_article in recent_articles -%}
-                <div class="blog-posts__featured-item" data-featured-item>
-                  {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
-                </div>
-              {%- endfor -%}
-          {%- endcase -%}
+          {%- for featured_article in metafield_articles -%}
+            <div class="blog-posts__featured-item" data-featured-item>
+              {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
+            </div>
+          {%- endfor -%}
         </div>
 
         {%- if featured_count > 1 -%}
@@ -430,7 +393,7 @@
       "type": "checkbox",
       "id": "posts_show_featured",
       "label": "Show featured articles",
-      "info": "Displays large cards above the grid. Add \"Blog post\" blocks below to choose which posts show here. If no blocks are added, falls back to the Featured Blog Posts metafield on this page, then to the 2 most recent posts.",
+      "info": "Displays large cards above the grid, pulled from the \"Featured Blog Posts\" metafield on the article. Hidden automatically when that metafield is empty.",
       "default": true
     },
     {
@@ -504,20 +467,6 @@
       "step": 4,
       "unit": "px",
       "default": 28
-    }
-  ],
-  "max_blocks": 8,
-  "blocks": [
-    {
-      "type": "featured_post",
-      "name": "Blog post",
-      "settings": [
-        {
-          "type": "article",
-          "id": "article",
-          "label": "Blog post"
-        }
-      ]
     }
   ],
   "presets": [
