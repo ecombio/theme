@@ -147,10 +147,11 @@
       the category page's own article (e.g. the "Cycling" article).
       Falls back to the 2 most recent posts in target_blog if the
       metafield isn't set on this page, or if we're not on an article
-      page at all. Rendered large via snippets/blog-card.liquid — see
-      the reference screenshot — sitting above the dense
-      .blog-posts__grid with a distinct, sparser/bulkier card style: no
-      excerpt, no "Read article" link.
+      page at all. Rendered as a horizontally-scrolling carousel (see
+      custom-articles.css/.js) since a merchant may select more than
+      fit on screen at once — each slide uses snippets/blog-card.liquid,
+      the same sparser/bulkier card style as before (no excerpt, no
+      "Read article" link).
 
       featured_ids below is also used to exclude these same posts from
       the paginated grid further down, so they don't show twice on page 1.
@@ -171,10 +172,33 @@
       endif
     -%}
     {%- if section.settings.posts_show_featured and featured_articles.size > 0 -%}
-      <div class="blog-posts__featured">
-        {%- for featured_article in featured_articles -%}
-          {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
-        {%- endfor -%}
+      <div class="blog-posts__featured-carousel" data-featured-carousel>
+        <div class="blog-posts__featured-track" data-featured-track>
+          {%- for featured_article in featured_articles -%}
+            <div class="blog-posts__featured-item" data-featured-item>
+              {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
+            </div>
+          {%- endfor -%}
+        </div>
+
+        {%- if featured_articles.size > 1 -%}
+          <button
+            type="button"
+            class="blog-posts__featured-nav blog-posts__featured-nav--prev"
+            data-featured-prev
+            aria-label="Previous featured post"
+          >
+            <span aria-hidden="true">←</span>
+          </button>
+          <button
+            type="button"
+            class="blog-posts__featured-nav blog-posts__featured-nav--next"
+            data-featured-next
+            aria-label="Next featured post"
+          >
+            <span aria-hidden="true">→</span>
+          </button>
+        {%- endif -%}
       </div>
     {%- endif -%}
 
