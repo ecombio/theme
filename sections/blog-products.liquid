@@ -1,0 +1,382 @@
+{%- liquid
+  assign layout            = section.settings.layout
+  assign heading           = section.settings.heading
+  assign text              = section.settings.text
+  assign text_position     = section.settings.text_position
+  assign columns_desktop   = section.settings.columns_desktop
+  assign padding_top       = section.settings.padding_top
+  assign padding_bottom    = section.settings.padding_bottom
+  assign heading_size      = section.settings.heading_size
+  assign heading_alignment = section.settings.heading_alignment
+  assign color_scheme      = section.settings.color_scheme
+
+  assign product_blocks = section.blocks | where: 'type', 'product'
+  assign first_block    = product_blocks.first
+-%}
+
+{{ 'blog-products.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="blog-products blog-products--{{ layout }} color-{{ color_scheme.id }}"
+  id="blog-products-{{ section.id }}"
+  style="--bp-padding-top: {{ padding_top }}px; --bp-padding-bottom: {{ padding_bottom }}px; --bp-columns-desktop: {{ columns_desktop }};"
+  {%- if layout == 'text' %} data-text-position="{{ text_position }}"{% endif %}
+  data-heading-align="{{ heading_alignment }}"
+>
+
+  {%- capture card_settings -%}
+    show_vendor: section.settings.show_vendor,
+    show_reviews: section.settings.show_reviews,
+    show_wishlist: section.settings.show_wishlist,
+    show_quickview: section.settings.show_quickview,
+    show_atc: section.settings.show_atc,
+    show_compare: section.settings.show_compare,
+    show_sale_badge: section.settings.show_sale_badge,
+    show_savings_row: section.settings.show_savings_row,
+    show_eta: section.settings.show_eta
+  {%- endcapture -%}
+
+  {%- case layout -%}
+
+    {%- comment -%} ---------- LAYOUT 1: FOCUS ON ONE PRODUCT ---------- {%- endcomment -%}
+    {%- when 'focus' -%}
+      <div class="blog-products__focus-wrap">
+        {%- if first_block -%}
+          {%- if first_block.settings.product != blank -%}
+            <div class="blog-products__card" {{ first_block.shopify_attributes }}>
+              {%- render 'product-card',
+                product: first_block.settings.product,
+                show_vendor: section.settings.show_vendor,
+                show_reviews: section.settings.show_reviews,
+                show_wishlist: section.settings.show_wishlist,
+                show_quickview: section.settings.show_quickview,
+                show_atc: section.settings.show_atc,
+                show_compare: section.settings.show_compare,
+                show_sale_badge: section.settings.show_sale_badge,
+                show_savings_row: section.settings.show_savings_row,
+                show_eta: section.settings.show_eta
+              -%}
+            </div>
+          {%- elsif request.design_mode -%}
+            <div class="blog-products__placeholder" {{ first_block.shopify_attributes }}>Select a product</div>
+          {%- endif -%}
+        {%- elsif request.design_mode -%}
+          <div class="blog-products__placeholder">Add a product block</div>
+        {%- endif -%}
+      </div>
+
+    {%- comment -%} ---------- LAYOUT 2: PRODUCT WITH TEXT ---------- {%- endcomment -%}
+    {%- when 'text' -%}
+      <div class="blog-products__text-row">
+        <div class="blog-products__text-col">
+          {%- if heading != blank -%}
+            <h2 class="blog-products__heading blog-products__heading--{{ heading_size }}">{{ heading }}</h2>
+          {%- endif -%}
+          {%- if text != blank -%}
+            <div class="blog-products__text">{{ text }}</div>
+          {%- endif -%}
+        </div>
+        <div class="blog-products__media-col">
+          {%- if first_block -%}
+            {%- if first_block.settings.product != blank -%}
+              <div class="blog-products__card" {{ first_block.shopify_attributes }}>
+                {%- render 'product-card',
+                  product: first_block.settings.product,
+                  show_vendor: section.settings.show_vendor,
+                  show_reviews: section.settings.show_reviews,
+                  show_wishlist: section.settings.show_wishlist,
+                  show_quickview: section.settings.show_quickview,
+                  show_atc: section.settings.show_atc,
+                  show_compare: section.settings.show_compare,
+                  show_sale_badge: section.settings.show_sale_badge,
+                  show_savings_row: section.settings.show_savings_row,
+                  show_eta: section.settings.show_eta
+                -%}
+              </div>
+            {%- elsif request.design_mode -%}
+              <div class="blog-products__placeholder" {{ first_block.shopify_attributes }}>Select a product</div>
+            {%- endif -%}
+          {%- elsif request.design_mode -%}
+            <div class="blog-products__placeholder">Add a product block</div>
+          {%- endif -%}
+        </div>
+      </div>
+
+    {%- comment -%} ---------- LAYOUT 3: PRODUCT GALLERY (text above, row of cards) ---------- {%- endcomment -%}
+    {%- when 'gallery' -%}
+      {%- if heading != blank or text != blank -%}
+        <div class="blog-products__intro">
+          {%- if heading != blank -%}
+            <h2 class="blog-products__heading blog-products__heading--{{ heading_size }}">{{ heading }}</h2>
+          {%- endif -%}
+          {%- if text != blank -%}
+            <div class="blog-products__text">{{ text }}</div>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      <div class="blog-products__grid">
+        {%- for block in product_blocks -%}
+          {%- if block.settings.product != blank -%}
+            <div class="blog-products__card" {{ block.shopify_attributes }}>
+              {%- render 'product-card',
+                product: block.settings.product,
+                show_vendor: section.settings.show_vendor,
+                show_reviews: section.settings.show_reviews,
+                show_wishlist: section.settings.show_wishlist,
+                show_quickview: section.settings.show_quickview,
+                show_atc: section.settings.show_atc,
+                show_compare: section.settings.show_compare,
+                show_sale_badge: section.settings.show_sale_badge,
+                show_savings_row: section.settings.show_savings_row,
+                show_eta: section.settings.show_eta
+              -%}
+            </div>
+          {%- elsif request.design_mode -%}
+            <div class="blog-products__placeholder" {{ block.shopify_attributes }}>Select a product</div>
+          {%- endif -%}
+        {%- else -%}
+          {%- if request.design_mode -%}
+            <div class="blog-products__placeholder">Add product blocks</div>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+    {%- comment -%} ---------- LAYOUT 4: PRODUCT GRID ---------- {%- endcomment -%}
+    {%- when 'grid' -%}
+      <div class="blog-products__grid">
+        {%- for block in product_blocks -%}
+          {%- if block.settings.product != blank -%}
+            <div class="blog-products__card" {{ block.shopify_attributes }}>
+              {%- render 'product-card',
+                product: block.settings.product,
+                show_vendor: section.settings.show_vendor,
+                show_reviews: section.settings.show_reviews,
+                show_wishlist: section.settings.show_wishlist,
+                show_quickview: section.settings.show_quickview,
+                show_atc: section.settings.show_atc,
+                show_compare: section.settings.show_compare,
+                show_sale_badge: section.settings.show_sale_badge,
+                show_savings_row: section.settings.show_savings_row,
+                show_eta: section.settings.show_eta
+              -%}
+            </div>
+          {%- elsif request.design_mode -%}
+            <div class="blog-products__placeholder" {{ block.shopify_attributes }}>Select a product</div>
+          {%- endif -%}
+        {%- else -%}
+          {%- if request.design_mode -%}
+            <div class="blog-products__placeholder">Add product blocks</div>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+  {%- endcase -%}
+
+</div>
+
+{% schema %}
+{
+  "name": "Blog products",
+  "tag": "section",
+  "class": "blog-products-section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "focus", "label": "Focus on one product" },
+        { "value": "text", "label": "Product with text" },
+        { "value": "gallery", "label": "Product gallery" },
+        { "value": "grid", "label": "Product grid" }
+      ],
+      "default": "focus"
+    },
+    {
+      "type": "header",
+      "content": "Text"
+    },
+    {
+      "type": "paragraph",
+      "content": "Used by the \"Product with text\" and \"Product gallery\" layouts."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Recommended"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "Text",
+      "default": "<p>A lightweight, foamy cleanser ideal for all skin types. Removes impurities without stripping the skin of its natural oils.</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_position",
+      "label": "Text position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left",
+      "info": "Applies to the \"Product with text\" layout only."
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "Heading & text alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "left",
+      "info": "On \"Product gallery\", this also centers the intro text block."
+    },
+    {
+      "type": "header",
+      "content": "Grid & gallery"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Products per row (desktop)",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "header",
+      "content": "Product card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_reviews",
+      "label": "Show review badge",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sale_badge",
+      "label": "Show sale badge",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_savings_row",
+      "label": "Show savings amount",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_eta",
+      "label": "Show delivery estimate",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_atc",
+      "label": "Show add to cart button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_wishlist",
+      "label": "Show wishlist button",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quickview",
+      "label": "Show quick view button",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_compare",
+      "label": "Show compare checkbox",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 36
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "enabled_on": {
+    "templates": ["article"]
+  },
+  "presets": [
+    {
+      "name": "Blog products",
+      "blocks": [
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" }
+      ]
+    }
+  ]
+}
+{% endschema %}
