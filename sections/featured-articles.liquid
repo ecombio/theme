@@ -5,22 +5,41 @@
   assign articles_to_show = section.settings.articles_to_show
   assign blog = blogs[section.settings.blog]
 
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'featured-articles__default-width'
+  else
+    assign width_class = 'featured-articles__' | append: width_type
+  endif
+
+  assign articles = blank
+  assign articles_count = 0
+
   if content_source == 'metafield'
-    assign curated_articles = shop.metafields.custom.featured_articles.value
-    if curated_articles != blank
-      assign articles = curated_articles
-      assign articles_count = curated_articles.size
+    assign featured_mf = shop.metafields.custom.featured_articles
+    if featured_mf != blank and featured_mf.value != blank
+      assign articles = featured_mf.value
+      assign articles_count = featured_mf.value.count
     endif
   else
     if blog != blank
       assign articles = blog.articles
-      assign articles_count = blog.articles.size
+      assign articles_count = blog.articles_count
     endif
   endif
 -%}
 
-<div class="featured-articles color-{{ section.settings.color_scheme }}" id="FeaturedArticles-{{ section.id }}">
-  <div class="featured-articles__container page-width">
+<div
+  class="featured-articles color-{{ section.settings.color_scheme }} {{ width_class }}"
+  id="FeaturedArticles-{{ section.id }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+  <div class="featured-articles__container">
 
     {%- if section.settings.heading != blank -%}
       <h2 class="featured-articles__heading">{{ section.settings.heading }}</h2>
@@ -117,6 +136,42 @@
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ],
   "presets": [
