@@ -1,0 +1,164 @@
+{{ 'featured-blog-posts.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'featured-blog-posts.js' | asset_url }}" defer="defer"></script>
+
+{%- comment -%}
+  Featured blog posts — fully self-contained section, no metafield
+  dependency. Merchants add "Blog post" blocks and pick an article in
+  each. Placeholders fill in wherever there's nothing to show yet:
+    - A block added but no article chosen -> placeholder card in that slot.
+    - Zero blocks added at all -> a default row of placeholder cards, so
+      the section never renders empty in the editor or on the live page.
+{%- endcomment -%}
+
+{%- liquid
+  assign block_count = section.blocks.size
+  assign placeholder_count = 3
+  assign item_count = block_count
+  if block_count == 0
+    assign item_count = placeholder_count
+  endif
+-%}
+
+<div
+  class="featured-blog-posts section-{{ section.id }}"
+  style="--section-padding: {{ section.settings.section_padding }}px;"
+>
+  {%- if section.settings.heading != blank -%}
+    <div class="featured-blog-posts__header">
+      <h2 class="featured-blog-posts__title">{{ section.settings.heading }}</h2>
+    </div>
+  {%- endif -%}
+
+  <div class="featured-blog-posts__carousel" data-featured-carousel>
+    <div class="featured-blog-posts__track" data-featured-track>
+      {%- if block_count > 0 -%}
+        {%- for block in section.blocks -%}
+          <div class="featured-blog-posts__item" data-featured-item {{ block.shopify_attributes }}>
+            {%- assign featured_article = block.settings.article -%}
+            {%- if featured_article != blank -%}
+              <a href="{{ featured_article.url }}" class="featured-blog-posts__card">
+                <div class="featured-blog-posts__card-image">
+                  {%- if featured_article.image -%}
+                    <img
+                      src="{{ featured_article.image | image_url: width: 800 }}"
+                      alt="{{ featured_article.image.alt | default: featured_article.title | escape }}"
+                      loading="eager"
+                      width="{{ featured_article.image.width }}"
+                      height="{{ featured_article.image.height }}"
+                    >
+                  {%- else -%}
+                    {{ 'lifestyle-1' | placeholder_svg_tag: 'featured-blog-posts__card-placeholder-svg' }}
+                  {%- endif -%}
+                </div>
+                <div class="featured-blog-posts__card-body">
+                  {%- if featured_article.tags.size > 0 -%}
+                    <span class="featured-blog-posts__card-tag">{{ featured_article.tags.first }}</span>
+                  {%- endif -%}
+                  <h3 class="featured-blog-posts__card-title">{{ featured_article.title }}</h3>
+                  <span class="featured-blog-posts__card-date">{{ featured_article.published_at | date: '%B %d, %Y' }}</span>
+                </div>
+              </a>
+            {%- else -%}
+              <div class="featured-blog-posts__card featured-blog-posts__card--placeholder">
+                <div class="featured-blog-posts__card-image">
+                  {{ 'lifestyle-1' | placeholder_svg_tag: 'featured-blog-posts__card-placeholder-svg' }}
+                </div>
+                <div class="featured-blog-posts__card-body">
+                  <span class="featured-blog-posts__card-tag">Category</span>
+                  <h3 class="featured-blog-posts__card-title">Add a blog post to this block</h3>
+                  <span class="featured-blog-posts__card-date">Select a post in the theme editor</span>
+                </div>
+              </div>
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+      {%- else -%}
+        {%- for i in (1..placeholder_count) -%}
+          <div class="featured-blog-posts__item" data-featured-item>
+            <div class="featured-blog-posts__card featured-blog-posts__card--placeholder">
+              <div class="featured-blog-posts__card-image">
+                {{ 'lifestyle-1' | placeholder_svg_tag: 'featured-blog-posts__card-placeholder-svg' }}
+              </div>
+              <div class="featured-blog-posts__card-body">
+                <span class="featured-blog-posts__card-tag">Category</span>
+                <h3 class="featured-blog-posts__card-title">Your featured post title</h3>
+                <span class="featured-blog-posts__card-date">Add "Blog post" blocks to feature real posts</span>
+              </div>
+            </div>
+          </div>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+
+    {%- if item_count > 1 -%}
+      <button
+        type="button"
+        class="featured-blog-posts__nav featured-blog-posts__nav--prev"
+        data-featured-prev
+        aria-label="Previous featured post"
+      >
+        <span aria-hidden="true">←</span>
+      </button>
+      <button
+        type="button"
+        class="featured-blog-posts__nav featured-blog-posts__nav--next"
+        data-featured-next
+        aria-label="Next featured post"
+      >
+        <span aria-hidden="true">→</span>
+      </button>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Featured blog posts",
+  "tag": "section",
+  "class": "section-featured-blog-posts",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Featured Blog Posts"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    }
+  ],
+  "max_blocks": 8,
+  "blocks": [
+    {
+      "type": "post",
+      "name": "Blog post",
+      "settings": [
+        {
+          "type": "article",
+          "id": "article",
+          "label": "Blog post",
+          "info": "Leave blank to show a placeholder card."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured blog posts",
+      "category": "Blog",
+      "blocks": [
+        { "type": "post" },
+        { "type": "post" },
+        { "type": "post" }
+      ]
+    }
+  ]
+}
+{% endschema %}
