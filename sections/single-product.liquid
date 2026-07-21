@@ -103,6 +103,10 @@
     {%- if product.media.size > 1 -%}
       <ul class="single-product__thumbnails" role="list">
         {%- for media in product.media -%}
+          {%- liquid
+            assign media_alt = media.alt | default: product.title
+            assign thumb_label = 'View image ' | append: forloop.index | append: ' of ' | append: forloop.length | append: ', ' | append: media_alt
+          -%}
           <li>
             <button
               type="button"
@@ -110,8 +114,8 @@
               data-thumb-btn
               data-media-id="{{ media.id }}"
               data-full-src="{{ media | image_url: width: 1200 }}"
-              data-alt="{{ media.alt | default: product.title | escape }}"
-              aria-label="{{ 'products.product.view_media_label' | t: index: forloop.index, alt: media.alt | default: product.title | escape }}"
+              data-alt="{{ media_alt | escape }}"
+              aria-label="{{ thumb_label | escape }}"
             >
               {{ media | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}
             </button>
@@ -268,9 +272,6 @@
   "name": "Single product",
   "tag": "section",
   "class": "shopify-section--single-product",
-  "enabled_on": {
-    "templates": ["product"]
-  },
   "settings": [
     {
       "type": "header",
