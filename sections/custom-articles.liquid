@@ -142,27 +142,40 @@
   <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
     {%- comment -%}
-      Featured row: the 2 most recent articles from the blog, rendered
-      large via snippets/blog-card.liquid (see the reference screenshot —
-      these sit above the dense .blog-posts__grid and use a distinct,
-      sparser/bulkier card style: no excerpt, no "Read article" link).
+      Featured row: merchant-selected via the "Featured Blog Posts"
+      metafield (featured.blog_posts, list of Blog post references) on
+      the category page's own article (e.g. the "Cycling" article).
+      Falls back to the 2 most recent posts in target_blog if the
+      metafield isn't set on this page, or if we're not on an article
+      page at all. Rendered large via snippets/blog-card.liquid — see
+      the reference screenshot — sitting above the dense
+      .blog-posts__grid with a distinct, sparser/bulkier card style: no
+      excerpt, no "Read article" link.
 
-      Note: these pull straight from target_blog.articles, same source as
-      the paginated grid below, so on page 1 the 2 featured posts will
-      also appear again in the grid. If that duplication isn't wanted,
-      the cleanest fix is tagging the 2 posts (e.g. "featured") and
-      excluding that tag from the grid loop's show_article check below —
-      happy to wire that up if you'd like it.
+      featured_ids below is also used to exclude these same posts from
+      the paginated grid further down, so they don't show twice on page 1.
     {%- endcomment -%}
-    {%- if section.settings.posts_show_featured -%}
-      {%- assign featured_articles = target_blog.articles | slice: 0, 2 -%}
-      {%- if featured_articles.size > 0 -%}
-        <div class="blog-posts__featured">
-          {%- for article in featured_articles -%}
-            {%- render 'blog-card', article: article, loading: 'eager' -%}
-          {%- endfor -%}
-        </div>
-      {%- endif -%}
+    {%- liquid
+      assign featured_articles = blank
+      if request.page_type == 'article' and article.metafields.featured.blog_posts.value.size > 0
+        assign featured_articles = article.metafields.featured.blog_posts.value
+      elsif section.settings.posts_show_featured
+        assign featured_articles = target_blog.articles | slice: 0, 2
+      endif
+
+      assign featured_ids = ''
+      if featured_articles.size > 0
+        for feat in featured_articles
+          assign featured_ids = featured_ids | append: ',' | append: feat.id | append: ','
+        endfor
+      endif
+    -%}
+    {%- if section.settings.posts_show_featured and featured_articles.size > 0 -%}
+      <div class="blog-posts__featured">
+        {%- for featured_article in featured_articles -%}
+          {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
+        {%- endfor -%}
+      </div>
     {%- endif -%}
 
     {% if section.settings.posts_heading != blank %}
@@ -203,6 +216,11 @@
                     assign show_article = true
                   endif
                 endfor
+              endif
+
+              assign article_marker = ',' | append: article.id | append: ','
+              if section.settings.posts_show_featured and featured_ids contains article_marker
+                assign show_article = false
               endif
             -%}
 
@@ -349,7 +367,7 @@
       "type": "checkbox",
       "id": "posts_show_featured",
       "label": "Show featured articles",
-      "info": "Displays the 2 most recent articles as large cards above the grid.",
+      "info": "Displays large cards above the grid. Uses the page's \"Featured Blog Posts\" metafield if set, otherwise falls back to the 2 most recent posts.",
       "default": true
     },
     {
