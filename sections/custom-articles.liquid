@@ -17,12 +17,25 @@
       assign width_class = 'default-width'
       assign menu_width_class = 'blog-menu--default-width'
   endcase
+
+  case request.page_type
+    when 'article'
+      assign current_page_title = article.title
+    when 'blog'
+      assign current_page_title = blog.title
+    when 'page'
+      assign current_page_title = page.title
+    else
+      assign current_page_title = blank
+  endcase
+
+  assign menu_heading = section.settings.menu_heading | default: current_page_title
 -%}
 
 <nav
   class="blog-menu {{ menu_width_class }} blog-menu--align-{{ section.settings.menu_alignment | default: 'left' }}{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
   data-blog-menu
-  aria-label="{{ section.settings.menu_heading | default: 'Blog navigation' | escape }}"
+  aria-label="{{ menu_heading | default: 'Blog navigation' | escape }}"
   style="
     --blog-menu-bg: {{ section.settings.menu_background_color | default: '#ffffff' }};
     --blog-menu-text: {{ section.settings.menu_text_color | default: '#111111' }};
@@ -36,8 +49,8 @@
 >
   <div class="blog-menu__inner">
 
-    {%- if section.settings.menu_heading != blank -%}
-      <div class="blog-menu__heading">{{ section.settings.menu_heading | escape }}</div>
+    {%- if menu_heading != blank -%}
+      <div class="blog-menu__heading">{{ menu_heading | escape }}</div>
     {%- endif -%}
 
     {%- if nav_items_total > 0 -%}
@@ -262,7 +275,7 @@
       "type": "text",
       "id": "menu_heading",
       "label": "Menu heading",
-      "info": "Optional label shown before the nav items."
+      "info": "Optional. Leave blank to automatically use the current page's title (e.g. the article/category name)."
     },
     {
       "type": "text",
