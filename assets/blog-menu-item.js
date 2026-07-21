@@ -47,7 +47,12 @@ window.BlogMenuItem = (function () {
     });
 
     document.addEventListener('click', function (event) {
-      if (!nav.contains(event.target)) {
+      if (!openItem) return;
+      var dropdown = openItem.querySelector('.blog-menu__dropdown');
+      var toggle = openItem.querySelector('[data-blog-menu-dropdown-toggle]');
+      var clickedInside = (dropdown && dropdown.contains(event.target)) ||
+                           (toggle && toggle.contains(event.target));
+      if (!clickedInside) {
         closeAllDropdowns(nav, null);
         openItem = null;
       }
