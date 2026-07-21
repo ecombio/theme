@@ -1,171 +1,244 @@
-/**
- * assets/blog-menu.js
- *
- * Merged from blog-menu.js (mobile toggle + dropdown behavior) and
- * blog-menu-sticky.js (sticky-on-scroll, coordinated with
- * header-group.js) — they were always two halves of the same nav's
- * behavior, no reason to ship them as separate requests.
- *
- * Sticky notes carried over from blog-menu-sticky.js: CSS
- * `position: sticky` only sticks within its own containing block.
- * Shopify wraps this section in its own content-sized
- * `.shopify-section` div, so the nav has almost no room to travel
- * before its own wrapper's bottom edge scrolls past and sticky
- * detaches. This swaps the nav to `position: fixed` (`.is-stuck`,
- * styled in blog-menu.css) once you scroll past its natural resting
- * position, so it stays visible for the rest of the page instead of
- * only within its own section. A spacer element reserves the nav's
- * height in the flow so nothing jumps when it goes fixed. It reads
- * --header-group-height and the header-group-hidden class already
- * maintained by header-group.js, so the two stay coordinated (menu
- * offset collapses to 0 when the header tucks away, matches when it
- * reappears).
- *
- * Scoped per-instance so multiple blog-menu sections can exist on one page.
- */
-(function () {
-  'use strict';
+{{ 'blog-menu.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'blog-menu.js' | asset_url }}" defer="defer"></script>
 
-  function closeAllDropdowns(nav, exceptItem) {
-    nav.querySelectorAll('[data-blog-menu-dropdown-toggle]').forEach(function (btn) {
-      var item = btn.closest('.blog-menu__item--list');
-      if (item === exceptItem) return;
-      item.classList.remove('is-open');
-      btn.setAttribute('aria-expanded', 'false');
-    });
-  }
+{%- liquid
+  assign nav_menu = section.settings.menu
+  assign nav_items_total = nav_menu.links.size
 
-  function initToggleAndDropdowns(nav) {
-    var toggle = nav.querySelector('[data-blog-menu-toggle]');
-    var list = nav.querySelector('[data-blog-menu-list]');
+  assign section_width = section.settings.section_width
+  case section_width
+    when 'full-width'
+      assign menu_width_class = 'blog-menu--full-width'
+    when 'custom-width'
+      assign menu_width_class = 'blog-menu--custom-width'
+    else
+      assign menu_width_class = 'blog-menu--default-width'
+  endcase
 
-    if (toggle && list) {
-      toggle.addEventListener('click', function () {
-        var isOpen = list.classList.toggle('is-open');
-        toggle.setAttribute('aria-expanded', String(isOpen));
-      });
+  case request.page_type
+    when 'article'
+      assign current_page_title = article.title
+    when 'blog'
+      assign current_page_title = blog.title
+    when 'page'
+      assign current_page_title = page.title
+    else
+      assign current_page_title = blank
+  endcase
+
+  assign menu_heading = section.settings.heading | default: current_page_title
+-%}
+
+<nav
+  class="blog-menu {{ menu_width_class }} blog-menu--align-{{ section.settings.alignment | default: 'left' }}{% if section.settings.sticky %} blog-menu--sticky{% endif %}"
+  data-blog-menu
+  aria-label="{{ menu_heading | default: 'Blog navigation' | escape }}"
+  style="
+    --blog-menu-bg: {{ section.settings.background_color | default: '#ffffff' }};
+    --blog-menu-text: {{ section.settings.text_color | default: '#111111' }};
+    --blog-menu-accent: {{ section.settings.accent_color | default: '#0A3161' }};
+    --blog-menu-border: {{ section.settings.border_color | default: '#e5e5e5' }};
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if section_width == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+  <div class="blog-menu__inner">
+
+    {%- if menu_heading != blank -%}
+      <div class="blog-menu__heading">{{ menu_heading | escape }}</div>
+    {%- endif -%}
+
+    {%- if nav_items_total > 0 -%}
+      <button
+        type="button"
+        class="blog-menu__toggle"
+        data-blog-menu-toggle
+        aria-expanded="false"
+        aria-controls="blog-menu-list-{{ section.id }}"
+      >
+        <span class="blog-menu__toggle-label">{{ section.settings.mobile_label | default: 'Menu' | escape }}</span>
+        <span class="blog-menu__toggle-icon" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+
+      <div class="blog-menu__scroll" data-blog-menu-scroll>
+        <ul class="blog-menu__list" id="blog-menu-list-{{ section.id }}" data-blog-menu-list>
+          {%- for link in nav_menu.links -%}
+
+            {%- if link.links.size > 0 -%}
+              <li class="blog-menu__item blog-menu__item--list">
+                <button
+                  type="button"
+                  class="blog-menu__link blog-menu__link--parent"
+                  data-blog-menu-dropdown-toggle
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                >
+                  {{ link.title | escape }}
+                  <span class="blog-menu__caret" aria-hidden="true"></span>
+                </button>
+
+                <ul class="blog-menu__dropdown" data-blog-menu-dropdown>
+                  {%- for sublink in link.links -%}
+                    <li class="blog-menu__dropdown-item">
+                      <a
+                        href="{{ sublink.url }}"
+                        class="blog-menu__dropdown-link{% if sublink.active %} blog-menu__dropdown-link--active{% endif %}"
+                      >
+                        {{ sublink.title | escape }}
+                      </a>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              </li>
+
+            {%- else -%}
+              <li class="blog-menu__item blog-menu__item--single">
+                <a
+                  href="{{ link.url }}"
+                  class="blog-menu__link{% if link.active %} blog-menu__link--active{% endif %}"
+                >
+                  {{ link.title | escape }}
+                </a>
+              </li>
+            {%- endif -%}
+
+          {%- endfor -%}
+        </ul>
+
+        <span class="blog-menu__edge-fade blog-menu__edge-fade--left" aria-hidden="true"></span>
+        <span class="blog-menu__edge-fade blog-menu__edge-fade--right" aria-hidden="true"></span>
+      </div>
+    {%- endif -%}
+
+  </div>
+</nav>
+
+{% schema %}
+{
+  "name": "Blog menu",
+  "tag": "section",
+  "class": "section-blog-menu",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Menu"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Menu heading",
+      "info": "Optional. Leave blank to automatically use the current page's title (e.g. the article/category name)."
+    },
+    {
+      "type": "text",
+      "id": "mobile_label",
+      "label": "Mobile toggle label",
+      "default": "Menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky",
+      "label": "Make menu sticky on scroll",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "Menu alignment",
+      "info": "Aligns the nav items within the available space. Has no effect once items overflow into the scrollable/edge-fade state.",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "info": "Choose a navigation menu from Online Store > Navigation. Top-level links become nav items; any link with nested links becomes a dropdown."
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent (hover / active)",
+      "default": "#0A3161"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "paragraph",
+      "content": "If this menu sits directly above the Custom articles section, set matching width values on both so they stay visually aligned."
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
-
-    nav.querySelectorAll('[data-blog-menu-dropdown-toggle]').forEach(function (btn) {
-      btn.addEventListener('click', function (event) {
-        event.stopPropagation();
-        var item = btn.closest('.blog-menu__item--list');
-        var willOpen = !item.classList.contains('is-open');
-        closeAllDropdowns(nav, willOpen ? item : null);
-        item.classList.toggle('is-open', willOpen);
-        btn.setAttribute('aria-expanded', String(willOpen));
-      });
-
-      btn.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape') {
-          var item = btn.closest('.blog-menu__item--list');
-          item.classList.remove('is-open');
-          btn.setAttribute('aria-expanded', 'false');
-          btn.focus();
-        }
-      });
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!nav.contains(event.target)) {
-        closeAllDropdowns(nav, null);
-      }
-    });
-  }
-
-  function initSticky(nav) {
-    if (!nav.classList.contains('blog-menu--sticky')) return;
-
-    var spacer = document.createElement('div');
-    spacer.className = 'blog-menu__spacer';
-    spacer.setAttribute('aria-hidden', 'true');
-    nav.parentNode.insertBefore(spacer, nav.nextSibling);
-
-    var originalTop = 0;
-    var ticking = false;
-
-    function getHeaderOffset() {
-      var height =
-        parseFloat(
-          getComputedStyle(document.documentElement).getPropertyValue('--header-group-height')
-        ) || 0;
-      var hidden = document.documentElement.classList.contains('header-group-hidden');
-      return hidden ? 0 : height;
+  ],
+  "presets": [
+    {
+      "name": "Blog menu",
+      "category": "Blog"
     }
-
-    function measure() {
-      // Only re-measure the nav's natural offset while it's still in
-      // normal flow, so switching to fixed doesn't corrupt the value.
-      if (!nav.classList.contains('is-stuck')) {
-        originalTop = nav.getBoundingClientRect().top + window.scrollY;
-      }
-      spacer.style.height = nav.offsetHeight + 'px';
-    }
-
-    function update() {
-      var shouldStick = window.scrollY + getHeaderOffset() >= originalTop;
-
-      if (shouldStick && !nav.classList.contains('is-stuck')) {
-        nav.classList.add('is-stuck');
-        spacer.classList.add('is-active');
-      } else if (!shouldStick && nav.classList.contains('is-stuck')) {
-        nav.classList.remove('is-stuck');
-        spacer.classList.remove('is-active');
-        measure(); // re-baseline originalTop now that it's back in flow
-      }
-      ticking = false;
-    }
-
-    measure();
-    update();
-
-    window.addEventListener(
-      'scroll',
-      function () {
-        if (!ticking) {
-          window.requestAnimationFrame(update);
-          ticking = true;
-        }
-      },
-      { passive: true }
-    );
-
-    window.addEventListener(
-      'resize',
-      function () {
-        measure();
-        update();
-      },
-      { passive: true }
-    );
-
-    if ('ResizeObserver' in window) {
-      new ResizeObserver(function () {
-        measure();
-      }).observe(nav);
-    }
-
-    // Recalculate immediately when header-group.js toggles hide/show,
-    // rather than waiting for the next scroll tick.
-    var rootObserver = new MutationObserver(update);
-    rootObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-  }
-
-  function initMenu(nav) {
-    initToggleAndDropdowns(nav);
-    initSticky(nav);
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('[data-blog-menu]').forEach(initMenu);
-  });
-
-  // Re-init inside the theme editor when the section is added/re-rendered.
-  document.addEventListener('shopify:section:load', function (event) {
-    var nav = event.target.querySelector('[data-blog-menu]');
-    if (nav) initMenu(nav);
-  });
-})();
+  ]
+}
+{% endschema %}
