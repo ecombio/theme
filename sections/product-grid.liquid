@@ -3,11 +3,12 @@
 
 {%- comment -%}
   sections/product-grid.liquid
-  Fixed grid of simple, icon-forward product tiles (name, price, CTA
-  button) — distinct from sections/product-gallery's photo-forward
-  .product-card layout. Each block picks one product; if a block has
-  no product assigned, or the product has no image, a placeholder
-  icon is shown instead so the grid never breaks in the editor.
+  Fixed 2x2 grid (max 4 products) of simple, icon-forward product
+  tiles (name, price, CTA button) — distinct from
+  sections/product-gallery's photo-forward .product-card layout.
+  Each block picks one product; if a block has no product assigned,
+  or the product has no image, a placeholder icon is shown instead
+  so the grid never breaks in the editor.
 
   SELF-CONTAINED / SECTION-LEVEL ASSETS: product-grid.css and
   product-grid.js are loaded above, by this file only — same pattern
@@ -41,7 +42,7 @@
     {%- endif %}
   "
 >
-<div class="product-grid {{ layout_class }}" style="--product-grid-columns: {{ section.settings.columns }};">
+<div class="product-grid {{ layout_class }}">
 
   {%- if section.settings.heading != blank or section.settings.description != blank -%}
     <div class="product-grid__header">
@@ -65,7 +66,7 @@
     <p class="product-grid__empty">Add products to this section to see them here.</p>
   {%- else -%}
     <ul class="product-grid__grid" role="list">
-      {%- for block in section.blocks -%}
+      {%- for block in section.blocks limit: 4 -%}
         {%- assign product = block.settings.product -%}
         {%- assign placeholder_index = forloop.index0 | modulo: 6 -%}
         {%- assign placeholder_name = placeholder_names[placeholder_index] -%}
@@ -122,6 +123,7 @@
   "name": "Product grid",
   "tag": "section",
   "class": "shopify-section--product-grid",
+  "max_blocks": 4,
   "settings": [
     {
       "type": "header",
@@ -158,15 +160,6 @@
       "step": 4,
       "unit": "px",
       "default": 32
-    },
-    {
-      "type": "range",
-      "id": "columns",
-      "label": "Columns",
-      "min": 2,
-      "max": 5,
-      "step": 1,
-      "default": 4
     },
     {
       "type": "header",

@@ -1,10 +1,11 @@
 /* ============================================================
    product-grid.css
    Scope: .product-grid
-   Fixed-count grid of minimal "icon card" product tiles — rounded
-   light-gray media box, centered name/price, solid CTA button.
-   NOT a carousel (same "no overflow-x, no scroll-snap" rule as
-   product-gallery.css) and NOT the same card as product-card.css.
+   Fixed 2x2 grid (max 4 products) of minimal "icon card" product
+   tiles — rounded light-gray media box, centered name/price, solid
+   CTA button. NOT a carousel (same "no overflow-x, no scroll-snap"
+   rule as product-gallery.css) and NOT the same card as
+   product-card.css.
 
    SELF-CONTAINED: this is its own card design end to end — it does
    NOT use or extend .product-card__*, and does not depend on
@@ -16,6 +17,11 @@
    --product-grid-* custom properties, same reasoning
    product-gallery.css gives for staying separate from
    product-row.css.
+
+   LAYOUT: fixed at 2 columns (2x2 for the max of 4 products) on
+   desktop and tablet. No longer merchant-configurable — the
+   "Columns" section setting was removed along with the
+   --product-grid-columns custom property it used to set inline.
    ============================================================ */
 
 .product-grid,
@@ -97,18 +103,17 @@
 }
 
 /* ── Grid ──
-   --product-grid-columns is set inline per-instance by
-   sections/product-grid.liquid (from the "Columns" range setting),
-   the same way product-gallery.liquid sets --product-gallery-columns.
-   Defaults to 4 if unset, matching the 2x2 four-tile reference. */
+   Fixed at 2 columns (2x2 for up to 4 products, enforced by
+   max_blocks: 4 in the section schema). No longer reads a
+   --product-grid-columns custom property from the liquid file. */
 .product-grid__grid {
   display: grid;
-  grid-template-columns: repeat(var(--product-grid-columns, 4), minmax(160px, 1fr));
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
   gap: 1.25rem;
   margin: 0;
   padding: 0;
   list-style: none;
-  /* Grid never scrolls — reflows via the breakpoints below instead,
+  /* Grid never scrolls — reflows via the breakpoint below instead,
      same guarantee product-gallery.css makes (minus its narrow-
      container safety net, which isn't needed here since these tiles
      have no long title/price/button text to protect at min-width). */
@@ -225,13 +230,10 @@ html:not(.js) .product-grid__item {
   background: var(--product-grid-cta-bg-hover);
 }
 
-/* ── Responsive ── */
-@media (max-width: 989px) {
-  .product-grid__grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
+/* ── Responsive ──
+   Only one breakpoint needed now: the grid is already 2 columns by
+   default, so the old "989px: 4 -> 2 columns" rule is gone. Below
+   589px it still stacks to a single column. */
 @media (max-width: 589px) {
   .product-grid__grid {
     grid-template-columns: 1fr;
