@@ -1,0 +1,109 @@
+{%- liquid
+  assign featured_articles = section.settings.featured_articles
+  assign featured_count = featured_articles.size
+-%}
+
+{%- if featured_count > 0 -%}
+  {{ 'featured-posts.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'featured-posts.js' | asset_url }}" defer="defer"></script>
+
+  <div
+    class="featured-posts section-{{ section.id }}"
+    style="--section-padding: {{ section.settings.section_padding }}px;"
+  >
+    {%- if section.settings.heading != blank -%}
+      <div class="featured-posts__header">
+        <h2 class="featured-posts__title">{{ section.settings.heading }}</h2>
+      </div>
+    {%- endif -%}
+
+    <div class="featured-posts__carousel" data-featured-carousel>
+      <div class="featured-posts__track" data-featured-track>
+        {%- for featured_article in featured_articles -%}
+          <div class="featured-posts__item" data-featured-item>
+            <a href="{{ featured_article.url }}" class="featured-posts__card">
+              <div class="featured-posts__card-image">
+                {%- if featured_article.image -%}
+                  <img
+                    src="{{ featured_article.image | image_url: width: 800 }}"
+                    alt="{{ featured_article.image.alt | default: featured_article.title | escape }}"
+                    loading="{% if forloop.index <= 3 %}eager{% else %}lazy{% endif %}"
+                    width="{{ featured_article.image.width }}"
+                    height="{{ featured_article.image.height }}"
+                  >
+                {%- else -%}
+                  {{ 'lifestyle-1' | placeholder_svg_tag: 'featured-posts__card-placeholder-svg' }}
+                {%- endif -%}
+              </div>
+              <div class="featured-posts__card-body">
+                {%- if featured_article.tags.size > 0 -%}
+                  <span class="featured-posts__card-tag">{{ featured_article.tags.first }}</span>
+                {%- endif -%}
+                <h3 class="featured-posts__card-title">{{ featured_article.title }}</h3>
+                <span class="featured-posts__card-date">{{ featured_article.published_at | date: '%B %d, %Y' }}</span>
+              </div>
+            </a>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      {%- if featured_count > 1 -%}
+        <button
+          type="button"
+          class="featured-posts__nav featured-posts__nav--prev"
+          data-featured-prev
+          aria-label="Previous featured post"
+        >
+          <span aria-hidden="true">←</span>
+        </button>
+        <button
+          type="button"
+          class="featured-posts__nav featured-posts__nav--next"
+          data-featured-next
+          aria-label="Next featured post"
+        >
+          <span aria-hidden="true">→</span>
+        </button>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Featured posts",
+  "tag": "section",
+  "class": "section-featured-posts",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Featured Posts"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "article_list",
+      "id": "featured_articles",
+      "label": "Featured articles",
+      "limit": 12,
+      "info": "Choose which published articles to feature, and drag to reorder."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured posts",
+      "category": "Blog"
+    }
+  ]
+}
+{% endschema %}
