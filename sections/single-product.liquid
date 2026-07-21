@@ -1,0 +1,392 @@
+{{ 'single-product.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'single-product.js' | asset_url }}" defer="defer"></script>
+
+{%- comment -%}
+  sections/single-product.liquid
+  Main product page (PDP) section.
+
+  SELF-CONTAINED / SECTION-LEVEL ASSETS: single-product.css and
+  single-product.js are loaded above, by this file, and by nothing
+  else — no other section or template needs to remember to include
+  them. Neither asset reads from or depends on product-card.css/js,
+  product-row.css, or product-gallery.css/js; this section renders
+  its own markup end to end with its own .single-product namespace.
+  This mirrors how sections/main-article.liquid loads its own
+  stylesheets/scripts at the top rather than relying on theme.liquid.
+{%- endcomment -%}
+
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'single-product__default-width'
+  else
+    assign width_class = 'single-product__' | append: width_type
+  endif
+
+  assign current_variant = product.selected_or_first_available_variant
+  assign media_position_class = ''
+  if section.settings.media_position == 'right'
+    assign media_position_class = 'single-product--media-right'
+  endif
+
+  assign sticky_class = ''
+  if section.settings.enable_sticky_info
+    assign sticky_class = 'single-product--sticky-info'
+  endif
+-%}
+
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+<div
+  class="single-product {{ media_position_class }} {{ sticky_class }}"
+  data-single-product
+  data-money-format="{{ shop.money_format | escape }}"
+  data-low-stock-threshold="{{ section.settings.low_stock_threshold }}"
+>
+
+  {%- if product == blank -%}
+    <p class="single-product__stock-message" data-state="out">
+      This section must be used on a product page.
+    </p>
+  {%- else -%}
+
+  {%- comment -%} Product + variant JSON, consumed entirely by single-product.js — never rendered as visible text. {%- endcomment -%}
+  <script type="application/json" data-product-json>
+    {{ product | json }}
+  </script>
+
+  {% comment %} ── Media / Gallery ── {% endcomment %}
+  <div class="single-product__media">
+    <div
+      class="single-product__main-image-zone"
+      data-main-image-zone
+      {% if section.settings.enable_zoom %}data-zoom-enabled{% endif %}
+    >
+      {%- if current_variant.featured_media -%}
+        {{
+          current_variant.featured_media
+          | image_url: width: 1200
+          | image_tag:
+              loading: 'eager',
+              class: 'single-product__main-image',
+              data-main-image: true,
+              alt: current_variant.featured_media.alt | default: product.title
+        }}
+      {%- elsif product.featured_media -%}
+        {{
+          product.featured_media
+          | image_url: width: 1200
+          | image_tag:
+              loading: 'eager',
+              class: 'single-product__main-image',
+              data-main-image: true,
+              alt: product.featured_media.alt | default: product.title
+        }}
+      {%- else -%}
+        <div class="single-product__main-image-placeholder">
+          {{ 'product-1' | placeholder_svg_tag: 'single-product__placeholder-svg' }}
+        </div>
+      {%- endif -%}
+
+      {%- if current_variant.compare_at_price > current_variant.price -%}
+        <span class="single-product__badge">Sale</span>
+      {%- endif -%}
+    </div>
+
+    {%- if product.media.size > 1 -%}
+      <ul class="single-product__thumbnails" role="list">
+        {%- for media in product.media -%}
+          <li>
+            <button
+              type="button"
+              class="single-product__thumb-btn{% if media.id == current_variant.featured_media.id %} is-active{% endif %}"
+              data-thumb-btn
+              data-media-id="{{ media.id }}"
+              data-full-src="{{ media | image_url: width: 1200 }}"
+              data-alt="{{ media.alt | default: product.title | escape }}"
+              aria-label="{{ 'products.product.view_media_label' | t: index: forloop.index, alt: media.alt | default: product.title | escape }}"
+            >
+              {{ media | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}
+            </button>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+
+  {% comment %} ── Info / Buy box ── {% endcomment %}
+  <div class="single-product__info">
+
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+
+        {%- when 'vendor' -%}
+          {%- if section.settings.show_vendor -%}
+            <p class="single-product__vendor" {{ block.shopify_attributes }}>{{ product.vendor }}</p>
+          {%- endif -%}
+
+        {%- when 'title' -%}
+          <h1 class="single-product__title" {{ block.shopify_attributes }}>{{ product.title }}</h1>
+          {%- if section.settings.show_sku -%}
+            <p class="single-product__sku" data-sku {{ block.shopify_attributes }}>
+              {%- if current_variant.sku != blank -%}SKU: {{ current_variant.sku }}{%- endif -%}
+            </p>
+          {%- endif -%}
+
+        {%- when 'price' -%}
+          <div class="single-product__pricing" {{ block.shopify_attributes }}>
+            <span
+              class="single-product__price{% if current_variant.compare_at_price > current_variant.price %} single-product__price--sale{% endif %}"
+              data-price
+            >
+              {{- current_variant.price | money -}}
+            </span>
+            <span
+              class="single-product__price--compare{% unless current_variant.compare_at_price > current_variant.price %} is-hidden{% endunless %}"
+              data-compare-price
+            >
+              {%- if current_variant.compare_at_price > current_variant.price -%}
+                <s>{{ current_variant.compare_at_price | money }}</s>
+              {%- endif -%}
+            </span>
+            <span
+              class="single-product__save-badge{% unless current_variant.compare_at_price > current_variant.price %} is-hidden{% endunless %}"
+              data-save-badge
+            >
+              {%- if current_variant.compare_at_price > current_variant.price -%}
+                Save {{ current_variant.compare_at_price | minus: current_variant.price | money }}
+              {%- endif -%}
+            </span>
+          </div>
+          <p class="single-product__stock-message" data-stock-message data-state="in" {{ block.shopify_attributes }}>
+            {%- if current_variant.available -%}In stock{%- else -%}Sold out{%- endif -%}
+          </p>
+
+        {%- when 'variant_picker' -%}
+          {%- if product.has_only_default_variant == false -%}
+            <div class="single-product__options" {{ block.shopify_attributes }}>
+              {%- for option in product.options_with_values -%}
+                <fieldset
+                  class="single-product__option"
+                  data-option-input
+                  data-option-position="{{ option.position }}"
+                >
+                  <legend class="single-product__option-label">
+                    {{ option.name }}:
+                    <span class="single-product__option-value">{{ option.selected_value }}</span>
+                  </legend>
+                  <div class="single-product__swatches">
+                    {%- for value in option.values -%}
+                      {%- assign input_id = 'SingleProductOption-' | append: section.id | append: '-' | append: option.position | append: '-' | append: forloop.index -%}
+                      <input
+                        type="radio"
+                        class="single-product__swatch-input"
+                        id="{{ input_id }}"
+                        name="option-{{ option.position }}"
+                        value="{{ value | escape }}"
+                        {% if value == option.selected_value %}checked{% endif %}
+                      >
+                      <label
+                        class="single-product__swatch-label"
+                        for="{{ input_id }}"
+                        data-swatch-label
+                        data-value="{{ value | escape }}"
+                      >
+                        {{ value }}
+                      </label>
+                    {%- endfor -%}
+                  </div>
+                </fieldset>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+
+        {%- when 'buy_buttons' -%}
+          <div {{ block.shopify_attributes }}>
+            {% form 'product', product, data-product-form: true %}
+              <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id-input>
+
+              <div class="single-product__buy-row">
+                {%- if section.settings.enable_quantity_selector -%}
+                  <div class="single-product__quantity">
+                    <button type="button" class="single-product__qty-btn" data-qty-decrement aria-label="Decrease quantity">–</button>
+                    <input
+                      type="number"
+                      class="single-product__qty-input"
+                      name="quantity"
+                      value="1"
+                      min="1"
+                      inputmode="numeric"
+                      data-qty-input
+                      aria-label="Quantity"
+                    >
+                    <button type="button" class="single-product__qty-btn" data-qty-increment aria-label="Increase quantity">+</button>
+                  </div>
+                {%- endif -%}
+
+                <button
+                  type="submit"
+                  class="single-product__atc-btn"
+                  data-atc-btn
+                  {% unless current_variant.available %}disabled{% endunless %}
+                >
+                  <span data-atc-label>
+                    {%- if current_variant.available -%}Add to cart{%- else -%}Sold out{%- endif -%}
+                  </span>
+                </button>
+              </div>
+
+              <p class="single-product__form-error" data-form-error role="alert"></p>
+            {% endform %}
+          </div>
+
+        {%- when 'description' -%}
+          {%- if product.description != blank -%}
+            <div class="single-product__description" {{ block.shopify_attributes }}>
+              {{ product.description }}
+            </div>
+          {%- endif -%}
+
+      {%- endcase -%}
+    {%- endfor -%}
+
+  </div>
+  {%- endif -%}
+
+</div>
+</div>
+
+{% schema %}
+{
+  "name": "Single product",
+  "tag": "section",
+  "class": "shopify-section--single-product",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "header",
+      "content": "Media"
+    },
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "Media position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_zoom",
+      "label": "Enable click-to-zoom on main image",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Buy box"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky_info",
+      "label": "Make buy box sticky on scroll",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_quantity_selector",
+      "label": "Show quantity selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sku",
+      "label": "Show SKU",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "low_stock_threshold",
+      "label": "Low stock threshold",
+      "info": "Show a low-stock message when inventory falls at or below this number. Set to 0 to disable.",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "default": 10
+    }
+  ],
+  "blocks": [
+    { "type": "vendor", "name": "Vendor", "limit": 1 },
+    { "type": "title", "name": "Title", "limit": 1 },
+    { "type": "price", "name": "Price", "limit": 1 },
+    { "type": "variant_picker", "name": "Variant picker", "limit": 1 },
+    { "type": "buy_buttons", "name": "Buy buttons", "limit": 1 },
+    { "type": "description", "name": "Description", "limit": 1 }
+  ],
+  "presets": [
+    {
+      "name": "Single product",
+      "blocks": [
+        { "type": "vendor" },
+        { "type": "title" },
+        { "type": "price" },
+        { "type": "variant_picker" },
+        { "type": "buy_buttons" },
+        { "type": "description" }
+      ]
+    }
+  ]
+}
+{% endschema %}
