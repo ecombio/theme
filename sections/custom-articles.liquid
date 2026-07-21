@@ -140,43 +140,6 @@
 >
   <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
-    {%- comment -%}
-      Featured row — sourced from the "Featured Blog Posts" metafield
-      (custom.featured_blog_posts), checked in this order:
-        1. On the current article, if we're on an article page and it's set there.
-        2. Otherwise, on the parent Blog itself — this is what powers the
-           listing page (request.page_type == 'blog'), and also covers
-           article pages where only the blog-level value was set.
-      If neither has data, featured_count stays 0 and nothing renders.
-
-      This data-fetch stays here (rather than moving into the snippet)
-      because featured_ids is also used below to exclude these same
-      posts from the paginated grid, so they don't show twice on page 1.
-      Display is delegated to snippets/featured-blog-posts.liquid, which
-      is self-contained (loads its own CSS/JS/blog-card.css).
-    {%- endcomment -%}
-    {%- liquid
-      assign featured_count = 0
-      assign featured_ids = ''
-      assign metafield_articles = blank
-
-      if request.page_type == 'article' and article.metafields.custom.featured_blog_posts.value.size > 0
-        assign metafield_articles = article.metafields.custom.featured_blog_posts.value
-      elsif blog.metafields.custom.featured_blog_posts.value.size > 0
-        assign metafield_articles = blog.metafields.custom.featured_blog_posts.value
-      endif
-
-      if metafield_articles.size > 0
-        assign featured_count = metafield_articles.size
-        for feat in metafield_articles
-          assign featured_ids = featured_ids | append: ',' | append: feat.id | append: ','
-        endfor
-      endif
-    -%}
-    {%- if section.settings.posts_show_featured and featured_count > 0 -%}
-      {%- render 'featured-blog-posts', articles: metafield_articles, heading: section.settings.featured_heading -%}
-    {%- endif -%}
-
     {% if section.settings.posts_heading != blank %}
       <div class="blog-posts__header">
         <h2 class="blog-posts__title">{{ section.settings.posts_heading }}</h2>
@@ -215,11 +178,6 @@
                     assign show_article = true
                   endif
                 endfor
-              endif
-
-              assign article_marker = ',' | append: article.id | append: ','
-              if section.settings.posts_show_featured and featured_ids contains article_marker
-                assign show_article = false
               endif
             -%}
 
@@ -361,20 +319,6 @@
       "id": "posts_heading",
       "label": "Heading",
       "default": "Latest Articles"
-    },
-    {
-      "type": "checkbox",
-      "id": "posts_show_featured",
-      "label": "Show featured articles",
-      "info": "Displays large cards above the grid, pulled from the \"Featured Blog Posts\" metafield — checks the current article first, then falls back to the metafield on the Blog itself (used for the listing page). Hidden automatically when neither has data.",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "featured_heading",
-      "label": "Featured heading",
-      "info": "Shown above the featured carousel. Leave blank to hide.",
-      "default": "Featured Blog Posts"
     },
     {
       "type": "text",
