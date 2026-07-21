@@ -41,22 +41,6 @@
   box-sizing: border-box;
 }
 
-/* FIX — this row was hardcoded to max-width:1200px/centered, so it never
-   matched whatever "Section layout" width was chosen for the posts grid
-   below (main-header.css has the identical fix for #main-header__inner
-   vs .menu-bar drifting apart). Both rows now read the same
-   posts_section_width / posts_custom_width / posts_section_padding
-   settings — applied here via --section-padding / --custom-width and the
-   blog-menu--default-width / --full-width / --custom-width modifier class
-   set in custom-articles.liquid.
-
-   justify-self is included on top of margin-inline:auto because <nav
-   class="blog-menu"> — the parent of .blog-menu__inner — is a grid item
-   in this theme's base styles. Without it, .blog-menu__inner shrinks to
-   its own content width inside that grid track before max-width/auto-
-   margins ever get a chance to act, which is what was squeezing/
-   misaligning the row (confirmed via DevTools). It's a no-op in a
-   non-grid ancestor, so it's safe to keep either way. */
 .blog-menu--default-width .blog-menu__inner {
   max-width: 1200px;
   margin-inline: auto;
@@ -83,25 +67,12 @@
   margin-right: 0.5rem;
 }
 
-/* Scroll viewport for the nav list.
-   This wrapper is the positioning context for the edge-fade shadows.
-   flex: 1 1 auto + min-width: 0 lets it shrink to the remaining row width
-   so the <ul> inside can overflow horizontally (instead of pushing the
-   toggle or breaking the layout). This mirrors the main-header .menu-bar pattern. */
 .blog-menu__scroll {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
 }
 
-/* FIX — overflow-anchor: none prevents the browser's scroll-anchoring
-   from nudging this list's scrollLeft away from 0 when something above/
-   before it in the DOM resizes after first paint (e.g. blog-menu__heading
-   going from a long/blank value to a short one like "Cycling"). Without
-   this, the list can silently load a few pixels into its scroll range,
-   clipping the first/last items ("Shop All Categories" reading as
-   "p All Categories"). See custom-articles.js initEdgeFade for the
-   companion JS-side scrollLeft reset. */
 .blog-menu__list {
   display: flex;
   align-items: center;
@@ -122,12 +93,6 @@
   display: none;
 }
 
-/* Alignment is a plain justify-content on the list's main axis — "left"
-   needs no rule since flex-start is the default. Once items overflow and
-   the row actually needs to scroll, browsers fall back to start-aligned
-   scrollable content automatically, so this only has a visible effect
-   while everything still fits (i.e. before the edge-fade/scroll state
-   kicks in). */
 .blog-menu--align-center .blog-menu__list {
   justify-content: center;
 }
@@ -225,12 +190,6 @@
   font-weight: 600;
 }
 
-/* Edge-fade shadows — same idea as main-header's .menu-bar__edge-fade
-   (JS toggles has-scroll-left / has-scroll-right on .blog-menu__scroll
-   based on scroll position, see custom-articles.js), but tinted from
-   --blog-menu-bg via color-mix instead of a hardcoded white, so the
-   fade stays correct for whatever background color is set on this
-   section rather than only working against a white bar. */
 .blog-menu__edge-fade {
   display: block;
   position: absolute;
@@ -311,9 +270,6 @@
     flex: 1 1 100%;
   }
 
-  /* Below 750px the nav collapses into a vertical stacked list (unchanged
-     behavior) rather than a horizontal scroller, so the overflow/edge-fade
-     effect only applies at the desktop breakpoint above. */
   .blog-menu__edge-fade {
     display: none;
   }
@@ -355,6 +311,13 @@
   margin-bottom: 24px;
 }
 
+/* Featured heading sits directly above the carousel, so it needs a
+   smaller bottom margin than the default .blog-posts__header (which
+   separates the grid heading/tag-pills stack below the carousel). */
+.blog-posts__header--featured {
+  margin-bottom: 16px;
+}
+
 .blog-posts__title {
   font-family: var(--font-primary--family);
   font-size: 2rem;
@@ -363,24 +326,87 @@
   margin: 0;
 }
 
-/* Featured row — the 2 large blog-card.liquid posts rendered above the
-   dense .blog-posts__grid. A hairline top border stands in for the
-   divider under the page heading in the reference design; the grid
-   itself just splits into 2 even columns (1 on mobile). */
-.blog-posts__featured {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 48px;
-/*border-top: 1px solid var(--color-border, #e5e5e5);*/
+.blog-posts__featured-carousel {
+  position: relative;
   padding-top: 32px;
   margin-bottom: 56px;
 }
 
+.blog-posts__header--featured + .blog-posts__featured-carousel {
+  padding-top: 0;
+}
+
+.blog-posts__featured-track {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overflow-anchor: none;
+}
+.blog-posts__featured-track::-webkit-scrollbar {
+  display: none;
+}
+
+.blog-posts__featured-item {
+  flex: 0 0 calc(50% - 12px);
+  min-width: 280px;
+  scroll-snap-align: start;
+}
+
+.blog-posts__featured-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-white, #ffffff);
+  border: 1px solid var(--color-border, #e5e5e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 16px;
+  color: var(--color-black);
+  transition: opacity 0.2s ease, border-color var(--transition-fast);
+}
+
+.blog-posts__featured-nav:hover {
+  border-color: var(--color-red);
+}
+
+.blog-posts__featured-nav--prev {
+  left: -8px;
+}
+
+.blog-posts__featured-nav--next {
+  right: -8px;
+}
+
+.blog-posts__featured-nav[disabled],
+.blog-posts__featured-carousel.no-scroll .blog-posts__featured-nav {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (max-width: 749px) {
-  .blog-posts__featured {
-    grid-template-columns: 1fr;
-    gap: 32px;
+  .blog-posts__featured-carousel {
+    padding-top: 0;
     margin-bottom: 40px;
+  }
+
+  .blog-posts__featured-item {
+    flex-basis: 85%;
+    min-width: 240px;
+  }
+
+  .blog-posts__featured-nav {
+    display: none;
   }
 }
 
