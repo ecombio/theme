@@ -1,102 +1,92 @@
-class FeaturedArticlesCarousel extends HTMLElement {
-  constructor() {
-    super();
-    this.track = this.querySelector('.featured-articles__track');
-    this.prevBtn = this.querySelector('.featured-articles__nav-btn--prev');
-    this.nextBtn = this.querySelector('.featured-articles__nav-btn--next');
+/**
+ * featured-articles.js
+ * Progressive-enhancement controls for sections/featured-articles.liquid.
+ * The track is a native scroll container by default (works with no JS);
+ * this just adds prev/next buttons and edge-fade state once it overflows.
+ * Pattern copied from article-carousel.js.
+ */
+(function () {
+  'use strict';
 
-    if (!this.track) return;
+  function initCarousel(section) {
+    var viewport = section.querySelector('[data-carousel-viewport]');
+    var track = section.querySelector('[data-carousel-track]');
+    var controls = section.querySelector('[data-carousel-controls]');
+    var prevBtn = section.querySelector('[data-carousel-prev]');
+    var nextBtn = section.querySelector('[data-carousel-next]');
 
-    this.slides = Array.from(this.track.children);
-    this.onPrevClick = this.onPrevClick.bind(this);
-    this.onNextClick = this.onNextClick.bind(this);
-    this.updateButtons = this.updateButtons.bind(this);
+    if (!viewport || !track || !controls || !prevBtn || !nextBtn) return;
 
-    this.prevBtn?.addEventListener('click', this.onPrevClick);
-    this.nextBtn?.addEventListener('click', this.onNextClick);
-    this.track.addEventListener('scroll', this.debounce(this.updateButtons, 100), { passive: true });
-    window.addEventListener('resize', this.debounce(this.updateButtons, 150));
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    this.enableDrag();
-    this.updateButtons();
+    function canScroll() {
+      // small tolerance for sub-pixel rounding
+      return track.scrollWidth - track.clientWidth > 2;
+    }
+
+    function updateEdgeState() {
+      var max = track.scrollWidth - track.clientWidth;
+      var pos = track.scrollLeft;
+
+      if (!canScroll()) {
+        viewport.setAttribute('data-edge', 'none');
+        controls.hidden = true;
+        return;
+      }
+
+      controls.hidden = false;
+
+      if (pos <= 2) {
+        viewport.setAttribute('data-edge', 'start');
+      } else if (pos >= max - 2) {
+        viewport.setAttribute('data-edge', 'end');
+      } else {
+        viewport.setAttribute('data-edge', 'middle');
+      }
+
+      prevBtn.disabled = pos <= 2;
+      nextBtn.disabled = pos >= max - 2;
+    }
+
+    function scrollByPage(direction) {
+      var amount = track.clientWidth * 0.9 * direction;
+      track.scrollBy({
+        left: amount,
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
+    }
+
+    prevBtn.addEventListener('click', function () {
+      scrollByPage(-1);
+    });
+
+    nextBtn.addEventListener('click', function () {
+      scrollByPage(1);
+    });
+
+    track.addEventListener('scroll', updateEdgeState, { passive: true });
+
+    var resizeObserver = new ResizeObserver(function () {
+      updateEdgeState();
+    });
+    resizeObserver.observe(track);
+
+    updateEdgeState();
   }
 
-  debounce(fn, wait) {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => fn.apply(this, args), wait);
-    };
+  function initAll() {
+    document.querySelectorAll('.featured-articles').forEach(initCarousel);
   }
 
-  getSlideStep() {
-    const slide = this.slides[0];
-    if (!slide) return 0;
-    const style = window.getComputedStyle(this.track);
-    const gap = parseFloat(style.columnGap || style.gap || '0');
-    return slide.getBoundingClientRect().width + gap;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
   }
 
-  onPrevClick() {
-    this.track.scrollBy({ left: -this.getSlideStep(), behavior: 'smooth' });
-  }
-
-  onNextClick() {
-    this.track.scrollBy({ left: this.getSlideStep(), behavior: 'smooth' });
-  }
-
-  updateButtons() {
-    const { scrollLeft, scrollWidth, clientWidth } = this.track;
-    const maxScroll = scrollWidth - clientWidth - 1;
-
-    if (this.prevBtn) this.prevBtn.disabled = scrollLeft <= 0;
-    if (this.nextBtn) this.nextBtn.disabled = scrollLeft >= maxScroll;
-  }
-
-  enableDrag() {
-    let isDown = false;
-    let startX = 0;
-    let scrollStart = 0;
-
-    const onPointerDown = (e) => {
-      isDown = true;
-      this.track.classList.add('is-dragging');
-      startX = e.pageX ?? e.touches?.[0]?.pageX ?? 0;
-      scrollStart = this.track.scrollLeft;
-    };
-
-    const onPointerMove = (e) => {
-      if (!isDown) return;
-      const x = e.pageX ?? e.touches?.[0]?.pageX ?? 0;
-      const walk = x - startX;
-      this.track.scrollLeft = scrollStart - walk;
-    };
-
-    const onPointerUp = () => {
-      isDown = false;
-      this.track.classList.remove('is-dragging');
-    };
-
-    this.track.addEventListener('mousedown', onPointerDown);
-    this.track.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('mouseup', onPointerUp);
-    this.track.addEventListener('mouseleave', onPointerUp);
-  }
-}
-
-document.querySelectorAll('.featured-articles').forEach((el) => {
-  if (!el.dataset.carouselInit) {
-    el.dataset.carouselInit = 'true';
-    Object.setPrototypeOf(el, FeaturedArticlesCarousel.prototype);
-    FeaturedArticlesCarousel.call(el);
-  }
-});
-
-document.addEventListener('shopify:section:load', (event) => {
-  const el = event.target.querySelector('.featured-articles');
-  if (el && !el.dataset.carouselInit) {
-    el.dataset.carouselInit = 'true';
-    Object.setPrototypeOf(el, FeaturedArticlesCarousel.prototype);
-    FeaturedArticlesCarousel.call(el);
-  }
-});
+  // Re-init when a section is added/edited in the theme editor.
+  document.addEventListener('shopify:section:load', function (event) {
+    var section = event.target.querySelector('.featured-articles');
+    if (section) initCarousel(section);
+  });
+})();
