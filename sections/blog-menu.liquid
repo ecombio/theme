@@ -2,9 +2,6 @@
 <script src="{{ 'blog-menu.js' | asset_url }}" defer="defer"></script>
 
 {%- liquid
-  assign nav_menu = section.settings.menu
-  assign nav_items_total = nav_menu.links.size
-
   assign section_width = section.settings.section_width
   case section_width
     when 'full-width'
@@ -27,6 +24,25 @@
   endcase
 
   assign menu_heading = section.settings.heading | default: current_page_title
+
+  # Menu items: article metafield (custom.menu_item) takes priority.
+  # Falls back to the section's "Menu" link list if the article has
+  # no metafield items, or if we're not on an article page at all.
+  assign menu_items = blank
+  assign menu_items_total = 0
+
+  if request.page_type == 'article'
+    assign menu_items = article.metafields.custom.menu_item.value
+    assign menu_items_total = menu_items.size
+  endif
+
+  if menu_items_total > 0
+    assign use_metafield_menu = true
+  else
+    assign use_metafield_menu = false
+    assign nav_menu = section.settings.menu
+    assign nav_items_total = nav_menu.links.size
+  endif
 -%}
 
 <nav
@@ -50,7 +66,7 @@
       <div class="blog-menu__heading">{{ menu_heading | escape }}</div>
     {%- endif -%}
 
-    {%- if nav_items_total > 0 -%}
+    {%- if use_metafield_menu or nav_items_total > 0 -%}
       <button
         type="button"
         class="blog-menu__toggle"
@@ -68,47 +84,30 @@
 
       <div class="blog-menu__scroll" data-blog-menu-scroll>
         <ul class="blog-menu__list" id="blog-menu-list-{{ section.id }}" data-blog-menu-list>
-          {%- for link in nav_menu.links -%}
-
-            {%- if link.links.size > 0 -%}
-              <li class="blog-menu__item blog-menu__item--list">
-                <button
-                  type="button"
-                  class="blog-menu__link blog-menu__link--parent"
-                  data-blog-menu-dropdown-toggle
-                  aria-expanded="false"
-                  aria-haspopup="true"
-                >
-                  {{ link.title | escape }}
-                  <span class="blog-menu__caret" aria-hidden="true"></span>
-                </button>
-
-                <ul class="blog-menu__dropdown" data-blog-menu-dropdown>
-                  {%- for sublink in link.links -%}
-                    <li class="blog-menu__dropdown-item">
-                      <a
-                        href="{{ sublink.url }}"
-                        class="blog-menu__dropdown-link{% if sublink.active %} blog-menu__dropdown-link--active{% endif %}"
-                      >
-                        {{ sublink.title | escape }}
-                      </a>
-                    </li>
-                  {%- endfor -%}
-                </ul>
-              </li>
-
-            {%- else -%}
-              <li class="blog-menu__item blog-menu__item--single">
-                <a
-                  href="{{ link.url }}"
-                  class="blog-menu__link{% if link.active %} blog-menu__link--active{% endif %}"
-                >
-                  {{ link.title | escape }}
-                </a>
-              </li>
-            {%- endif -%}
-
-          {%- endfor -%}
+          {%- if use_metafield_menu -%}
+            {%- for item in menu_items -%}
+              {%- liquid
+                assign item_active = false
+                if item.link == request.path
+                  assign item_active = true
+                endif
+                assign item_sublinks = item.sublinks.value
+              -%}
+              {%- if item_sublinks.size > 0 -%}
+                {%- render 'blog-menu-item', title: item.label, url: item.link, active: item_active, sublinks: item_sublinks -%}
+              {%- else -%}
+                {%- render 'blog-menu-item', title: item.label, url: item.link, active: item_active -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- else -%}
+            {%- for link in nav_menu.links -%}
+              {%- if link.links.size > 0 -%}
+                {%- render 'blog-menu-item', title: link.title, url: link.url, active: link.active, sublinks: link.links -%}
+              {%- else -%}
+                {%- render 'blog-menu-item', title: link.title, url: link.url, active: link.active -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
         </ul>
 
         <span class="blog-menu__edge-fade blog-menu__edge-fade--left" aria-hidden="true"></span>
@@ -160,9 +159,13 @@
       "default": "left"
     },
     {
+      "type": "paragraph",
+      "content": "On article pages, this section first checks the article's \"Menu Item\" metafield (custom.menu_item). If that metafield has entries, they're used instead of the link list below. The Menu setting below is only used as a fallback — on non-article pages, or when the article has no metafield items."
+    },
+    {
       "type": "link_list",
       "id": "menu",
-      "label": "Menu",
+      "label": "Menu (fallback)",
       "info": "Choose a navigation menu from Online Store > Navigation. Top-level links become nav items; any link with nested links becomes a dropdown."
     },
     {
