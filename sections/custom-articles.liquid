@@ -123,7 +123,6 @@
 </nav>
 
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
-{{ 'blog-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign target_blog = blogs['articles']
@@ -148,16 +147,13 @@
         2. Otherwise, on the parent Blog itself — this is what powers the
            listing page (request.page_type == 'blog'), and also covers
            article pages where only the blog-level value was set.
-      If neither has data, featured_count stays 0 and the whole featured
-      block — heading included — doesn't render at all.
-      Rendered as a horizontally-scrolling carousel (see
-      custom-articles.css/.js) since a merchant may select more than fit
-      on screen at once — each slide uses snippets/blog-card.liquid, the
-      same sparser/bulkier card style as before (no excerpt, no "Read
-      article" link).
+      If neither has data, featured_count stays 0 and nothing renders.
 
-      featured_ids below is also used to exclude these same posts from
-      the paginated grid further down, so they don't show twice on page 1.
+      This data-fetch stays here (rather than moving into the snippet)
+      because featured_ids is also used below to exclude these same
+      posts from the paginated grid, so they don't show twice on page 1.
+      Display is delegated to snippets/featured-blog-posts.liquid, which
+      is self-contained (loads its own CSS/JS/blog-card.css).
     {%- endcomment -%}
     {%- liquid
       assign featured_count = 0
@@ -178,39 +174,7 @@
       endif
     -%}
     {%- if section.settings.posts_show_featured and featured_count > 0 -%}
-      {%- if section.settings.featured_heading != blank -%}
-        <div class="blog-posts__header blog-posts__header--featured">
-          <h2 class="blog-posts__title">{{ section.settings.featured_heading }}</h2>
-        </div>
-      {%- endif -%}
-      <div class="blog-posts__featured-carousel" data-featured-carousel>
-        <div class="blog-posts__featured-track" data-featured-track>
-          {%- for featured_article in metafield_articles -%}
-            <div class="blog-posts__featured-item" data-featured-item>
-              {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
-            </div>
-          {%- endfor -%}
-        </div>
-
-        {%- if featured_count > 1 -%}
-          <button
-            type="button"
-            class="blog-posts__featured-nav blog-posts__featured-nav--prev"
-            data-featured-prev
-            aria-label="Previous featured post"
-          >
-            <span aria-hidden="true">←</span>
-          </button>
-          <button
-            type="button"
-            class="blog-posts__featured-nav blog-posts__featured-nav--next"
-            data-featured-next
-            aria-label="Next featured post"
-          >
-            <span aria-hidden="true">→</span>
-          </button>
-        {%- endif -%}
-      </div>
+      {%- render 'featured-blog-posts', articles: metafield_articles, heading: section.settings.featured_heading -%}
     {%- endif -%}
 
     {% if section.settings.posts_heading != blank %}
