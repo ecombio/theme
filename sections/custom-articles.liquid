@@ -1,132 +1,19 @@
 {{ 'custom-articles.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'custom-articles.js' | asset_url }}" defer="defer"></script>
-
-{%- liquid
-  assign nav_menu = section.settings.menu
-  assign nav_items_total = nav_menu.links.size
-
-  assign section_width = section.settings.posts_section_width
-  case section_width
-    when 'full-width'
-      assign width_class = 'full-width'
-      assign menu_width_class = 'blog-menu--full-width'
-    when 'custom-width'
-      assign width_class = 'custom-width'
-      assign menu_width_class = 'blog-menu--custom-width'
-    else
-      assign width_class = 'default-width'
-      assign menu_width_class = 'blog-menu--default-width'
-  endcase
-
-  case request.page_type
-    when 'article'
-      assign current_page_title = article.title
-    when 'blog'
-      assign current_page_title = blog.title
-    when 'page'
-      assign current_page_title = page.title
-    else
-      assign current_page_title = blank
-  endcase
-
-  assign menu_heading = section.settings.menu_heading | default: current_page_title
--%}
-
-<nav
-  class="blog-menu {{ menu_width_class }} blog-menu--align-{{ section.settings.menu_alignment | default: 'left' }}{% if section.settings.menu_sticky %} blog-menu--sticky{% endif %}"
-  data-blog-menu
-  aria-label="{{ menu_heading | default: 'Blog navigation' | escape }}"
-  style="
-    --blog-menu-bg: {{ section.settings.menu_background_color | default: '#ffffff' }};
-    --blog-menu-text: {{ section.settings.menu_text_color | default: '#111111' }};
-    --blog-menu-accent: {{ section.settings.menu_accent_color | default: '#0A3161' }};
-    --blog-menu-border: {{ section.settings.menu_border_color | default: '#e5e5e5' }};
-    --section-padding: {{ section.settings.posts_section_padding }}px;
-    {%- if section_width == 'custom-width' %}
-      --custom-width: {{ section.settings.posts_custom_width }}rem;
-    {%- endif %}
-  "
->
-  <div class="blog-menu__inner">
-
-    {%- if menu_heading != blank -%}
-      <div class="blog-menu__heading">{{ menu_heading | escape }}</div>
-    {%- endif -%}
-
-    {%- if nav_items_total > 0 -%}
-      <button
-        type="button"
-        class="blog-menu__toggle"
-        data-blog-menu-toggle
-        aria-expanded="false"
-        aria-controls="blog-menu-list-{{ section.id }}"
-      >
-        <span class="blog-menu__toggle-label">{{ section.settings.menu_mobile_label | default: 'Menu' | escape }}</span>
-        <span class="blog-menu__toggle-icon" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      </button>
-
-      <div class="blog-menu__scroll" data-blog-menu-scroll>
-        <ul class="blog-menu__list" id="blog-menu-list-{{ section.id }}" data-blog-menu-list>
-          {%- for link in nav_menu.links -%}
-
-            {%- if link.links.size > 0 -%}
-              <li class="blog-menu__item blog-menu__item--list">
-                <button
-                  type="button"
-                  class="blog-menu__link blog-menu__link--parent"
-                  data-blog-menu-dropdown-toggle
-                  aria-expanded="false"
-                  aria-haspopup="true"
-                >
-                  {{ link.title | escape }}
-                  <span class="blog-menu__caret" aria-hidden="true"></span>
-                </button>
-
-                <ul class="blog-menu__dropdown" data-blog-menu-dropdown>
-                  {%- for sublink in link.links -%}
-                    <li class="blog-menu__dropdown-item">
-                      <a
-                        href="{{ sublink.url }}"
-                        class="blog-menu__dropdown-link{% if sublink.active %} blog-menu__dropdown-link--active{% endif %}"
-                      >
-                        {{ sublink.title | escape }}
-                      </a>
-                    </li>
-                  {%- endfor -%}
-                </ul>
-              </li>
-
-            {%- else -%}
-              <li class="blog-menu__item blog-menu__item--single">
-                <a
-                  href="{{ link.url }}"
-                  class="blog-menu__link{% if link.active %} blog-menu__link--active{% endif %}"
-                >
-                  {{ link.title | escape }}
-                </a>
-              </li>
-            {%- endif -%}
-
-          {%- endfor -%}
-        </ul>
-
-        <span class="blog-menu__edge-fade blog-menu__edge-fade--left" aria-hidden="true"></span>
-        <span class="blog-menu__edge-fade blog-menu__edge-fade--right" aria-hidden="true"></span>
-      </div>
-    {%- endif -%}
-
-  </div>
-</nav>
-
 {{ 'article-card.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign target_blog = blogs['articles']
   assign custom_tags_list = section.settings.posts_custom_tags | split: ','
+
+  assign section_width = section.settings.posts_section_width
+  case section_width
+    when 'full-width'
+      assign width_class = 'full-width'
+    when 'custom-width'
+      assign width_class = 'custom-width'
+    else
+      assign width_class = 'default-width'
+  endcase
 -%}
 
 <div
@@ -244,74 +131,6 @@
   "settings": [
     {
       "type": "header",
-      "content": "Blog menu"
-    },
-    {
-      "type": "text",
-      "id": "menu_heading",
-      "label": "Menu heading",
-      "info": "Optional. Leave blank to automatically use the current page's title (e.g. the article/category name)."
-    },
-    {
-      "type": "text",
-      "id": "menu_mobile_label",
-      "label": "Mobile toggle label",
-      "default": "Menu"
-    },
-    {
-      "type": "checkbox",
-      "id": "menu_sticky",
-      "label": "Make menu sticky on scroll",
-      "default": false
-    },
-    {
-      "type": "select",
-      "id": "menu_alignment",
-      "label": "Menu alignment",
-      "info": "Aligns the nav items within the available space. Has no effect once items overflow into the scrollable/edge-fade state.",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "left"
-    },
-    {
-      "type": "link_list",
-      "id": "menu",
-      "label": "Menu",
-      "info": "Choose a navigation menu from Online Store > Navigation. Top-level links become nav items; any link with nested links becomes a dropdown."
-    },
-    {
-      "type": "header",
-      "content": "Blog menu colors"
-    },
-    {
-      "type": "color",
-      "id": "menu_background_color",
-      "label": "Background",
-      "default": "#ffffff"
-    },
-    {
-      "type": "color",
-      "id": "menu_text_color",
-      "label": "Text",
-      "default": "#111111"
-    },
-    {
-      "type": "color",
-      "id": "menu_accent_color",
-      "label": "Accent (hover / active)",
-      "default": "#0A3161"
-    },
-    {
-      "type": "color",
-      "id": "menu_border_color",
-      "label": "Border",
-      "default": "#e5e5e5"
-    },
-    {
-      "type": "header",
       "content": "Blog posts"
     },
     {
@@ -351,7 +170,7 @@
     },
     {
       "type": "paragraph",
-      "content": "Controls both the blog nav bar above and the article grid below, so they stay aligned."
+      "content": "If you're placing a Blog menu section directly above this one, set matching width values on both so they stay visually aligned."
     },
     {
       "type": "select",
