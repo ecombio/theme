@@ -3,23 +3,24 @@
   assign featured_count = featured_articles.size
 -%}
 
-<div
-  class="featured-posts section-{{ section.id }}"
-  style="--section-padding: {{ section.settings.section_padding }}px;"
->
-  {%- if section.settings.heading != blank -%}
-    <div class="featured-posts__header">
-      <h2 class="featured-posts__title">{{ section.settings.heading }}</h2>
-    </div>
-  {%- endif -%}
+{%- if featured_count > 0 -%}
+  {{ 'featured-posts.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'featured-posts.js' | asset_url }}" defer="defer"></script>
 
-  {%- if featured_count > 0 -%}
-    {{ 'featured-posts.css' | asset_url | stylesheet_tag }}
-    <script src="{{ 'featured-posts.js' | asset_url }}" defer="defer"></script>
+  <div
+    class="featured-posts section-{{ section.id }}"
+    style="--section-padding: {{ section.settings.section_padding }}px;"
+  >
+    {%- if section.settings.heading != blank -%}
+      <div class="featured-posts__header">
+        <h2 class="featured-posts__title">{{ section.settings.heading }}</h2>
+      </div>
+    {%- endif -%}
 
     <div class="featured-posts__carousel" data-featured-carousel>
       <div class="featured-posts__track" data-featured-track>
         {%- for featured_article in featured_articles -%}
+          {%- assign article_tag = featured_article.metafields.theme['article-tags'] | metafield_text -%}
           <div class="featured-posts__item" data-featured-item>
             <a href="{{ featured_article.url }}" class="featured-posts__card">
               <div class="featured-posts__card-image">
@@ -36,8 +37,8 @@
                 {%- endif -%}
               </div>
               <div class="featured-posts__card-body">
-                {%- if featured_article.tags.size > 0 -%}
-                  <span class="featured-posts__card-tag">{{ featured_article.tags.first }}</span>
+                {%- if article_tag != blank -%}
+                  <span class="featured-posts__card-tag">{{ article_tag }}</span>
                 {%- endif -%}
                 <h3 class="featured-posts__card-title">{{ featured_article.title }}</h3>
                 <span class="featured-posts__card-date">{{ featured_article.published_at | date: '%B %d, %Y' }}</span>
@@ -66,12 +67,8 @@
         </button>
       {%- endif -%}
     </div>
-  {%- else -%}
-    {%- if request.design_mode -%}
-      <p class="featured-posts__empty">No articles selected yet. Choose articles in the section settings.</p>
-    {%- endif -%}
-  {%- endif -%}
-</div>
+  </div>
+{%- endif -%}
 
 {% schema %}
 {
