@@ -142,11 +142,14 @@
   <div class="blog-posts-section section-{{ section.id }}" style="padding-block: var(--section-spacing);">
 
     {%- comment -%}
-      Featured row — sourced entirely from the "Featured Blog Posts"
-      metafield (custom.featured_blog_posts) on the current article. No
-      block picker, no "recent posts" fallback: if the metafield is blank
-      (or we're not on an article page), featured_count stays 0 and the
-      whole featured block — heading included — doesn't render at all.
+      Featured row — sourced from the "Featured Blog Posts" metafield
+      (custom.featured_blog_posts), checked in this order:
+        1. On the current article, if we're on an article page and it's set there.
+        2. Otherwise, on the parent Blog itself — this is what powers the
+           listing page (request.page_type == 'blog'), and also covers
+           article pages where only the blog-level value was set.
+      If neither has data, featured_count stays 0 and the whole featured
+      block — heading included — doesn't render at all.
       Rendered as a horizontally-scrolling carousel (see
       custom-articles.css/.js) since a merchant may select more than fit
       on screen at once — each slide uses snippets/blog-card.liquid, the
@@ -159,9 +162,15 @@
     {%- liquid
       assign featured_count = 0
       assign featured_ids = ''
+      assign metafield_articles = blank
 
       if request.page_type == 'article' and article.metafields.custom.featured_blog_posts.value.size > 0
         assign metafield_articles = article.metafields.custom.featured_blog_posts.value
+      elsif blog.metafields.custom.featured_blog_posts.value.size > 0
+        assign metafield_articles = blog.metafields.custom.featured_blog_posts.value
+      endif
+
+      if metafield_articles.size > 0
         assign featured_count = metafield_articles.size
         for feat in metafield_articles
           assign featured_ids = featured_ids | append: ',' | append: feat.id | append: ','
@@ -393,7 +402,7 @@
       "type": "checkbox",
       "id": "posts_show_featured",
       "label": "Show featured articles",
-      "info": "Displays large cards above the grid, pulled from the \"Featured Blog Posts\" metafield on the article. Hidden automatically when that metafield is empty.",
+      "info": "Displays large cards above the grid, pulled from the \"Featured Blog Posts\" metafield — checks the current article first, then falls back to the metafield on the Blog itself (used for the listing page). Hidden automatically when neither has data.",
       "default": true
     },
     {
