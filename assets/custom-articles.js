@@ -57,6 +57,14 @@
     var list = nav.querySelector('[data-blog-menu-list]');
     if (!wrap || !list) return;
 
+    // FIX — browser scroll-anchoring can nudge this list's scrollLeft away
+    // from 0 when something earlier in the DOM (e.g. blog-menu__heading)
+    // resizes after first paint, silently landing the nav a few pixels
+    // into its scroll range and clipping the first/last items. Force it
+    // back to a known-good start before doing anything else. Paired with
+    // overflow-anchor: none on .blog-menu__list in custom-articles.css.
+    list.scrollLeft = 0;
+
     var BUFFER = 1; // guards against sub-pixel scrollLeft/maxScroll mismatches at the true end
 
     var update = function () {

@@ -94,6 +94,14 @@
   min-width: 0;
 }
 
+/* FIX — overflow-anchor: none prevents the browser's scroll-anchoring
+   from nudging this list's scrollLeft away from 0 when something above/
+   before it in the DOM resizes after first paint (e.g. blog-menu__heading
+   going from a long/blank value to a short one like "Cycling"). Without
+   this, the list can silently load a few pixels into its scroll range,
+   clipping the first/last items ("Shop All Categories" reading as
+   "p All Categories"). See custom-articles.js initEdgeFade for the
+   companion JS-side scrollLeft reset. */
 .blog-menu__list {
   display: flex;
   align-items: center;
@@ -105,6 +113,7 @@
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  overflow-anchor: none;
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
