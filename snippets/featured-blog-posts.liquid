@@ -1,0 +1,62 @@
+{%- comment -%}
+  Renders the featured blog posts carousel.
+
+  Usage:
+    {% render 'featured-blog-posts', articles: metafield_articles, heading: section.settings.featured_heading %}
+
+  Self-contained: loads its own CSS/JS, plus blog-card.css (the only
+  place that card style is used), so this snippet works wherever it's
+  rendered without the caller needing to load anything else for it.
+
+  Params:
+    articles - (array, required) article objects to show in the carousel.
+               Nothing renders at all if this is blank or empty.
+    heading  - (string, optional) heading shown above the carousel.
+               Omit or leave blank to hide it.
+{%- endcomment -%}
+
+{{ 'featured-blog-posts.css' | asset_url | stylesheet_tag }}
+{{ 'blog-card.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'featured-blog-posts.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign featured_articles = articles
+  assign featured_count = featured_articles.size
+-%}
+
+{%- if featured_count > 0 -%}
+  {%- if heading != blank -%}
+    <div class="featured-blog-posts__header">
+      <h2 class="featured-blog-posts__title">{{ heading }}</h2>
+    </div>
+  {%- endif -%}
+
+  <div class="featured-blog-posts__carousel" data-featured-carousel>
+    <div class="featured-blog-posts__track" data-featured-track>
+      {%- for featured_article in featured_articles -%}
+        <div class="featured-blog-posts__item" data-featured-item>
+          {%- render 'blog-card', article: featured_article, loading: 'eager' -%}
+        </div>
+      {%- endfor -%}
+    </div>
+
+    {%- if featured_count > 1 -%}
+      <button
+        type="button"
+        class="featured-blog-posts__nav featured-blog-posts__nav--prev"
+        data-featured-prev
+        aria-label="Previous featured post"
+      >
+        <span aria-hidden="true">←</span>
+      </button>
+      <button
+        type="button"
+        class="featured-blog-posts__nav featured-blog-posts__nav--next"
+        data-featured-next
+        aria-label="Next featured post"
+      >
+        <span aria-hidden="true">→</span>
+      </button>
+    {%- endif -%}
+  </div>
+{%- endif -%}
