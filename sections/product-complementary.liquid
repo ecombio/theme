@@ -26,30 +26,6 @@
         </li>
       {%- endfor -%}
     </ul>
-  {%- elsif request.design_mode and section.settings.preview_product != blank -%}
-    {%- assign preview_product = section.settings.preview_product -%}
-    <h2 class="product-recommendations__heading">
-      {{ 'product_recommendations.complementary_heading' | t }}
-    </h2>
-    <ul class="product-recommendations__list">
-      <li class="product-recommendations__item">
-        <a href="{{ preview_product.url }}" class="product-recommendations__link">
-          {%- if preview_product.featured_image -%}
-            <img
-              class="product-recommendations__img"
-              src="{{ preview_product.featured_image | image_url: width: 300 }}"
-              alt="{{ preview_product.featured_image.alt | escape }}"
-              loading="lazy"
-              width="{{ preview_product.featured_image.width }}"
-              height="{{ preview_product.featured_image.height }}"
-            >
-          {%- endif -%}
-          <p class="product-recommendations__title">{{ preview_product.title }}</p>
-          <p class="product-recommendations__price">{{ preview_product.price | money }}</p>
-        </a>
-      </li>
-    </ul>
-    <p class="product-recommendations__preview-note">Editor preview only — showing manually selected product because live complementary data isn't available in this draft theme.</p>
   {%- endif -%}
 </div>
 
@@ -57,47 +33,88 @@
 .product-recommendations--complementary {
   margin-top: 2rem;
 }
-.product-recommendations__preview-note {
-  margin-top: 1rem;
-  font-size: 0.8rem;
-  font-style: italic;
-  opacity: 0.65;
+.product-recommendations--complementary[data-loading="true"] {
+  min-height: 2rem;
+  opacity: 0.5;
 }
 {% endstylesheet %}
 
 {% javascript %}
-  const complementarySection = document.querySelector('.product-recommendations--complementary');
+  (function () {
+    const complementarySection = document.querySelector('.product-recommendations--complementary');
+    if (!complementarySection) return;
 
-  if (complementarySection) {
-    const fetchRecommendations = () => {
-      const url = complementarySection.dataset.url;
+    const url = complementarySection.dataset.url;
+    const isDesignMode = typeof Shopify !== 'undefined' && Shopify.designMode;
 
-      fetch(url)
+    const hasRenderedProducts = (rootEl) => {
+      const list = rootEl.querySelector('.product-recommendations__list');
+      return !!(list && list.children.length > 0);
+    };
+
+    const setLoading = (isLoading) => {
+      complementarySection.dataset.loading = isLoading ? 'true' : 'false';
+    };
+
+    const applyResponseHtml = (text) => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = text;
+      const fetched = wrapper.querySelector('.product-recommendations--complementary');
+      if (fetched && hasRenderedProducts(fetched)) {
+        complementarySection.innerHTML = fetched.innerHTML;
+        return true;
+      }
+      return false;
+    };
+
+    const fetchOnce = () => {
+      return fetch(url, { cache: 'no-store' })
         .then((response) => response.text())
-        .then((text) => {
-          const html = document.createElement('div');
-          html.innerHTML = text;
-          const recommendations = html.querySelector('.product-recommendations--complementary');
-
-          if (recommendations && recommendations.innerHTML.trim().length) {
-            complementarySection.innerHTML = recommendations.innerHTML;
-          }
-        })
+        .then((text) => applyResponseHtml(text))
         .catch((e) => {
           console.error(e);
+          return false;
         });
     };
 
-    if (Shopify && Shopify.designMode) {
-      // In the theme editor, fetch immediately so merchants see results
-      // without relying on scroll-triggered IntersectionObserver behavior.
-      fetchRecommendations();
+    // In the theme editor, retry a few times with short delays since the
+    // recommendations service can be slow to respond on a cold dev store.
+    const fetchWithRetry = (attemptsLeft, delayMs) => {
+      setLoading(true);
+
+      fetchOnce().then((succeeded) => {
+        if (succeeded) {
+          setLoading(false);
+          return;
+        }
+
+        if (attemptsLeft > 0) {
+          setTimeout(() => {
+            fetchWithRetry(attemptsLeft - 1, delayMs);
+          }, delayMs);
+        } else {
+          setLoading(false);
+        }
+      });
+    };
+
+    if (isDesignMode) {
+      fetchWithRetry(3, 1500);
+
+      // Re-fetch cleanly whenever the editor reloads this specific section
+      // (e.g. after a settings change), instead of relying on stale content.
+      document.addEventListener('shopify:section:load', (event) => {
+        if (!event.target || !event.target.contains) return;
+        const reloadedSection = event.target.querySelector('.product-recommendations--complementary');
+        if (reloadedSection) {
+          fetchWithRetry(3, 1500);
+        }
+      });
     } else {
       const handleIntersection = (entries, observer) => {
         if (!entries[0].isIntersecting) return;
-
         observer.unobserve(complementarySection);
-        fetchRecommendations();
+        fetchOnce();
       };
 
       const observer = new IntersectionObserver(handleIntersection, {
@@ -106,7 +123,7 @@
 
       observer.observe(complementarySection);
     }
-  }
+  })();
 {% endjavascript %}
 
 {% schema %}
@@ -121,12 +138,6 @@
       "max": 10,
       "step": 1,
       "default": 3
-    },
-    {
-      "type": "product",
-      "id": "preview_product",
-      "label": "t:product_recommendations.settings.preview_product_label",
-      "info": "t:product_recommendations.settings.preview_product_info"
     }
   ]
 }
