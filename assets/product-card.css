@@ -47,6 +47,7 @@
 
 .product-card__image-wrapper {
   display: block;
+  position: relative;
   width: 100%;
   height: 100%;
 }
@@ -56,27 +57,29 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: opacity var(--product-card-transition), transform 0.35s ease;
+  transition: opacity 0.3s ease, transform 0.35s ease;
 }
 
-.product-card__img--primary  { opacity: 1; }
+.product-card__img--primary {
+  position: relative;
+  z-index: 1;
+}
+
 .product-card__img--secondary {
   position: absolute;
   inset: 0;
+  z-index: 2;
   opacity: 0;
 }
 
-/* Hover-swap to the secondary image is scoped to img-zones that
-   actually have a second image (product-card.liquid only adds the
-   `--has-hover` modifier class when card_image2 is present). Without
-   this guard, single-image products would fade the primary image to
-   opacity: 0 on hover with nothing rendered underneath it, exposing
-   the img-zone's background color as a grey box. */
-.product-card__img-zone--has-hover:hover .product-card__img--primary  { opacity: 0; }
-.product-card__img-zone--has-hover:hover .product-card__img--secondary { opacity: 1; }
+/* Only zones with a real second image get the swap — product-card.liquid
+   adds --has-hover exclusively when card_image2 exists, so single-image
+   cards never fade into empty space. */
+.product-card__img-zone--has-hover:hover .product-card__img--secondary {
+  opacity: 1;
+}
 
-.product-card:hover .product-card__img--primary,
-.product-card:hover .product-card__img--secondary {
+.product-card__img-zone:hover .product-card__img {
   transform: scale(1.04);
 }
 
