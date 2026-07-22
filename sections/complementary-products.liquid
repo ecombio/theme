@@ -6,6 +6,7 @@
     assign current_product = section.settings.product
   endif
 
+  assign intent = section.settings.intent | default: 'complementary'
   assign max_products = section.settings.max_products | default: 4
   assign recommendation_limit = max_products | at_most: 10
   assign selection_mode = section.settings.selection_mode | default: 'checkbox'
@@ -13,6 +14,15 @@
   assign use_manual = false
   if manual_products.size > 0
     assign use_manual = true
+  endif
+
+  assign heading_text = section.settings.heading
+  if heading_text == blank
+    if intent == 'related'
+      assign heading_text = 'You might also like'
+    else
+      assign heading_text = 'Pairs well with'
+    endif
   endif
 -%}
 
@@ -24,7 +34,7 @@
   data-selection-mode="{{ selection_mode }}"
   data-max-selected="{{ section.settings.max_selectable | default: 0 }}"
   {%- unless use_manual %}
-  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ current_product.id }}&limit={{ recommendation_limit }}&intent=complementary"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ current_product.id }}&limit={{ recommendation_limit }}&intent={{ intent }}"
   {%- endunless %}
   {%- if recommendations.performed? and recommendations.products_count == 0 and use_manual == false %}
   hidden
@@ -33,12 +43,12 @@
   <div class="complementary-products__inner page-width">
 
     {%- comment -%}
-      Heading text follows Shopify's UI guidance: "Pairs well with" /
-      similar phrasing explains *why* these products are shown, rather
-      than a generic "Recommended for you".
+      Heading defaults follow Shopify's UI guidance per intent:
+      "You might also like" for related, "Pairs well with" for
+      complementary — overridden if the merchant sets custom text.
     {%- endcomment -%}
-    {%- if section.settings.heading != blank -%}
-      <h2 class="complementary-products__heading">{{ section.settings.heading }}</h2>
+    {%- if heading_text != blank -%}
+      <h2 class="complementary-products__heading">{{ heading_text }}</h2>
     {%- endif -%}
     {%- if section.settings.subheading != blank -%}
       <p class="complementary-products__subheading">{{ section.settings.subheading }}</p>
@@ -117,15 +127,26 @@
 
 {% schema %}
 {
-  "name": "Complementary products",
+  "name": "Product recommendations",
   "tag": "section",
   "class": "section",
   "settings": [
     {
+      "type": "select",
+      "id": "intent",
+      "label": "Recommendation type",
+      "options": [
+        { "value": "complementary", "label": "Complementary — frequently bought together" },
+        { "value": "related", "label": "Related — similar products" }
+      ],
+      "default": "complementary",
+      "info": "Ignored when using Product override blocks below."
+    },
+    {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Pairs well with"
+      "info": "Leave blank to use Shopify's suggested heading for the recommendation type above."
     },
     {
       "type": "text",
@@ -142,7 +163,7 @@
       "type": "range",
       "id": "max_products",
       "label": "Maximum products to show",
-      "info": "The recommendations API returns at most 10. Shopify recommends showing 2-3 by default.",
+      "info": "The API returns up to 10, ranked by relevance. Shopify recommends 2-3 for complementary, up to 4 for related.",
       "min": 1,
       "max": 10,
       "step": 1,
@@ -201,7 +222,7 @@
   ],
   "presets": [
     {
-      "name": "Complementary products",
+      "name": "Product recommendations",
       "blocks": []
     }
   ]
