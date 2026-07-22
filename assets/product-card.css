@@ -66,8 +66,14 @@
   opacity: 0;
 }
 
-.product-card:hover .product-card__img--primary  { opacity: 0; }
-.product-card:hover .product-card__img--secondary { opacity: 1; }
+/* Hover-swap to the secondary image is scoped to img-zones that
+   actually have a second image (product-card.liquid only adds the
+   `--has-hover` modifier class when card_image2 is present). Without
+   this guard, single-image products would fade the primary image to
+   opacity: 0 on hover with nothing rendered underneath it, exposing
+   the img-zone's background color as a grey box. */
+.product-card__img-zone--has-hover:hover .product-card__img--primary  { opacity: 0; }
+.product-card__img-zone--has-hover:hover .product-card__img--secondary { opacity: 1; }
 
 .product-card:hover .product-card__img--primary,
 .product-card:hover .product-card__img--secondary {
