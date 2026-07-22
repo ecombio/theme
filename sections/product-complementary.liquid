@@ -58,25 +58,42 @@
       }
 
       const url = this.dataset.url;
-      if (!url) return;
+      if (!url) {
+        console.warn('[product-complementary] no data-url set on element');
+        return;
+      }
 
       fetch(url)
-        .then((res) => (res.ok ? res.text() : Promise.reject()))
+        .then((res) => {
+          if (!res.ok) {
+            console.warn(`[product-complementary] fetch failed: ${res.status} ${res.statusText}`, url);
+            return Promise.reject(res.status);
+          }
+          return res.text();
+        })
         .then((text) => {
           const html = new DOMParser().parseFromString(text, 'text/html');
           const newInner = html.querySelector('.pr-inner');
-          const grid = newInner && newInner.querySelector('.pr-grid');
+
+          if (!newInner) {
+            console.warn('[product-complementary] fetched markup had no .pr-inner — check section_id matches', url);
+            return;
+          }
+
+          const grid = newInner.querySelector('.pr-grid');
 
           if (!grid) {
-            // No complementary products configured for this product — stay hidden.
+            // recommendations.products_count was 0 — no complementary products
+            // configured (or eligible) for this product. Not an error.
+            console.info('[product-complementary] no eligible complementary products for this product');
             return;
           }
 
           this.querySelector('.pr-inner').innerHTML = newInner.innerHTML;
           this.removeAttribute('hidden');
         })
-        .catch(() => {
-          // Fetch failed — leave the section hidden rather than show a broken shelf.
+        .catch((err) => {
+          console.warn('[product-complementary] request failed', err);
         });
     }
   }
