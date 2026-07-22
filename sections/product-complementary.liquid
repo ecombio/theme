@@ -1,3 +1,23 @@
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'fbt__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'fbt__full-width'
+  else
+    assign width_class = 'fbt__custom-width'
+  endif
+-%}
+
+<div
+  class="{{ width_class }}"
+  style="
+    --fbt-section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --fbt-custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
 <div
   class="product-recommendations product-recommendations--complementary fbt"
   data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ section.settings.limit }}&intent=complementary"
@@ -82,8 +102,20 @@
     </div>
   {%- endif -%}
 </div>
-
+</div>
 {% stylesheet %}
+.fbt__default-width {
+  padding-inline: var(--fbt-section-padding);
+}
+.fbt__full-width {
+  padding-inline: var(--fbt-section-padding);
+  max-width: none;
+}
+.fbt__custom-width {
+  padding-inline: var(--fbt-section-padding);
+  max-width: var(--fbt-custom-width);
+  margin-inline: auto;
+}
 .fbt {
   margin-top: 2rem;
 }
@@ -399,6 +431,42 @@
       "max": 10,
       "step": 1,
       "default": 3
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ]
 }
