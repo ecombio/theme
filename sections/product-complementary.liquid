@@ -39,11 +39,7 @@
   const complementarySection = document.querySelector('.product-recommendations--complementary');
 
   if (complementarySection) {
-    const handleIntersection = (entries, observer) => {
-      if (!entries[0].isIntersecting) return;
-
-      observer.unobserve(complementarySection);
-
+    const fetchRecommendations = () => {
       const url = complementarySection.dataset.url;
 
       fetch(url)
@@ -62,11 +58,24 @@
         });
     };
 
-    const observer = new IntersectionObserver(handleIntersection, {
-      rootMargin: '0px 0px 200px 0px'
-    });
+    if (Shopify && Shopify.designMode) {
+      // In the theme editor, fetch immediately so merchants see results
+      // without relying on scroll-triggered IntersectionObserver behavior.
+      fetchRecommendations();
+    } else {
+      const handleIntersection = (entries, observer) => {
+        if (!entries[0].isIntersecting) return;
 
-    observer.observe(complementarySection);
+        observer.unobserve(complementarySection);
+        fetchRecommendations();
+      };
+
+      const observer = new IntersectionObserver(handleIntersection, {
+        rootMargin: '0px 0px 200px 0px'
+      });
+
+      observer.observe(complementarySection);
+    }
   }
 {% endjavascript %}
 

@@ -71,11 +71,7 @@
   const relatedSection = document.querySelector('.product-recommendations--related');
 
   if (relatedSection) {
-    const handleIntersection = (entries, observer) => {
-      if (!entries[0].isIntersecting) return;
-
-      observer.unobserve(relatedSection);
-
+    const fetchRecommendations = () => {
       const url = relatedSection.dataset.url;
 
       fetch(url)
@@ -94,11 +90,24 @@
         });
     };
 
-    const observer = new IntersectionObserver(handleIntersection, {
-      rootMargin: '0px 0px 200px 0px'
-    });
+    if (Shopify && Shopify.designMode) {
+      // In the theme editor, fetch immediately so merchants see results
+      // without relying on scroll-triggered IntersectionObserver behavior.
+      fetchRecommendations();
+    } else {
+      const handleIntersection = (entries, observer) => {
+        if (!entries[0].isIntersecting) return;
 
-    observer.observe(relatedSection);
+        observer.unobserve(relatedSection);
+        fetchRecommendations();
+      };
+
+      const observer = new IntersectionObserver(handleIntersection, {
+        rootMargin: '0px 0px 200px 0px'
+      });
+
+      observer.observe(relatedSection);
+    }
   }
 {% endjavascript %}
 
