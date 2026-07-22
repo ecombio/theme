@@ -4,34 +4,10 @@
   ║  Mode: Shopify AI — /recommendations/products.json       ║
   ║  Cards: snippets/product-card.liquid                     ║
   ║         via sections/product-card-single.liquid          ║
-  ║                                                            ║
-  ║  Section layout (width/padding) follows the pattern in    ║
-  ║  sections/example-width-section.liquid — local vars only, ║
-  ║  never reads --page-margin / --page-width.                ║
   ╚══════════════════════════════════════════════════════════╝
 {% endcomment %}
 
 {% render 'pr-card-styles' %}
-
-<style>
-  /* Scoped width utility classes — see example-width-section.liquid.
-     No global width utility classes exist in this theme yet, so these
-     are namespaced to this section (BEM-style) rather than shared. */
-  #pr-recs-section-{{ section.id }}.pr-recommendations__default-width {
-    max-width: var(--page-width, 120rem);
-    margin-inline: auto;
-    padding-inline: var(--section-padding);
-  }
-  #pr-recs-section-{{ section.id }}.pr-recommendations__full-width {
-    max-width: none;
-    padding-inline: var(--section-padding);
-  }
-  #pr-recs-section-{{ section.id }}.pr-recommendations__custom-width {
-    max-width: var(--custom-width);
-    margin-inline: auto;
-    padding-inline: var(--section-padding);
-  }
-</style>
 
 {%- liquid
   assign cols_d     = section.settings.columns_desktop
@@ -41,17 +17,10 @@
   assign pad_bottom = section.settings.padding_bottom
   assign cs         = section.settings.color_scheme
   assign limit      = section.settings.products_to_show
-
-  assign width_type = section.settings.section_width
-  if width_type == blank
-    assign width_class = 'pr-recommendations__default-width'
-  else
-    assign width_class = 'pr-recommendations__' | append: width_type
-  endif
 -%}
 
 <section
-  class="pr-section cs-{{ cs }} {{ width_class }}"
+  class="pr-section cs-{{ cs }}"
   id="pr-recs-section-{{ section.id }}"
   style="
     --pr-cols: {{ cols_d }};
@@ -59,10 +28,6 @@
     --pr-gap: {{ gap }}px;
     --pr-pad-top: {{ pad_top }}px;
     --pr-pad-bottom: {{ pad_bottom }}px;
-    --section-padding: {{ section.settings.section_padding }}px;
-    {%- if width_type == 'custom-width' %}
-      --custom-width: {{ section.settings.custom_width }}rem;
-    {%- endif %}
   "
   aria-label="{{ section.settings.heading | escape }}"
   hidden
@@ -148,41 +113,6 @@
       "step": 1,
       "default": 4,
       "label": "Number of Products"
-    },
-    {
-      "type": "header",
-      "content": "Section layout"
-    },
-    {
-      "type": "select",
-      "id": "section_width",
-      "label": "Section width",
-      "options": [
-        { "value": "", "label": "Default" },
-        { "value": "full-width", "label": "Full width" },
-        { "value": "custom-width", "label": "Custom width" }
-      ],
-      "default": ""
-    },
-    {
-      "type": "range",
-      "id": "custom_width",
-      "label": "Custom width",
-      "min": 40,
-      "max": 120,
-      "step": 5,
-      "unit": "rem",
-      "default": 80,
-      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
-    },
-    {
-      "type": "range",
-      "id": "section_padding",
-      "label": "Side padding",
-      "min": 0,
-      "max": 80,
-      "step": 4,
-      "default": 28
     },
     {
       "type": "header",
