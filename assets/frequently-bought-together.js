@@ -13,9 +13,96 @@
     return '$' + amount;
   }
 
-  // Wires up checkboxes / variant selects / add-to-cart for a section that
-  // already has fully rendered Complementary Products markup in it
-  // (i.e. recommendations.performed was true when it was rendered).
+  function splitPrice(cents, moneyFormat) {
+    var moneyStr = formatMoney(cents, moneyFormat);
+    var wholeLen = moneyStr.length - 3;
+    return {
+      symbol: moneyStr.slice(0, 1),
+      whole: moneyStr.slice(1, wholeLen),
+      decimal: moneyStr.slice(wholeLen)
+    };
+  }
+
+  function escapeHtml(value) {
+    var div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+  }
+
+  function imageUrl(url, width) {
+    if (!url) return '';
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    return url + sep + 'width=' + width;
+  }
+
+  function pickVariant(product) {
+    if (!product.variants || !product.variants.length) return null;
+    var available = product.variants.filter(function (v) { return v.available; });
+    return available.length ? available[0] : product.variants[0];
+  }
+
+  // Builds one .fbt-item element for a related product from the JSON
+  // recommendations response. Mirrors the markup the Liquid template
+  // used to render server-side for each metafield-referenced product.
+  function buildRelatedItem(product, index, moneyFormat) {
+    var variant = pickVariant(product);
+    var price = variant ? variant.price : (product.price || 0);
+    var priceParts = splitPrice(price, moneyFormat);
+    var checkboxId = 'fbt-check-related-' + index;
+    var image = product.featured_image || (product.images && product.images[0]) || '';
+    var available = product.available !== false;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'fbt-item';
+    wrap.setAttribute('data-fbt-item', '');
+    wrap.setAttribute('data-product-id', product.id);
+    wrap.setAttribute('data-variant-id', variant ? variant.id : '');
+    wrap.setAttribute('data-price', price);
+    if (!available) wrap.setAttribute('data-fbt-disabled', 'true');
+
+    var variantOptionsHtml = '';
+    if (product.variants && product.variants.length > 1) {
+      variantOptionsHtml = product.variants
+        .map(function (v) {
+          return (
+            '<option value="' + v.id + '" data-price="' + v.price + '"' +
+            (!v.available ? ' disabled' : '') +
+            (variant && v.id === variant.id ? ' selected' : '') +
+            '>' + escapeHtml(v.title) + (!v.available ? ' - Sold out' : '') + '</option>'
+          );
+        })
+        .join('');
+    }
+
+    wrap.innerHTML =
+      '<a href="' + product.url + '" class="fbt-item-image" tabindex="-1">' +
+        (image
+          ? '<img src="' + imageUrl(image, 300) + '" alt="' + escapeHtml(product.title) + '" loading="lazy" width="150" height="150">'
+          : '<div class="fbt-item-image--placeholder"></div>') +
+        '<span class="fbt-item-checkbox">' +
+          '<input type="checkbox" id="' + checkboxId + '" data-fbt-checkbox' + (available ? ' checked' : ' disabled') + '>' +
+          '<label for="' + checkboxId + '"></label>' +
+        '</span>' +
+      '</a>' +
+      '<div class="fbt-item-info">' +
+        '<a href="' + product.url + '" class="fbt-item-title fbt-item-title--link">' + escapeHtml(product.title) + '</a>' +
+        (!available
+          ? '<span class="fbt-item-soldout">Currently unavailable</span>'
+          : (variantOptionsHtml
+              ? '<select class="fbt-variant-select" data-fbt-variant-select aria-label="' + escapeHtml(product.title) + ' variant">' + variantOptionsHtml + '</select>'
+              : '') +
+            '<span class="fbt-item-price" data-fbt-price>' +
+              '<span class="fbt-item-price__symbol">' + priceParts.symbol + '</span>' +
+              '<span class="fbt-item-price__whole">' + priceParts.whole + '</span>' +
+              '<span class="fbt-item-price__decimal">' + priceParts.decimal + '</span>' +
+            '</span>') +
+      '</div>';
+
+    return wrap;
+  }
+
+  // Wires checkboxes / variant selects / add-to-cart once the item
+  // markup (main item + any related items) is in the DOM.
   function wireInteractions(section) {
     var itemsWrap = section.querySelector('[data-fbt-products]');
     var items = Array.prototype.slice.call(section.querySelectorAll('[data-fbt-item]'));
@@ -75,16 +162,11 @@
       var state = getItemState(item);
       if (!priceWrap) return;
 
-      var moneyStr = formatMoney(state.price, moneyFormat);
-      var wholeLen = moneyStr.length - 3;
-      var symbol = moneyStr.slice(0, 1);
-      var whole = moneyStr.slice(1, wholeLen);
-      var decimal = moneyStr.slice(wholeLen);
-
+      var parts = splitPrice(state.price, moneyFormat);
       priceWrap.innerHTML =
-        '<span class="fbt-item-price__symbol">' + symbol + '</span>' +
-        '<span class="fbt-item-price__whole">' + whole + '</span>' +
-        '<span class="fbt-item-price__decimal">' + decimal + '</span>';
+        '<span class="fbt-item-price__symbol">' + parts.symbol + '</span>' +
+        '<span class="fbt-item-price__whole">' + parts.whole + '</span>' +
+        '<span class="fbt-item-price__decimal">' + parts.decimal + '</span>';
     }
 
     items.forEach(function (item) {
@@ -179,60 +261,79 @@
     recalcTotal();
   }
 
-  // No complementary products for this product (or the request failed) —
-  // remove the whole section, including its width/padding wrapper divs.
-  function removeWrapper(section) {
-    var outer = section.closest('.fbt__default-width, .fbt__full-width, .fbt__custom-width');
-    (outer || section).remove();
-  }
-
-  // Re-requests this same section from Shopify's recommendations endpoint,
-  // this time with product_id/section_id/intent set so `recommendations`
-  // is populated server-side, then swaps the skeleton for the response.
+  // Fetches Complementary Products as plain JSON, builds the related
+  // item markup, and reveals either the results or an empty-state
+  // message. Every outcome is logged to the console — open devtools
+  // if the section still doesn't show up.
   function loadRecommendations(section) {
     var productId = section.getAttribute('data-product-id');
-    var sectionId = section.getAttribute('data-section-id');
     var limit = section.getAttribute('data-limit') || 3;
+    var moneyFormat = (window.theme && window.theme.moneyFormat) || null;
 
-    if (!productId || !sectionId) return;
+    var productsWrap = section.querySelector('[data-fbt-products]');
+    var content = section.querySelector('[data-fbt-content]');
+    var skeleton = section.querySelector('[data-fbt-skeleton]');
+    var emptyEl = section.querySelector('[data-fbt-empty]');
+
+    if (!productId || !productsWrap) {
+      console.error('[FBT] section is missing data-product-id or [data-fbt-products]');
+      return;
+    }
 
     var url =
-      '/recommendations/products?product_id=' + encodeURIComponent(productId) +
-      '&section_id=' + encodeURIComponent(sectionId) +
+      '/recommendations/products.json?product_id=' + encodeURIComponent(productId) +
       '&limit=' + encodeURIComponent(limit) +
       '&intent=complementary';
 
+    console.log('[FBT] requesting', url);
+
     fetch(url)
       .then(function (response) {
-        if (!response.ok) throw new Error('Recommendations request failed');
-        return response.text();
+        if (!response.ok) {
+          throw new Error('Recommendations request failed with status ' + response.status);
+        }
+        return response.json();
       })
-      .then(function (html) {
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        var newSection = doc.querySelector('[data-fbt-section]');
+      .then(function (data) {
+        var products = (data && data.products) || [];
+        console.log('[FBT] received', products.length, 'complementary product(s):', products);
 
-        if (!newSection || !newSection.querySelector('[data-fbt-products]')) {
-          removeWrapper(section);
+        var related = products.filter(function (p) {
+          return String(p.id) !== String(productId);
+        });
+
+        if (!related.length) {
+          if (skeleton) skeleton.hidden = true;
+          if (emptyEl) emptyEl.hidden = false;
           return;
         }
 
-        section.replaceWith(newSection);
-        wireInteractions(newSection);
+        related.forEach(function (product, i) {
+          var plus = document.createElement('div');
+          plus.className = 'fbt-plus';
+          plus.setAttribute('aria-hidden', 'true');
+          plus.textContent = '+';
+          productsWrap.appendChild(plus);
+          productsWrap.appendChild(buildRelatedItem(product, i, moneyFormat));
+        });
+
+        if (skeleton) skeleton.hidden = true;
+        if (content) content.hidden = false;
+        wireInteractions(section);
       })
-      .catch(function () {
-        removeWrapper(section);
+      .catch(function (error) {
+        console.error('[FBT] failed to load complementary products:', error);
+        if (skeleton) skeleton.hidden = true;
+        if (emptyEl) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = 'Could not load recommendations right now.';
+        }
       });
   }
 
   function init() {
     var sections = document.querySelectorAll('[data-fbt-section]');
-    sections.forEach(function (section) {
-      if (section.querySelector('[data-fbt-skeleton]')) {
-        loadRecommendations(section);
-      } else if (section.querySelector('[data-fbt-products]')) {
-        wireInteractions(section);
-      }
-    });
+    sections.forEach(loadRecommendations);
   }
 
   if (document.readyState === 'loading') {
