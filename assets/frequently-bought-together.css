@@ -1,105 +1,109 @@
-.fbt-section {
-  padding: 3rem 0;
+/* ==========================================================================
+   Section layout wrapper — local width/padding, decoupled from the
+   theme's global --page-margin / --page-width (see the comment block
+   at the top of frequently-bought-together.liquid).
+   ========================================================================== */
+.fbt__default-width,
+.fbt__full-width,
+.fbt__custom-width {
+  padding-inline: var(--section-padding, 24px);
 }
 
-.fbt-container {
-  max-width: 100%;
+.fbt__default-width {
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.fbt__full-width {
+  max-width: none;
+  width: 100%;
+}
+
+.fbt__custom-width {
+  max-width: var(--custom-width, 80rem);
+  margin-inline: auto;
+}
+
+/* ==========================================================================
+   Frequently bought together
+   Tokens mirror assets/product-card.css so this section reads as part
+   of the same design system (same accent, same ATC yellow, same
+   radius scale) rather than a bolted-on widget.
+   ========================================================================== */
+.fbt-section {
+  --fbt-accent:           #4F46E5;
+  --fbt-atc-bg:           #f5c518;
+  --fbt-atc-bg-hover:     #e6b800;
+  --fbt-atc-text:         #111827;
+  --fbt-surface:          #ffffff;
+  --fbt-border:           #E5E7EB;
+  --fbt-text:             #111827;
+  --fbt-text-secondary:   #6B7280;
+  --fbt-danger:           #DC2626;
+  --fbt-success:          #059669;
+  --fbt-radius:           10px;
+  --fbt-radius-sm:        6px;
+  --fbt-transition:       0.2s ease;
+
+  display: block;
+  padding-block: 3rem;
+  color: var(--fbt-text);
 }
 
 .fbt-heading {
-  font-size: 2.2rem;
-  margin: 0 0 2rem;
-  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem;
 }
 
 .fbt-content {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 2rem;
-  justify-content: center;
+  align-items: flex-start;
+  gap: 2.5rem;
 }
 
 .fbt-products {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 1.2rem;
+  align-items: flex-start;
+  gap: 1rem;
   flex: 1 1 auto;
   min-width: 0;
 }
 
 .fbt-plus {
-  font-size: 1.6rem;
-  font-weight: 600;
-  opacity: 0.5;
+  align-self: center;
+  margin-top: 60px;
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--fbt-text-secondary);
   flex: 0 0 auto;
 }
 
 .fbt-item {
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  flex-direction: column;
+  gap: 0.5rem;
   flex: 0 0 auto;
-  max-width: 220px;
-  position: relative;
+  width: 130px;
 }
 
-.fbt-item-checkbox {
-  position: relative;
-  flex: 0 0 auto;
+.fbt-item[data-fbt-disabled='true'] {
+  opacity: 0.5;
 }
 
-.fbt-item-checkbox input[type='checkbox'] {
-  position: absolute;
-  opacity: 0;
-  width: 2rem;
-  height: 2rem;
-  margin: 0;
-  cursor: pointer;
-}
-
-.fbt-item-checkbox label {
-  display: block;
-  width: 2rem;
-  height: 2rem;
-  border: 1.5px solid rgba(var(--color-foreground, 0, 0, 0), 0.35);
-  border-radius: 0.4rem;
-  cursor: pointer;
-  position: relative;
-  background: var(--color-background, #fff);
-}
-
-.fbt-item-checkbox input[type='checkbox']:checked + label {
-  background: var(--color-button, #121212);
-  border-color: var(--color-button, #121212);
-}
-
-.fbt-item-checkbox input[type='checkbox']:checked + label::after {
-  content: '';
-  position: absolute;
-  left: 0.55rem;
-  top: 0.25rem;
-  width: 0.5rem;
-  height: 0.95rem;
-  border: solid var(--color-button-text, #fff);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.fbt-item-checkbox input[type='checkbox']:disabled + label {
-  opacity: 0.9;
-  cursor: default;
-}
+/* -- image + overlaid checkbox --------------------------------------- */
 
 .fbt-item-image {
+  position: relative;
   display: block;
-  flex: 0 0 auto;
-  width: 6rem;
-  height: 6rem;
-  border-radius: 0.6rem;
+  width: 130px;
+  height: 130px;
+  border-radius: var(--fbt-radius);
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.04);
+  background: #F9FAFB;
+  border: 1px solid var(--fbt-border);
 }
 
 .fbt-item-image img {
@@ -112,74 +116,158 @@
 .fbt-item-image--placeholder {
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.06);
+  background: #F3F4F6;
 }
+
+.fbt-item-checkbox {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.fbt-item-checkbox input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.fbt-item-checkbox label {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1.5px solid #ffffff;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  position: relative;
+}
+
+.fbt-item-checkbox input[type='checkbox']:checked + label {
+  background: var(--fbt-accent);
+  border-color: var(--fbt-accent);
+}
+
+.fbt-item-checkbox input[type='checkbox']:checked + label::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 11px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.fbt-item-checkbox input[type='checkbox']:disabled + label {
+  cursor: default;
+}
+
+/* -- info block -------------------------------------------------------- */
 
 .fbt-item-info {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
+  gap: 0.35rem;
 }
 
 .fbt-item-title {
-  font-size: 1.3rem;
-  font-weight: 500;
-  text-decoration: none;
-  color: inherit;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--fbt-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 14rem;
 }
 
-.fbt-item-title:hover {
+a.fbt-item-title--link {
+  text-decoration: none;
+  color: var(--fbt-accent);
+}
+
+a.fbt-item-title--link:hover {
   text-decoration: underline;
 }
 
-.fbt-item-price {
-  font-size: 1.3rem;
-  font-weight: 600;
+.fbt-item-thisitem {
+  font-weight: 700;
+  color: var(--fbt-text);
 }
 
 .fbt-item-soldout {
-  font-size: 1.2rem;
-  color: #d02e2e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fbt-danger);
 }
 
 .fbt-variant-select {
-  font-size: 1.2rem;
-  padding: 0.2rem 0.4rem;
-  max-width: 14rem;
-  border-radius: 0.4rem;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+  width: 100%;
+  border-radius: var(--fbt-radius-sm);
+  border: 1px solid var(--fbt-border);
+  background: var(--fbt-surface);
+  color: var(--fbt-text);
 }
 
-.fbt-item[data-fbt-disabled='true'] {
-  opacity: 0.45;
+/* -- price, split into symbol / whole / decimal ------------------------ */
+
+.fbt-item-price {
+  font-weight: 400;
+  color: var(--fbt-text);
 }
+
+.fbt-item-price__symbol {
+  font-size: 0.72rem;
+  vertical-align: top;
+  position: relative;
+  top: 0.15em;
+}
+
+.fbt-item-price__whole {
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.fbt-item-price__decimal {
+  font-size: 0.72rem;
+  vertical-align: top;
+  position: relative;
+  top: 0.15em;
+}
+
+/* ==========================================================================
+   Summary panel
+   ========================================================================== */
 
 .fbt-summary {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.8rem;
+  align-items: flex-start;
+  gap: 0.6rem;
   flex: 0 0 auto;
-  padding: 1.5rem;
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
-  min-width: 20rem;
+  min-width: 22rem;
+  padding-top: 0.25rem;
 }
 
 .fbt-summary-total {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
-  font-size: 1.4rem;
+  gap: 0.5rem;
+  font-size: 0.95rem;
 }
 
 .fbt-summary-price {
-  font-size: 1.9rem;
+  font-size: 1.15rem;
   font-weight: 700;
+  color: var(--fbt-text);
 }
 
 .fbt-add-button {
@@ -187,19 +275,33 @@
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  min-width: 22rem;
-  padding: 1.2rem 2rem;
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.9rem 1.5rem;
+  margin-top: 0.25rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--fbt-atc-bg);
+  color: var(--fbt-atc-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: background var(--fbt-transition);
+}
+
+.fbt-add-button:hover:not(:disabled) {
+  background: var(--fbt-atc-bg-hover);
 }
 
 .fbt-add-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .fbt-spinner {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.4rem;
+  height: 1.4rem;
   display: none;
   animation: fbt-spin 0.7s linear infinite;
 }
@@ -220,38 +322,61 @@
   }
 }
 
+.fbt-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--fbt-text-secondary);
+  line-height: 1.4;
+}
+
+.fbt-note-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin-top: 0.15rem;
+  color: var(--fbt-text-secondary);
+}
+
 .fbt-message {
-  font-size: 1.3rem;
-  min-height: 1.6rem;
-  text-align: center;
+  font-size: 0.8rem;
+  min-height: 1.2rem;
 }
 
 .fbt-message[data-state='success'] {
-  color: #1a7f37;
+  color: var(--fbt-success);
 }
 
 .fbt-message[data-state='error'] {
-  color: #d02e2e;
+  color: var(--fbt-danger);
 }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
 
 @media screen and (max-width: 749px) {
   .fbt-content {
     flex-direction: column;
-    align-items: stretch;
-  }
-
-  .fbt-products {
-    justify-content: center;
+    gap: 1.5rem;
   }
 
   .fbt-summary {
-    border-left: none;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    min-width: 0;
     width: 100%;
   }
 
-  .fbt-item-title,
-  .fbt-variant-select {
-    max-width: 10rem;
+  .fbt-add-button {
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fbt-add-button,
+  .fbt-spinner {
+    transition: none;
+    animation: none;
   }
 }

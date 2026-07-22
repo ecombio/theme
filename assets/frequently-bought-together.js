@@ -2,7 +2,6 @@
   'use strict';
 
   function formatMoney(cents, format) {
-    // Fall back to Shopify.formatMoney if the theme exposes it (it usually does).
     if (window.Shopify && typeof window.Shopify.formatMoney === 'function') {
       try {
         return window.Shopify.formatMoney(cents, format);
@@ -22,6 +21,7 @@
     var buttonText = section.querySelector('[data-fbt-button-text]');
     var messageEl = section.querySelector('[data-fbt-message]');
     var moneyFormat = (window.theme && window.theme.moneyFormat) || null;
+    var labelTemplate = (addButton && addButton.getAttribute('data-label-template')) || 'Add all {count} to Cart';
 
     if (!itemsWrap || !addButton) return;
 
@@ -41,33 +41,49 @@
       };
     }
 
+    function updateButtonLabel(count) {
+      if (buttonText) {
+        buttonText.textContent = labelTemplate.replace('{count}', count);
+      }
+    }
+
     function recalcTotal() {
       var total = 0;
+      var count = 0;
+
       items.forEach(function (item) {
         var state = getItemState(item);
         if (state.checked && state.variantId) {
           total += state.price;
+          count += 1;
         }
       });
+
       if (totalEl) {
         totalEl.textContent = formatMoney(total, moneyFormat);
       }
 
-      var anyChecked = items.some(function (item) {
-        return getItemState(item).checked && getItemState(item).variantId;
-      });
-      addButton.disabled = !anyChecked;
+      updateButtonLabel(count);
+      addButton.disabled = count === 0;
     }
 
     function updateItemPriceDisplay(item) {
-      var priceEl = item.querySelector('[data-fbt-price]');
+      var priceWrap = item.querySelector('[data-fbt-price]');
       var state = getItemState(item);
-      if (priceEl) {
-        priceEl.textContent = formatMoney(state.price, moneyFormat);
-      }
+      if (!priceWrap) return;
+
+      var moneyStr = formatMoney(state.price, moneyFormat);
+      var wholeLen = moneyStr.length - 3;
+      var symbol = moneyStr.slice(0, 1);
+      var whole = moneyStr.slice(1, wholeLen);
+      var decimal = moneyStr.slice(wholeLen);
+
+      priceWrap.innerHTML =
+        '<span class="fbt-item-price__symbol">' + symbol + '</span>' +
+        '<span class="fbt-item-price__whole">' + whole + '</span>' +
+        '<span class="fbt-item-price__decimal">' + decimal + '</span>';
     }
 
-    // Wire up checkboxes
     items.forEach(function (item) {
       var checkbox = item.querySelector('input[type="checkbox"]');
       if (checkbox && !checkbox.disabled) {
@@ -81,6 +97,7 @@
       if (select) {
         select.addEventListener('change', function () {
           item.setAttribute('data-variant-id', select.value);
+          item.setAttribute('data-price', select.options[select.selectedIndex].getAttribute('data-price'));
           updateItemPriceDisplay(item);
           recalcTotal();
         });
@@ -100,15 +117,13 @@
     function setLoading(isLoading) {
       addButton.disabled = isLoading;
       addButton.setAttribute('data-loading', isLoading ? 'true' : 'false');
-      if (buttonText) {
-        buttonText.textContent = isLoading
-          ? 'Adding…'
-          : (addButton.getAttribute('data-default-label') || buttonText.textContent);
-      }
-    }
 
-    if (buttonText) {
-      addButton.setAttribute('data-default-label', buttonText.textContent);
+      if (isLoading && buttonText) {
+        addButton.setAttribute('data-restore-label', buttonText.textContent);
+        buttonText.textContent = 'Adding…';
+      } else if (buttonText && addButton.getAttribute('data-restore-label')) {
+        buttonText.textContent = addButton.getAttribute('data-restore-label');
+      }
     }
 
     addButton.addEventListener('click', function () {
@@ -129,7 +144,7 @@
       setLoading(true);
       setMessage('');
 
-      fetch(window.Shopify ? '/cart/add.js' : '/cart/add.js', {
+      fetch('/cart/add.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ items: toAdd })
@@ -148,7 +163,6 @@
           document.dispatchEvent(
             new CustomEvent('cart:updated', { bubbles: true, detail: { source: 'frequently-bought-together' } })
           );
-          // Some themes listen for this instead; harmless if unused.
           document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
         })
         .catch(function (error) {
@@ -173,7 +187,6 @@
     init();
   }
 
-  // Re-init if the section is loaded dynamically by the theme editor.
   document.addEventListener('shopify:section:load', function (event) {
     var section = event.target.querySelector('[data-fbt-section]');
     if (section) initSection(section);
