@@ -21,7 +21,7 @@
     var buttonText = section.querySelector('[data-fbt-button-text]');
     var messageEl = section.querySelector('[data-fbt-message]');
     var moneyFormat = (window.theme && window.theme.moneyFormat) || null;
-    var labelTemplate = (addButton && addButton.getAttribute('data-label-template')) || 'Add all {count} to Cart';
+    var labelTemplate = (addButton && addButton.getAttribute('data-label-template')) || 'Add all [count] to Cart';
 
     if (!itemsWrap || !addButton) return;
 
@@ -43,7 +43,7 @@
 
     function updateButtonLabel(count) {
       if (buttonText) {
-        buttonText.textContent = labelTemplate.replace('{count}', count);
+        buttonText.textContent = labelTemplate.replace('[count]', count);
       }
     }
 
