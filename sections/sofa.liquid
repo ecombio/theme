@@ -1,0 +1,130 @@
+{{ 'sofa.css' | asset_url | stylesheet_tag }}
+
+<div class="sofa-section" data-section-id="{{ section.id }}">
+  <div class="sofa-container">
+
+    {% comment %} ============ LEFT: GALLERY ============ {% endcomment %}
+    <div class="sofa-gallery">
+      <div class="sofa-gallery-main">
+        <button type="button" class="sofa-arrow sofa-arrow--prev" aria-label="Previous image">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <div class="sofa-gallery-main-images">
+          {% for image in product.images %}
+            <img
+              class="sofa-gallery-main-image{% if forloop.first %} is-active{% endif %}"
+              src="{{ image | image_url: width: 900 }}"
+              alt="{{ image.alt | default: product.title }}"
+              data-index="{{ forloop.index0 }}"
+              loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+            >
+          {% else %}
+            <img class="sofa-gallery-main-image is-active" src="{{ 'no-image.svg' | asset_url }}" alt="{{ product.title }}">
+          {% endfor %}
+        </div>
+
+        <button type="button" class="sofa-arrow sofa-arrow--next" aria-label="Next image">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      {% if product.images.size > 1 %}
+        <div class="sofa-thumbs">
+          {% for image in product.images %}
+            <button
+              type="button"
+              class="sofa-thumb{% if forloop.first %} is-active{% endif %}"
+              data-index="{{ forloop.index0 }}"
+              aria-label="Show image {{ forloop.index }}"
+            >
+              <img src="{{ image | image_url: width: 200 }}" alt="{{ image.alt | default: product.title }}" loading="lazy">
+            </button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {% comment %} ============ RIGHT: INFO PANEL ============ {% endcomment %}
+    <div class="sofa-info">
+      <button type="button" class="sofa-menu-toggle" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+
+      <span class="sofa-eyebrow-rule" aria-hidden="true"></span>
+
+      <h1 class="sofa-title">{{ product.title }}</h1>
+
+      <div class="sofa-price-row">
+        <span class="sofa-price">{{ product.selected_or_first_available_variant.price | money_without_trailing_zeros }}</span>
+        {% if product.compare_at_price > product.price %}
+          <span class="sofa-price-compare">{{ product.compare_at_price | money_without_trailing_zeros }}</span>
+        {% endif %}
+      </div>
+
+      {% if product.metafields.reviews.rating.value %}
+        {% assign rating = product.metafields.reviews.rating.value.rating %}
+        {% assign rating_count = product.metafields.reviews.rating_count %}
+      {% else %}
+        {% assign rating = 4 %}
+      {% endif %}
+      <div class="sofa-rating" aria-label="Rated {{ rating }} out of 5">
+        {% for i in (1..5) %}
+          <svg width="16" height="16" viewBox="0 0 24 24" class="sofa-star{% if i <= rating %} is-filled{% endif %}">
+            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        {% endfor %}
+      </div>
+
+      {% comment %} Color / variant swatches — expects a variant option named "Color" {% endcomment %}
+      {% for option in product.options_with_values %}
+        {% if option.name == 'Color' %}
+          <div class="sofa-swatches" role="radiogroup" aria-label="Color">
+            {% for value in option.values %}
+              {% assign swatch_variant = product.variants | where: 'option1', value | first %}
+              <button
+                type="button"
+                class="sofa-swatch{% if forloop.first %} is-active{% endif %}"
+                style="--swatch-color: {{ value | handle }};"
+                data-option-value="{{ value }}"
+                aria-label="{{ value }}"
+                role="radio"
+                aria-checked="{% if forloop.first %}true{% else %}false{% endif %}"
+              ></button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div class="sofa-divider-lines" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+
+      {% form 'product', product, class: 'sofa-form' %}
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" class="sofa-variant-id">
+        <button type="submit" class="sofa-buy-btn" {% if product.selected_or_first_available_variant.available == false %}disabled{% endif %}>
+          {% if product.selected_or_first_available_variant.available %}
+            Buy Now
+          {% else %}
+            Sold Out
+          {% endif %}
+        </button>
+      {% endform %}
+
+    </div>
+  </div>
+</div>
+
+{{ 'sofa.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Sofa Product",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Sofa Product"
+    }
+  ]
+}
+{% endschema %}
