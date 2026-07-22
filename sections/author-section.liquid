@@ -1,0 +1,300 @@
+{{ 'author-section.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign name_words = section.settings.author_name | split: ' '
+  assign initials = ''
+  if name_words.size > 0
+    assign first_letter = name_words.first | slice: 0, 1
+    assign last_letter = name_words.last | slice: 0, 1
+    assign initials = first_letter | append: last_letter | upcase
+  endif
+-%}
+
+<div
+  class="author-section author-section--{{ section.settings.layout }}{% if section.settings.enable_animation %} author-section--animated{% endif %}"
+  data-section-id="{{ section.id }}"
+  data-author-section
+  data-animate="{{ section.settings.enable_animation }}"
+  style="
+    --as-paper: {{ section.settings.bg_color }};
+    --as-ink: {{ section.settings.ink_color }};
+    --as-accent: {{ section.settings.accent_color }};
+    --as-rule: {{ section.settings.rule_color }};
+    --as-pt: {{ section.settings.padding_top }}px;
+    --as-pb: {{ section.settings.padding_bottom }}px;
+  "
+>
+  <div class="author-section__card">
+
+    <div class="author-section__media">
+      <div class="author-section__frame">
+        {%- if section.settings.author_image != blank -%}
+          <img
+            class="author-section__photo"
+            src="{{ section.settings.author_image | image_url: width: 480 }}"
+            width="240"
+            height="240"
+            loading="lazy"
+            alt="{{ section.settings.author_image.alt | default: section.settings.author_name | escape }}"
+          >
+        {%- else -%}
+          <div class="author-section__photo author-section__photo--placeholder">
+            <span>{{ initials | default: 'AA' }}</span>
+          </div>
+        {%- endif -%}
+        <div class="author-section__stamp" aria-hidden="true">
+          <svg viewBox="0 0 100 100" class="author-section__stamp-ring">
+            <circle cx="50" cy="50" r="46" />
+          </svg>
+          <span class="author-section__stamp-initials">{{ initials | default: 'AA' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="author-section__divider" aria-hidden="true"></div>
+
+    <div class="author-section__content">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="author-section__eyebrow">{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.author_name != blank -%}
+        <h3 class="author-section__name">{{ section.settings.author_name }}</h3>
+      {%- endif -%}
+
+      {%- if section.settings.author_role != blank -%}
+        <p class="author-section__role">{{ section.settings.author_role }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.bio != blank -%}
+        <div
+          class="author-section__bio{% if section.settings.enable_bio_truncate %} author-section__bio--clamped{% endif %}"
+          style="--as-bio-lines: {{ section.settings.bio_lines }};"
+          data-author-bio
+        >
+          <div class="author-section__bio-inner">
+            {{ section.settings.bio }}
+          </div>
+        </div>
+        {%- if section.settings.enable_bio_truncate -%}
+          <button type="button" class="author-section__bio-toggle" data-author-bio-toggle hidden>
+            <span data-label-more>Read more</span>
+            <span data-label-less hidden>Read less</span>
+          </button>
+        {%- endif -%}
+      {%- endif -%}
+
+      {%- if section.blocks.size > 0 -%}
+        <ul class="author-section__social" role="list">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'social' and block.settings.url != blank -%}
+              <li class="author-section__social-item" {{ block.shopify_attributes }}>
+                <a
+                  href="{{ block.settings.url }}"
+                  class="author-section__social-link"
+                  {% if block.settings.platform != 'email' %}target="_blank" rel="noopener"{% endif %}
+                >
+                  <span class="author-section__social-icon">
+                    {%- case block.settings.platform -%}
+                      {%- when 'twitter' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l16 16M20 4L4 20" stroke="none"/><path d="M21 4.6c-.7.5-1.6.9-2.5 1.1a4 4 0 0 0-6.8 3.6A11.3 11.3 0 0 1 3.3 4.9a4 4 0 0 0 1.2 5.3c-.7 0-1.3-.2-1.9-.5v.1a4 4 0 0 0 3.2 3.9c-.6.2-1.2.2-1.8.1a4 4 0 0 0 3.7 2.8A8 8 0 0 1 2 18.4a11.3 11.3 0 0 0 6.1 1.8c7.3 0 11.3-6.1 11.3-11.3v-.5c.8-.6 1.4-1.3 2-2.1-.7.3-1.5.6-2.4.7.9-.5 1.5-1.3 1.8-2.3z"/></svg>
+                      {%- when 'instagram' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="0.8" fill="currentColor" stroke="none"/></svg>
+                      {%- when 'linkedin' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><line x1="7.5" y1="10.5" x2="7.5" y2="16.5"/><circle cx="7.5" cy="7.3" r="0.4" fill="currentColor"/><path d="M11 16.5v-3.6c0-1.3.9-2.2 2.1-2.2s2 .9 2 2.2v3.6" /><line x1="11" y1="10.5" x2="11" y2="16.5"/></svg>
+                      {%- when 'facebook' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M13.8 20.4v-6.1h2l.3-2.4h-2.3V10c0-.7.2-1.2 1.2-1.2h1.3V6.6c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.1-3.2 3.3v1.9H9.2v2.4h2v6.3"/></svg>
+                      {%- when 'youtube' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="3.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z" fill="currentColor" stroke="none"/></svg>
+                      {%- when 'tiktok' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 4v9.6a3.4 3.4 0 1 1-2.6-3.3"/><path d="M14 4c.3 2 1.8 3.5 4 3.8"/></svg>
+                      {%- when 'email' -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 6.5l8 6 8-6"/></svg>
+                      {%- else -%}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h7M12 8.5v7"/></svg>
+                    {%- endcase -%}
+                  </span>
+                  <span class="author-section__social-label">
+                    {{ block.settings.label | default: block.settings.platform | capitalize }}
+                  </span>
+                </a>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{{ 'author-section.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Author section",
+  "tag": "section",
+  "class": "shopify-section--author",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow label",
+      "default": "Written by"
+    },
+    {
+      "type": "text",
+      "id": "author_name",
+      "label": "Author name",
+      "default": "Jordan Whitfield"
+    },
+    {
+      "type": "text",
+      "id": "author_role",
+      "label": "Author role or title",
+      "default": "Senior Editor, Field Notes"
+    },
+    {
+      "type": "image_picker",
+      "id": "author_image",
+      "label": "Author photo"
+    },
+    {
+      "type": "richtext",
+      "id": "bio",
+      "label": "Biography",
+      "default": "<p>Jordan has spent the last decade writing about craft, materials, and the people who make things by hand. When not on deadline, they're refinishing furniture found on the side of the road.</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_bio_truncate",
+      "label": "Truncate long biographies",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "bio_lines",
+      "label": "Visible lines before truncating",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Photo position",
+      "options": [
+        { "value": "image-left", "label": "Left" },
+        { "value": "image-right", "label": "Right" }
+      ],
+      "default": "image-left"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animation",
+      "label": "Animate on scroll",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Color"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background",
+      "default": "#F1ECDD"
+    },
+    {
+      "type": "color",
+      "id": "ink_color",
+      "label": "Text",
+      "default": "#241F18"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent / stamp",
+      "default": "#A13D2E"
+    },
+    {
+      "type": "color",
+      "id": "rule_color",
+      "label": "Rule lines",
+      "default": "#B9AF95"
+    },
+    {
+      "type": "header",
+      "content": "Section spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "blocks": [
+    {
+      "type": "social",
+      "name": "Social link",
+      "settings": [
+        {
+          "type": "select",
+          "id": "platform",
+          "label": "Platform",
+          "options": [
+            { "value": "twitter", "label": "X / Twitter" },
+            { "value": "instagram", "label": "Instagram" },
+            { "value": "linkedin", "label": "LinkedIn" },
+            { "value": "facebook", "label": "Facebook" },
+            { "value": "youtube", "label": "YouTube" },
+            { "value": "tiktok", "label": "TikTok" },
+            { "value": "email", "label": "Email" },
+            { "value": "website", "label": "Website" }
+          ],
+          "default": "twitter"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Custom label (optional)"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "Author section",
+      "blocks": [
+        { "type": "social", "settings": { "platform": "twitter" } },
+        { "type": "social", "settings": { "platform": "instagram" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
