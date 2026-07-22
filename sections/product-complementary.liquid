@@ -1,0 +1,88 @@
+<div
+  class="product-recommendations product-recommendations--complementary"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ section.settings.limit }}&intent=complementary"
+>
+  {%- if recommendations.performed? and recommendations.products_count > 0 -%}
+    <h2 class="product-recommendations__heading">
+      {{ 'product_recommendations.complementary_heading' | t }}
+    </h2>
+    <ul class="product-recommendations__list">
+      {%- for product in recommendations.products -%}
+        <li class="product-recommendations__item">
+          <a href="{{ product.url }}" class="product-recommendations__link">
+            {%- if product.featured_image -%}
+              <img
+                class="product-recommendations__img"
+                src="{{ product.featured_image | image_url: width: 300 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                loading="lazy"
+                width="{{ product.featured_image.width }}"
+                height="{{ product.featured_image.height }}"
+              >
+            {%- endif -%}
+            <p class="product-recommendations__title">{{ product.title }}</p>
+            <p class="product-recommendations__price">{{ product.price | money }}</p>
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+.product-recommendations--complementary {
+  margin-top: 2rem;
+}
+{% endstylesheet %}
+
+{% javascript %}
+  const complementarySection = document.querySelector('.product-recommendations--complementary');
+
+  if (complementarySection) {
+    const handleIntersection = (entries, observer) => {
+      if (!entries[0].isIntersecting) return;
+
+      observer.unobserve(complementarySection);
+
+      const url = complementarySection.dataset.url;
+
+      fetch(url)
+        .then((response) => response.text())
+        .then((text) => {
+          const html = document.createElement('div');
+          html.innerHTML = text;
+          const recommendations = html.querySelector('.product-recommendations--complementary');
+
+          if (recommendations && recommendations.innerHTML.trim().length) {
+            complementarySection.innerHTML = recommendations.innerHTML;
+          }
+        })
+        .catch((e) => {
+          console.error(e);
+        });
+    };
+
+    const observer = new IntersectionObserver(handleIntersection, {
+      rootMargin: '0px 0px 200px 0px'
+    });
+
+    observer.observe(complementarySection);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:product_recommendations.complementary_name",
+  "settings": [
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "t:product_recommendations.settings.limit_label",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 3
+    }
+  ]
+}
+{% endschema %}
