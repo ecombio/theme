@@ -1,0 +1,224 @@
+{{ 'sofa-details.css' | asset_url | stylesheet_tag }}
+
+<div class="sofa-details-section" data-section-id="{{ section.id }}">
+  <div class="sofa-details-container">
+
+    {% comment %} ============ LEFT: DETAILS & CARE ============ {% endcomment %}
+    <div class="sofa-details-col">
+      <h2 class="sofa-details-heading">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>
+        </svg>
+        {{ section.settings.details_heading | default: 'Details & Care' }}
+      </h2>
+
+      <div class="sofa-details-body">
+        {% if section.settings.what_it_is != blank %}
+          <p><strong>What it is:</strong> {{ section.settings.what_it_is }}</p>
+        {% endif %}
+
+        {% if section.settings.story_heading != blank or section.settings.story_content != blank %}
+          <p>
+            <strong>{{ section.settings.story_heading | default: 'Story:' }}</strong>
+            {{ section.settings.story_content }}
+          </p>
+        {% endif %}
+
+        {% if section.settings.style_content != blank %}
+          <p><strong>Style:</strong> {{ section.settings.style_content }}</p>
+        {% endif %}
+
+        {% if section.settings.notes_content != blank %}
+          <div class="sofa-details-notes">
+            <strong>Notes:</strong>
+            {{ section.settings.notes_content }}
+          </div>
+        {% endif %}
+
+        {% if section.blocks.size > 0 %}
+          <ul class="sofa-details-list">
+            {% for block in section.blocks %}
+              {% if block.type == 'detail_item' %}
+                <li {{ block.shopify_attributes }}>{{ block.settings.text }}</li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% if section.settings.shipping_text != blank %}
+          <p class="sofa-details-shipping">
+            <strong>{{ section.settings.shipping_text }}</strong>
+            {% if section.settings.shipping_link != blank %}
+              <a href="{{ section.settings.shipping_link }}">See more</a>
+            {% endif %}
+          </p>
+        {% endif %}
+
+        {% if section.settings.questions_heading != blank %}
+          <div class="sofa-details-questions">
+            <strong>{{ section.settings.questions_heading }}</strong><br>
+            {% if section.settings.chat_link != blank %}
+              <a href="{{ section.settings.chat_link }}">Chat with us</a>
+            {% endif %}
+            {% if section.settings.phone != blank %}
+              or call {{ section.settings.phone }}
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% comment %} ============ RIGHT: GIFT OPTIONS + BRAND ============ {% endcomment %}
+    <div class="sofa-details-col">
+      <h2 class="sofa-details-heading">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M12 8c-2 0-3.5-1.5-3.5-3S10 2.5 12 4.5C14 2.5 15.5 3.5 15.5 5S14 8 12 8z"/>
+        </svg>
+        {{ section.settings.gift_heading | default: 'Gift Options' }}
+      </h2>
+
+      {% if section.settings.gift_intro != blank %}
+        <p class="sofa-gift-intro">{{ section.settings.gift_intro }}</p>
+      {% endif %}
+
+      <div class="sofa-gift-columns">
+        <div class="sofa-gift-col">
+          <h3>{{ section.settings.pickup_heading | default: 'Free Pickup' }}</h3>
+          <ul class="sofa-gift-list">
+            {% for block in section.blocks %}
+              {% if block.type == 'gift_option' and block.settings.column == 'pickup' %}
+                <li {{ block.shopify_attributes }}>
+                  {% render 'sofa-gift-icon', icon: block.settings.icon %}
+                  {{ block.settings.label }}
+                  {% if block.settings.price != blank %}<span>({{ block.settings.price }})</span>{% endif %}
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="sofa-gift-col">
+          <h3>{{ section.settings.delivery_heading | default: 'Delivery' }}</h3>
+          <ul class="sofa-gift-list">
+            {% for block in section.blocks %}
+              {% if block.type == 'gift_option' and block.settings.column == 'delivery' %}
+                <li {{ block.shopify_attributes }}>
+                  {% render 'sofa-gift-icon', icon: block.settings.icon %}
+                  {{ block.settings.label }}
+                  {% if block.settings.price != blank %}<span>({{ block.settings.price }})</span>{% endif %}
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      {% if section.settings.gift_help_text != blank %}
+        <p class="sofa-gift-help">{{ section.settings.gift_help_text }}</p>
+      {% endif %}
+
+      {% if section.settings.shop_gifts_link != blank %}
+        <a href="{{ section.settings.shop_gifts_link }}" class="sofa-gift-btn">
+          {{ section.settings.shop_gifts_label | default: 'Shop Gifts' }}
+        </a>
+      {% endif %}
+
+      {% if section.settings.brand_name != blank %}
+        <div class="sofa-brand-block">
+          <h2 class="sofa-details-heading">{{ section.settings.brand_name }}</h2>
+          <p>{{ section.settings.brand_content }}</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Sofa Details & Gifts",
+  "settings": [
+    { "type": "header", "content": "Details & Care" },
+    { "type": "text", "id": "details_heading", "label": "Heading", "default": "Details & Care" },
+    { "type": "textarea", "id": "what_it_is", "label": "What it is" },
+    { "type": "text", "id": "story_heading", "label": "Story label", "default": "Story:" },
+    { "type": "textarea", "id": "story_content", "label": "Story content" },
+    { "type": "textarea", "id": "style_content", "label": "Style" },
+    { "type": "richtext", "id": "notes_content", "label": "Notes (list)" },
+    { "type": "text", "id": "shipping_text", "label": "Shipping line", "default": "Free Shipping & Returns" },
+    { "type": "url", "id": "shipping_link", "label": "Shipping link" },
+    { "type": "text", "id": "questions_heading", "label": "Questions heading", "default": "Have Questions?" },
+    { "type": "url", "id": "chat_link", "label": "Chat link" },
+    { "type": "text", "id": "phone", "label": "Phone number" },
+
+    { "type": "header", "content": "Gift Options" },
+    { "type": "text", "id": "gift_heading", "label": "Heading", "default": "Gift Options" },
+    { "type": "textarea", "id": "gift_intro", "label": "Intro text" },
+    { "type": "text", "id": "pickup_heading", "label": "Pickup column heading", "default": "Free Pickup" },
+    { "type": "text", "id": "delivery_heading", "label": "Delivery column heading", "default": "Delivery" },
+    { "type": "text", "id": "gift_help_text", "label": "Help text" },
+    { "type": "url", "id": "shop_gifts_link", "label": "Shop Gifts link" },
+    { "type": "text", "id": "shop_gifts_label", "label": "Shop Gifts button label", "default": "Shop Gifts" },
+
+    { "type": "header", "content": "Brand" },
+    { "type": "text", "id": "brand_name", "label": "Brand name" },
+    { "type": "textarea", "id": "brand_content", "label": "Brand description" }
+  ],
+  "blocks": [
+    {
+      "type": "detail_item",
+      "name": "Detail bullet",
+      "settings": [
+        { "type": "text", "id": "text", "label": "Text" }
+      ]
+    },
+    {
+      "type": "gift_option",
+      "name": "Gift option row",
+      "settings": [
+        {
+          "type": "select",
+          "id": "column",
+          "label": "Column",
+          "options": [
+            { "value": "pickup", "label": "Free Pickup" },
+            { "value": "delivery", "label": "Delivery" }
+          ],
+          "default": "pickup"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "message", "label": "Printed message" },
+            { "value": "diy", "label": "DIY box" },
+            { "value": "box", "label": "Gift box" },
+            { "value": "wrap", "label": "Signature wrap" },
+            { "value": "mail", "label": "Email" }
+          ],
+          "default": "box"
+        },
+        { "type": "text", "id": "label", "label": "Label" },
+        { "type": "text", "id": "price", "label": "Price note (e.g. free, $3)" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Sofa Details & Gifts",
+      "blocks": [
+        { "type": "gift_option", "settings": { "column": "pickup", "icon": "message", "label": "Printed gift message", "price": "free" } },
+        { "type": "gift_option", "settings": { "column": "pickup", "icon": "diy", "label": "DIY gift box", "price": "free" } },
+        { "type": "gift_option", "settings": { "column": "pickup", "icon": "box", "label": "Gift box", "price": "free" } },
+        { "type": "gift_option", "settings": { "column": "pickup", "icon": "wrap", "label": "Signature gift wrap", "price": "free" } },
+        { "type": "gift_option", "settings": { "column": "delivery", "icon": "mail", "label": "Email gift message", "price": "free" } },
+        { "type": "gift_option", "settings": { "column": "delivery", "icon": "message", "label": "Printed gift message", "price": "free" } },
+        { "type": "gift_option", "settings": { "column": "delivery", "icon": "diy", "label": "DIY gift box", "price": "$3" } },
+        { "type": "gift_option", "settings": { "column": "delivery", "icon": "box", "label": "Gift box", "price": "$5" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
