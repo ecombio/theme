@@ -13,7 +13,10 @@
     return '$' + amount;
   }
 
-  function initSection(section) {
+  // Wires up checkboxes / variant selects / add-to-cart for a section that
+  // already has fully rendered Complementary Products markup in it
+  // (i.e. recommendations.performed was true when it was rendered).
+  function wireInteractions(section) {
     var itemsWrap = section.querySelector('[data-fbt-products]');
     var items = Array.prototype.slice.call(section.querySelectorAll('[data-fbt-item]'));
     var totalEl = section.querySelector('[data-fbt-total]');
@@ -176,9 +179,60 @@
     recalcTotal();
   }
 
+  // No complementary products for this product (or the request failed) —
+  // remove the whole section, including its width/padding wrapper divs.
+  function removeWrapper(section) {
+    var outer = section.closest('.fbt__default-width, .fbt__full-width, .fbt__custom-width');
+    (outer || section).remove();
+  }
+
+  // Re-requests this same section from Shopify's recommendations endpoint,
+  // this time with product_id/section_id/intent set so `recommendations`
+  // is populated server-side, then swaps the skeleton for the response.
+  function loadRecommendations(section) {
+    var productId = section.getAttribute('data-product-id');
+    var sectionId = section.getAttribute('data-section-id');
+    var limit = section.getAttribute('data-limit') || 3;
+
+    if (!productId || !sectionId) return;
+
+    var url =
+      '/recommendations/products?product_id=' + encodeURIComponent(productId) +
+      '&section_id=' + encodeURIComponent(sectionId) +
+      '&limit=' + encodeURIComponent(limit) +
+      '&intent=complementary';
+
+    fetch(url)
+      .then(function (response) {
+        if (!response.ok) throw new Error('Recommendations request failed');
+        return response.text();
+      })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var newSection = doc.querySelector('[data-fbt-section]');
+
+        if (!newSection || !newSection.querySelector('[data-fbt-products]')) {
+          removeWrapper(section);
+          return;
+        }
+
+        section.replaceWith(newSection);
+        wireInteractions(newSection);
+      })
+      .catch(function () {
+        removeWrapper(section);
+      });
+  }
+
   function init() {
     var sections = document.querySelectorAll('[data-fbt-section]');
-    sections.forEach(initSection);
+    sections.forEach(function (section) {
+      if (section.querySelector('[data-fbt-skeleton]')) {
+        loadRecommendations(section);
+      } else if (section.querySelector('[data-fbt-products]')) {
+        wireInteractions(section);
+      }
+    });
   }
 
   if (document.readyState === 'loading') {
@@ -189,6 +243,6 @@
 
   document.addEventListener('shopify:section:load', function (event) {
     var section = event.target.querySelector('[data-fbt-section]');
-    if (section) initSection(section);
+    if (section) loadRecommendations(section);
   });
 })();
