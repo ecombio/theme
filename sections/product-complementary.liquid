@@ -26,12 +26,42 @@
         </li>
       {%- endfor -%}
     </ul>
+  {%- elsif request.design_mode and section.settings.preview_product != blank -%}
+    {%- assign preview_product = section.settings.preview_product -%}
+    <h2 class="product-recommendations__heading">
+      {{ 'product_recommendations.complementary_heading' | t }}
+    </h2>
+    <ul class="product-recommendations__list">
+      <li class="product-recommendations__item">
+        <a href="{{ preview_product.url }}" class="product-recommendations__link">
+          {%- if preview_product.featured_image -%}
+            <img
+              class="product-recommendations__img"
+              src="{{ preview_product.featured_image | image_url: width: 300 }}"
+              alt="{{ preview_product.featured_image.alt | escape }}"
+              loading="lazy"
+              width="{{ preview_product.featured_image.width }}"
+              height="{{ preview_product.featured_image.height }}"
+            >
+          {%- endif -%}
+          <p class="product-recommendations__title">{{ preview_product.title }}</p>
+          <p class="product-recommendations__price">{{ preview_product.price | money }}</p>
+        </a>
+      </li>
+    </ul>
+    <p class="product-recommendations__preview-note">Editor preview only — showing manually selected product because live complementary data isn't available in this draft theme.</p>
   {%- endif -%}
 </div>
 
 {% stylesheet %}
 .product-recommendations--complementary {
   margin-top: 2rem;
+}
+.product-recommendations__preview-note {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  font-style: italic;
+  opacity: 0.65;
 }
 {% endstylesheet %}
 
@@ -91,6 +121,12 @@
       "max": 10,
       "step": 1,
       "default": 3
+    },
+    {
+      "type": "product",
+      "id": "preview_product",
+      "label": "t:product_recommendations.settings.preview_product_label",
+      "info": "t:product_recommendations.settings.preview_product_info"
     }
   ]
 }
