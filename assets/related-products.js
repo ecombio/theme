@@ -23,16 +23,22 @@
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const fresh = doc.querySelector('related-products');
 
+        const hadContent = !!el.innerHTML.trim();
+
         if (fresh && fresh.innerHTML.trim()) {
+          // Only swap in the fetched result if it actually has products —
+          // never overwrite existing (e.g. fallback) content with an
+          // empty or malformed response.
           el.innerHTML = fresh.innerHTML;
           document.dispatchEvent(new CustomEvent('productcard:injected', { bubbles: true }));
-        } else if (!el.innerHTML.trim()) {
-          // Nothing server-rendered (no fallback collection configured)
+        } else if (!hadContent) {
+          // Nothing was server-rendered (no fallback collection configured)
           // and the recommendations endpoint returned nothing either.
           el.closest('.shopify-section')?.setAttribute('hidden', '');
         }
-        // If the fetch comes back empty but a fallback was already
-        // rendered server-side, leave that fallback showing as-is.
+        // If the fetch comes back empty but content was already showing
+        // (e.g. a fallback collection), that content is left untouched —
+        // this branch intentionally does nothing.
       })
       .catch(() => {
         if (!el.innerHTML.trim()) {

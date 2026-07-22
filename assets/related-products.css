@@ -2,9 +2,15 @@
   padding: 2.5rem 0;
 }
 
-.related-products:empty {
-  display: none;
-}
+/* Note: deliberately no `.related-products:empty { display: none }` here.
+   related-products.js lazy-loads via IntersectionObserver, which never
+   reports an element as intersecting once it has zero layout height —
+   so a CSS rule that hides empty elements would mean a section with no
+   fallback collection configured never gets observed, never fetches,
+   and stays empty forever. An empty <related-products> already renders
+   with no visible height on its own; no CSS is needed for that case,
+   and .shopify-section[hidden] (set by the JS) covers the "confirmed
+   nothing to show" case once the fetch has actually run. */
 
 .related-products__heading {
   font-size: 1.25rem;
