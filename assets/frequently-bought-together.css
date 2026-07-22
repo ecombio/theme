@@ -11,7 +11,6 @@
 
 .fbt__default-width {
   max-width: 1200px;
-  margin-inline: auto;
 }
 
 .fbt__full-width {
@@ -21,6 +20,12 @@
 
 .fbt__custom-width {
   max-width: var(--custom-width, 80rem);
+}
+
+/* Opt-in: add this alongside a width class to center it instead of
+   the default left-aligned behavior (see the "Content alignment"
+   section setting). */
+.fbt--centered {
   margin-inline: auto;
 }
 
@@ -73,7 +78,6 @@
 
 .fbt-plus {
   align-self: center;
-  margin-top: 60px;
   font-size: 1.4rem;
   font-weight: 400;
   color: var(--fbt-text-secondary);
@@ -84,8 +88,15 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  flex: 0 0 auto;
-  width: 130px;
+  flex: 1 1 100px;
+  min-width: 90px;
+  max-width: 150px;
+
+  /* Mirrors .product-card: let this item react to its own rendered
+     width (container query below) instead of the viewport, so it
+     scales the same way product cards do inside a grid/flex row. */
+  container-type: inline-size;
+  container-name: fbt-item;
 }
 
 .fbt-item[data-fbt-disabled='true'] {
@@ -97,8 +108,8 @@
 .fbt-item-image {
   position: relative;
   display: block;
-  width: 130px;
-  height: 130px;
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: var(--fbt-radius);
   overflow: hidden;
   background: #F9FAFB;
@@ -240,6 +251,27 @@ a.fbt-item-title--link:hover {
   vertical-align: top;
   position: relative;
   top: 0.15em;
+}
+
+/* When an item's own rendered width drops below ~100px (e.g. four or
+   five items wrapped onto a narrow row), tighten type and controls
+   instead of just letting them get proportionally squeezed — same
+   idea as .product-card's @container rule for its reviews widget. */
+@container fbt-item (max-width: 100px) {
+  .fbt-item-title {
+    font-size: 0.72rem;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .fbt-variant-select {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .fbt-item-price__whole {
+    font-size: 0.92rem;
+  }
 }
 
 /* ==========================================================================
