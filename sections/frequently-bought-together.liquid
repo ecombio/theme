@@ -5,10 +5,15 @@
   Data source: product.metafields.custom.frequently_bought_together
   (List of Product references metafield).
 
-  Layout independence: this section defines its own local
-  --section-padding / --custom-width variables (see "Section layout"
-  settings below), following the same pattern documented in
-  sections/example-width-section.liquid — it never reads from the
+  Layout independence: this section follows the "Section layout"
+  pattern documented in sections/example-width-section.liquid —
+  an outer div carries the width class (fbt__default-width /
+  fbt__full-width / fbt__custom-width, scoped to this section's own
+  BEM namespace since the theme has no shared global width utility
+  classes) plus the --section-padding / --custom-width variables set
+  inline from this section's own settings. An inner .section div
+  handles vertical spacing via the shared --section-spacing variable,
+  same as every other section. Neither wrapper ever reads from the
   theme's global --page-margin / --page-width, so bumping the global
   Body side padding setting will not affect this section.
 
@@ -27,8 +32,12 @@
 
 {%- if fbt_list != blank -%}
   {%- liquid
-    assign width_type = section.settings.section_width | default: 'default-width'
-    assign width_class = 'fbt__' | append: width_type
+    assign width_type = section.settings.section_width
+    if width_type == blank
+      assign width_class = 'fbt__default-width'
+    else
+      assign width_class = 'fbt__' | append: width_type
+    endif
   -%}
 
   <div
@@ -40,6 +49,7 @@
       {%- endif %}
     "
   >
+    <div class="section" style="padding-block: var(--section-spacing, 48px);">
     <section
       class="fbt-section color-{{ section.settings.color_scheme }}"
       id="fbt-section-{{ section.id }}"
@@ -208,6 +218,7 @@
         </div>
       </div>
     </section>
+    </div>
   </div>
 
   <script src="{{ 'frequently-bought-together.js' | asset_url }}" defer="defer"></script>
@@ -259,11 +270,11 @@
       "id": "section_width",
       "label": "Section width",
       "options": [
-        { "value": "default-width", "label": "Default" },
+        { "value": "", "label": "Default" },
         { "value": "full-width", "label": "Full width" },
         { "value": "custom-width", "label": "Custom width" }
       ],
-      "default": "default-width"
+      "default": ""
     },
     {
       "type": "range",
