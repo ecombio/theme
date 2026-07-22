@@ -1,3 +1,23 @@
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'product-related__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'product-related__full-width'
+  else
+    assign width_class = 'product-related__custom-width'
+  endif
+-%}
+
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
 <div
   class="product-recommendations product-recommendations--related"
   data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ section.settings.limit }}&intent=related"
@@ -28,8 +48,23 @@
     </ul>
   {%- endif -%}
 </div>
+</div>
 
 {% stylesheet %}
+.product-related__default-width {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: var(--section-padding);
+}
+.product-related__full-width {
+  width: 100%;
+  padding-inline: var(--section-padding);
+}
+.product-related__custom-width {
+  max-width: var(--custom-width);
+  margin-inline: auto;
+  padding-inline: var(--section-padding);
+}
 .product-recommendations {
   margin-top: 3rem;
 }
@@ -123,6 +158,42 @@
       "max": 10,
       "step": 1,
       "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
     }
   ]
 }
