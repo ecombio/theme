@@ -41,12 +41,19 @@
     function recalcTotal() {
       var total = 0;
       var count = 0;
+      var optionalSelected = 0;
 
       items.forEach(function (item) {
         var state = getItemState(item);
+        // Only complementary items carry a data-fbt-checkbox toggle —
+        // the main item's checkbox is locked on and doesn't count as
+        // an "optional" selection.
+        var isOptional = !!item.querySelector('[data-fbt-checkbox]');
+
         if (state.checked && state.variantId) {
           total += state.price;
           count += 1;
+          if (isOptional) optionalSelected += 1;
         }
       });
 
@@ -56,6 +63,13 @@
 
       updateButtonLabel(count);
       addButton.disabled = count === 0;
+
+      // Every optional item has been unchecked — hide the section.
+      // This is a one-way action by design: the customer needs to
+      // reload the page to bring the module back.
+      if (optionalSelected === 0) {
+        section.hidden = true;
+      }
     }
 
     function updateItemPriceDisplay(item) {
