@@ -227,6 +227,13 @@
       '&limit=' + encodeURIComponent(limit || 2) +
       '&intent=' + encodeURIComponent(intent || 'complementary');
 
+    // Inside the Theme Editor, the customizer preview needs its own
+    // query params (e.g. _fd, pb) carried along or this fetch resolves
+    // against the published theme instead of the draft being edited.
+    if (window.Shopify && window.Shopify.designMode) {
+      url += window.location.search.replace(/^\?/, '&');
+    }
+
     fetch(url)
       .then(function (response) {
         if (!response.ok) throw new Error('Recommendations request failed (' + response.status + ')');
