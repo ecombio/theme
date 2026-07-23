@@ -23,6 +23,14 @@
   ║  Assumes product-card.css / product-card.js are already   ║
   ║  loaded globally in theme.liquid (same assumption made     ║
   ║  by product-carousel.liquid) — not re-loaded here.         ║
+  ║                                                            ║
+  ║  Section layout: width_class + --section-padding follow    ║
+  ║  the same pattern as sections/example-width-section.liquid ║
+  ║  (also adopted by product-carousel.liquid) — side padding  ║
+  ║  is section-local, does not read the global --page-margin. ║
+  ║  Vertical padding (--pr-pad-top/bottom) stays separate,    ║
+  ║  driven by this section's own existing padding_top/bottom  ║
+  ║  settings.                                                  ║
   ╚══════════════════════════════════════════════════════════╝
 {% endcomment %}
 
@@ -40,6 +48,13 @@
   assign arrow_position = section.settings.arrow_position | default: 'bottom'
   assign autoplay      = section.settings.autoplay
   assign autoplay_ms   = section.settings.autoplay_interval | default: 4 | times: 1000
+
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = width_type
+  endif
 
   assign show_recs = false
   if recommendations.performed and recommendations.products_count > 0
@@ -61,7 +76,7 @@
 {{ 'product-recommendations.css' | asset_url | stylesheet_tag }}
 
 <section
-  class="pr-carousel cs-{{ cs }}{% if show_side_arrows %} pr-carousel--side-arrows{% endif %}"
+  class="pr-carousel cs-{{ cs }}{% if show_side_arrows %} pr-carousel--side-arrows{% endif %} {{ width_class }}"
   id="pr-section-{{ section.id }}"
   data-section-id="{{ section.id }}"
   data-recommendations-url="{{ routes.product_recommendations_url }}"
@@ -79,6 +94,10 @@
     --pr-gap: {{ gap }}px;
     --pr-pad-top: {{ pad_top }}px;
     --pr-pad-bottom: {{ pad_bottom }}px;
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
   "
   aria-label="{{ heading | escape }}"
   {%- unless show_recs %} hidden{% endunless -%}
@@ -225,6 +244,42 @@
       "max": 40,
       "step": 2,
       "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 24
     },
     {
       "type": "header",
