@@ -1,0 +1,37 @@
+{% if section.settings.enable_reviews %}
+  <div class="product-reviews-section">
+    {% case section.settings.review_app %}
+      {% when 'judge_me' %}
+        {% include 'reviews-judge-me' %}
+      {% when 'stamped' %}
+        {% include 'reviews-stamped' %}
+      {% when 'shopify' %}
+        <div id="shopify-product-reviews" data-id="{{ product.id }}"></div>
+    {% endcase %}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Product Reviews",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_reviews",
+      "label": "Enable Reviews",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "review_app",
+      "label": "Review App",
+      "options": [
+        { "value": "judge_me", "label": "Judge.me" },
+        { "value": "stamped", "label": "Stamped.io" },
+        { "value": "shopify", "label": "Shopify Product Reviews" }
+      ],
+      "default": "judge_me"
+    }
+  ]
+}
+{% endschema %}
