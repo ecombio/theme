@@ -1,13 +1,30 @@
 {% comment %}
   ╔══════════════════════════════════════════════════════════╗
   ║  sections/product-recommendations.liquid                 ║
-  ║  Mode: Shopify AI — /recommendations/products.json       ║
-  ║  Cards: snippets/product-card.liquid                     ║
-  ║         via sections/product-card-single.liquid          ║
+  ║  Mode: Shopify native recommendations                    ║
+  ║        (routes.product_recommendations_url)              ║
+  ║  Cards: snippets/product-card.liquid — rendered directly ║
+  ║         in THIS section, same pattern as                 ║
+  ║         sections/product-carousel.liquid.                ║
+  ║                                                            ║
+  ║  How it works:                                           ║
+  ║  On a normal page load, `recommendations` is blank, so   ║
+  ║  the section renders `hidden` with an empty grid. The    ║
+  ║  script below re-fetches THIS section through             ║
+  ║  routes.product_recommendations_url?section_id=...&      ║
+  ║  product_id=...&limit=... — Shopify resolves              ║
+  ║  `recommendations.products` server-side and returns the  ║
+  ║  fully rendered section HTML, cards and all. We swap the ║
+  ║  grid's innerHTML with that response and reveal the      ║
+  ║  section. Single request, no per-product fetch, no       ║
+  ║  separate product-card-single section required — that    ║
+  ║  file can be deleted if nothing else references it.      ║
+  ║                                                            ║
+  ║  product-card.css / product-card.js are assumed global   ║
+  ║  (loaded once in theme.liquid), same assumption already  ║
+  ║  made by product-carousel.liquid — not re-loaded here.   ║
   ╚══════════════════════════════════════════════════════════╝
 {% endcomment %}
-
-{% render 'pr-card-styles' %}
 
 {%- liquid
   assign cols_d     = section.settings.columns_desktop
@@ -17,11 +34,20 @@
   assign pad_bottom = section.settings.padding_bottom
   assign cs         = section.settings.color_scheme
   assign limit      = section.settings.products_to_show
+
+  assign show_recs = false
+  if recommendations.performed and recommendations.products_count > 0
+    assign show_recs = true
+  endif
 -%}
 
 <section
   class="pr-section cs-{{ cs }}"
   id="pr-recs-section-{{ section.id }}"
+  data-recommendations-url="{{ routes.product_recommendations_url }}"
+  data-product-id="{{ product.id }}"
+  data-section-id="{{ section.id }}"
+  data-limit="{{ limit }}"
   style="
     --pr-cols: {{ cols_d }};
     --pr-cols-mob: {{ cols_m }};
@@ -30,59 +56,64 @@
     --pr-pad-bottom: {{ pad_bottom }}px;
   "
   aria-label="{{ section.settings.heading | escape }}"
-  hidden
+  {%- unless show_recs %} hidden{% endunless %}
 >
   <div class="pr-inner">
     <div class="pr-header">
       <h2 class="pr-heading">{{ section.settings.heading }}</h2>
     </div>
-    <div class="pr-grid" id="pr-recs-grid-{{ section.id }}"></div>
+    <ul class="pr-grid" id="pr-recs-grid-{{ section.id }}" role="list">
+      {%- if show_recs -%}
+        {%- for rec_product in recommendations.products limit: limit -%}
+          <li class="pr-grid__item">
+            {%- render 'product-card', product: rec_product -%}
+          </li>
+        {%- endfor -%}
+      {%- endif -%}
+    </ul>
   </div>
 </section>
 
 <script>
 (function () {
-  const section   = document.getElementById('pr-recs-section-{{ section.id }}');
-  const grid      = document.getElementById('pr-recs-grid-{{ section.id }}');
-  const productId = {{ product.id | json }};
-  const limit     = {{ limit | json }};
+  var section = document.getElementById('pr-recs-section-{{ section.id }}');
+  if (!section) return;
 
-  if (!grid || !productId) return;
+  // Already server-rendered with real recommendations (this section
+  // was itself fetched via section_id) — nothing left to do.
+  var alreadyPerformed = {{ recommendations.performed | json }};
+  if (alreadyPerformed) return;
 
-  // 1. Fetch Shopify AI recommendations to get product handles
-  fetch(`/recommendations/products.json?product_id=${productId}&limit=${limit}&intent=related`)
-    .then(r => r.json())
-    .then(({ products }) => {
-      if (!products || products.length === 0) return;
+  var baseUrl   = section.getAttribute('data-recommendations-url');
+  var productId = section.getAttribute('data-product-id');
+  var sectionId = section.getAttribute('data-section-id');
+  var limit     = section.getAttribute('data-limit');
 
-      // 2. For each handle, fetch a server-rendered product-card via sections API
-      return Promise.all(
-        products.slice(0, limit).map(p =>
-          fetch(`/products/${p.handle}?sections=product-card-single`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-          })
-            .then(r => r.ok ? r.json() : null)
-            .catch(() => null)
-        )
-      );
-    })
-    .then(results => {
-      if (!results) return;
+  if (!baseUrl || !productId) return;
 
-      const cards = results
-        .filter(Boolean)
-        .map(data => data['product-card-single'])
-        .filter(Boolean);
+  var fetchUrl = baseUrl
+    + '?section_id=' + encodeURIComponent(sectionId)
+    + '&product_id=' + encodeURIComponent(productId)
+    + '&limit=' + encodeURIComponent(limit)
+    + '&intent=related';
 
-      if (cards.length === 0) return;
+  fetch(fetchUrl)
+    .then(function (res) { return res.ok ? res.text() : Promise.reject(); })
+    .then(function (html) {
+      var doc     = new DOMParser().parseFromString(html, 'text/html');
+      var newGrid = doc.getElementById('pr-recs-grid-{{ section.id }}');
+      var grid    = document.getElementById('pr-recs-grid-{{ section.id }}');
 
-      grid.innerHTML = cards.join('');
+      if (!newGrid || !grid || newGrid.children.length === 0) return;
+
+      grid.innerHTML = newGrid.innerHTML;
       section.removeAttribute('hidden');
 
       // Re-sync wishlist + compare state for injected cards
+      // (handled globally by product-card.js's productcard:injected listener)
       document.dispatchEvent(new CustomEvent('productcard:injected', { bubbles: true }));
     })
-    .catch(() => {
+    .catch(function () {
       // Silently fail — section stays hidden
     });
 })();
