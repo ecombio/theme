@@ -45,12 +45,31 @@
   }
 
   function swapInRecommendations(section, html) {
-    var sectionId = section.getAttribute('data-section-id');
-    var doc       = new DOMParser().parseFromString(html, 'text/html');
-    var newTrack  = doc.getElementById('pr-track-' + sectionId);
-    var track     = document.getElementById('pr-track-' + sectionId);
+    var sectionId  = section.getAttribute('data-section-id');
+    var doc        = new DOMParser().parseFromString(html, 'text/html');
+    var newSection = doc.getElementById('pr-section-' + sectionId);
+    var newTrack   = doc.getElementById('pr-track-' + sectionId);
+    var track      = document.getElementById('pr-track-' + sectionId);
 
-    if (!newTrack || !track || newTrack.children.length === 0) return false;
+    // FIX: previously this only checked `newTrack.children.length === 0`,
+    // but the Liquid's placeholder branch always renders `limit` shimmer
+    // <li> cards into the track even when recommendations.products_count
+    // is 0 — so that check never actually caught the "zero recommendations"
+    // case. It would swap in shimmer placeholders and reveal the section
+    // permanently instead of leaving it hidden. Checking the fetched
+    // section's own data-performed attribute (set server-side from
+    // recommendations.performed / products_count, same as the initial
+    // render) correctly distinguishes "real cards came back" from
+    // "still just placeholders."
+    if (
+      !newSection ||
+      newSection.getAttribute('data-performed') !== 'true' ||
+      !newTrack ||
+      !track ||
+      newTrack.children.length === 0
+    ) {
+      return false;
+    }
 
     track.innerHTML = newTrack.innerHTML;
     section.removeAttribute('hidden');
