@@ -41,19 +41,12 @@
     function recalcTotal() {
       var total = 0;
       var count = 0;
-      var optionalSelected = 0;
 
       items.forEach(function (item) {
         var state = getItemState(item);
-        // Only complementary items carry a data-fbt-checkbox toggle —
-        // the main item's checkbox is locked on and doesn't count as
-        // an "optional" selection.
-        var isOptional = !!item.querySelector('[data-fbt-checkbox]');
-
         if (state.checked && state.variantId) {
           total += state.price;
           count += 1;
-          if (isOptional) optionalSelected += 1;
         }
       });
 
@@ -63,13 +56,6 @@
 
       updateButtonLabel(count);
       addButton.disabled = count === 0;
-
-      // Every optional item has been unchecked — hide the section.
-      // This is a one-way action by design: the customer needs to
-      // reload the page to bring the module back.
-      if (optionalSelected === 0) {
-        section.hidden = true;
-      }
     }
 
     function updateItemPriceDisplay(item) {
@@ -228,81 +214,53 @@
       return;
     }
 
-    if (!recommendationsUrl || !sectionId || !productId || typeof window.fetch !== 'function') {
+    if (!recommendationsUrl || !sectionId || !productId) {
       section.hidden = true;
       return;
     }
 
-    // Safety net: whatever happens next — a thrown error before the
-    // request even starts, or a request that just never resolves
-    // (network stall, blocked by an extension, slow proxy, etc.) —
-    // the section must not be left stuck showing shimmer forever.
-    // settled + the timeout below guarantee it always ends up either
-    // populated or hidden.
-    var settled = false;
-    var FBT_FETCH_TIMEOUT_MS = 8000;
+    // Reveal the shimmer state while the fetch is in flight.
+    section.hidden = false;
 
-    function hideOnce() {
-      if (settled) return;
-      settled = true;
-      section.hidden = true;
+    var url = recommendationsUrl + '?section_id=' + encodeURIComponent(sectionId) +
+      '&product_id=' + encodeURIComponent(productId) +
+      '&limit=' + encodeURIComponent(limit || 2) +
+      '&intent=' + encodeURIComponent(intent || 'complementary');
+
+    // Inside the Theme Editor, the customizer preview needs its own
+    // query params (e.g. _fd, pb) carried along or this fetch resolves
+    // against the published theme instead of the draft being edited.
+    if (window.Shopify && window.Shopify.designMode) {
+      url += window.location.search.replace(/^\?/, '&');
     }
 
-    var timeoutId = window.setTimeout(hideOnce, FBT_FETCH_TIMEOUT_MS);
+    fetch(url)
+      .then(function (response) {
+        if (!response.ok) throw new Error('Recommendations request failed (' + response.status + ')');
+        return response.text();
+      })
+      .then(function (html) {
+        var doc = document.createElement('div');
+        doc.innerHTML = html;
 
-    try {
-      // Reveal the shimmer state while the fetch is in flight.
-      section.hidden = false;
+        var newSection = doc.querySelector('[data-fbt-section]');
+        var newProducts = doc.querySelector('[data-fbt-products]');
 
-      var url = recommendationsUrl + '?section_id=' + encodeURIComponent(sectionId) +
-        '&product_id=' + encodeURIComponent(productId) +
-        '&limit=' + encodeURIComponent(limit || 2) +
-        '&intent=' + encodeURIComponent(intent || 'complementary');
+        if (!newSection || newSection.getAttribute('data-performed') !== 'true' || !newProducts) {
+          // No complementary recommendations available for this
+          // product — stay hidden, same as the SSR fallback.
+          section.hidden = true;
+          return;
+        }
 
-      // Inside the Theme Editor, the customizer preview needs its own
-      // query params (e.g. _fd, pb) carried along or this fetch resolves
-      // against the published theme instead of the draft being edited.
-      if (window.Shopify && window.Shopify.designMode) {
-        url += window.location.search.replace(/^\?/, '&');
-      }
-
-      fetch(url)
-        .then(function (response) {
-          if (!response.ok) throw new Error('Recommendations request failed (' + response.status + ')');
-          return response.text();
-        })
-        .then(function (html) {
-          if (settled) return; // the timeout already fired — don't fight it
-          window.clearTimeout(timeoutId);
-          settled = true;
-
-          var doc = document.createElement('div');
-          doc.innerHTML = html;
-
-          var newSection = doc.querySelector('[data-fbt-section]');
-          var newProducts = doc.querySelector('[data-fbt-products]');
-
-          if (!newSection || newSection.getAttribute('data-performed') !== 'true' || !newProducts) {
-            // No complementary recommendations available for this
-            // product — stay hidden, same as the SSR fallback.
-            section.hidden = true;
-            return;
-          }
-
-          itemsWrap.innerHTML = newProducts.innerHTML;
-          section.hidden = false;
-          finalizeWithItems();
-        })
-        .catch(function (error) {
-          console.error('Frequently bought together:', error);
-          window.clearTimeout(timeoutId);
-          hideOnce();
-        });
-    } catch (error) {
-      console.error('Frequently bought together:', error);
-      window.clearTimeout(timeoutId);
-      hideOnce();
-    }
+        itemsWrap.innerHTML = newProducts.innerHTML;
+        section.hidden = false;
+        finalizeWithItems();
+      })
+      .catch(function (error) {
+        console.error('Frequently bought together:', error);
+        section.hidden = true;
+      });
   }
 
   function init() {
