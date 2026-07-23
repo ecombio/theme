@@ -1,194 +1,222 @@
-(function () {
-  'use strict';
+/**
+ * frequently-bought-together.js
+ *
+ * Drives sections/frequently-bought-together.liquid.
+ *
+ * Core logic:
+ * 1. On load, reveal the section (shimmer placeholders become visible)
+ *    and re-request the section via the Product Recommendations
+ *    endpoint with intent=complementary. Shopify resolves the
+ *    `recommendations` object server-side and returns the section's
+ *    rendered HTML — pricing, "+" separators, and sold-out states are
+ *    all still produced by Liquid, not duplicated here.
+ * 2. Swap the returned #fbt-products-{id} markup into the DOM. If the
+ *    fetch comes back with no complementary recommendations (no
+ *    Search & Discovery coverage for this product), re-hide the
+ *    section — same fallback behavior as product-complementary.liquid.
+ * 3. Wire up checkboxes, variant selects, running total, and the
+ *    "Add all to cart" button on the newly rendered nodes.
+ */
+(() => {
+  class FrequentlyBoughtTogether {
+    constructor(section) {
+      this.section = section;
+      this.productsWrap = section.querySelector('[data-fbt-products]');
+      this.totalEl = section.querySelector('[data-fbt-total]');
+      this.addButton = section.querySelector('[data-fbt-add-button]');
+      this.buttonText = section.querySelector('[data-fbt-button-text]');
+      this.messageEl = section.querySelector('[data-fbt-message]');
+      this.moneyFormat = section.dataset.moneyFormat || '${{amount}}';
 
-  function formatMoney(cents, format) {
-    if (window.Shopify && typeof window.Shopify.formatMoney === 'function') {
-      try {
-        return window.Shopify.formatMoney(cents, format);
-      } catch (e) {
-        /* fall through to basic formatter below */
-      }
-    }
-    var amount = (cents / 100).toFixed(2);
-    return '$' + amount;
-  }
-
-  function initSection(section) {
-    var itemsWrap = section.querySelector('[data-fbt-products]');
-    var items = Array.prototype.slice.call(section.querySelectorAll('[data-fbt-item]'));
-    var totalEl = section.querySelector('[data-fbt-total]');
-    var addButton = section.querySelector('[data-fbt-add-button]');
-    var buttonText = section.querySelector('[data-fbt-button-text]');
-    var messageEl = section.querySelector('[data-fbt-message]');
-    var moneyFormat = (window.theme && window.theme.moneyFormat) || null;
-    var labelTemplate = (addButton && addButton.getAttribute('data-label-template')) || 'Add all [count] to Cart';
-
-    if (!itemsWrap || !addButton) return;
-
-    function getItemState(item) {
-      var checkbox = item.querySelector('input[type="checkbox"]');
-      var select = item.querySelector('[data-fbt-variant-select]');
-      var checked = checkbox ? checkbox.checked : true;
-      var variantId = select ? select.value : item.getAttribute('data-variant-id');
-      var price = select
-        ? parseInt(select.options[select.selectedIndex].getAttribute('data-price'), 10)
-        : parseInt(item.getAttribute('data-price'), 10);
-
-      return {
-        checked: checked,
-        variantId: variantId,
-        price: isNaN(price) ? 0 : price
-      };
+      this.init();
     }
 
-    function updateButtonLabel(count) {
-      if (buttonText) {
-        buttonText.textContent = labelTemplate.replace('[count]', count);
-      }
+    init() {
+      // Reveal the shimmer state immediately, then fetch the real
+      // complementary recommendations to replace it.
+      this.section.hidden = false;
+      this.fetchRecommendations();
     }
 
-    function recalcTotal() {
-      var total = 0;
-      var count = 0;
+    fetchRecommendations() {
+      const { recommendationsUrl, sectionId, productId, limit, intent } = this.section.dataset;
+      const url = `${recommendationsUrl}?section_id=${sectionId}&product_id=${productId}&limit=${limit}&intent=${intent}`;
 
-      items.forEach(function (item) {
-        var state = getItemState(item);
-        if (state.checked && state.variantId) {
-          total += state.price;
-          count += 1;
-        }
-      });
-
-      if (totalEl) {
-        totalEl.textContent = formatMoney(total, moneyFormat);
-      }
-
-      updateButtonLabel(count);
-      addButton.disabled = count === 0;
-    }
-
-    function updateItemPriceDisplay(item) {
-      var priceWrap = item.querySelector('[data-fbt-price]');
-      var state = getItemState(item);
-      if (!priceWrap) return;
-
-      var moneyStr = formatMoney(state.price, moneyFormat);
-      var wholeLen = moneyStr.length - 3;
-      var symbol = moneyStr.slice(0, 1);
-      var whole = moneyStr.slice(1, wholeLen);
-      var decimal = moneyStr.slice(wholeLen);
-
-      priceWrap.innerHTML =
-        '<span class="fbt-item-price__symbol">' + symbol + '</span>' +
-        '<span class="fbt-item-price__whole">' + whole + '</span>' +
-        '<span class="fbt-item-price__decimal">' + decimal + '</span>';
-    }
-
-    items.forEach(function (item) {
-      var checkbox = item.querySelector('input[type="checkbox"]');
-      if (checkbox && !checkbox.disabled) {
-        checkbox.addEventListener('change', function () {
-          item.setAttribute('data-fbt-disabled', checkbox.checked ? 'false' : 'true');
-          recalcTotal();
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) throw new Error(`Recommendations request failed (${response.status})`);
+          return response.text();
+        })
+        .then((html) => this.render(html))
+        .catch((error) => {
+          console.error('Frequently bought together:', error);
+          // No usable data — fall back to hiding the module rather than
+          // showing a broken/empty state.
+          this.section.hidden = true;
         });
-      }
-
-      var select = item.querySelector('[data-fbt-variant-select]');
-      if (select) {
-        select.addEventListener('change', function () {
-          item.setAttribute('data-variant-id', select.value);
-          item.setAttribute('data-price', select.options[select.selectedIndex].getAttribute('data-price'));
-          updateItemPriceDisplay(item);
-          recalcTotal();
-        });
-      }
-    });
-
-    function setMessage(text, state) {
-      if (!messageEl) return;
-      messageEl.textContent = text || '';
-      if (state) {
-        messageEl.setAttribute('data-state', state);
-      } else {
-        messageEl.removeAttribute('data-state');
-      }
     }
 
-    function setLoading(isLoading) {
-      addButton.disabled = isLoading;
-      addButton.setAttribute('data-loading', isLoading ? 'true' : 'false');
+    render(html) {
+      const doc = document.createElement('div');
+      doc.innerHTML = html;
 
-      if (isLoading && buttonText) {
-        addButton.setAttribute('data-restore-label', buttonText.textContent);
-        buttonText.textContent = 'Adding…';
-      } else if (buttonText && addButton.getAttribute('data-restore-label')) {
-        buttonText.textContent = addButton.getAttribute('data-restore-label');
-      }
-    }
+      const newSection = doc.querySelector('[data-fbt-section]');
+      const newProducts = doc.querySelector('[data-fbt-products]');
 
-    addButton.addEventListener('click', function () {
-      var toAdd = [];
-
-      items.forEach(function (item) {
-        var state = getItemState(item);
-        if (state.checked && state.variantId) {
-          toAdd.push({ id: parseInt(state.variantId, 10), quantity: 1 });
-        }
-      });
-
-      if (!toAdd.length) {
-        setMessage('Select at least one product to add.', 'error');
+      if (!newSection || newSection.dataset.performed !== 'true' || !newProducts) {
+        // Search & Discovery has no complementary pairing for this
+        // product (yet) — stay hidden, same as the SSR fallback.
+        this.section.hidden = true;
         return;
       }
 
-      setLoading(true);
-      setMessage('');
+      this.productsWrap.innerHTML = newProducts.innerHTML;
+      this.section.hidden = false;
 
-      fetch('/cart/add.js', {
+      this.bindItemEvents();
+      this.recalculate();
+    }
+
+    bindItemEvents() {
+      this.productsWrap.querySelectorAll('[data-fbt-checkbox]').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => this.recalculate());
+      });
+
+      this.productsWrap.querySelectorAll('[data-fbt-variant-select]').forEach((select) => {
+        select.addEventListener('change', (event) => this.handleVariantChange(event));
+      });
+
+      if (this.addButton) {
+        this.addButton.addEventListener('click', () => this.addAllToCart());
+      }
+    }
+
+    handleVariantChange(event) {
+      const select = event.currentTarget;
+      const item = select.closest('[data-fbt-item]');
+      const option = select.options[select.selectedIndex];
+      if (!item || !option) return;
+
+      const price = option.dataset.price || 0;
+      const variantId = option.value;
+
+      item.dataset.price = price;
+      item.dataset.variantId = variantId;
+
+      const priceEl = item.querySelector('[data-fbt-price]');
+      if (priceEl) {
+        priceEl.innerHTML = this.formatMoneySpans(price);
+      }
+
+      this.recalculate();
+    }
+
+    getIncludedItems() {
+      return Array.from(this.productsWrap.querySelectorAll('[data-fbt-item]')).filter((item) => {
+        if (item.dataset.fbtDisabled === 'true') return false;
+        const checkbox = item.querySelector('[data-fbt-checkbox]');
+        // The main item has no toggle checkbox — it's always included.
+        return checkbox ? checkbox.checked : true;
+      });
+    }
+
+    recalculate() {
+      const items = this.getIncludedItems();
+      const total = items.reduce((sum, item) => sum + Number(item.dataset.price || 0), 0);
+
+      if (this.totalEl) {
+        this.totalEl.textContent = this.formatMoney(total);
+      }
+
+      if (this.buttonText) {
+        const template = this.addButton?.dataset.labelTemplate || 'Add all [count] to Cart';
+        this.buttonText.textContent = template.replace('[count]', items.length);
+      }
+
+      if (this.addButton) {
+        this.addButton.disabled = items.length === 0;
+      }
+    }
+
+    addAllToCart() {
+      const items = this.getIncludedItems()
+        .map((item) => ({ id: Number(item.dataset.variantId), quantity: 1 }))
+        .filter((line) => Number.isFinite(line.id) && line.id > 0);
+
+      if (!items.length) return;
+
+      const root = window.Shopify?.routes?.root || '/';
+
+      this.addButton.classList.add('is-loading');
+      this.addButton.disabled = true;
+      this.setMessage('');
+
+      fetch(`${root}cart/add.js`.replace(/\/{2,}/g, '/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ items: toAdd })
+        body: JSON.stringify({ items }),
       })
-        .then(function (response) {
-          return response.json().then(function (data) {
-            if (!response.ok) {
-              var errMessage = (data && data.description) || 'Could not add items to cart.';
-              throw new Error(errMessage);
-            }
-            return data;
-          });
+        .then((response) => {
+          if (!response.ok) return response.json().then((err) => Promise.reject(err));
+          return response.json();
         })
-        .then(function () {
-          setMessage('Added to cart!', 'success');
-          document.dispatchEvent(
-            new CustomEvent('cart:updated', { bubbles: true, detail: { source: 'frequently-bought-together' } })
-          );
+        .then(() => {
+          this.setMessage('Added to your cart.');
+          // Let a cart drawer / header cart count elsewhere on the page
+          // know it should refresh. Hook this up to your theme's
+          // existing cart-update event if it uses a different name.
           document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
         })
-        .catch(function (error) {
-          setMessage(error.message || 'Something went wrong. Please try again.', 'error');
+        .catch((error) => {
+          this.setMessage(error?.description || error?.message || 'Something went wrong adding these to your cart.', true);
         })
-        .finally(function () {
-          setLoading(false);
+        .finally(() => {
+          this.addButton.classList.remove('is-loading');
+          this.addButton.disabled = false;
         });
-    });
+    }
 
-    recalcTotal();
+    setMessage(text, isError = false) {
+      if (!this.messageEl) return;
+      this.messageEl.textContent = text;
+      this.messageEl.classList.toggle('fbt-message--error', Boolean(isError));
+    }
+
+    // Splits a formatted money string into symbol/whole/decimal spans,
+    // matching the markup the Liquid template renders server-side.
+    formatMoneySpans(cents) {
+      const formatted = this.formatMoney(cents);
+      const decimalStart = formatted.length - 3;
+      const symbol = formatted.slice(0, 1);
+      const whole = formatted.slice(1, decimalStart);
+      const decimal = formatted.slice(decimalStart);
+
+      return `<span class="fbt-item-price__symbol">${symbol}</span><span class="fbt-item-price__whole">${whole}</span><span class="fbt-item-price__decimal">${decimal}</span>`;
+    }
+
+    // Formats cents using the shop's money_format string (passed down
+    // via data-money-format), so this doesn't need to guess at currency
+    // symbol or decimal conventions. Prefers window.Shopify.formatMoney
+    // if the theme already loads it.
+    formatMoney(cents) {
+      cents = Number(cents) || 0;
+
+      if (window.Shopify && typeof window.Shopify.formatMoney === 'function') {
+        return window.Shopify.formatMoney(cents, this.moneyFormat);
+      }
+
+      const noDecimals = /amount_no_decimals/.test(this.moneyFormat);
+      const value = noDecimals
+        ? Math.round(cents / 100).toString()
+        : (cents / 100).toFixed(2);
+
+      const formatted = value.replace(/\B(?=(\d{3})+(?=\.|$))/g, ',');
+
+      return this.moneyFormat.replace(/\{\{\s*\w+\s*\}\}/, formatted) || `$${value}`;
+    }
   }
 
-  function init() {
-    var sections = document.querySelectorAll('[data-fbt-section]');
-    sections.forEach(initSection);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  document.addEventListener('shopify:section:load', function (event) {
-    var section = event.target.querySelector('[data-fbt-section]');
-    if (section) initSection(section);
+  document.querySelectorAll('[data-fbt-section]').forEach((section) => {
+    new FrequentlyBoughtTogether(section);
   });
 })();
