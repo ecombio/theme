@@ -13,17 +13,8 @@
     return '$' + amount;
   }
 
-  function initSection(section) {
-    var itemsWrap = section.querySelector('[data-fbt-products]');
-    var items = Array.prototype.slice.call(section.querySelectorAll('[data-fbt-item]'));
-    var totalEl = section.querySelector('[data-fbt-total]');
-    var addButton = section.querySelector('[data-fbt-add-button]');
-    var buttonText = section.querySelector('[data-fbt-button-text]');
-    var messageEl = section.querySelector('[data-fbt-message]');
-    var moneyFormat = (window.theme && window.theme.moneyFormat) || null;
-    var labelTemplate = (addButton && addButton.getAttribute('data-label-template')) || 'Add all [count] to Cart';
-
-    if (!itemsWrap || !addButton) return;
+  function bindItems(section, itemsWrap, totalEl, addButton, buttonText, moneyFormat, labelTemplate) {
+    var items = Array.prototype.slice.call(itemsWrap.querySelectorAll('[data-fbt-item]'));
 
     function getItemState(item) {
       var checkbox = item.querySelector('input[type="checkbox"]');
@@ -104,6 +95,24 @@
       }
     });
 
+    recalcTotal();
+
+    return items;
+  }
+
+  function initSection(section) {
+    var itemsWrap = section.querySelector('[data-fbt-products]');
+    var totalEl = section.querySelector('[data-fbt-total]');
+    var addButton = section.querySelector('[data-fbt-add-button]');
+    var buttonText = section.querySelector('[data-fbt-button-text]');
+    var messageEl = section.querySelector('[data-fbt-message]');
+    var moneyFormat = (window.theme && window.theme.moneyFormat) || section.getAttribute('data-money-format') || null;
+    var labelTemplate = (addButton && addButton.getAttribute('data-label-template')) || 'Add all [count] to Cart';
+
+    if (!itemsWrap || !addButton) return;
+
+    var items = [];
+
     function setMessage(text, state) {
       if (!messageEl) return;
       messageEl.textContent = text || '';
@@ -126,13 +135,17 @@
       }
     }
 
-    addButton.addEventListener('click', function () {
+    function handleAddClick() {
       var toAdd = [];
 
       items.forEach(function (item) {
-        var state = getItemState(item);
-        if (state.checked && state.variantId) {
-          toAdd.push({ id: parseInt(state.variantId, 10), quantity: 1 });
+        var checkbox = item.querySelector('input[type="checkbox"]');
+        var select = item.querySelector('[data-fbt-variant-select]');
+        var checked = checkbox ? checkbox.checked : true;
+        var variantId = select ? select.value : item.getAttribute('data-variant-id');
+
+        if (checked && variantId) {
+          toAdd.push({ id: parseInt(variantId, 10), quantity: 1 });
         }
       });
 
@@ -171,9 +184,76 @@
         .finally(function () {
           setLoading(false);
         });
-    });
+    }
 
-    recalcTotal();
+    addButton.addEventListener('click', handleAddClick);
+
+    // -- Fetch complementary recommendations ---------------------------
+    // On a normal page load `recommendations` is blank server-side, so
+    // the section renders hidden with shimmer placeholders only. This
+    // re-requests the section through the Product Recommendations
+    // endpoint (intent=complementary); Shopify resolves recommendations
+    // server-side and returns the fully rendered #fbt-products markup.
+    var recommendationsUrl = section.getAttribute('data-recommendations-url');
+    var sectionId = section.getAttribute('data-section-id');
+    var productId = section.getAttribute('data-product-id');
+    var limit = section.getAttribute('data-limit');
+    var intent = section.getAttribute('data-intent');
+    var alreadyPerformed = section.getAttribute('data-performed') === 'true';
+
+    function finalizeWithItems() {
+      items = bindItems(section, itemsWrap, totalEl, addButton, buttonText, moneyFormat, labelTemplate);
+    }
+
+    if (alreadyPerformed) {
+      // Section markup was already populated (e.g. re-init after a
+      // shopify:section:load reload of already-resolved content) —
+      // just wire it up, no fetch needed.
+      section.hidden = false;
+      finalizeWithItems();
+      return;
+    }
+
+    if (!recommendationsUrl || !sectionId || !productId) {
+      section.hidden = true;
+      return;
+    }
+
+    // Reveal the shimmer state while the fetch is in flight.
+    section.hidden = false;
+
+    var url = recommendationsUrl + '?section_id=' + encodeURIComponent(sectionId) +
+      '&product_id=' + encodeURIComponent(productId) +
+      '&limit=' + encodeURIComponent(limit || 2) +
+      '&intent=' + encodeURIComponent(intent || 'complementary');
+
+    fetch(url)
+      .then(function (response) {
+        if (!response.ok) throw new Error('Recommendations request failed (' + response.status + ')');
+        return response.text();
+      })
+      .then(function (html) {
+        var doc = document.createElement('div');
+        doc.innerHTML = html;
+
+        var newSection = doc.querySelector('[data-fbt-section]');
+        var newProducts = doc.querySelector('[data-fbt-products]');
+
+        if (!newSection || newSection.getAttribute('data-performed') !== 'true' || !newProducts) {
+          // No complementary recommendations available for this
+          // product — stay hidden, same as the SSR fallback.
+          section.hidden = true;
+          return;
+        }
+
+        itemsWrap.innerHTML = newProducts.innerHTML;
+        section.hidden = false;
+        finalizeWithItems();
+      })
+      .catch(function (error) {
+        console.error('Frequently bought together:', error);
+        section.hidden = true;
+      });
   }
 
   function init() {
