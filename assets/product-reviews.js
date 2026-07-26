@@ -1,11 +1,36 @@
+/* ============================================================
+   product-reviews.js  (Yotpo version)
+   Self-contained — pairs with sections/product-reviews.liquid
+   and product-reviews.css only.
+
+   This does not fetch or render review data itself — Yotpo's
+   own loader script (installed once in theme.liquid) does
+   that, by finding the .yotpo-widget-instance div this section
+   renders and populating it.
+
+   Unlike some review apps, Yotpo doesn't document a stable
+   "done loading" class we can watch for. So instead this file
+   watches for ANY child content appearing inside the widget
+   div (MutationObserver on childList) and treats that as
+   "loaded" — same fail-safe lesson as the Frequently Bought
+   Together / Related Products sections: if nothing appears
+   within a timeout (Yotpo app disabled, script blocked, or a
+   genuinely empty widget), hide the ENTIRE section rather than
+   leaving a stuck shimmer skeleton visible indefinitely.
+
+   If Yotpo later documents/adds a stable ready class or fires
+   a reliable custom event, swap the detection in markLoaded()
+   below for that instead — it'll be more precise than "did any
+   children show up."
+   ============================================================ */
+
 (function () {
   'use strict';
 
-  var READY_CLASS   = 'jdgm--done-setup-widget';
-  var TIMEOUT_MS    = 8000;
+  var TIMEOUT_MS = 8000;
 
   function initSection(wrapperEl) {
-    var widgetEl = wrapperEl.querySelector('#judgeme_product_reviews');
+    var widgetEl = wrapperEl.querySelector('.yotpo-widget-instance');
     var innerWrap = wrapperEl.querySelector('[data-revs-widget-wrapper]');
 
     if (!widgetEl || !innerWrap) {
@@ -31,18 +56,18 @@
       observer.disconnect();
     }
 
-    if (widgetEl.classList.contains(READY_CLASS)) {
+    if (widgetEl.childElementCount > 0) {
       markLoaded();
       return;
     }
 
     var observer = new MutationObserver(function () {
-      if (widgetEl.classList.contains(READY_CLASS)) {
+      if (widgetEl.childElementCount > 0) {
         markLoaded();
       }
     });
 
-    observer.observe(widgetEl, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(widgetEl, { childList: true, subtree: true });
 
     var timeoutId = setTimeout(function () {
       markFailed();
