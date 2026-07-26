@@ -1,83 +1,37 @@
-/**
- * cart-drawer.css
- * Scoped to .ecombio-cart-drawer — zero global side-effects.
- * Architecture: BEM + CSS custom properties, mobile-first.
- * Respects prefers-reduced-motion.
- *
- * Recommendation rail styles live in cart-recommendations.css.
- * Both are self-contained: this file is only ever requested by
- * sections/cart-drawer.liquid, and cart-recommendations.css only by
- * snippets/cart-recommendations.liquid.
- *
- * Changelog:
- *   2026-07-25 — Removed the `prefers-color-scheme: dark` override block.
- *                The drawer now stays on the light/brand palette regardless
- *                of the visitor's OS/browser color scheme setting.
- *              — Raised --ecd-z from 600 to 9999 so the drawer reliably
- *                renders above the header/announcement bar. If it's still
- *                appearing behind the header after this change, the header
- *                (or one of its ancestors) likely creates its own stacking
- *                context (e.g. via position + z-index, transform, or
- *                filter) that a z-index on the drawer alone can't escape —
- *                that would need to be fixed on the header side instead.
- *              — Section 5B reworked: the progress bar's horizontal
- *                padding is now delegated to progress-bar.css itself (via
- *                --ecpb-padding-x, set here to match --ecd-padding-x) so
- *                the message text stays padded while the track/fill run
- *                edge-to-edge. Also dropped the border-bottom under the
- *                bar to match the reference design (no divider between
- *                the bar and the item list).
- */
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   1. DESIGN TOKENS
-   Override any of these in your theme's base stylesheet or inside a
-   `[data-theme]` scope to white-label the drawer without touching this file.
-───────────────────────────────────────────────────────────────────────────── */
-
 :root {
-  /* Surface */
   --ecd-bg:                     #ffffff;
   --ecd-bg-footer:              #f8f8f6;
   --ecd-backdrop:               rgba(0, 0, 0, 0.45);
 
-  /* Typography */
   --ecd-font-family:            inherit;
   --ecd-color-text:             #1a1a1a;
   --ecd-color-text-muted:       #6b6b6b;
   --ecd-color-text-link:        #1a1a1a;
   --ecd-color-text-link-hover:  #000000;
 
-  /* Border */
   --ecd-border-color:           #e8e8e5;
   --ecd-border-radius:          0px;
 
-  /* Accent / primary action */
   --ecd-accent:                 #1a1a1a;
   --ecd-accent-hover:           #333333;
   --ecd-accent-text:            #ffffff;
 
-  /* Outline button */
   --ecd-outline-border:         #1a1a1a;
   --ecd-outline-text:           #1a1a1a;
   --ecd-outline-hover-bg:       #1a1a1a;
   --ecd-outline-hover-text:     #ffffff;
 
-  /* Danger / remove */
   --ecd-remove-color:           #9a9a9a;
   --ecd-remove-hover:           #c0392b;
 
-  /* Qty stepper */
   --ecd-qty-bg:                 #f2f2f0;
   --ecd-qty-hover-bg:           #e5e5e3;
   --ecd-qty-color:              #1a1a1a;
   --ecd-qty-border-radius:      4px;
 
-  /* Spinner */
   --ecd-spinner-color:          #1a1a1a;
   --ecd-spinner-track:          #e0e0e0;
 
-  /* Sizing */
   --ecd-width:                  420px;
   --ecd-header-height:          64px;
   --ecd-footer-gap:             16px;
@@ -85,19 +39,13 @@
   --ecd-padding-x:              24px;
   --ecd-image-size:             80px;
 
-  /* Motion */
   --ecd-duration-open:          320ms;
   --ecd-duration-close:         240ms;
   --ecd-easing-open:            cubic-bezier(0.22, 1, 0.36, 1);
   --ecd-easing-close:           cubic-bezier(0.4, 0, 1, 1);
 
-  /* Z-index */
   --ecd-z:                      9999;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   2. ROOT ELEMENT — drawer shell
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer {
   position:       fixed;
@@ -112,10 +60,6 @@
   pointer-events: auto;
   visibility:     visible;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   3. BACKDROP
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__backdrop {
   position:   absolute;
@@ -136,10 +80,6 @@
     transition: none;
   }
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   4. INNER PANEL
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__inner {
   position:       relative;
@@ -167,10 +107,6 @@
     transition: none;
   }
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   5. HEADER
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__header {
   flex-shrink:     0;
@@ -227,24 +163,11 @@
   outline-offset: 2px;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   5B. FREE SHIPPING PROGRESS BAR — layout hook only
-   Visual design (track, fill, tokens) lives entirely in progress-bar.css.
-   This block only positions the component within the drawer's flex
-   layout and hands progress-bar.css the padding value to use for its
-   message text — the track/fill run edge-to-edge, not padded, per the
-   reference design.
-───────────────────────────────────────────────────────────────────────────── */
-
 .ecombio-cart-drawer__inner > .ecombio-progress-bar {
   --ecpb-padding-x: var(--ecd-padding-x);
   flex-shrink:      0;
   padding:          14px 0;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   6. BODY
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__body {
   flex:                       1 1 auto;
@@ -254,8 +177,6 @@
   -webkit-overflow-scrolling: touch;
   padding:                    var(--ecd-item-gap) var(--ecd-padding-x);
 }
-
-/* ── Empty state ── */
 
 .ecombio-cart-drawer__empty {
   display:         flex;
@@ -278,8 +199,6 @@
   color:     var(--ecd-color-text-muted);
 }
 
-/* ── Item list ── */
-
 .ecombio-cart-drawer__items {
   list-style:     none;
   margin:         0;
@@ -288,8 +207,6 @@
   flex-direction: column;
   gap:            0;
 }
-
-/* ── Single item ── */
 
 .ecombio-cart-drawer__item {
   display:               grid;
@@ -302,8 +219,6 @@
 .ecombio-cart-drawer__item:last-child {
   border-bottom: none;
 }
-
-/* Image */
 
 .ecombio-cart-drawer__item-image-link {
   display:       block;
@@ -327,8 +242,6 @@
   height:     100%;
   background: var(--ecd-qty-bg);
 }
-
-/* Info column */
 
 .ecombio-cart-drawer__item-info {
   display:        flex;
@@ -363,8 +276,6 @@
   line-height: 1.3;
 }
 
-/* Bottom row: qty + price + remove */
-
 .ecombio-cart-drawer__item-bottom {
   display:     flex;
   align-items: center;
@@ -373,10 +284,6 @@
   padding-top: 8px;
   flex-wrap:   wrap;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   7. QUANTITY STEPPER
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__qty {
   display:       inline-flex;
@@ -425,10 +332,6 @@
   user-select: none;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   8. PRICE
-───────────────────────────────────────────────────────────────────────────── */
-
 .ecombio-cart-drawer__item-price {
   margin-left:     auto;
   display:         flex;
@@ -449,10 +352,6 @@
   color:             var(--ecd-color-text-muted);
   text-decoration-color: var(--ecd-color-text-muted);
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   9. REMOVE BUTTON
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__remove {
   appearance:      none;
@@ -483,10 +382,6 @@
   opacity: 0.4;
   cursor:  not-allowed;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   10. FOOTER
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__footer {
   flex-shrink:    0;
@@ -535,10 +430,6 @@
   text-align: center;
   margin-top: -4px;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   11. SHARED BUTTON PRIMITIVES
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer .ecombio-btn {
   display:         block;
@@ -590,7 +481,6 @@
   gap: 8px;
 }
 
-/* On very narrow drawers (e.g. full-width mobile) keep them stacked */
 @media (max-width: 340px) {
   .ecombio-cart-drawer__cta {
     grid-template-columns: 1fr;
@@ -621,10 +511,6 @@
   outline-offset: 2px;
   border-radius:  2px;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   12. LOADING OVERLAY
-───────────────────────────────────────────────────────────────────────────── */
 
 .ecombio-cart-drawer__loading {
   position:            absolute;
@@ -662,17 +548,9 @@
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   13. BODY SCROLL LOCK
-───────────────────────────────────────────────────────────────────────────── */
-
 html.cart-drawer-open {
   overflow: hidden;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   14. RESPONSIVE OVERRIDES
-───────────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 479px) {
   .ecombio-cart-drawer__inner {
