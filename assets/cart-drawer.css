@@ -2,9 +2,21 @@
  * cart-drawer.css
  * Scoped to .ecombio-cart-drawer — zero global side-effects.
  * Architecture: BEM + CSS custom properties, mobile-first.
- * Respects prefers-reduced-motion and prefers-color-scheme.
+ * Respects prefers-reduced-motion.
  *
  * Recommendation rail styles live in cart-recommendations.css.
+ *
+ * Changelog:
+ *   2026-07-25 — Removed the `prefers-color-scheme: dark` override block.
+ *                The drawer now stays on the light/brand palette regardless
+ *                of the visitor's OS/browser color scheme setting.
+ *              — Raised --ecd-z from 600 to 9999 so the drawer reliably
+ *                renders above the header/announcement bar. If it's still
+ *                appearing behind the header after this change, the header
+ *                (or one of its ancestors) likely creates its own stacking
+ *                context (e.g. via position + z-index, transform, or
+ *                filter) that a z-index on the drawer alone can't escape —
+ *                that would need to be fixed on the header side instead.
  */
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -70,35 +82,7 @@
   --ecd-easing-close:           cubic-bezier(0.4, 0, 1, 1);
 
   /* Z-index */
-  --ecd-z:                      600;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ecd-bg:                   #1c1c1e;
-    --ecd-bg-footer:            #141414;
-    --ecd-backdrop:             rgba(0, 0, 0, 0.65);
-    --ecd-color-text:           #f0f0f0;
-    --ecd-color-text-muted:     #9a9a9a;
-    --ecd-color-text-link:      #f0f0f0;
-    --ecd-color-text-link-hover:#ffffff;
-    --ecd-border-color:         #2e2e2e;
-    --ecd-accent:               #f0f0f0;
-    --ecd-accent-hover:         #ffffff;
-    --ecd-accent-text:          #1c1c1e;
-    --ecd-outline-border:       #f0f0f0;
-    --ecd-outline-text:         #f0f0f0;
-    --ecd-outline-hover-bg:     #f0f0f0;
-    --ecd-outline-hover-text:   #1c1c1e;
-    --ecd-remove-color:         #5a5a5a;
-    --ecd-remove-hover:         #e74c3c;
-    --ecd-qty-bg:               #2a2a2c;
-    --ecd-qty-hover-bg:         #3a3a3c;
-    --ecd-qty-color:            #f0f0f0;
-    --ecd-spinner-color:        #f0f0f0;
-    --ecd-spinner-track:        #333333;
-  }
+  --ecd-z:                      9999;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -627,12 +611,6 @@
   z-index:             10;
   backdrop-filter:     blur(2px);
   -webkit-backdrop-filter: blur(2px);
-}
-
-@media (prefers-color-scheme: dark) {
-  .ecombio-cart-drawer__loading {
-    background: rgba(28, 28, 30, 0.6);
-  }
 }
 
 .ecombio-cart-drawer__loading[hidden] {
