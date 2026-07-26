@@ -1,0 +1,209 @@
+{%- comment -%}==================================================
+  sections/product-information.liquid
+
+  Horizontal tab replacement for the previous stacked layout:
+  accordion (Description / Shipping Policy / Refund & Return Policy,
+  from snippets/product-description.liquid) + a separate "Customer
+  Reviews" block below it (sections/reviews-widget.liquid).
+
+  This section supersedes BOTH of those. It's meant to sit as its
+  own section directly below the main-product section in the
+  template, not be rendered from inside main-product.liquid.
+
+  Required cleanup once this ships (not done automatically, since
+  it touches other files):
+  1. Remove `{%- render 'product-description' -%}` from
+     sections/main-product.liquid -- otherwise Description/Shipping/
+     Refund render twice (once here, once in the old accordion).
+  2. Unassign the "Reviews widget" section from the product
+     template -- otherwise the Yotpo review_widget instance renders
+     twice on the same page, and yotpo-widgets.liquid's own comments
+     flag double-init as a real risk.
+
+  Assumption (please confirm): Shipping Policy and Refund & Return
+  Policy pull from Shopify's built-in shop.shipping_policy /
+  shop.refund_policy objects, since I don't have the actual
+  product-description snippet to see what it was pulling from. If
+  that snippet had custom content instead, send it over and I'll
+  wire this up to match exactly.
+
+  The star-rating badge's `#reviews` anchor still works unchanged --
+  it targets the anchor span below, which carries the theme's
+  --sticky-header-height offset so the scroll lands below the
+  sticky header instead of underneath it.
+==================================================
+{%- endcomment -%}
+
+<link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}"></noscript>
+<script src="{{ 'product-information.js' | asset_url }}" defer></script>
+
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'product-information__default-width'
+  elsif width_type == 'full-width'
+    assign width_class = 'product-information__full-width'
+  else
+    assign width_class = 'product-information__custom-width'
+  endif
+-%}
+
+<span id="reviews" class="product-information__anchor" aria-hidden="true"></span>
+
+<div
+  class="product-information {{ width_class }}"
+  id="ProductInformation-{{ section.id }}"
+  data-product-information
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+
+  <div class="product-information__nav" role="tablist" aria-label="Product information">
+    <button
+      type="button"
+      class="product-information__tab is-active"
+      id="tab-description-{{ section.id }}"
+      role="tab"
+      aria-selected="true"
+      aria-controls="panel-description-{{ section.id }}"
+      data-tab-target="description"
+    >
+      Description
+    </button>
+    <button
+      type="button"
+      class="product-information__tab"
+      id="tab-shipping-{{ section.id }}"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-shipping-{{ section.id }}"
+      data-tab-target="shipping"
+    >
+      Shipping Policy
+    </button>
+    <button
+      type="button"
+      class="product-information__tab"
+      id="tab-refund-{{ section.id }}"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-refund-{{ section.id }}"
+      data-tab-target="refund"
+    >
+      Refund &amp; Return Policy
+    </button>
+    <button
+      type="button"
+      class="product-information__tab"
+      id="tab-reviews-{{ section.id }}"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-reviews-{{ section.id }}"
+      data-tab-target="reviews"
+    >
+      Customer Reviews
+    </button>
+  </div>
+
+  <div class="product-information__panels">
+
+    <div
+      class="product-information__panel"
+      id="panel-description-{{ section.id }}"
+      role="tabpanel"
+      aria-labelledby="tab-description-{{ section.id }}"
+      data-tab-panel="description"
+    >
+      {{ product.description }}
+    </div>
+
+    <div
+      class="product-information__panel"
+      id="panel-shipping-{{ section.id }}"
+      role="tabpanel"
+      aria-labelledby="tab-shipping-{{ section.id }}"
+      data-tab-panel="shipping"
+      hidden
+    >
+      {{ shop.shipping_policy.body }}
+    </div>
+
+    <div
+      class="product-information__panel"
+      id="panel-refund-{{ section.id }}"
+      role="tabpanel"
+      aria-labelledby="tab-refund-{{ section.id }}"
+      data-tab-panel="refund"
+      hidden
+    >
+      {{ shop.refund_policy.body }}
+    </div>
+
+    <div
+      class="product-information__panel"
+      id="panel-reviews-{{ section.id }}"
+      role="tabpanel"
+      aria-labelledby="tab-reviews-{{ section.id }}"
+      data-tab-panel="reviews"
+      hidden
+    >
+      {%- render 'yotpo-widgets', widget_type: 'yotpo_review_widget', product: product -%}
+    </div>
+
+  </div>
+
+</div>
+
+{% schema %}
+{
+  "name": "Product information",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product information"
+    }
+  ]
+}
+{% endschema %}
