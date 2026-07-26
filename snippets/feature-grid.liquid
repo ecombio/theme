@@ -1,0 +1,55 @@
+{% comment %}
+  Renders the feature grid from the product's custom.feature_grid metafield
+  Usage: {% render 'feature-grid', product: product %}
+{% endcomment %}
+
+{% assign feature_items = product.metafields.custom.feature_grid.value %}
+
+{% if feature_items != blank %}
+  <div class="feature-grid">
+    {% for item in feature_items %}
+      <a href="{{ item.link }}" class="feature-tile">
+        <div class="feature-icon">
+          {{ item.icon.value | image_url: width: 64 | image_tag: loading: 'lazy' }}
+        </div>
+        <p class="feature-title">{{ item.title.value }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% style %}
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .feature-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    padding: 1.25rem 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
+  }
+
+  .feature-tile:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .feature-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-title {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+{% endstyle %}
