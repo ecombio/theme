@@ -52,6 +52,40 @@ h6 {
 }
 
 /* ============================================
+   BREAKPOINT SYSTEM (mobile-first)
+   ============================================
+   CSS custom properties cannot be used inside @media conditions
+   (`@media (min-width: var(--bp-md))` is invalid CSS), and this
+   theme has no Sass/PostCSS build step to interpolate them. These
+   values are therefore NOT enforceable by the CSS engine — they are
+   enforced by convention. Every file in the theme that adds a
+   breakpoint MUST use one of these exact six values. Do not
+   introduce a seventh value (e.g. 599px, 639px, 989px) without
+   updating this table and every consumer first.
+
+   Mobile-first: base/unqualified rules = xs. Every @media below
+   this point is min-width, layering up as viewport grows — never
+   max-width. (2026-07-26: main-header.css / header-group.css were
+   converted from desktop-first max-width queries to this system —
+   see those files' changelogs.)
+
+     xs   0      (base — no query)
+     sm   480px  30rem
+     md   640px  40rem   — tablet division (matches main-header.liquid's
+                            own schema label; consolidates a previous
+                            599px/639px split that main-header.css and
+                            header-group.css used to disagree on)
+     lg   1024px 64rem   — desktop division (matches the pre-existing
+                            1023/1024 threshold used for the nav bar)
+     xl   1280px 80rem
+     2xl  1536px 96rem
+
+   Copy-paste values for @media rules (root 16px; rem stays correct
+   under user font-size/zoom changes, unlike px):
+     sm:  30rem   md:  40rem   lg:  64rem   xl:  80rem   2xl: 96rem
+   ============================================ */
+
+/* ============================================
    LAYOUT VARIABLES
 
    NOTE: --page-width, --page-margin, --header-width, --header-margin,
