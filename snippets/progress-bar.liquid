@@ -30,6 +30,13 @@
 
     assign progress_template = label_progress | default: "You're {{ amount }} away from free shipping!"
     assign complete_template = label_complete | default: "You've unlocked free shipping!"
+
+    assign remaining_money = remaining_cents | money
+    if is_complete
+      assign display_message = complete_template
+    else
+      assign display_message = progress_template | replace: '{{ amount }}', remaining_money
+    endif
   -%}
 
   <div
@@ -50,13 +57,7 @@
       <svg class="ecombio-progress-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
-      <span>
-        {%- if is_complete -%}
-          {{ complete_template }}
-        {%- else -%}
-          {{ progress_template | replace: '{{ amount }}', remaining_cents | money }}
-        {%- endif -%}
-      </span>
+      <span>{{ display_message }}</span>
     </p>
 
     <div
