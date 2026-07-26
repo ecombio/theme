@@ -1,15 +1,13 @@
 {%- comment -%}
   snippets/description.liquid
-  Renders product.description and loads the product-videos / product-video
-  CSS + JS that the pasted-in video carousel HTML (added via the native
-  rich text editor) depends on.
+  Renders the product's video carousel (sourced from the
+  custom.product_videos metaobject-list metafield, via snippets/videos.liquid)
+  followed by product.description.
 
   Usage:
     {% render 'description', product: product %}
 {%- endcomment -%}
 
-<link rel="stylesheet" href="{{ 'videos.css' | asset_url }}" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="{{ 'videos.css' | asset_url }}"></noscript>
-<script src="{{ 'videos.js' | asset_url }}" defer></script>
+{% render 'videos', product: product %}
 
 {{ product.description }}
