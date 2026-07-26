@@ -42,32 +42,37 @@
               assign placeholder_name = 'lifestyle-1'
             endif
 
+            assign entry_video = entry.video.value
+            assign entry_video_url = entry.video_url.value
+            assign entry_thumbnail = entry.thumbnail.value
+            assign entry_caption = entry.caption.value
+
             assign has_native_video = false
             assign has_external_video = false
-            if entry.video != blank
+            if entry_video != blank
               assign has_native_video = true
-            elsif entry.video_url != blank
+            elsif entry_video_url != blank
               assign has_external_video = true
             endif
 
             assign has_thumbnail = false
-            if entry.thumbnail != blank
+            if entry_thumbnail != blank
               assign has_thumbnail = true
             endif
 
             assign provider = ''
             assign video_id = ''
             if has_external_video
-              if entry.video_url contains 'youtu'
+              if entry_video_url contains 'youtu'
                 assign provider = 'youtube'
-                if entry.video_url contains 'v='
-                  assign video_id = entry.video_url | split: 'v=' | last | split: '&' | first
+                if entry_video_url contains 'v='
+                  assign video_id = entry_video_url | split: 'v=' | last | split: '&' | first
                 else
-                  assign video_id = entry.video_url | split: '/' | last | split: '?' | first
+                  assign video_id = entry_video_url | split: '/' | last | split: '?' | first
                 endif
-              elsif entry.video_url contains 'vimeo'
+              elsif entry_video_url contains 'vimeo'
                 assign provider = 'vimeo'
-                assign video_id = entry.video_url | split: '/' | last | split: '?' | first
+                assign video_id = entry_video_url | split: '/' | last | split: '?' | first
               endif
             endif
           -%}
@@ -79,12 +84,12 @@
                   type="button"
                   class="product-video__play-trigger"
                   data-video-play-trigger
-                  aria-label="Play video{% if entry.caption != blank %}: {{ entry.caption | escape }}{% endif %}"
+                  aria-label="Play video{% if entry_caption != blank %}: {{ entry_caption | escape }}{% endif %}"
                   {% unless has_native_video or has_external_video %}disabled{% endunless %}
                 >
                   {%- if has_thumbnail -%}
                     {{
-                      entry.thumbnail
+                      entry_thumbnail
                       | image_url: width: 800
                       | image_tag:
                         loading: 'lazy',
@@ -92,9 +97,9 @@
                         sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 80vw',
                         widths: '400,600,800,1000'
                     }}
-                  {%- elsif has_native_video and entry.video.preview_image -%}
+                  {%- elsif has_native_video and entry_video.preview_image -%}
                     {{
-                      entry.video.preview_image
+                      entry_video.preview_image
                       | image_url: width: 800
                       | image_tag:
                         loading: 'lazy',
@@ -117,7 +122,7 @@
                   {%- if has_native_video -%}
                     <div data-video-type="native">
                       {{
-                        entry.video
+                        entry_video
                         | video_tag:
                           controls: true,
                           preload: 'none',
@@ -136,8 +141,8 @@
 
               </div>
 
-              {%- if entry.caption != blank -%}
-                <p class="product-video__caption">{{ entry.caption }}</p>
+              {%- if entry_caption != blank -%}
+                <p class="product-video__caption">{{ entry_caption }}</p>
               {%- endif -%}
             </div>
           </div>
