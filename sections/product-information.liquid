@@ -1,61 +1,3 @@
-{%- comment -%}==================================================
-  sections/product-information.liquid
-
-  Horizontal tab replacement for the previous stacked layout: the
-  accordion/dialog pattern in snippets/product-description.liquid
-  (Description / Shipping Policy / Refund & Return Policy / Warranty)
-  plus the separate "Customer Reviews" block below it
-  (sections/reviews-widget.liquid). This section supersedes BOTH.
-
-  Content-source priority per tab, matching the original snippet
-  exactly:
-    Description — product.description (tab omitted if blank)
-    Shipping    — product.metafields.custom.product_policy.shipping_policy
-                  > pages['shipping-policy'] > shop.shipping_policy.body
-    Refund      — product.metafields.custom.product_policy.returns_refunds
-                  > pages['refund-policy'] > shop.refund_policy.body
-    Warranty    — product.metafields.custom.product_policy.warranty_policy
-                  > pages['warranty'] > "Please contact us for warranty
-                  information." fallback text
-    Reviews     — always shown (Yotpo widget renders its own empty
-                  state when there's nothing to display yet)
-
-  Each of the first four tabs only renders if it actually has content
-  from one of its sources -- same as the original snippet's has_*/
-  show_* flags. Whichever is the first tab with content becomes the
-  default active tab (usually Description, but falls through to
-  Shipping/Refund/Warranty/Reviews if Description is blank for a
-  given product).
-
-  Required cleanup once this ships (touches other files, not done
-  automatically):
-  1. Remove `{%- render 'product-description' -%}` from
-     sections/main-product.liquid.
-  2. Unassign the "Reviews widget" section from the product
-     template, to avoid a duplicate Yotpo review_widget instance.
-
-  FIX (previous version): Liquid's `{{ ... }}` output tag cannot
-  evaluate comparison operators like `==`. `{{ active_tab ==
-  'description' }}` for aria-selected threw "Expected end_of_string
-  but found comparison" at parse time. Fixed by precomputing
-  *_selected booleans below with `case`/`when` and outputting those
-  plain variables instead.
-
-  FIX (this version): Jump links. Each tab now has a matching anchor
-  (#description, #shipping, #refund, #warranty, #reviews) that can be
-  linked to from anywhere on the page or from another page's URL —
-  generalized from the single hardcoded #reviews anchor that used to
-  be the only one of these. Tabs themselves are now <a href="#slug">
-  elements rather than plain buttons, so clicking one also updates
-  the URL hash and makes that tab shareable/bookmarkable. Anchors are
-  rendered above the whole component (not inside the hidden panels),
-  since a same-page jump can't land on a display:none target — the
-  anchors just need to sit at roughly the right scroll position, and
-  product-information.js does the actual tab-switching once the hash
-  is read.
-==================================================
-{%- endcomment -%}
-
 <link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}"></noscript>
 <script src="{{ 'product-information.js' | asset_url }}" defer></script>
@@ -120,9 +62,6 @@
     assign show_warranty = true
   endif
 
-  # First tab with content becomes the default active one. Reviews is
-  # the final fallback since the Yotpo widget always has something to
-  # render (even just its own empty state).
   assign active_tab = 'reviews'
   if has_description
     assign active_tab = 'description'
@@ -134,9 +73,6 @@
     assign active_tab = 'warranty'
   endif
 
-  # Precomputed aria-selected booleans. Liquid's {{ }} output tag can't
-  # evaluate `==` directly, so these are resolved here with case/when
-  # and just output as plain variables in the markup below.
   assign description_selected = false
   assign shipping_selected    = false
   assign refund_selected      = false
