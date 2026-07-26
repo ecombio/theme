@@ -1,0 +1,44 @@
+{% comment %}
+  Expert Reviews section — pulls `expert_review` metaobject entries linked
+  via the product metafield `custom.expert_reviews` and renders them in
+  the video-carousel snippet.
+{% endcomment %}
+
+{%- assign reviews = product.metafields.custom.expert_reviews.value -%}
+{%- if reviews != blank -%}
+  <div class="expert-reviews-section page-width">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="expert-reviews-section__heading">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+    {% render 'video-carousel', reviews: reviews, carousel_id: 'expert-reviews-carousel' %}
+  </div>
+
+  <style>
+    .expert-reviews-section { padding: 3rem 1.5rem; }
+    .expert-reviews-section__heading {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Expert Reviews",
+  "tag": "section",
+  "class": "section-expert-reviews",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Expert Reviews"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Expert Reviews"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,186 @@
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-modal[hidden] {
+  display: none;
+}
+
+.video-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.video-modal__inner {
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  animation: video-modal-in 0.18s ease-out;
+}
+
+/* ── Single layout (no product) — unchanged from original ── */
+
+/* Default / YouTube / Vimeo: we can't read their real ratio, so assume 16:9. */
+.video-modal[data-orientation="landscape"]:not([data-layout="split"]) .video-modal__inner {
+  width: min(1000px, 92vw);
+  aspect-ratio: var(--vm-ratio, 16 / 9);
+}
+
+/* Uploaded portrait video: height-driven so it doesn't force a landscape crop. */
+.video-modal[data-orientation="portrait"]:not([data-layout="split"]) .video-modal__inner {
+  height: min(85vh, 900px);
+  width: auto;
+  aspect-ratio: var(--vm-ratio, 9 / 16);
+}
+
+/* ── Split layout: landscape / default (YouTube, Vimeo, or unknown ratio) ── */
+.video-modal[data-layout="split"][data-orientation="landscape"] .video-modal__inner {
+  display: flex;
+  flex-direction: row;
+  width: min(1100px, 94vw);
+  height: min(85vh, 720px);
+  aspect-ratio: unset;
+}
+
+.video-modal[data-layout="split"][data-orientation="landscape"] .video-modal__media {
+  flex: 1 1 60%;
+  min-width: 0;
+}
+
+.video-modal[data-layout="split"][data-orientation="landscape"] .video-modal__product {
+  flex: 0 0 380px;
+  max-width: 380px;
+}
+
+/* ── Split layout: portrait (9:16 reels) — size the media pane to the
+   real ratio instead of stretching it into a landscape-shaped box, so
+   there's no pillarboxing. Product pane fills the leftover width.
+   Only kicks in for uploaded files, since video-modal.js can only read
+   the real ratio via loadedmetadata on a native <video> element —
+   YouTube/Vimeo iframes still fall back to the landscape rule above. ── */
+.video-modal[data-layout="split"][data-orientation="portrait"] .video-modal__inner {
+  display: flex;
+  flex-direction: row;
+  width: auto;
+  max-width: min(1100px, 94vw);
+  height: min(85vh, 720px);
+  aspect-ratio: unset;
+}
+
+.video-modal[data-layout="split"][data-orientation="portrait"] .video-modal__media {
+  flex: 0 0 auto;
+  width: auto;
+  height: 100%;
+  aspect-ratio: var(--vm-ratio, 9 / 16);
+  min-width: 0;
+}
+
+.video-modal[data-layout="split"][data-orientation="portrait"] .video-modal__product {
+  flex: 1 1 380px;
+  min-width: 300px;
+  max-width: 420px;
+}
+
+@keyframes video-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.video-modal__close {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.video-modal__close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.video-modal__media {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.video-modal__content {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video-modal__content iframe,
+.video-modal__content video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Product pane hosts a cloned .video-modal-product panel (markup +
+   styles live in video-card.liquid / video-card.css) */
+.video-modal__product {
+  background: #fff;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.video-modal__product[hidden] {
+  display: none;
+}
+
+@media screen and (max-width: 749px) {
+  .video-modal__close {
+    top: -40px;
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Stack: video on top, product below — applies to both landscape and
+     portrait split layouts on mobile; the side-by-side portrait rule
+     above only matters at tablet/desktop widths. */
+  .video-modal[data-layout="split"] .video-modal__inner {
+    flex-direction: column;
+    width: min(94vw, 480px);
+    height: min(90vh, 640px);
+  }
+
+  .video-modal[data-layout="split"] .video-modal__media {
+    flex: 1 1 45%;
+    height: auto;
+    aspect-ratio: unset;
+  }
+
+  .video-modal[data-layout="split"] .video-modal__product {
+    flex: 1 1 55%;
+    max-width: none;
+    width: 100%;
+  }
+}

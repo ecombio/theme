@@ -1,0 +1,430 @@
+.video-card {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+.video-card__trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.video-card__trigger:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.video-card__trigger[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.video-card__thumbnail {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--vc-card-ratio, 16 / 9);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.video-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.video-card__trigger:hover .video-card__image {
+  transform: scale(1.03);
+}
+
+.video-card__placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.04),
+    rgba(0, 0, 0, 0.04) 10px,
+    rgba(0, 0, 0, 0.08) 10px,
+    rgba(0, 0, 0, 0.08) 20px
+  );
+}
+
+.video-card__play-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.video-card__trigger:hover .video-card__play-icon {
+  transform: scale(1.1);
+}
+
+.video-card__play-bg {
+  fill: rgba(0, 0, 0, 0.45);
+}
+
+.video-card__caption {
+  display: block;
+  margin-top: 12px;
+}
+
+.video-card__title {
+  display: block;
+  font-weight: 600;
+}
+
+.video-card__subtitle {
+  display: block;
+  opacity: 0.7;
+  font-size: 0.9em;
+  margin-top: 2px;
+}
+
+/* --- shared product name/price, used by overlay, text_button and card_outside_video --- */
+.video-card__cta-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.video-card__cta-name {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-card__cta-price {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* overlay + text_button sit on top of footage: white text, price de-emphasized */
+.video-card__overlay-scrim .video-card__cta-name,
+.video-card__overlay-scrim .video-card__cta-price,
+.video-card__text-bar .video-card__cta-name,
+.video-card__text-bar .video-card__cta-price {
+  color: #fff;
+}
+
+.video-card__overlay-scrim .video-card__cta-price,
+.video-card__text-bar .video-card__cta-price {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* card_outside_video sits on a light footer: dark text, lighter name weight */
+.video-card__footer .video-card__cta-name,
+.video-card__footer .video-card__cta-price {
+  color: var(--vc-footer-text, #111);
+}
+
+.video-card__footer .video-card__cta-name {
+  font-weight: 500;
+}
+
+/* --- CTA style: overlay --- */
+.video-card__overlay-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px;
+  padding-top: 28px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* --- CTA style: text_button --- */
+.video-card__text-bar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  background: rgba(17, 18, 20, 0.72);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- CTA style: card_outside_video --- */
+.video-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-top: 12px;
+  background: var(--vc-footer-bg, #fff);
+  border-radius: 10px;
+}
+
+/* shared product thumbnail, used by overlay and card_outside_video */
+.video-card__cta-thumb {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.video-card__cta-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* on the overlay, the thumb sits directly on video footage — a light ring
+   and soft shadow keep it legible against any background the video shows */
+.video-card__overlay-scrim .video-card__cta-thumb {
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* on the footer's flat white background, a heavy ring isn't needed */
+.video-card__footer .video-card__cta-thumb {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* --- shared Add to cart button, used by icon_button (with --icon modifier), text_button and card_outside_video --- */
+.video-card__cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--vc-cta-bg, #111);
+  color: var(--vc-cta-text, #fff);
+  font-size: 0.75em;
+  font-weight: 600;
+  border: none;
+  border-radius: 20px;
+  padding: 7px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.video-card__cta:hover {
+  transform: scale(1.03);
+}
+
+.video-card__cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.video-card__cta.is-added {
+  background: #1f6f3e;
+}
+
+/* icon_button variant: circular, icon-only, floats over the footage */
+.video-card__cta--icon {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+}
+
+.video-card__cta--icon:hover {
+  background: #fff;
+}
+
+/* =============================================================
+   Modal product panel
+   The markup for this lives inline in video-card.liquid (inside
+   the hidden <template>, not on the visible card) — styled here
+   since that's where it's authored. It only ever displays cloned
+   into video-modal's product pane, so no product-card.css
+   dependency is needed for it.
+   ============================================================= */
+
+.video-modal-product {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+/* ── Gallery ── */
+.video-modal-product__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.video-modal-product__main {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.video-modal-product__main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-modal-product__main-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.04),
+    rgba(0, 0, 0, 0.04) 10px,
+    rgba(0, 0, 0, 0.08) 10px,
+    rgba(0, 0, 0, 0.08) 20px
+  );
+}
+
+.video-modal-product__thumbs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.video-modal-product__thumb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: none;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.video-modal-product__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-modal-product__thumb:hover {
+  opacity: 0.85;
+}
+
+.video-modal-product__thumb.is-active {
+  opacity: 1;
+  border-color: var(--vc-cta-bg, #111);
+}
+
+/* ── Info ── */
+.video-modal-product__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.video-modal-product__vendor {
+  margin: 0;
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.video-modal-product__title {
+  margin: 0;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+
+.video-modal-product__price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.video-modal-product__price {
+  font-size: 1.1em;
+  font-weight: 700;
+}
+
+.video-modal-product__save {
+  font-size: 0.8em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fdf1dc;
+  color: #8a5a00;
+}
+
+.video-modal-product__compare-at {
+  font-size: 0.9em;
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.video-modal-product__add-to-cart {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.95em;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--vc-cta-bg, #111);
+  color: var(--vc-cta-text, #fff);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.video-modal-product__add-to-cart:hover {
+  transform: scale(1.01);
+}
+
+.video-modal-product__add-to-cart:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.video-modal-product__add-to-cart.is-added {
+  background: #1f6f3e;
+}

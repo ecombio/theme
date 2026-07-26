@@ -1,0 +1,111 @@
+/* =============================================================
+   Highlighted Menu Link (with stars)
+   File: assets/highlight.css
+   Loaded by: snippets/highlight.liquid AND snippets/header-hamburger.liquid
+
+   Scope: the special "highlight" nav item (e.g. "On Sale") — the
+   highlighted color/weight treatment and the twinkling star icons
+   attached to it. This is ONE item rendered in two places: the
+   desktop menu bar (.menu-bar__item--highlight /
+   .menu-bar__link--highlight, from highlight.liquid) and the mobile
+   drawer accordion (.main-header__mobile-nav-item--highlight /
+   .main-header__mobile-nav-link--highlight, from the `highlight` case
+   in header-hamburger.liquid). Both render the same icon + three
+   <svg class="star star-1/2/3"> markup, so the star/keyframe rules
+   below are shared as-is; only the item/link color+layout rules are
+   duplicated per selector, since the two links have different base
+   padding/font-size.
+
+   Extracted from assets/header-menu.css so highlight styling lives in
+   its own file rather than the general menu bar stylesheet.
+   UPDATED: mobile drawer rules added — previously the drawer's
+   highlight item had no stars at all; header-hamburger.liquid didn't
+   render the icon/star markup and header-hamburger.css only carried a
+   bare color/font-weight rule with no home for stars. That partial
+   rule has been removed from header-hamburger.css; this file is now
+   the single source of truth for what a highlight item looks like.
+   FIXED: the mobile link is a full-width flex row (so the whole row
+   stays tappable/hoverable), so anchoring the absolutely-positioned
+   stars directly to it pushed them out to the far edge of the drawer
+   instead of next to the text. header-hamburger.liquid now wraps the
+   label + stars in an inner .main-header__mobile-nav-highlight-content
+   span sized to its own content — the stars anchor to that instead.
+
+   Depends on:
+     --hdr-accent — custom property defined elsewhere (header
+       theme color scope), used as the fallback/base accent.
+   ============================================================= */
+
+/* ── Desktop menu bar ── */
+.menu-bar__item--highlight {
+  --hl-color: var(--hdr-accent);
+}
+
+.menu-bar__link--highlight {
+  color: var(--hl-color) !important;
+  font-weight: 700;
+  position: relative;
+  padding-right: 28px;
+}
+
+.menu-bar__link--highlight:hover {
+  opacity: 0.82;
+}
+
+/* ── Mobile drawer accordion item (same highlight, different host link) ── */
+.main-header__mobile-nav-item--highlight {
+  --hl-color: var(--hdr-accent);
+}
+
+.main-header__mobile-nav-link--highlight {
+  color: var(--hl-color) !important;
+  font-weight: 700;
+}
+
+.main-header__mobile-nav-link--highlight:hover {
+  color: var(--hl-color) !important;
+  opacity: 0.82;
+}
+
+/* The outer link stays full-row-width for a full tap target/hover
+   background, like every other drawer row. This inner wrapper is
+   sized to its own content instead (same idea as the desktop
+   .menu-bar__link--highlight, which is inline-flex for the same
+   reason) so the stars anchor next to the text, not the far edge
+   of the drawer. */
+.main-header__mobile-nav-highlight-content {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding-right: 28px;
+}
+
+/* ── Stars — shared by both contexts ── */
+.star {
+  position: absolute;
+  color: var(--hl-color, var(--hdr-accent));
+  animation: twinkle 1.4s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.star-1 { top: -4px; right: -2px; animation-delay: 0s; }
+.star-2 { top: 6px; right: -8px; animation-delay: 0.35s; }
+.star-3 { top: 14px; right: -1px; animation-delay: 0.75s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.5) rotate(0deg); }
+  50%      { opacity: 1;   transform: scale(1)   rotate(15deg); }
+}
+
+.menu-bar__link--highlight:hover .star,
+.main-header__mobile-nav-link--highlight:hover .star {
+  animation-duration: 0.8s;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .star {
+    transition: none !important;
+    animation: none !important;
+  }
+}

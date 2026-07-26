@@ -1,0 +1,352 @@
+/* ============================================================
+   product-reviews.css
+   Self-contained — pairs with sections/product-reviews.liquid
+   and assets/product-reviews.js only.
+
+   Two jobs:
+   1. Section layout (wrapper width/padding), same pattern as
+      product-recommendations.css / frequently-bought-together.css.
+   2. Restyle Judge.me's Review Widget by targeting its documented,
+      stable .jdgm-* classes (see Judge.me's public CSS reference).
+      Everything under "3. Judge.me widget overrides" below is
+      scoped under .revs-section so it never leaks onto other
+      Judge.me widgets elsewhere on the page (e.g. a preview badge
+      on a collection page product card).
+   ============================================================ */
+
+/* ── 1. Section layout wrapper ───────────────────────────── */
+
+.revs-section {
+  --revs-accent:         #4F46E5;
+  --revs-accent-hover:   #4338CA;
+  --revs-star:           #F5A623;
+  --revs-surface:        #ffffff;
+  --revs-border:         #E5E7EB;
+  --revs-text:           #111827;
+  --revs-text-secondary: #6B7280;
+  --revs-radius:         10px;
+  --revs-radius-sm:      6px;
+
+  display: block;
+  padding-top: var(--revs-pad-top, 48px);
+  padding-bottom: var(--revs-pad-bottom, 48px);
+  padding-inline: var(--section-padding, 24px);
+  box-sizing: border-box;
+  color: var(--revs-text);
+}
+
+.revs-section.default-width { max-width: 1200px; margin-inline: auto; }
+.revs-section.full-width    { max-width: none; }
+.revs-section.custom-width  { max-width: var(--custom-width, 80rem); margin-inline: auto; }
+
+.revs-section.cs-gray  { background: #F9FAFB; }
+.revs-section.cs-dark  {
+  background: #111827;
+  color: #fff;
+  --revs-surface: #1F2937;
+  --revs-border: #374151;
+  --revs-text: #F9FAFB;
+  --revs-text-secondary: #9CA3AF;
+}
+
+.revs-header {
+  margin-bottom: 1.25rem;
+}
+
+.revs-heading {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.revs-demo-flag {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #B45309;
+  background: #FEF3C7;
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.revs-widget-wrapper {
+  position: relative;
+}
+
+/* ── 2. Shimmer skeleton (shown until Judge.me finishes setup) ── */
+
+.revs-shimmer {
+  display: block;
+}
+
+/* Judge.me adds `jdgm--done-setup-widget` to the anchor div once
+   its script has populated it — hide our shimmer as soon as that
+   happens, and reveal the real widget. Until then, hide the real
+   widget's raw/unstyled flash-of-unstyled-content behind it. */
+#judgeme_product_reviews {
+  opacity: 0;
+  min-height: 0;
+  transition: opacity 0.25s ease;
+}
+#judgeme_product_reviews.jdgm--done-setup-widget {
+  opacity: 1;
+}
+#judgeme_product_reviews.jdgm--done-setup-widget ~ .revs-shimmer,
+.revs-widget-wrapper[data-revs-loaded] .revs-shimmer {
+  display: none;
+}
+
+.revs-shimmer__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.revs-shimmer__list {
+  display: grid;
+  gap: 1rem;
+}
+
+.revs-shimmer__card {
+  border: 1px solid var(--revs-border);
+  border-radius: var(--revs-radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.revs-shimmer__line {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e8e8e8 25%, #d4d4d4 50%, #e8e8e8 75%);
+  background-size: 400px 100%;
+  animation: revs-shimmer-move 1.4s ease-in-out infinite;
+}
+.revs-section.cs-dark .revs-shimmer__line {
+  background: linear-gradient(90deg, #2b3546 25%, #3a4658 50%, #2b3546 75%);
+  background-size: 400px 100%;
+}
+
+.revs-shimmer__line--stars    { width: 140px; height: 20px; }
+.revs-shimmer__line--stars-sm { width: 90px; }
+.revs-shimmer__line--text     { width: 200px; }
+.revs-shimmer__line--title    { width: 55%; height: 14px; }
+.revs-shimmer__line--body     { width: 90%; }
+.revs-shimmer__line--short    { width: 40%; }
+
+@keyframes revs-shimmer-move {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revs-shimmer__line { animation: none; }
+}
+
+/* ── 3. Judge.me widget overrides ────────────────────────────
+   Targets Judge.me's own documented CSS classes. If a future
+   Judge.me widget update renames a class, use browser devtools
+   on the live widget to find the new name and update the
+   selector here — the custom property values (--revs-*) above
+   are the single source of truth for colors/radius/spacing, so
+   most re-theming only needs the variables changed, not these
+   rules rewritten.
+   ─────────────────────────────────────────────────────────── */
+
+.revs-section .jdgm-rev-widg {
+  font-family: inherit;
+  color: var(--revs-text);
+}
+
+/* Optional: hide Judge.me's own title when using our .revs-heading instead */
+.revs-section--hide-widget-title .jdgm-rev-widg__title {
+  display: none;
+}
+
+/* Summary row: average stars + histogram + write-review button */
+.revs-section .jdgm-rev-widg__header {
+  margin-bottom: 1.5rem;
+}
+
+.revs-section .jdgm-star {
+  color: var(--revs-border);
+}
+.revs-section .jdgm-star.jdgm--on,
+.revs-section .jdgm-star.jdgm--half {
+  color: var(--revs-star);
+}
+
+.revs-section .jdgm-rev-widg__summary-average {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--revs-text);
+}
+
+.revs-section .jdgm-rev-widg__summary-text {
+  color: var(--revs-text-secondary);
+  font-size: 0.85rem;
+}
+
+.revs-section .jdgm-histogram__bar {
+  background: var(--revs-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.revs-section .jdgm-histogram__bar-content {
+  background: var(--revs-star);
+}
+.revs-section .jdgm-histogram__frequency {
+  color: var(--revs-text-secondary);
+  font-size: 0.8rem;
+}
+
+/* Buttons — "Write a review", form submit/cancel, pagination arrows */
+.revs-section .jdgm-btn,
+.revs-section .jdgm-write-rev-link {
+  font-family: inherit;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.revs-section .jdgm-btn--solid,
+.revs-section .jdgm-write-rev-link {
+  background: var(--revs-accent);
+  border-color: var(--revs-accent);
+  color: #fff;
+}
+.revs-section .jdgm-btn--solid:hover,
+.revs-section .jdgm-write-rev-link:hover {
+  background: var(--revs-accent-hover);
+  border-color: var(--revs-accent-hover);
+}
+
+.revs-section .jdgm-btn--border {
+  background: transparent;
+  border: 1px solid var(--revs-border);
+  color: var(--revs-text);
+}
+.revs-section .jdgm-btn--border:hover {
+  background: var(--revs-border);
+}
+
+/* Inline / dynamic "write a review" forms */
+.revs-section .jdgm-form-wrapper,
+.revs-section .jdgm-form-dynamic-wrapper {
+  border: 1px solid var(--revs-border);
+  border-radius: var(--revs-radius);
+  padding: 1.25rem;
+  background: var(--revs-surface);
+}
+
+.revs-section .jdgm-form__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.revs-section .jdgm-form__inline-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--revs-text-secondary);
+}
+
+.revs-section .jdgm-form input[type="text"],
+.revs-section .jdgm-form input[type="email"],
+.revs-section .jdgm-form textarea,
+.revs-section .jdgm-form select,
+.revs-section .jdgm-sort-dropdown {
+  font-family: inherit;
+  border: 1px solid var(--revs-border);
+  border-radius: var(--revs-radius-sm);
+  background: var(--revs-surface);
+  color: var(--revs-text);
+}
+
+/* Review list */
+.revs-section .jdgm-rev-widg__reviews {
+  display: block;
+}
+
+.revs-section .jdgm-rev {
+  border: 1px solid var(--revs-border);
+  border-radius: var(--revs-radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background: var(--revs-surface);
+}
+.revs-section .jdgm-divider-top {
+  border-top: none; /* replaced by the card border above */
+}
+
+.revs-section .jdgm-rev__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--revs-text);
+}
+
+.revs-section .jdgm-rev__body {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--revs-text);
+}
+
+.revs-section .jdgm-rev__author {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--revs-text);
+}
+
+.revs-section .jdgm-rev__timestamp,
+.revs-section .jdgm-rev__location {
+  color: var(--revs-text-secondary);
+  font-size: 0.78rem;
+}
+
+.revs-section .jdgm-rev__buyer-badge-wrapper {
+  color: var(--revs-accent);
+}
+
+.revs-section .jdgm-rev__pic-img {
+  border-radius: var(--revs-radius-sm);
+}
+
+/* Pagination */
+.revs-section .jdgm-paginate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+}
+
+.revs-section .jdgm-paginate__page {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--revs-border);
+  color: var(--revs-text);
+  font-size: 0.85rem;
+}
+
+.revs-section .jdgm-paginate__page.jdgm-curt {
+  background: var(--revs-accent);
+  border-color: var(--revs-accent);
+  color: #fff;
+}
+
+.revs-section .jdgm-spinner {
+  border-top-color: var(--revs-accent);
+}
+
+@media screen and (max-width: 749px) {
+  .revs-section .jdgm-form-wrapper,
+  .revs-section .jdgm-form-dynamic-wrapper {
+    padding: 1rem;
+  }
+}

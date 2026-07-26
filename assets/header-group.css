@@ -1,0 +1,92 @@
+/* header-group.css
+   Sticky/hide-on-scroll header wrapper + supporting layout fixes.
+   Paired with header-group.js (scroll/hover/focus behavior).
+
+   Changelog:
+     2026-07-25 — Lowered #header-group-wrapper's z-index from
+                  2147483647 (the maximum possible value) to 500.
+                  That max value guaranteed the header would always
+                  render above everything else on the page, including
+                  the cart drawer (assets/cart-drawer.css, z-index
+                  9999 via --ecd-z) — no z-index set on the drawer
+                  could ever outrank it. 500 keeps the header above
+                  ordinary page content (menu-bar and its dropdowns
+                  sit at 100 / var(--hdr-z)+10, well below this) while
+                  letting the cart drawer render on top when open.
+                  If anything else in the theme relied on the header
+                  being unconditionally above absolutely everything
+                  (a third-party widget, chat bubble, cookie banner),
+                  double-check it after this change — it may now
+                  render above the header where it previously couldn't. */
+
+#header-group-wrapper {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 500 !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.3s ease !important;
+  will-change: transform;
+}
+
+#header-group-wrapper.header--hidden {
+  transform: translateY(-100%) !important;
+}
+
+/* Single source of truth for the header's height. header-group.js
+   measures the real, rendered header (announcement bar + utility bar
+   + main header + nav, whatever combination is actually present) and
+   keeps this updated on load/resize/content-change via ResizeObserver.
+   The value here is a static fallback only, for first paint before JS
+   runs and for no-JS — set it close to the real height at each
+   breakpoint to minimize layout shift once JS takes over. Any other
+   stylesheet in the theme that needs the header's height (anchor-link
+   scroll offsets, a sticky sidebar's top offset, etc.) should read
+   var(--header-group-height) rather than hardcoding a number. */
+:root {
+  --header-group-height: 68px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --header-group-height: 64px;
+  }
+}
+
+@media (max-width: 599px) {
+  :root {
+    --header-group-height: 56px;
+  }
+}
+
+/* Invisible pushback: reserves layout space equal to the header's
+   height so page content doesn't render underneath the fixed header.
+   Applied as padding on <main> itself (not a sibling spacer div) so
+   every section gets it automatically without per-section markup,
+   and so it can't be defeated by a child section's negative top
+   margin — padding on the parent establishes a real boundary that a
+   descendant's margin can't collapse through, whereas an empty
+   sibling div only occupies its own space and doesn't stop that. */
+main[role="main"] {
+  padding-top: var(--header-group-height, 68px);
+}
+
+/* Stacking-context reset.
+   Carried over as-is from theme.liquid — still theme-wide and still
+   overrides overflow/transform/filter/contain on any section-like
+   element site-wide, which can affect image crops, carousels, and
+   perf-isolated sections that rely on those properties elsewhere.
+   TODO: narrow this to the specific ancestor(s) that were actually
+   trapping the header in a stacking context, once identified. */
+main,
+.shopify-section,
+section,
+.page-width,
+[class*="section"] {
+  overflow: visible !important;
+  transform: none !important;
+  filter: none !important;
+  contain: none !important;
+}

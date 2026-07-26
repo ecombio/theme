@@ -1,0 +1,141 @@
+{%- comment -%}
+  sections/example-width-section.liquid
+
+  Minimal, self-contained example showing how to wire up a fully
+  independent "Section Layout" control group:
+    - Section width: Default / Full width / Custom width
+    - Side padding: its own slider, decoupled from the global
+      --page-margin (Theme settings > Layout > Body side padding)
+
+  WHY THIS IS SEPARATE FROM --page-margin / --page-width:
+  Those two variables are global (snippets/css-variables.liquid) and
+  drive header, footer, and body-wide layout. Wiring individual
+  sections to read from them means changing one global slider moves
+  every section that references it at once — which is what caused
+  sections like "Watch & learn" to visually break when Body side
+  padding was bumped to test something else.
+
+  This section instead defines its OWN local CSS variables
+  (--section-max-width, --section-padding) that are only ever set
+  inline, per-instance, via this section's own schema settings. They
+  never read from --page-margin or --page-width, so this section is
+  fully independent of global Body settings.
+
+  Copy the schema block's "section_width", "custom_width", and
+  "section_padding" settings into any section you want this behavior
+  on, and copy the class + style attribute pattern from the <div>
+  below into that section's markup.
+
+  APPLYING THIS TO OTHER SECTIONS:
+  - Copy the three schema settings (section_width, custom_width,
+    section_padding) as-is — ids, types, and the custom_width
+    visible_if all stay the same.
+  - Copy the width_type/width_class liquid assign and the style
+    attribute (--section-padding / --custom-width) onto that
+    section's outermost wrapping div.
+  - Class names: if the theme has shared global default-width /
+    full-width / custom-width utility classes, reuse those directly.
+    If not (as is the case in this theme today), scope the three
+    classes to that section's own BEM namespace instead — e.g.
+    {section-name}__default-width / {section-name}__full-width /
+    {section-name}__custom-width — and define them in that section's
+    own stylesheet. Either way, the liquid only needs the class
+    *names* to line up with whatever CSS actually defines the width
+    behavior; the settings and logic above don't change.
+  - Padding value: --section-padding is a single value applied at
+    every breakpoint by design (matching this example). If a section
+    previously had responsive/breakpoint-specific padding, decide
+    per-section whether to flatten it to one value or layer a
+    breakpoint override on top — that's a per-section CSS decision,
+    not something this snippet dictates.
+
+  ADOPTED BY (update this list as more sections migrate):
+  - sections/video-carousel.liquid ("Watch & learn") — scoped classes
+    example, since this theme has no global width utility classes.
+{%- endcomment -%}
+
+{%- liquid
+  assign width_type = section.settings.section_width
+  if width_type == blank
+    assign width_class = 'default-width'
+  else
+    assign width_class = width_type
+  endif
+-%}
+
+<div
+  class="{{ width_class }}"
+  style="
+    --section-padding: {{ section.settings.section_padding }}px;
+    {%- if width_type == 'custom-width' %}
+      --custom-width: {{ section.settings.custom_width }}rem;
+    {%- endif %}
+  "
+>
+  <div class="section" style="padding-block: var(--section-spacing);">
+    <h2>{{ section.settings.heading | default: 'Example section' }}</h2>
+    <p>
+      This block's outer div is a direct child of the section's
+      .shopify-section grid wrapper, so its width class
+      (default-width / full-width / custom-width) controls how it
+      spans that grid. Its side padding comes from this section's own
+      "Side padding" setting, independent of the global Body side
+      padding setting.
+    </p>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Example width section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Example section"
+    },
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    }
+  ],
+  "presets": [
+    {
+      "name": "Example width section"
+    }
+  ]
+}
+{% endschema %}

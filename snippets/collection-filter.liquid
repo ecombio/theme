@@ -1,0 +1,222 @@
+{%- comment -%}
+  snippets/collection-filter.liquid
+
+  Renders the filter sidebar/drawer: header, filter groups (list +
+  price range types), and the Apply button. Active-filter pills live
+  in the toolbar (snippets/collection-toolbar.liquid), not here.
+
+  STRUCTURE MATCH (matches search-filter.liquid's look):
+    - Static header ("Filters" + mobile close button)
+    - Each group uses a <button aria-expanded> + SVG chevron accordion
+      instead of native <details>/<summary>, so open/close state and
+      styling matches the search page exactly.
+    - Price fields are labeled (MIN/MAX) with a "$" symbol, instead of
+      bare placeholder text.
+
+  IMPORTANT: group accordion buttons use `data-group-toggle` /
+  `data-group-body`, NOT `data-filter-toggle`. `data-filter-toggle` is
+  already used elsewhere (collection-filter.js) for the whole-panel
+  open/close control -- reusing it here would collide with that and
+  break the show/hide-sidebar behavior. Keep these separate.
+
+  Two calling conventions:
+    1. Collection page (unchanged):
+       {%- render 'collection-filter', collection: collection -%}
+
+    2. Search results page:
+       {%- render 'collection-filter', search_terms: search.terms, result_type: 'product' -%}
+{%- endcomment -%}
+
+{%- liquid
+  if collection
+    assign filters = collection.filters
+    assign form_action = collection.url
+    assign clear_url = collection.url
+    assign remove_suffix = ''
+  else
+    assign filters = search.filters
+    assign form_action = routes.search_url
+    assign clear_url = routes.search_url | append: '?q=' | append: search_terms | append: '&type=' | append: result_type
+    assign remove_suffix = '&type=' | append: result_type
+  endif
+-%}
+
+{{ 'collection-filter.css' | asset_url | stylesheet_tag }}
+
+<aside
+  class="collection-filter"
+  id="collection-filter"
+  aria-label="Product filters"
+>
+
+  <div class="collection-filter__header">
+    <span class="collection-filter__heading">Filters</span>
+    <button class="collection-filter__close-btn" type="button" aria-label="Close filters" data-filter-close>&times;</button>
+  </div>
+
+  <form method="get" action="{{ form_action }}" id="FilterForm">
+
+    {%- unless collection -%}
+      <input type="hidden" name="q" value="{{ search_terms }}">
+      <input type="hidden" name="type" value="{{ result_type }}">
+    {%- endunless -%}
+
+    {%- for filter in filters -%}
+      {%- assign group_body_id = 'CollectionFilterGroupBody-' | append: forloop.index -%}
+      <div class="collection-filter__group" data-filter-group>
+        <button
+          type="button"
+          class="collection-filter__group-toggle"
+          aria-expanded="true"
+          aria-controls="{{ group_body_id }}"
+          data-group-toggle
+        >
+          <span class="collection-filter__group-label">
+            {{ filter.label }}
+            {%- if filter.active_values.size > 0 -%}
+              <span class="collection-filter__group-badge">{{ filter.active_values.size }}</span>
+            {%- endif -%}
+          </span>
+          <svg class="collection-filter__group-chevron" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <div class="collection-filter__group-body" id="{{ group_body_id }}" data-group-body>
+          {%- case filter.type -%}
+            {%- when 'list' -%}
+              {%- for value in filter.values -%}
+                <label class="collection-filter__option
+                  {%- if value.active %} collection-filter__option--active{%- endif %}
+                  {%- if value.count == 0 and value.active == false %} collection-filter__option--disabled{%- endif %}">
+                  <input
+                    type="checkbox"
+                    name="{{ value.param_name }}"
+                    value="{{ value.value }}"
+                    {%- if value.active %} checked{%- endif %}
+                    {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
+                  >
+                  {{ value.label }} <span>({{ value.count }})</span>
+                </label>
+              {%- endfor -%}
+
+            {%- when 'price_range' -%}
+              <div class="collection-filter__price-wrap" data-price-filter>
+                <div class="collection-filter__price-fields">
+                  <div class="collection-filter__price-field">
+                    <label class="collection-filter__price-label" for="CollectionFilterPriceMin-{{ forloop.index }}">Min</label>
+                    <div class="collection-filter__price-input-wrap">
+                      <span class="collection-filter__price-symbol">$</span>
+                      <input
+                        type="number"
+                        class="collection-filter__price-input"
+                        id="CollectionFilterPriceMin-{{ forloop.index }}"
+                        name="{{ filter.min_value.param_name }}"
+                        value="{{ filter.min_value.value }}"
+                        min="0"
+                        max="{{ filter.range_max }}"
+                        placeholder="0"
+                        data-price-input="min"
+                      >
+                    </div>
+                  </div>
+
+                  <span class="collection-filter__price-sep">&ndash;</span>
+
+                  <div class="collection-filter__price-field">
+                    <label class="collection-filter__price-label" for="CollectionFilterPriceMax-{{ forloop.index }}">Max</label>
+                    <div class="collection-filter__price-input-wrap">
+                      <span class="collection-filter__price-symbol">$</span>
+                      <input
+                        type="number"
+                        class="collection-filter__price-input"
+                        id="CollectionFilterPriceMax-{{ forloop.index }}"
+                        name="{{ filter.max_value.param_name }}"
+                        value="{{ filter.max_value.value }}"
+                        min="0"
+                        max="{{ filter.range_max }}"
+                        placeholder="{{ filter.range_max }}"
+                        data-price-input="max"
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                {%- comment -%}
+                  Decorative distribution bars. Shopify's price_range
+                  filter only exposes range_max -- it doesn't hand back
+                  per-bucket product counts -- so this renders a plain
+                  bell-shaped curve rather than a real histogram.
+                {%- endcomment -%}
+                <div class="collection-filter__histogram" aria-hidden="true">
+                  {%- assign bar_count = 16 -%}
+                  {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
+                  {%- for i in (1..bar_count) -%}
+                    {%- assign dist = i | minus: mid | abs -%}
+                    {%- assign bar_height = bar_count | minus: dist | times: 6 -%}
+                    <span class="collection-filter__histogram-bar" style="height: {{ bar_height }}%"></span>
+                  {%- endfor -%}
+                </div>
+
+                <div class="collection-filter__range-slider" data-range-slider>
+                  <div class="collection-filter__range-track"></div>
+                  <div class="collection-filter__range-track-active" data-range-active></div>
+                  <input
+                    type="range"
+                    class="collection-filter__range-input collection-filter__range-input--min"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    value="{{ filter.min_value.value | default: 0 }}"
+                    data-range-thumb="min"
+                    aria-label="Minimum price"
+                  >
+                  <input
+                    type="range"
+                    class="collection-filter__range-input collection-filter__range-input--max"
+                    min="0"
+                    max="{{ filter.range_max }}"
+                    value="{{ filter.max_value.value | default: filter.range_max }}"
+                    data-range-thumb="max"
+                    aria-label="Maximum price"
+                  >
+                </div>
+
+                {%- assign quarter = filter.range_max | divided_by: 4.0 -%}
+                {%- assign b1 = quarter | round -%}
+                {%- assign b2 = quarter | times: 2 | round -%}
+                {%- assign b3 = quarter | times: 3 | round -%}
+                <div class="collection-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
+                    Less than ${{ b1 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}">
+                    ${{ b1 }} to ${{ b2 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}">
+                    ${{ b2 }} to ${{ b3 }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}">
+                    ${{ b3 }} to ${{ filter.range_max }}
+                  </label>
+                  <label class="collection-filter__price-option">
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max="">
+                    More than ${{ filter.range_max }}
+                  </label>
+                </div>
+              </div>
+          {%- endcase -%}
+        </div>
+      </div>
+    {%- endfor -%}
+
+    <button type="submit" class="collection-filter__submit">Apply</button>
+
+  </form>
+
+</aside>
+
+<script src="{{ 'collection-filter.js' | asset_url }}" defer></script>
