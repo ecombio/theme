@@ -14,6 +14,26 @@
    filtering and toolbar (sort + tab keyboard nav) behavior described
    below.
 
+   MOBILE DRAWER: HIDDEN BY DEFAULT / SLIDE-IN (2026-07-25): openFilters()
+   and closeFilters() below now add/remove an `is-open` class on the
+   filter <aside> in addition to (on desktop only) toggling the
+   native `hidden` attribute. This split exists because the two
+   breakpoints need different behavior:
+     - Desktop: the aside is a permanent sidebar; opening/closing it
+       is an instant collapse/expand, handled by toggling `hidden`
+       (assets/main-search.css's FLEXBOX FIX makes the feed reflow to
+       fill the space on its own when the aside is hidden).
+     - Mobile: the aside is a slide-in drawer. assets/search-filter.css
+       keeps it permanently translated off-screen by default
+       (regardless of the `hidden` attribute's state -- see that
+       file's HIDDEN-BY-DEFAULT / SLIDE-IN DRAWER note) and only
+       slides it on-screen when `.is-open` is present. Toggling the
+       native `hidden` attribute on mobile would force `display: none`
+       instantly and defeat the slide transition entirely, so mobile
+       never touches `hidden` -- only the class.
+   isMobileViewport() (already used for the backdrop) decides which
+   path each call takes.
+
    Laid out as independent IIFEs below rather than one combined
    block, since each bails out early when its target element isn't on
    the page (filters disabled, or a control not present on this
@@ -139,23 +159,41 @@
   }
 
   function openFilters() {
-    filterAside.hidden = false;
+    // Mobile: slide-in via class only -- never touch `hidden` here,
+    // it would force display:none and skip the transition entirely.
+    // Desktop: instant collapse/expand via the `hidden` attribute,
+    // as before.
+    if (isMobileViewport()) {
+      filterAside.classList.add('is-open');
+      if (backdrop) backdrop.classList.add('is-visible');
+    } else {
+      filterAside.hidden = false;
+    }
     setToggleState(true);
-    if (backdrop && isMobileViewport()) backdrop.classList.add('is-visible');
   }
 
   function closeFilters() {
-    filterAside.hidden = true;
-    setToggleState(false);
+    if (isMobileViewport()) {
+      filterAside.classList.remove('is-open');
+    } else {
+      filterAside.hidden = true;
+    }
     if (backdrop) backdrop.classList.remove('is-visible');
+    setToggleState(false);
+  }
+
+  function isFiltersOpen() {
+    return isMobileViewport()
+      ? filterAside.classList.contains('is-open')
+      : !filterAside.hidden;
   }
 
   filterToggles.forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (filterAside.hidden) {
-        openFilters();
-      } else {
+      if (isFiltersOpen()) {
         closeFilters();
+      } else {
+        openFilters();
       }
     });
   });
@@ -295,9 +333,8 @@
   // with whatever the fetched section actually rendered. Handles all
   // three cases: pills existed and still do (replace in place),
   // pills didn't exist and now do (first filter just got checked —
-  // insert right after the tab switcher, matching where Liquid
-  // places it), and pills existed but no longer do (last filter just
-  // got cleared — remove).
+  // insert right after the tab switcher), and pills existed but no
+  // longer do (last filter just got cleared — remove).
   function syncActivePills(doc) {
     var toolbar = document.getElementById('search-toolbar');
     if (!toolbar) return;
