@@ -8,6 +8,12 @@
     assign has_description = true
   endif
 
+  assign specifications = product.metafields.custom.specifications.value
+  assign has_specification = false
+  if specifications != blank
+    assign has_specification = true
+  endif
+
   assign shipping_page = pages['shipping-policy']
   assign refund_page   = pages['refund-policy']
   assign warranty_page = pages['warranty']
@@ -56,6 +62,8 @@
   assign active_tab = 'reviews'
   if has_description
     assign active_tab = 'description'
+  elsif has_specification
+    assign active_tab = 'specification'
   elsif show_shipping
     assign active_tab = 'shipping'
   elsif show_refund
@@ -64,15 +72,18 @@
     assign active_tab = 'warranty'
   endif
 
-  assign description_selected = false
-  assign shipping_selected    = false
-  assign refund_selected      = false
-  assign warranty_selected    = false
-  assign reviews_selected     = false
+  assign description_selected   = false
+  assign specification_selected = false
+  assign shipping_selected      = false
+  assign refund_selected        = false
+  assign warranty_selected      = false
+  assign reviews_selected       = false
 
   case active_tab
     when 'description'
       assign description_selected = true
+    when 'specification'
+      assign specification_selected = true
     when 'shipping'
       assign shipping_selected = true
     when 'refund'
@@ -86,6 +97,9 @@
 
 {%- if has_description -%}
   <span id="description" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if has_specification -%}
+  <span id="specification" class="product-information__anchor" aria-hidden="true"></span>
 {%- endif -%}
 {%- if show_shipping -%}
   <span id="shipping" class="product-information__anchor" aria-hidden="true"></span>
@@ -117,6 +131,20 @@
         data-tab-target="description"
       >
         Description
+      </a>
+    {%- endif -%}
+
+    {%- if has_specification -%}
+      <a
+        href="#specification"
+        class="product-information__tab{% if active_tab == 'specification' %} is-active{% endif %}"
+        id="tab-specification-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ specification_selected }}"
+        aria-controls="panel-specification-{{ section.id }}"
+        data-tab-target="specification"
+      >
+        Specifications
       </a>
     {%- endif -%}
 
@@ -188,6 +216,19 @@
         {% unless active_tab == 'description' %}hidden{% endunless %}
       >
         {% render 'description', product: product %}
+      </div>
+    {%- endif -%}
+
+    {%- if has_specification -%}
+      <div
+        class="product-information__panel"
+        id="panel-specification-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-specification-{{ section.id }}"
+        data-tab-panel="specification"
+        {% unless active_tab == 'specification' %}hidden{% endunless %}
+      >
+        {% render 'specification', product: product %}
       </div>
     {%- endif -%}
 
