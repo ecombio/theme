@@ -1,0 +1,41 @@
+{% comment %}
+  snippets/star-rating.liquid  (Yotpo Star Rating)
+
+  Thin wrapper around snippets/yotpo-widgets.liquid (widget_type:
+  'yotpo_preview_badge'). This file owns the "should it link to the
+  Reviews Widget?" decision; yotpo-widgets.liquid owns the actual
+  data-yotpo-* markup, so the attributes only need to be correct in
+  one place.
+
+  Works in two contexts — pass whichever's relevant:
+  - Product pages / product cards: pass `product`
+  - Cart line items: pass `cart_item` (the `item` from a cart loop)
+
+  Usage:
+    {% render 'star-rating', product: product %}
+    {% render 'star-rating', cart_item: item %}
+
+  Optional:
+    {% render 'star-rating', product: product, link_to_reviews: false %}
+    (set false to render a non-clickable rating, e.g. inside a
+    product card that's already wrapped in its own <a> tag)
+{% endcomment %}
+
+{%- liquid
+  assign link_url = ''
+  if product
+    assign link_url = product.url | append: '#yotpoReviewsWidget'
+  elsif cart_item
+    assign link_url = cart_item.product.url | append: '#yotpoReviewsWidget'
+  endif
+-%}
+
+{%- capture widget_markup -%}
+  {%- render 'yotpo-widgets', widget_type: 'yotpo_preview_badge', product: product, cart_item: cart_item -%}
+{%- endcapture -%}
+
+{%- if link_to_reviews == false or link_url == blank -%}
+  {{ widget_markup }}
+{%- else -%}
+  <a href="{{ link_url }}" class="star-rating-link">{{ widget_markup }}</a>
+{%- endif -%}
