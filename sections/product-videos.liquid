@@ -1,6 +1,9 @@
 <link rel="stylesheet" href="{{ 'product-videos.css' | asset_url }}" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="{{ 'product-videos.css' | asset_url }}"></noscript>
+<link rel="stylesheet" href="{{ 'product-video.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ 'product-video.css' | asset_url }}"></noscript>
 <script src="{{ 'product-videos.js' | asset_url }}" defer></script>
+<script src="{{ 'product-video.js' | asset_url }}" defer></script>
 
 {%- liquid
   assign placeholder_names = 'lifestyle-1,lifestyle-2,product-1,product-2,product-3,product-4' | split: ','
@@ -46,19 +49,6 @@
             if placeholder_name == blank
               assign placeholder_name = 'lifestyle-1'
             endif
-
-            assign has_native_video = false
-            assign has_external_video = false
-            if block.settings.video != blank
-              assign has_native_video = true
-            elsif block.settings.video_url != blank
-              assign has_external_video = true
-            endif
-
-            assign has_thumbnail = false
-            if block.settings.thumbnail != blank
-              assign has_thumbnail = true
-            endif
           -%}
           <div
             class="product-videos__item"
@@ -67,72 +57,11 @@
             role="listitem"
             {{ block.shopify_attributes }}
           >
-            <div class="product-videos__frame">
-
-              <button
-                type="button"
-                class="product-videos__play-trigger"
-                data-video-play-trigger
-                aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}"
-                {% unless has_native_video or has_external_video %}disabled{% endunless %}
-              >
-                {%- if has_thumbnail -%}
-                  {{
-                    block.settings.thumbnail
-                    | image_url: width: 800
-                    | image_tag:
-                      loading: 'lazy',
-                      class: 'product-videos__thumbnail',
-                      sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 80vw',
-                      widths: '400,600,800,1000'
-                  }}
-                {%- elsif has_native_video and block.settings.video.preview_image -%}
-                  {{
-                    block.settings.video.preview_image
-                    | image_url: width: 800
-                    | image_tag:
-                      loading: 'lazy',
-                      class: 'product-videos__thumbnail',
-                      sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 80vw',
-                      widths: '400,600,800,1000'
-                  }}
-                {%- else -%}
-                  {{ placeholder_name | placeholder_svg_tag: 'product-videos__thumbnail product-videos__thumbnail--placeholder' }}
-                {%- endif -%}
-
-                <span class="product-videos__play-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="26" height="26" focusable="false">
-                    <path d="M8 5v14l11-7z" fill="currentColor"/>
-                  </svg>
-                </span>
-              </button>
-
-              <div class="product-videos__media" data-video-media hidden>
-                {%- if has_native_video -%}
-                  <div data-video-type="native">
-                    {{
-                      block.settings.video
-                      | video_tag:
-                        controls: true,
-                        preload: 'none',
-                        class: 'product-videos__video-el',
-                        image_size: '1100x'
-                    }}
-                  </div>
-                {%- elsif has_external_video -%}
-                  <div
-                    data-video-type="external"
-                    data-provider="{{ block.settings.video_url.type }}"
-                    data-video-id="{{ block.settings.video_url.id }}"
-                  ></div>
-                {%- endif -%}
-              </div>
-
-            </div>
-
-            {%- if section.settings.show_caption and block.settings.caption != blank -%}
-              <p class="product-videos__caption">{{ block.settings.caption }}</p>
-            {%- endif -%}
+            {%- render 'product-video',
+              block: block,
+              show_caption: section.settings.show_caption,
+              placeholder: placeholder_name
+            -%}
           </div>
         {%- endfor -%}
       </div>
