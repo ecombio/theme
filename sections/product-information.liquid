@@ -1,36 +1,47 @@
 {%- comment -%}==================================================
   sections/product-information.liquid
 
-  Horizontal tab replacement for the previous stacked layout:
-  accordion (Description / Shipping Policy / Refund & Return Policy,
-  from snippets/product-description.liquid) + a separate "Customer
-  Reviews" block below it (sections/reviews-widget.liquid).
+  Horizontal tab replacement for the previous stacked layout: the
+  accordion/dialog pattern in snippets/product-description.liquid
+  (Description / Shipping Policy / Refund & Return Policy / Warranty)
+  plus the separate "Customer Reviews" block below it
+  (sections/reviews-widget.liquid). This section supersedes BOTH.
 
-  This section supersedes BOTH of those. It's meant to sit as its
-  own section directly below the main-product section in the
-  template, not be rendered from inside main-product.liquid.
+  Content-source priority per tab, matching the original snippet
+  exactly:
+    Description — product.description (tab omitted if blank)
+    Shipping    — product.metafields.custom.product_policy.shipping_policy
+                  > pages['shipping-policy'] > shop.shipping_policy.body
+    Refund      — product.metafields.custom.product_policy.returns_refunds
+                  > pages['refund-policy'] > shop.refund_policy.body
+    Warranty    — product.metafields.custom.product_policy.warranty_policy
+                  > pages['warranty'] > "Please contact us for warranty
+                  information." fallback text
+    Reviews     — always shown (Yotpo widget renders its own empty
+                  state when there's nothing to display yet)
 
-  Required cleanup once this ships (not done automatically, since
-  it touches other files):
+  Each of the first four tabs only renders if it actually has content
+  from one of its sources -- same as the original snippet's has_*/
+  show_* flags. Whichever is the first tab with content becomes the
+  default active tab (usually Description, but falls through to
+  Shipping/Refund/Warranty/Reviews if Description is blank for a
+  given product).
+
+  Required cleanup once this ships (touches other files, not done
+  automatically):
   1. Remove `{%- render 'product-description' -%}` from
-     sections/main-product.liquid -- otherwise Description/Shipping/
-     Refund render twice (once here, once in the old accordion).
+     sections/main-product.liquid.
   2. Unassign the "Reviews widget" section from the product
-     template -- otherwise the Yotpo review_widget instance renders
-     twice on the same page, and yotpo-widgets.liquid's own comments
-     flag double-init as a real risk.
+     template, to avoid a duplicate Yotpo review_widget instance.
 
-  Assumption (please confirm): Shipping Policy and Refund & Return
-  Policy pull from Shopify's built-in shop.shipping_policy /
-  shop.refund_policy objects, since I don't have the actual
-  product-description snippet to see what it was pulling from. If
-  that snippet had custom content instead, send it over and I'll
-  wire this up to match exactly.
+  The star-rating badge's `#reviews` anchor still works unchanged.
 
-  The star-rating badge's `#reviews` anchor still works unchanged --
-  it targets the anchor span below, which carries the theme's
-  --sticky-header-height offset so the scroll lands below the
-  sticky header instead of underneath it.
+  FIX (this version): Liquid's `{{ ... }}` output tag cannot evaluate
+  comparison operators like `==`. The previous version used
+  `{{ active_tab == 'description' }}` for aria-selected, which throws
+  "Expected end_of_string but found comparison" at parse time. Fixed
+  by precomputing *_selected booleans below with `case`/`when` and
+  outputting those plain variables instead.
 ==================================================
 {%- endcomment -%}
 
@@ -47,6 +58,92 @@
   else
     assign width_class = 'product-information__custom-width'
   endif
+
+  assign has_description = false
+  if product.description != blank
+    assign has_description = true
+  endif
+
+  assign shipping_page = pages['shipping-policy']
+  assign refund_page   = pages['refund-policy']
+  assign warranty_page = pages['warranty']
+
+  assign has_shipping = false
+  assign has_refund   = false
+  assign has_warranty = false
+  if shipping_page.content != blank
+    assign has_shipping = true
+  endif
+  if refund_page.content != blank
+    assign has_refund = true
+  endif
+  if warranty_page.content != blank
+    assign has_warranty = true
+  endif
+
+  assign policy = product.metafields.custom.product_policy.value
+
+  assign has_custom_shipping = false
+  assign has_custom_refund   = false
+  assign has_custom_warranty = false
+  if policy.shipping_policy.value != blank
+    assign has_custom_shipping = true
+  endif
+  if policy.returns_refunds.value != blank
+    assign has_custom_refund = true
+  endif
+  if policy.warranty_policy.value != blank
+    assign has_custom_warranty = true
+  endif
+
+  assign show_shipping = false
+  assign show_refund   = false
+  assign show_warranty = false
+  if has_custom_shipping or has_shipping or shop.shipping_policy.body != blank
+    assign show_shipping = true
+  endif
+  if has_custom_refund or has_refund or shop.refund_policy.body != blank
+    assign show_refund = true
+  endif
+  if has_custom_warranty or has_warranty
+    assign show_warranty = true
+  endif
+
+  # First tab with content becomes the default active one. Reviews is
+  # the final fallback since the Yotpo widget always has something to
+  # render (even just its own empty state).
+  assign active_tab = 'reviews'
+  if has_description
+    assign active_tab = 'description'
+  elsif show_shipping
+    assign active_tab = 'shipping'
+  elsif show_refund
+    assign active_tab = 'refund'
+  elsif show_warranty
+    assign active_tab = 'warranty'
+  endif
+
+  # Precomputed aria-selected booleans. Liquid's {{ }} output tag can't
+  # evaluate `==` directly, so these are resolved here with case/when
+  # and just output as plain variables in the markup below.
+  assign description_selected = false
+  assign shipping_selected    = false
+  assign refund_selected      = false
+  assign warranty_selected    = false
+  assign reviews_selected     = false
+
+  case active_tab
+    when 'description'
+      assign description_selected = true
+    when 'shipping'
+      assign shipping_selected = true
+    when 'refund'
+      assign refund_selected = true
+    when 'warranty'
+      assign warranty_selected = true
+    when 'reviews'
+      assign reviews_selected = true
+  endcase
 -%}
 
 <span id="reviews" class="product-information__anchor" aria-hidden="true"></span>
@@ -64,85 +161,148 @@
 >
 
   <div class="product-information__nav" role="tablist" aria-label="Product information">
+
+    {%- if has_description -%}
+      <button
+        type="button"
+        class="product-information__tab{% if active_tab == 'description' %} is-active{% endif %}"
+        id="tab-description-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ description_selected }}"
+        aria-controls="panel-description-{{ section.id }}"
+        data-tab-target="description"
+      >
+        Description
+      </button>
+    {%- endif -%}
+
+    {%- if show_shipping -%}
+      <button
+        type="button"
+        class="product-information__tab{% if active_tab == 'shipping' %} is-active{% endif %}"
+        id="tab-shipping-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ shipping_selected }}"
+        aria-controls="panel-shipping-{{ section.id }}"
+        data-tab-target="shipping"
+      >
+        Shipping Policy
+      </button>
+    {%- endif -%}
+
+    {%- if show_refund -%}
+      <button
+        type="button"
+        class="product-information__tab{% if active_tab == 'refund' %} is-active{% endif %}"
+        id="tab-refund-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ refund_selected }}"
+        aria-controls="panel-refund-{{ section.id }}"
+        data-tab-target="refund"
+      >
+        Refund &amp; Return Policy
+      </button>
+    {%- endif -%}
+
+    {%- if show_warranty -%}
+      <button
+        type="button"
+        class="product-information__tab{% if active_tab == 'warranty' %} is-active{% endif %}"
+        id="tab-warranty-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ warranty_selected }}"
+        aria-controls="panel-warranty-{{ section.id }}"
+        data-tab-target="warranty"
+      >
+        Warranty
+      </button>
+    {%- endif -%}
+
     <button
       type="button"
-      class="product-information__tab is-active"
-      id="tab-description-{{ section.id }}"
-      role="tab"
-      aria-selected="true"
-      aria-controls="panel-description-{{ section.id }}"
-      data-tab-target="description"
-    >
-      Description
-    </button>
-    <button
-      type="button"
-      class="product-information__tab"
-      id="tab-shipping-{{ section.id }}"
-      role="tab"
-      aria-selected="false"
-      aria-controls="panel-shipping-{{ section.id }}"
-      data-tab-target="shipping"
-    >
-      Shipping Policy
-    </button>
-    <button
-      type="button"
-      class="product-information__tab"
-      id="tab-refund-{{ section.id }}"
-      role="tab"
-      aria-selected="false"
-      aria-controls="panel-refund-{{ section.id }}"
-      data-tab-target="refund"
-    >
-      Refund &amp; Return Policy
-    </button>
-    <button
-      type="button"
-      class="product-information__tab"
+      class="product-information__tab{% if active_tab == 'reviews' %} is-active{% endif %}"
       id="tab-reviews-{{ section.id }}"
       role="tab"
-      aria-selected="false"
+      aria-selected="{{ reviews_selected }}"
       aria-controls="panel-reviews-{{ section.id }}"
       data-tab-target="reviews"
     >
       Customer Reviews
     </button>
+
   </div>
 
   <div class="product-information__panels">
 
-    <div
-      class="product-information__panel"
-      id="panel-description-{{ section.id }}"
-      role="tabpanel"
-      aria-labelledby="tab-description-{{ section.id }}"
-      data-tab-panel="description"
-    >
-      {{ product.description }}
-    </div>
+    {%- if has_description -%}
+      <div
+        class="product-information__panel"
+        id="panel-description-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-description-{{ section.id }}"
+        data-tab-panel="description"
+        {% unless active_tab == 'description' %}hidden{% endunless %}
+      >
+        {{ product.description }}
+      </div>
+    {%- endif -%}
 
-    <div
-      class="product-information__panel"
-      id="panel-shipping-{{ section.id }}"
-      role="tabpanel"
-      aria-labelledby="tab-shipping-{{ section.id }}"
-      data-tab-panel="shipping"
-      hidden
-    >
-      {{ shop.shipping_policy.body }}
-    </div>
+    {%- if show_shipping -%}
+      <div
+        class="product-information__panel"
+        id="panel-shipping-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-shipping-{{ section.id }}"
+        data-tab-panel="shipping"
+        {% unless active_tab == 'shipping' %}hidden{% endunless %}
+      >
+        {%- if has_custom_shipping -%}
+          {{ policy.shipping_policy | metafield_tag }}
+        {%- elsif has_shipping -%}
+          {{ shipping_page.content }}
+        {%- else -%}
+          {{ shop.shipping_policy.body }}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
 
-    <div
-      class="product-information__panel"
-      id="panel-refund-{{ section.id }}"
-      role="tabpanel"
-      aria-labelledby="tab-refund-{{ section.id }}"
-      data-tab-panel="refund"
-      hidden
-    >
-      {{ shop.refund_policy.body }}
-    </div>
+    {%- if show_refund -%}
+      <div
+        class="product-information__panel"
+        id="panel-refund-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-refund-{{ section.id }}"
+        data-tab-panel="refund"
+        {% unless active_tab == 'refund' %}hidden{% endunless %}
+      >
+        {%- if has_custom_refund -%}
+          {{ policy.returns_refunds | metafield_tag }}
+        {%- elsif has_refund -%}
+          {{ refund_page.content }}
+        {%- else -%}
+          {{ shop.refund_policy.body }}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if show_warranty -%}
+      <div
+        class="product-information__panel"
+        id="panel-warranty-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-warranty-{{ section.id }}"
+        data-tab-panel="warranty"
+        {% unless active_tab == 'warranty' %}hidden{% endunless %}
+      >
+        {%- if has_custom_warranty -%}
+          {{ policy.warranty_policy | metafield_tag }}
+        {%- elsif has_warranty -%}
+          {{ warranty_page.content }}
+        {%- else -%}
+          <p>Please contact us for warranty information.</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
 
     <div
       class="product-information__panel"
@@ -150,7 +310,7 @@
       role="tabpanel"
       aria-labelledby="tab-reviews-{{ section.id }}"
       data-tab-panel="reviews"
-      hidden
+      {% unless active_tab == 'reviews' %}hidden{% endunless %}
     >
       {%- render 'yotpo-widgets', widget_type: 'yotpo_review_widget', product: product -%}
     </div>
