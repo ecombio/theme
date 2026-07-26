@@ -1,3 +1,43 @@
+/* product-information.css
+
+   2026-07-26 — Removed .product-information__default-width /
+   __full-width / __custom-width. These duplicated base.css's global
+   .shopify-section > .default-width / .full-width / .custom-width
+   rules under scoped names, which is what let this section's width
+   settings silently stop matching those global rules (same failure
+   mode main-header.css had). The section now renders one of the
+   global class names directly (via snippets/section-width.liquid),
+   so base.css's existing rules apply with no local duplicate needed.
+
+   TWO BEHAVIORAL DIFFERENCES THIS SURFACED — flagging rather than
+   silently picking, since both are visible design decisions:
+
+   1. DEFAULT MAX-WIDTH: this file's own .product-information__default
+      -width used 80rem (1280px). base.css's global .default-width
+      uses 1184px. Adopting the global class means "Default" width
+      sections here now cap at 1184px instead of 1280px — a ~96px
+      narrower product-info block by default. If 1280px was
+      intentional (e.g. to match a wider product page layout), don't
+      use "Default" — use "Custom width" set to 80rem instead, which
+      reproduces the old value exactly via the global .custom-width
+      class.
+
+   2. SIDE PADDING DIRECTION: the old .product-information rule was
+      `padding: var(--section-padding, 28px) 1rem;` — the "Side
+      padding" slider was actually being applied to top/bottom, with
+      left/right hardcoded at a fixed 1rem regardless of the slider.
+      That's the opposite of what the setting's label says. base.css's
+      global classes apply --section-padding as padding-INLINE
+      (left/right) — which is what the label actually promises. To
+      avoid changing behavior silently, vertical spacing below keeps
+      its own fixed padding-block (28px, matching the old default)
+      rather than being removed outright — but it's no longer tied to
+      the slider. If you want the slider to keep controlling vertical
+      spacing too (its old, mislabeled behavior), that needs a
+      decision: rename the setting to reflect both axes, or split it
+      into two sliders.
+*/
+
 .product-information__anchor {
   display: block;
   scroll-margin-top: var(--header-group-height, 68px);
@@ -9,21 +49,7 @@
 }
 
 .product-information {
-  width: 100%;
-  margin-inline: auto;
-  padding: var(--section-padding, 28px) 1rem;
-}
-
-.product-information__default-width {
-  max-width: 80rem;
-}
-
-.product-information__full-width {
-  max-width: none;
-}
-
-.product-information__custom-width {
-  max-width: min(var(--custom-width, 80rem), 100%);
+  padding-block: 28px;
 }
 
 .product-information__nav {
@@ -92,13 +118,28 @@
   display: none;
 }
 
-@media (max-width: 767px) {
+/* Was `@media (max-width: 767px)` narrowing these down from desktop
+   values — converted to mobile-first per the theme's breakpoint
+   system (see base.css's token table): these are now the base
+   mobile/xs-sm values, unqualified, with the min-width query below
+   restoring the roomier desktop sizing at md+. 767px was not one of
+   the theme's six standard cutoffs; folded into md (640px) rather
+   than kept as a seventh one-off value. */
+.product-information__nav {
+  gap: 1.1rem;
+}
+
+.product-information__tab {
+  font-size: 0.85rem;
+}
+
+@media (min-width: 40rem) {
   .product-information__nav {
-    gap: 1.1rem;
+    gap: 1.5rem;
   }
 
   .product-information__tab {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
 }
 

@@ -2,16 +2,21 @@
 <noscript><link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}"></noscript>
 <script src="{{ 'product-information.js' | asset_url }}" defer></script>
 
-{%- liquid
-  assign width_type = section.settings.section_width
-  if width_type == blank
-    assign width_class = 'product-information__default-width'
-  elsif width_type == 'full-width'
-    assign width_class = 'product-information__full-width'
-  else
-    assign width_class = 'product-information__custom-width'
-  endif
+{%- comment -%}
+  2026-07-26 — width_type/width_class assign block removed. It was a
+  duplicate of snippets/section-width.liquid (the theme's canonical
+  source for this logic — see that file's header comment), and this
+  section's CSS separately duplicated base.css's max-width rules under
+  scoped names (.product-information__default-width, etc.) instead of
+  using the global .default-width / .full-width / .custom-width
+  classes those duplicates were supposed to match. Both duplicates
+  removed; see product-information.css for the corresponding cleanup
+  and a note on one behavioral difference this surfaced (default max-
+  width was 80rem here vs. base.css's global 1184px — worth a decision,
+  flagged there rather than silently picked for you).
+{%- endcomment -%}
 
+{%- liquid
   assign has_description = false
   if product.description != blank
     assign has_description = true
@@ -108,15 +113,9 @@
 <span id="reviews" class="product-information__anchor" aria-hidden="true"></span>
 
 <div
-  class="product-information {{ width_class }}"
+  {% render 'section-width', section: section, extra_class: 'product-information' %}
   id="ProductInformation-{{ section.id }}"
   data-product-information
-  style="
-    --section-padding: {{ section.settings.section_padding }}px;
-    {%- if width_type == 'custom-width' %}
-      --custom-width: {{ section.settings.custom_width }}rem;
-    {%- endif %}
-  "
 >
 
   <div class="product-information__nav" role="tablist" aria-label="Product information">
