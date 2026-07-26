@@ -1,0 +1,122 @@
+{%- comment -%}
+  snippets/progress-bar.liquid
+
+  Self-contained free shipping progress bar. "Self-contained" means this
+  file loads its own CSS and JS — the including template does NOT need to
+  queue progress-bar.css/js in theme.liquid the way cart-drawer.css/js are.
+  Render this snippet anywhere and it works on its own.
+
+  Usage:
+    {%- render 'progress-bar',
+          enabled:        section.settings.show_free_shipping_bar,
+          threshold:      section.settings.free_shipping_threshold,
+          current_total:  cart.total_price,
+          label_progress: section.settings.free_shipping_label_progress,
+          label_complete: section.settings.free_shipping_label_complete
+    -%}
+
+  Params:
+    enabled        (boolean) — if false, or threshold is missing/zero,
+                                renders nothing at all.
+    threshold      (number)  — free shipping minimum, in the store's
+                                currency, as a plain decimal (e.g. 100 for
+                                $100.00). NOT cents.
+    current_total  (number)  — cart.total_price (cents) at render time.
+                                Used only for the FIRST paint; JS takes
+                                over from there via /cart.js.
+    label_progress (string)  — message shown before the goal is reached.
+                                Must contain the literal token {{ amount }}
+                                (as plain text, not a real Liquid tag) —
+                                progress-bar.js replaces it client-side.
+    label_complete (string)  — message shown once the goal is reached.
+
+  KNOWN LIMITATION — multi-currency / Shopify Markets:
+    `threshold` is a single number set once in the section schema and is
+    NOT converted per-market. cart.total_price already reflects whatever
+    presentment currency the customer is shopping in, but this snippet
+    does not convert `threshold` to match. On a single-currency store
+    this is a non-issue. On a store using Shopify Markets with multiple
+    currencies, the goal will effectively be wrong in every currency
+    except the one `threshold` was entered in — the bar will read as
+    "closer to" or "further from" free shipping than it actually is.
+    Fixing this properly needs Shopify's Markets exchange-rate object,
+    which isn't wired up here.
+{%- endcomment -%}
+
+{%- liquid
+  assign threshold_num = threshold | times: 1.0
+-%}
+
+{%- if enabled and threshold_num > 0 -%}
+  {{ 'progress-bar.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'progress-bar.js' | asset_url }}" defer></script>
+
+  {%- liquid
+    assign threshold_cents = threshold_num | times: 100 | round
+    assign current_cents   = current_total | default: 0
+    if current_cents < 0
+      assign current_cents = 0
+    endif
+
+    assign remaining_cents = threshold_cents | minus: current_cents
+    if remaining_cents < 0
+      assign remaining_cents = 0
+    endif
+
+    assign percent = current_cents | times: 100.0 | divided_by: threshold_cents
+    if percent > 100
+      assign percent = 100
+    endif
+
+    assign is_complete = false
+    if current_cents >= threshold_cents
+      assign is_complete = true
+    endif
+
+    assign progress_template = label_progress | default: "You're {{ amount }} away from free shipping!"
+    assign complete_template = label_complete | default: "You've unlocked free shipping!"
+  -%}
+
+  <div
+    class="ecombio-progress-bar{% if is_complete %} is-complete{% endif %}"
+    data-ecombio-progress-bar
+    data-threshold="{{ threshold_cents }}"
+    data-current="{{ current_cents }}"
+    data-label-progress="{{ progress_template | escape }}"
+    data-label-complete="{{ complete_template | escape }}"
+  >
+    <p
+      class="ecombio-progress-bar__message"
+      data-ecombio-progress-message
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <svg class="ecombio-progress-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>
+        {%- if is_complete -%}
+          {{ complete_template }}
+        {%- else -%}
+          {{ progress_template | replace: '{{ amount }}', remaining_cents | money }}
+        {%- endif -%}
+      </span>
+    </p>
+
+    <div
+      class="ecombio-progress-bar__track"
+      role="progressbar"
+      aria-valuenow="{{ percent | round }}"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-label="Progress toward free shipping"
+    >
+      <div
+        class="ecombio-progress-bar__fill"
+        data-ecombio-progress-fill
+        style="width: {{ percent }}%;"
+      ></div>
+    </div>
+  </div>
+{%- endif -%}
