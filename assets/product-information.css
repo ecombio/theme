@@ -1,6 +1,15 @@
+/* Anchor targets for jump links (#description, #shipping, #refund,
+   #warranty, #reviews — see the liquid file). scroll-margin-top uses
+   --header-group-height (set by header-group.js) so a same-page jump
+   or a direct link with a hash lands the tab row right below the
+   sticky header instead of underneath it.
+
+   FIX — was --sticky-header-height, a variable nothing in this theme
+   actually sets, so scroll-margin-top silently fell back to 0px and
+   jumps landed the anchor right under the fixed header. */
 .product-information__anchor {
   display: block;
-  scroll-margin-top: var(--sticky-header-height, 0px);
+  scroll-margin-top: var(--header-group-height, 68px);
 }
 
 .product-information,
@@ -55,7 +64,12 @@
   top: 0;
 }
 
-.product-information__tab {
+/* Tabs are <a href="#slug"> jump links now (see the liquid file), not
+   buttons — text-decoration and the :visited override strip the
+   browser's default link styling so they still look identical to the
+   original button markup. */
+.product-information__tab,
+.product-information__tab:visited {
   flex-shrink: 0;
   padding: 0.85rem 0.1rem;
   background: none;
@@ -66,6 +80,7 @@
   color: #6B7280;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -73,7 +88,8 @@
   color: #111827;
 }
 
-.product-information__tab.is-active {
+.product-information__tab.is-active,
+.product-information__tab.is-active:visited {
   color: #111827;
   border-bottom-color: #111827;
 }

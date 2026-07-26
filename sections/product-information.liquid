@@ -34,14 +34,25 @@
   2. Unassign the "Reviews widget" section from the product
      template, to avoid a duplicate Yotpo review_widget instance.
 
-  The star-rating badge's `#reviews` anchor still works unchanged.
+  FIX (previous version): Liquid's `{{ ... }}` output tag cannot
+  evaluate comparison operators like `==`. `{{ active_tab ==
+  'description' }}` for aria-selected threw "Expected end_of_string
+  but found comparison" at parse time. Fixed by precomputing
+  *_selected booleans below with `case`/`when` and outputting those
+  plain variables instead.
 
-  FIX (this version): Liquid's `{{ ... }}` output tag cannot evaluate
-  comparison operators like `==`. The previous version used
-  `{{ active_tab == 'description' }}` for aria-selected, which throws
-  "Expected end_of_string but found comparison" at parse time. Fixed
-  by precomputing *_selected booleans below with `case`/`when` and
-  outputting those plain variables instead.
+  FIX (this version): Jump links. Each tab now has a matching anchor
+  (#description, #shipping, #refund, #warranty, #reviews) that can be
+  linked to from anywhere on the page or from another page's URL —
+  generalized from the single hardcoded #reviews anchor that used to
+  be the only one of these. Tabs themselves are now <a href="#slug">
+  elements rather than plain buttons, so clicking one also updates
+  the URL hash and makes that tab shareable/bookmarkable. Anchors are
+  rendered above the whole component (not inside the hidden panels),
+  since a same-page jump can't land on a display:none target — the
+  anchors just need to sit at roughly the right scroll position, and
+  product-information.js does the actual tab-switching once the hash
+  is read.
 ==================================================
 {%- endcomment -%}
 
@@ -146,6 +157,18 @@
   endcase
 -%}
 
+{%- if has_description -%}
+  <span id="description" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if show_shipping -%}
+  <span id="shipping" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if show_refund -%}
+  <span id="refund" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if show_warranty -%}
+  <span id="warranty" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
 <span id="reviews" class="product-information__anchor" aria-hidden="true"></span>
 
 <div
@@ -163,8 +186,8 @@
   <div class="product-information__nav" role="tablist" aria-label="Product information">
 
     {%- if has_description -%}
-      <button
-        type="button"
+      <a
+        href="#description"
         class="product-information__tab{% if active_tab == 'description' %} is-active{% endif %}"
         id="tab-description-{{ section.id }}"
         role="tab"
@@ -173,12 +196,12 @@
         data-tab-target="description"
       >
         Description
-      </button>
+      </a>
     {%- endif -%}
 
     {%- if show_shipping -%}
-      <button
-        type="button"
+      <a
+        href="#shipping"
         class="product-information__tab{% if active_tab == 'shipping' %} is-active{% endif %}"
         id="tab-shipping-{{ section.id }}"
         role="tab"
@@ -187,12 +210,12 @@
         data-tab-target="shipping"
       >
         Shipping Policy
-      </button>
+      </a>
     {%- endif -%}
 
     {%- if show_refund -%}
-      <button
-        type="button"
+      <a
+        href="#refund"
         class="product-information__tab{% if active_tab == 'refund' %} is-active{% endif %}"
         id="tab-refund-{{ section.id }}"
         role="tab"
@@ -201,12 +224,12 @@
         data-tab-target="refund"
       >
         Refund &amp; Return Policy
-      </button>
+      </a>
     {%- endif -%}
 
     {%- if show_warranty -%}
-      <button
-        type="button"
+      <a
+        href="#warranty"
         class="product-information__tab{% if active_tab == 'warranty' %} is-active{% endif %}"
         id="tab-warranty-{{ section.id }}"
         role="tab"
@@ -215,11 +238,11 @@
         data-tab-target="warranty"
       >
         Warranty
-      </button>
+      </a>
     {%- endif -%}
 
-    <button
-      type="button"
+    <a
+      href="#reviews"
       class="product-information__tab{% if active_tab == 'reviews' %} is-active{% endif %}"
       id="tab-reviews-{{ section.id }}"
       role="tab"
@@ -228,7 +251,7 @@
       data-tab-target="reviews"
     >
       Customer Reviews
-    </button>
+    </a>
 
   </div>
 
