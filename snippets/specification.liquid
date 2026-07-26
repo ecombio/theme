@@ -1,0 +1,36 @@
+{%- comment -%}
+  snippets/specification.liquid
+  Renders a product's specification table from the custom.specifications
+  metaobject-list metafield (each entry: label + content).
+
+  Usage:
+    {% render 'specification', product: product %}
+{%- endcomment -%}
+
+{%- liquid
+  assign specs = product.metafields.custom.specifications.value
+-%}
+
+{%- if specs != blank -%}
+
+  <link rel="stylesheet" href="{{ 'specification.css' | asset_url }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ 'specification.css' | asset_url }}"></noscript>
+
+  <table class="specification-table">
+    <tbody>
+      {%- for spec in specs -%}
+        {%- liquid
+          assign spec_label = spec.label.value
+          assign spec_content = spec.content.value
+        -%}
+        {%- if spec_label != blank and spec_content != blank -%}
+          <tr class="specification-table__row">
+            <th class="specification-table__label" scope="row">{{ spec_label }}</th>
+            <td class="specification-table__value">{{ spec_content }}</td>
+          </tr>
+        {%- endif -%}
+      {%- endfor -%}
+    </tbody>
+  </table>
+
+{%- endif -%}
