@@ -1,3 +1,58 @@
+/*
+  product-videos.css handles carousel/section-level layout (heading,
+  track, slot sizing, arrows). Each slot's inner markup — thumbnail,
+  play button overlay, and video/embed — is styled by product-video.css
+  and rendered either by snippets/product-video.liquid (theme sections)
+  or hand-coded HTML (e.g. pasted into a product description).
+
+  Example: one carousel slot using a self-hosted Shopify CDN video.
+
+  <div class="product-videos__item" data-video-item role="listitem">
+    <div class="product-video" data-product-video>
+      <div class="product-video__frame">
+
+        <button
+          type="button"
+          class="product-video__play-trigger"
+          data-video-play-trigger
+          aria-label="Play video: Ride demo"
+        >
+          <img
+            class="product-video__thumbnail"
+            src="https://cdn.shopify.com/s/files/.../ride-demo-thumb.jpg"
+            alt="Ace P-51 ride demo"
+            loading="lazy"
+          >
+          <span class="product-video__play-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" focusable="false">
+              <path d="M8 5v14l11-7z" fill="currentColor"/>
+            </svg>
+          </span>
+        </button>
+
+        <div class="product-video__media" data-video-media hidden>
+          <div data-video-type="native">
+            <video class="product-video__video-el" controls preload="none" playsinline>
+              <source
+                src="https://cdn.shopify.com/videos/c/o/v/aaea60fa37a1450d842e6c5d87593edb.mp4"
+                type="video/mp4"
+              >
+            </video>
+          </div>
+        </div>
+
+      </div>
+      <p class="product-video__caption">Ride demo</p>
+    </div>
+  </div>
+
+  On load, .product-video__media stays [hidden] and the thumbnail/play
+  button are what's visible. product-video.js listens for a click on
+  [data-video-play-trigger], then unhides [data-video-media] and calls
+  .play() on the <video> inside it — no page reload, no iframe needed,
+  since this is a direct .mp4 source rather than a YouTube/Vimeo embed.
+*/
+
 .product-videos,
 .product-videos * {
   box-sizing: border-box;
