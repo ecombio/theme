@@ -5,14 +5,21 @@
     {{ 'theme.css'                 | asset_url | stylesheet_tag }}
     {{ 'header-group.css'          | asset_url | stylesheet_tag }}
     {{ 'quick-view.css'            | asset_url | stylesheet_tag }}
-    {{ 'cart-drawer.css'           | asset_url | stylesheet_tag }}
-    {{ 'cart-recommendations.css'  | asset_url | stylesheet_tag }}
     {{ 'collection-layout.css'     | asset_url | stylesheet_tag }}
     {{ 'compare-bar.css'           | asset_url | stylesheet_tag }}
     {{ 'section-accordion.css'     | asset_url | stylesheet_tag }}
     {{ 'related-products.css'      | asset_url | stylesheet_tag }}
     {{ 'product-card.css'      | asset_url | stylesheet_tag }}
     {% render 'css-variables' %}
+
+    {%- comment -%}
+      cart-drawer.css, cart-recommendations.css, and progress-bar.css are
+      intentionally NOT queued here. All three are self-contained: they're
+      loaded by sections/cart-drawer.liquid, snippets/cart-recommendations.liquid,
+      and snippets/progress-bar.liquid respectively, the moment (and only if)
+      those templates actually render. Queuing them here too would double-load
+      them on every page.
+    {%- endcomment -%}
 
     {% unless settings.type_primary_font.system? %}
       <link rel="preconnect" href="https://fonts.shopifycdn.com" crossorigin>
@@ -55,13 +62,17 @@
     {{- 'collection-filters.js' | asset_url | script_tag }}
     {{- 'product-card.js'       | asset_url | script_tag }}
 
+    {%- comment -%}
+      cart-drawer.js and cart-recommendations.js are intentionally NOT
+      queued here — see the CSS note above. The section/snippet that
+      render the drawer are what pull in their own scripts.
+    {%- endcomment -%}
+
     {% render 'compare-bar' %}
     {% section 'cart-drawer' %}
     {% section 'quick-view' %}
 
-    <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
-    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
-    <script src="{{ 'quick-view.js'           | asset_url }}" defer></script>
+    <script src="{{ 'quick-view.js' | asset_url }}" defer></script>
 
   </body>
 </html>
