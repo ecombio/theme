@@ -1,40 +1,3 @@
-{%- comment -%}
-  snippets/cart-recommendations.liquid
-
-  Renders the product recommendations shell inside the cart drawer.
-  JS (cart-recommendations.js) reads data-* attributes from the drawer root
-  (#ecombio-cart-drawer: data-show-related, data-show-complementary, data-rec-limit)
-  and from this container, then fetches + injects cards after the drawer opens.
-
-  SELF-CONTAINED: this snippet loads cart-recommendations.css/js itself,
-  below, inside the same show_related/show_complementary guard that gates
-  the rest of the markup — so nothing is fetched or shipped to the page
-  when both settings are off. Do NOT also queue these assets in
-  theme.liquid; that would either double-load them (if always queued) or
-  reintroduce a hard dependency between this snippet and the base layout
-  (if conditionally queued from section settings, which theme.liquid has
-  no clean way to check). Rendering this snippet is the only thing that
-  should determine whether these assets load.
-
-  Usage (inside cart-drawer.liquid, after the items list):
-    {%- render 'cart-recommendations',
-          show_related: show_related,
-          show_complementary: show_complementary,
-          related_label: related_label,
-          complementary_label: complementary_label
-    -%}
-
-  "related" intent       → Shopify ML, works out of the box.
-  "complementary" intent → Requires Shopify Search & Discovery app +
-                           complementary products configured per product in Admin.
-                           Returns 0 products silently; rail hidden automatically.
-
-  NOTE: this snippet only controls whether the *container* exists. Whether
-  each rail actually shows is decided again at fetch time in JS via the
-  drawer root's data-show-related / data-show-complementary attributes —
-  keep both in sync if you ever change how those settings are threaded through.
-{%- endcomment -%}
-
 {%- if show_related or show_complementary -%}
   {{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
   <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
@@ -45,11 +8,6 @@
     data-related-label="{{ related_label | escape }}"
     data-complementary-label="{{ complementary_label | escape }}"
   >
-    {%- comment -%}
-      A visually-hidden live region announces state changes to screen readers
-      without reading out every product title on each re-render.
-      JS updates this element's text when recs load or are unavailable.
-    {%- endcomment -%}
     <span
       class="ecombio-cart-recs__status"
       role="status"
@@ -57,11 +15,6 @@
       aria-atomic="true"
     ></span>
 
-    {%- comment -%}
-      Skeleton renders immediately server-side to prevent layout shift.
-      Must stay structurally identical to showSkeleton() in
-      cart-recommendations.js so JS taking over causes no visible flash.
-    {%- endcomment -%}
     <div class="ecombio-cart-recs__skeleton" aria-hidden="true">
       <div class="ecombio-cart-recs__skeleton-bar"></div>
       <div class="ecombio-cart-recs__skeleton-cards">
