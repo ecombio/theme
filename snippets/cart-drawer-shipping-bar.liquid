@@ -1,0 +1,69 @@
+{%- comment -%}
+  snippets/cart-drawer-shipping-bar.liquid
+
+  Free shipping progress bar. Shows either:
+    - an in-progress message + partial bar ("Spend $X more for free shipping")
+    - a success message + full bar ("You are eligible for free shipping")
+
+  Parameters:
+    minimum_cents (required) — the free shipping threshold, in cents,
+      passed in by the caller:
+      {%- render 'cart-drawer-shipping-bar', minimum_cents: minimum_cents -%}
+
+  KNOWN LIMITATION — this compares cart.total_price against minimum_cents
+  directly, both assumed to be in the store's primary currency. It does
+  NOT convert minimum_cents using Shopify Markets exchange rates for a
+  shopper viewing the store in a different currency. If you sell across
+  multiple markets/currencies, the threshold will read correctly for the
+  shopper's currency, so it will read as if free shipping unlocks at the
+  wrong (converted 1:1) amount rather than the true market rate. This
+  would need Shopify's `localization` / market objects to fix properly.
+{%- endcomment -%}
+
+{%- liquid
+  assign remaining_cents = minimum_cents | minus: cart.total_price
+  if remaining_cents < 0
+    assign remaining_cents = 0
+  endif
+
+  assign progress_pct = 100
+  if minimum_cents > 0
+    assign progress_pct = cart.total_price | times: 100 | divided_by: minimum_cents
+    if progress_pct > 100
+      assign progress_pct = 100
+    endif
+  endif
+
+  assign is_eligible = false
+  if remaining_cents == 0
+    assign is_eligible = true
+  endif
+-%}
+
+<div
+  class="ecombio-cart-drawer__shipping-bar{% if is_eligible %} ecombio-cart-drawer__shipping-bar--eligible{% endif %}"
+  data-ecombio-shipping-bar
+  data-minimum-cents="{{ minimum_cents }}"
+>
+  <p class="ecombio-cart-drawer__shipping-message" aria-live="polite">
+    {%- if is_eligible -%}
+      You are eligible for free shipping.
+    {%- else -%}
+      Spend {{ remaining_cents | money }} more for free shipping.
+    {%- endif -%}
+  </p>
+
+  <div
+    class="ecombio-cart-drawer__shipping-track"
+    role="progressbar"
+    aria-label="Progress toward free shipping"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="{{ progress_pct }}"
+  >
+    <div
+      class="ecombio-cart-drawer__shipping-fill"
+      style="width: {{ progress_pct }}%;"
+    ></div>
+  </div>
+</div>
