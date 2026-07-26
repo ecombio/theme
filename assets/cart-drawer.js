@@ -1,7 +1,7 @@
 /**
  * cart-drawer.js
  * Handles open/close, quantity updates, item removal, subtotal refresh,
- * the free shipping progress bar, and the public EcombioCart API.
+ * and the public EcombioCart API.
  *
  * Custom events dispatched:
  *   'cart:drawer:open'  — drawer just opened
@@ -26,17 +26,6 @@
  *   Updated event    : cart:updated
  *   Opened event     : cart:drawer:open
  *   Closed event     : cart:drawer:close
- *
- * Changelog:
- *   2026-07-25 — refreshDrawerHTML() now also swaps the free shipping
- *                bar (snippets/cart-drawer-shipping-bar.liquid) so its
- *                message and progress fill stay in sync after a qty
- *                change, removal, or rec-card add — same pattern
- *                already used for the body and footer. The bar is
- *                optional in the rendered HTML (only present when the
- *                merchant has it enabled and the cart isn't empty), so
- *                every lookup here is null-safe and no-ops if it's
- *                absent on either side of the swap.
  */
 
 (() => {
@@ -48,15 +37,14 @@
   const OPEN_CLASS  = 'is-open';
   const LOCK_CLASS  = 'cart-drawer-open';
 
-  const TRIGGER_SEL      = '[data-ecombio-cart-trigger]'; // SOURCE OF TRUTH — must match header-cart.liquid
-  const CLOSE_SEL        = '[data-ecombio-cart-close]';
-  const QTY_SEL          = '[data-ecombio-qty-change]';
-  const REMOVE_SEL       = '[data-ecombio-remove-item]';
-  const BODY_SEL         = '[data-ecombio-cart-body]';
-  const FOOTER_SEL       = '[data-ecombio-cart-footer]';
-  const SHIPPING_BAR_SEL = '[data-ecombio-shipping-bar]';
-  const COUNT_SEL        = '[data-cart-count]';           // SOURCE OF TRUTH — must match header-cart.liquid
-  const LOADING_SEL      = '[data-ecombio-cart-loading]';
+  const TRIGGER_SEL = '[data-ecombio-cart-trigger]'; // SOURCE OF TRUTH — must match header-cart.liquid
+  const CLOSE_SEL   = '[data-ecombio-cart-close]';
+  const QTY_SEL     = '[data-ecombio-qty-change]';
+  const REMOVE_SEL  = '[data-ecombio-remove-item]';
+  const BODY_SEL    = '[data-ecombio-cart-body]';
+  const FOOTER_SEL  = '[data-ecombio-cart-footer]';
+  const COUNT_SEL   = '[data-cart-count]';            // SOURCE OF TRUTH — must match header-cart.liquid
+  const LOADING_SEL = '[data-ecombio-cart-loading]';
 
   // ── State ──────────────────────────────────────────────────────────────────
 
@@ -168,22 +156,6 @@
         newFooter.hasAttribute('hidden')
           ? curFooter.setAttribute('hidden', '')
           : curFooter.removeAttribute('hidden');
-      }
-
-      // Shipping bar is optional markup — only present when the merchant
-      // has it enabled AND the cart isn't empty (see cart-drawer.liquid).
-      // Handle all four combinations: present→present (update), present→absent
-      // (cart just emptied, remove it), absent→present (cart just went from
-      // empty to non-empty, insert it), absent→absent (no-op).
-      const newBar = doc.querySelector(SHIPPING_BAR_SEL);
-      const curBar = document.querySelector(SHIPPING_BAR_SEL);
-
-      if (newBar && curBar) {
-        curBar.outerHTML = newBar.outerHTML;
-      } else if (newBar && !curBar) {
-        curBody?.insertAdjacentElement('beforebegin', newBar);
-      } else if (!newBar && curBar) {
-        curBar.remove();
       }
     } catch (err) {
       console.error('[EcombioCart] HTML refresh failed', err);
