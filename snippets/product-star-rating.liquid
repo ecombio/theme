@@ -1,17 +1,26 @@
 {% comment %}
   snippets/product-star-rating.liquid  (Yotpo Star Rating)
 
-  Drop this anywhere you want a small clickable star rating —
-  product cards on collection/search grids, near the price on
-  the main product page, etc. Uses the same Yotpo loader script
-  already installed in theme.liquid; no extra <script> needed.
+  This matches Yotpo's own documented install snippet for this store's
+  account (Yotpo admin > On-Site Widgets > Star Ratings > Publish >
+  Show Instructions) — the instance-based system, same pattern as the
+  Reviews Widget, NOT the older `.yotpo.bottomLine` format some generic
+  install guides reference. Don't mix the two markups.
 
-  Yotpo's own behavior: if a product has zero reviews, the div
-  stays empty and nothing renders — no shimmer or hide/fail
-  logic needed here, unlike the full Reviews Widget section.
+  Important: Star Ratings has its own Instance ID (1332841), separate
+  from the Reviews Widget's Instance ID (1332840 in
+  sections/product-reviews.liquid). If Yotpo ever shows you a different
+  Instance ID for Star Ratings, update the instance_id param default
+  below.
+
+  Works in two contexts — pass whichever's relevant, the other's data
+  attribute renders blank and Yotpo's script handles that fine:
+  - Product pages / product cards: pass `product`
+  - Cart line items: pass `cart_item` (the `item` from a cart loop)
 
   Usage:
     {% render 'product-star-rating', product: product %}
+    {% render 'product-star-rating', cart_item: item %}
 
   Optional:
     {% render 'product-star-rating', product: product, link_to_reviews: false %}
@@ -19,10 +28,39 @@
     product card that's already wrapped in its own <a> tag)
 {% endcomment %}
 
-{%- unless link_to_reviews == false -%}
-  <a href="{{ product.url }}#yotpoReviewsWidget" class="star-rating-link">
-    <div class="yotpo bottomLine" data-product-id="{{ product.id }}" data-url="{{ shop.url }}{{ product.url }}"></div>
-  </a>
+{%- liquid
+  assign instance_id = instance_id | default: '1332841'
+
+  assign resolved_product_id = ''
+  if product
+    assign resolved_product_id = product.id
+  endif
+
+  assign resolved_cart_product_id = ''
+  if cart_item
+    assign resolved_cart_product_id = cart_item.product.id
+  endif
+
+  assign link_url = ''
+  if product
+    assign link_url = product.url | append: '#yotpoReviewsWidget'
+  elsif cart_item
+    assign link_url = cart_item.product.url | append: '#yotpoReviewsWidget'
+  endif
+-%}
+
+{%- capture widget_markup -%}
+  <div
+    class="yotpo-widget-instance"
+    data-yotpo-instance-id="{{ instance_id }}"
+    data-yotpo-product-id="{{ resolved_product_id }}"
+    data-yotpo-cart-product-id="{{ resolved_cart_product_id }}"
+    data-yotpo-section-id="{{ template.name }}"
+  ></div>
+{%- endcapture -%}
+
+{%- if link_to_reviews == false or link_url == blank -%}
+  {{ widget_markup }}
 {%- else -%}
-  <div class="yotpo bottomLine" data-product-id="{{ product.id }}" data-url="{{ shop.url }}{{ product.url }}"></div>
-{%- endunless -%}
+  <a href="{{ link_url }}" class="star-rating-link">{{ widget_markup }}</a>
+{%- endif -%}
