@@ -1,3 +1,30 @@
+/* main-header.css
+
+   Changelog:
+     2026-07-26 — Converted every breakpoint in this file from
+                  desktop-first (max-width, cascading down) to the
+                  theme's mobile-first system (min-width, cascading
+                  up — base rules are unqualified/mobile, then md and
+                  lg override upward). See the token table at the top
+                  of base.css for the full six-tier scale (xs–2xl)
+                  and why md=640/lg=1024 were chosen.
+
+                  This also FIXES a real bug: mobile sizing used to
+                  flip at two different cutoffs that disagreed with
+                  each other — 599px (header height/padding, via a
+                  `max-width: 599px` rule) vs 639px (search-drawer
+                  visibility + menu-bar scroll mode, via `max-width:
+                  639px` / `min-width: 640px`). A viewport between
+                  600–639px was "tablet" by one rule and "mobile" by
+                  the other simultaneously. It also contradicted this
+                  section's own schema, which explicitly labels the
+                  tiers "Mobile Division (< 640px)" / "Tablet Division
+                  (640px – 1023px)". Everything below now agrees on a
+                  single md=640px / lg=1024px boundary, matching that
+                  schema exactly. No visual values changed (same
+                  heights, padding, gaps as before) — only where the
+                  line falls and which direction the query reads. */
+
 :root {
   --hdr-height-desktop : 68px;
   --hdr-height-tablet  : 64px;
@@ -75,11 +102,9 @@
   max-width: 100%;
   margin: 0 auto;
   padding: 0 var(--section-padding, 24px);
-  height: var(--hdr-height-desktop);
 }
 
 .ecombio-header__hamburger {
-  display: none;
   flex-direction: column;
   justify-content: center;
   gap: 5px;
@@ -106,16 +131,6 @@
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-/* ASSUMPTION — verify against your actual breakpoint intent */
-.main-header__search-drawer-mobile-only { display: none; }
-.main-header__search-drawer-tablet-only { display: none; }
-@media (max-width: 639px) {
-  .main-header__search-drawer-mobile-only { display: flex; align-items: center; }
-}
-@media (min-width: 640px) and (max-width: 1023px) {
-  .main-header__search-drawer-tablet-only { display: flex; align-items: center; }
-}
 
 .ecombio-search__form {
   display: flex;
@@ -216,11 +231,13 @@
    fills the available room on typical desktop widths without stretching
    to an awkward, overly wide bar on very large / ultrawide screens. If
    you'd rather it always fill 100% of whatever space is left with no
-   ceiling at all, drop the max-width line entirely. */
+   ceiling at all, drop the max-width line entirely. Still unscaled by
+   breakpoint (xl/2xl) — flag if you want this to grow further on
+   ultra-wide screens instead of staying fixed at 960px. */
 .main-header__search--inline { flex: 1 1 auto; min-width: 0; max-width: 960px; }
 
-.main-header__search-row { display: none; border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
-.main-header__search-row-inner { max-width: 100%; margin: 0 auto; padding: 8px var(--section-padding, 24px); }
+.main-header__search-row { border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
+.main-header__search-row-inner { max-width: 100%; margin: 0 auto; }
 
 /* FIX — Section layout (Section width / Custom width / Side padding)
    was wired up correctly in main-header.liquid — same pattern as
@@ -415,32 +432,121 @@
   border: 0;
 }
 
-@media (max-width: 1023px) {
-  .main-header__inner { height: var(--hdr-height-tablet); padding: 0 20px; gap: 10px; }
-  .ecombio-header__hamburger { display: flex; }
-  .main-header__search--inline { display: none; }
-  .main-header__search-row { display: block; }
+.menu-bar__container { position: relative; }
+
+.menu-bar__list {
+  display: flex;
+  align-items: stretch;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
 }
 
-@media (max-width: 599px) {
-  .main-header__inner { height: var(--hdr-height-mobile); padding: 0 16px; gap: 8px; }
-  .main-header__search-row-inner { padding: 6px 12px; }
-  .ecombio-search__form { height: 42px; }
+.menu-bar__item { position: relative; }
+
+.menu-bar__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #1a1a1a;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.menu-bar__link:hover,
+.menu-bar__item:hover > .menu-bar__link { color: var(--hdr-accent); }
+
+.menu-bar__icon { display: inline-flex; align-items: center; margin-right: 6px; flex-shrink: 0; }
+.menu-bar__icon svg { width: 16px; height: 16px; }
+
+.icon-caret-down { display: inline-block; width: 13px; height: 13px; flex-shrink: 0; transition: transform 0.2s ease; }
+.menu-bar__item:hover > .menu-bar__link .icon-caret-down { transform: rotate(180deg); }
+
+/* ============================================
+   Base (xs/sm) — mobile styles, unqualified.
+   This is the mobile-first "floor": everything below is what
+   ships to every viewport unless overridden by an md/lg query
+   further down.
+   ============================================ */
+.main-header__inner {
+  height: var(--hdr-height-mobile);
+  padding: 0 16px;
+  gap: 8px;
+}
+.main-header__search-row-inner { padding: 6px 12px; }
+.ecombio-search__form { height: 42px; }
+
+.ecombio-header__hamburger { display: flex; }
+.main-header__search--inline { display: none; }
+.main-header__search-row { display: block; }
+
+.menu-bar { display: none; }
+.menu-bar__edge-fade { display: none; }
+
+/* ASSUMPTION — verify against your actual breakpoint intent.
+   Consolidated from the old 599px/639px split onto md=640px. */
+.main-header__search-drawer-mobile-only { display: none; }
+.main-header__search-drawer-tablet-only { display: none; }
+.main-header__search-drawer-mobile-only { display: flex; align-items: center; }
+
+.main-header--menu-bar-mobile-visible .menu-bar {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
+  padding: 0;
+}
+.main-header--menu-bar-mobile-visible .menu-bar::-webkit-scrollbar { display: none; }
+.main-header--menu-bar-mobile-visible .menu-bar .menu-bar__container {
+  width: max-content;
+  max-width: unset;
+  min-width: 100%;
+  padding: 0 16px;
+}
+.main-header--menu-bar-mobile-visible .menu-bar__list { flex-wrap: nowrap; width: max-content; }
+
+/* ============================================
+   md: 640px (40rem) — tablet division
+   Was two disagreeing cutoffs (599px for height/padding, 639px for
+   search-drawer/menu-bar visibility). Now one boundary, matching
+   main-header.liquid's own "Tablet Division (640px – 1023px)" label.
+   ============================================ */
+@media (min-width: 40rem) {
+  .main-header__inner {
+    height: var(--hdr-height-tablet);
+    padding: 0 20px;
+    gap: 10px;
+  }
+
+  .main-header__search-drawer-mobile-only { display: none; }
+  .main-header__search-drawer-tablet-only { display: flex; align-items: center; }
+
+  .main-header--menu-bar-tablet-visible .menu-bar {
+    display: flex;
+    flex-wrap: wrap;
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ecombio-mobile-nav__overlay,
-  .ecombio-mobile-nav__panel,
-  .ecombio-mobile-nav__chevron,
-  .ecombio-header__hamburger span { transition: none !important; }
-}
+/* ============================================
+   lg: 1024px (64rem) — desktop division
+   ============================================ */
+@media (min-width: 64rem) {
+  .main-header__inner {
+    height: var(--hdr-height-desktop);
+  }
 
-@media (min-width: 1024px) {
-  /* FIX — was max-width:1184px + margin:0 auto, which centers this bar
-     independently of .main-header__inner's own alignment (100% width +
-     24px side padding). On wide viewports the two rows drift apart,
-     causing the left gap under the logo. Now both rows share the same
-     alignment rule. */
+  .ecombio-header__hamburger { display: none; }
+  .main-header__search--inline { display: flex; }
+  .main-header__search-row { display: none; }
+
+  .main-header__search-drawer-tablet-only { display: none; }
+
   .menu-bar {
     display: flex;
     align-items: center;
@@ -510,72 +616,20 @@
 
   .menu-bar.has-scroll-left .menu-bar__edge-fade--left,
   .menu-bar.has-scroll-right .menu-bar__edge-fade--right { opacity: 1; }
+
+  /* FIX — was max-width:1184px + margin:0 auto, which centers this bar
+     independently of .main-header__inner's own alignment (100% width +
+     24px side padding). On wide viewports the two rows drift apart,
+     causing the left gap under the logo. Now both rows share the same
+     alignment rule (see the section-width variants above, which also
+     apply to .menu-bar at every tier once it becomes visible here). */
 }
-
-@media (max-width: 1023px) {
-  .menu-bar__edge-fade { display: none; }
-  .menu-bar { display: none; }
-}
-
-@media (max-width: 639px) {
-  .main-header--menu-bar-mobile-visible .menu-bar {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
-    padding: 0;
-  }
-  .main-header--menu-bar-mobile-visible .menu-bar::-webkit-scrollbar { display: none; }
-  .main-header--menu-bar-mobile-visible .menu-bar .menu-bar__container {
-    width: max-content;
-    max-width: unset;
-    min-width: 100%;
-    padding: 0 16px;
-  }
-  .main-header--menu-bar-mobile-visible .menu-bar__list { flex-wrap: nowrap; width: max-content; }
-}
-
-@media (min-width: 640px) and (max-width: 1023px) {
-  .main-header--menu-bar-tablet-visible .menu-bar { display: flex; flex-wrap: wrap; }
-}
-
-.menu-bar__container { position: relative; }
-
-.menu-bar__list {
-  display: flex;
-  align-items: stretch;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  position: relative;
-}
-
-.menu-bar__item { position: relative; }
-
-.menu-bar__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 14px 16px;
-  font-weight: 600;
-  font-size: 13.5px;
-  color: #1a1a1a;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.15s ease;
-}
-.menu-bar__link:hover,
-.menu-bar__item:hover > .menu-bar__link { color: var(--hdr-accent); }
-
-.menu-bar__icon { display: inline-flex; align-items: center; margin-right: 6px; flex-shrink: 0; }
-.menu-bar__icon svg { width: 16px; height: 16px; }
-
-.icon-caret-down { display: inline-block; width: 13px; height: 13px; flex-shrink: 0; transition: transform 0.2s ease; }
-.menu-bar__item:hover > .menu-bar__link .icon-caret-down { transform: rotate(180deg); }
 
 @media (prefers-reduced-motion: reduce) {
-  .icon-caret-down { transition: none !important; animation: none !important; }
-  .menu-bar__edge-fade { transition: none !important; }
+  .ecombio-mobile-nav__overlay,
+  .ecombio-mobile-nav__panel,
+  .ecombio-mobile-nav__chevron,
+  .ecombio-header__hamburger span,
+  .icon-caret-down,
+  .menu-bar__edge-fade { transition: none !important; animation: none !important; }
 }

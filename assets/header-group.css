@@ -3,6 +3,16 @@
    Paired with header-group.js (scroll/hover/focus behavior).
 
    Changelog:
+     2026-07-26 — Converted --header-group-height from desktop-first
+                  max-width queries (1023px / 599px) to the theme's
+                  mobile-first breakpoint system (see the token table
+                  in base.css). Base value is now the smallest/mobile
+                  size, with min-width queries layering up at md
+                  (640px) and lg (1024px). Values themselves are
+                  unchanged (56 / 64 / 68px) — only the query
+                  direction and cutoffs moved, from 599px to 640px
+                  and from 1023px to 1024px, to match the rest of the
+                  theme and main-header.liquid's own schema labels.
      2026-07-25 — Lowered #header-group-wrapper's z-index from
                   2147483647 (the maximum possible value) to 500.
                   That max value guaranteed the header would always
@@ -40,24 +50,28 @@
    + main header + nav, whatever combination is actually present) and
    keeps this updated on load/resize/content-change via ResizeObserver.
    The value here is a static fallback only, for first paint before JS
-   runs and for no-JS — set it close to the real height at each
-   breakpoint to minimize layout shift once JS takes over. Any other
-   stylesheet in the theme that needs the header's height (anchor-link
-   scroll offsets, a sticky sidebar's top offset, etc.) should read
-   var(--header-group-height) rather than hardcoding a number. */
+   runs and for no-JS — set it close to the real height at each tier
+   to minimize layout shift once JS takes over. Any other stylesheet
+   in the theme that needs the header's height (anchor-link scroll
+   offsets, a sticky sidebar's top offset, etc.) should read
+   var(--header-group-height) rather than hardcoding a number.
+
+   Mobile-first: base value is xs/sm (mobile). Each tier up overrides
+   with its own value as the viewport grows — see the breakpoint
+   token table in base.css. */
 :root {
-  --header-group-height: 68px;
+  --header-group-height: 56px; /* xs/sm base */
 }
 
-@media (max-width: 1023px) {
+@media (min-width: 40rem) { /* md: 640px */
   :root {
     --header-group-height: 64px;
   }
 }
 
-@media (max-width: 599px) {
+@media (min-width: 64rem) { /* lg: 1024px */
   :root {
-    --header-group-height: 56px;
+    --header-group-height: 68px;
   }
 }
 
