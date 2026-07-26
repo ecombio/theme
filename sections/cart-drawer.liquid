@@ -2,13 +2,24 @@
   sections/cart-drawer.liquid
 
   Cart drawer shell. Handles layout, items, footer, and loading overlay.
-  Recommendation rails are fully delegated to snippets/cart-recommendations.liquid.
+  Recommendation rails are fully delegated to snippets/cart-recommendations.liquid,
+  which is self-contained (loads its own CSS/JS — see that file's header).
+  The free shipping bar is delegated to snippets/progress-bar.liquid, which is
+  likewise self-contained.
 
-  Assets to load in your theme.liquid (in this order):
-    {{ 'cart-drawer.css'          | asset_url | stylesheet_tag }}
-    {{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
-    <script src="{{ 'cart-drawer.js'          | asset_url }}" defer></script>
-    <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
+  SELF-CONTAINED: this section loads its own assets below. Do NOT also queue
+  cart-drawer.css / cart-drawer.js in theme.liquid — that would double-load
+  them. This section is rendered exactly once (via {% section 'cart-drawer' %}
+  in theme.liquid), so a single stylesheet_tag/script_tag pair here is safe
+  and sufficient.
+
+  Load order note: cart-recommendations.liquid and progress-bar.liquid each
+  also self-load their own <script defer>. Deferred scripts execute in
+  document order regardless of position, so as long as this section's own
+  script tag appears above the `{%- render 'cart-recommendations' -%}` and
+  `{%- render 'progress-bar' -%}` calls below (it does), cart-drawer.js
+  finishes registering its listeners before the other two scripts run —
+  which matters, since both listen for events cart-drawer.js dispatches.
 
   Schema settings:
     show_related         → "You may also like" rail
@@ -17,6 +28,9 @@
     complementary_label  → heading text for the complementary rail
     rec_limit            → how many cards to show per rail (2–6)
 {%- endcomment -%}
+
+{{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
 
 {%- liquid
   assign show_related        = section.settings.show_related
@@ -82,6 +96,10 @@
       elements' innerHTML on AJAX cart changes, so keeping this bar as a
       sibling means it survives every drawer refresh untouched — its own
       progress-bar.js updates it in place instead.
+
+      progress-bar.liquid is self-contained: it loads progress-bar.css/js
+      itself the first (and only) time it's rendered here. Nothing to
+      queue for it in theme.liquid.
     {%- endcomment -%}
     {%- render 'progress-bar',
           enabled:        section.settings.show_free_shipping_bar,
@@ -230,6 +248,12 @@
           {%- endfor -%}
         </ul>
 
+        {%- comment -%}
+          cart-recommendations.liquid is self-contained: it loads
+          cart-recommendations.css/js itself, and only when it actually
+          has something to render (show_related or show_complementary).
+          Nothing to queue for it in theme.liquid.
+        {%- endcomment -%}
         {%- render 'cart-recommendations',
               show_related: show_related,
               show_complementary: show_complementary,
