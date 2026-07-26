@@ -269,15 +269,22 @@
   overflow: hidden;
 }
 
-.product-card__reviews .jdgm-widget,
-.product-card__reviews .jdgm-widget * {
+/* Swapped from Judge.me (.jdgm-widget) to Yotpo (.yotpo-widget-instance)
+   now that product cards render the Yotpo star-rating snippet instead.
+   Same wrapping/truncation fix as before, just retargeted at Yotpo's
+   markup -- verify against the live rendered badge, since Yotpo's
+   internal DOM structure differs from Judge.me's and the `*` selector
+   may need narrowing to a more specific child element if the
+   !important overrides don't land the same way. */
+.product-card__reviews .yotpo-widget-instance,
+.product-card__reviews .yotpo-widget-instance * {
   max-width: 100%;
   white-space: normal !important;
   flex-wrap: wrap !important;
 }
 
 @container product-card (max-width: 260px) {
-  .product-card__reviews .jdgm-widget {
+  .product-card__reviews .yotpo-widget-instance {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
