@@ -76,6 +76,26 @@
    panel collapses its offset in sync with search-toolbar's own
    toolbar when the header hides on scroll-down, instead of leaving a
    gap sized for a header that's no longer there.
+
+   OPAQUE BACKGROUND FIX (2026-07-25): .search-filter never set its
+   own background-color, on desktop or on mobile. On desktop that was
+   harmless -- the aside sits in normal flow next to the feed, so
+   there's nothing behind it to show through. On mobile, though, the
+   media query below turns it into a `position: fixed` overlay drawer
+   that sits on top of the results feed -- with no background, the
+   drawer was fully transparent, so its price slider/histogram and
+   category checkboxes rendered directly on top of (and visually
+   tangled with) the product grid underneath. Added a solid
+   background here so the drawer is opaque whenever it's shown as an
+   overlay.
+
+   Z-INDEX FIX (2026-07-25): the mobile drawer's z-index was 50, while
+   .search-mobile-backdrop (assets/main-search.css) is z-index: 199 --
+   the backdrop was stacking ABOVE the drawer instead of behind it,
+   so the dimming overlay meant for the page behind the drawer was
+   also darkening the drawer itself. Raised the drawer to z-index: 200
+   so it sits above its own backdrop, matching the usual
+   drawer-over-dimmed-page pattern.
 */
 
 /* ── Sidebar shell ──────────────────────────────────────────── */
@@ -88,6 +108,7 @@
   top: calc(var(--header-group-height, 68px) + var(--sticky-toolbar-height, 64px));
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
+  background: var(--hs-surface, #fff);
 
   /* Firefox: only thin/auto are settable, no exact pixel width */
   scrollbar-width: thin;
@@ -654,7 +675,7 @@
     position: fixed;
     inset: 0 0 0 auto;
     width: min(85vw, 22rem);
-    z-index: 50;
+    z-index: 200;
     border-radius: 0;
     overflow-y: auto;
     padding: 1rem;
