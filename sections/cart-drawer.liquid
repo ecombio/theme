@@ -76,6 +76,21 @@
       </button>
     </div>
 
+    {%- comment -%} ── Free shipping progress bar ──
+      Rendered outside .ecombio-cart-drawer__body / __footer on purpose:
+      cart-drawer.js's refreshDrawerHTML() only replaces those two
+      elements' innerHTML on AJAX cart changes, so keeping this bar as a
+      sibling means it survives every drawer refresh untouched — its own
+      progress-bar.js updates it in place instead.
+    {%- endcomment -%}
+    {%- render 'progress-bar',
+          enabled:        section.settings.show_free_shipping_bar,
+          threshold:      section.settings.free_shipping_threshold,
+          current_total:  cart.total_price,
+          label_progress: section.settings.free_shipping_label_progress,
+          label_complete: section.settings.free_shipping_label_complete
+    -%}
+
     {%- comment -%} ── Body ── {%- endcomment -%}
     <div class="ecombio-cart-drawer__body" data-ecombio-cart-body>
 
@@ -336,6 +351,37 @@
       "max": 6,
       "step": 1,
       "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Free shipping goal"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_free_shipping_bar",
+      "label": "Show free shipping progress bar",
+      "info": "Renders snippets/progress-bar.liquid — self-contained, loads its own CSS/JS.",
+      "default": false
+    },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free shipping minimum amount",
+      "info": "In your store's currency, as a plain number (e.g. 100 for $100.00). Not converted per-market — see the limitation note at the top of progress-bar.liquid.",
+      "default": 100
+    },
+    {
+      "type": "text",
+      "id": "free_shipping_label_progress",
+      "label": "Progress message",
+      "info": "Use {{ amount }} where the remaining amount should appear.",
+      "default": "You're {{ amount }} away from free shipping!"
+    },
+    {
+      "type": "text",
+      "id": "free_shipping_label_complete",
+      "label": "Complete message",
+      "default": "You've unlocked free shipping!"
     }
   ]
 }
