@@ -6,6 +6,16 @@
   (#ecombio-cart-drawer: data-show-related, data-show-complementary, data-rec-limit)
   and from this container, then fetches + injects cards after the drawer opens.
 
+  SELF-CONTAINED: this snippet loads cart-recommendations.css/js itself,
+  below, inside the same show_related/show_complementary guard that gates
+  the rest of the markup — so nothing is fetched or shipped to the page
+  when both settings are off. Do NOT also queue these assets in
+  theme.liquid; that would either double-load them (if always queued) or
+  reintroduce a hard dependency between this snippet and the base layout
+  (if conditionally queued from section settings, which theme.liquid has
+  no clean way to check). Rendering this snippet is the only thing that
+  should determine whether these assets load.
+
   Usage (inside cart-drawer.liquid, after the items list):
     {%- render 'cart-recommendations',
           show_related: show_related,
@@ -26,6 +36,9 @@
 {%- endcomment -%}
 
 {%- if show_related or show_complementary -%}
+  {{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
+
   <div
     class="ecombio-cart-recs"
     data-ecombio-recs
