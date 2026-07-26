@@ -1,0 +1,28 @@
+{% comment %}
+  snippets/product-star-rating.liquid  (Yotpo Star Rating)
+
+  Drop this anywhere you want a small clickable star rating —
+  product cards on collection/search grids, near the price on
+  the main product page, etc. Uses the same Yotpo loader script
+  already installed in theme.liquid; no extra <script> needed.
+
+  Yotpo's own behavior: if a product has zero reviews, the div
+  stays empty and nothing renders — no shimmer or hide/fail
+  logic needed here, unlike the full Reviews Widget section.
+
+  Usage:
+    {% render 'product-star-rating', product: product %}
+
+  Optional:
+    {% render 'product-star-rating', product: product, link_to_reviews: false %}
+    (set false to render a non-clickable rating, e.g. inside a
+    product card that's already wrapped in its own <a> tag)
+{% endcomment %}
+
+{%- unless link_to_reviews == false -%}
+  <a href="{{ product.url }}#yotpoReviewsWidget" class="star-rating-link">
+    <div class="yotpo bottomLine" data-product-id="{{ product.id }}" data-url="{{ shop.url }}{{ product.url }}"></div>
+  </a>
+{%- else -%}
+  <div class="yotpo bottomLine" data-product-id="{{ product.id }}" data-url="{{ shop.url }}{{ product.url }}"></div>
+{%- endunless -%}
