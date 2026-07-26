@@ -96,6 +96,27 @@
    also darkening the drawer itself. Raised the drawer to z-index: 200
    so it sits above its own backdrop, matching the usual
    drawer-over-dimmed-page pattern.
+
+   HIDDEN-BY-DEFAULT / SLIDE-IN DRAWER (2026-07-25): on mobile, the
+   drawer previously started OPEN on first paint whenever the
+   merchant's "Show filters" setting was on -- search-filter.liquid
+   only adds the `hidden` attribute when that setting is off (i.e. it
+   means "filtering is disabled for this store," not "start
+   collapsed"), so the normal case (filtering enabled) always
+   server-rendered the <aside> unhidden. On desktop that's correct --
+   it's a permanent sidebar -- but on mobile that same unhidden markup
+   is what made the drawer fill the screen by default instead of
+   staying tucked away until search-mobile-bar__btn is tapped.
+
+   Fixed by making the mobile state depend on a JS-driven `.is-open`
+   class instead of the `hidden` attribute: the drawer now starts
+   translated fully off-screen (`transform: translateX(100%)`)
+   regardless of whether `hidden` is present, and only slides in when
+   `.is-open` is added. assets/main-search.js's openFilters()/
+   closeFilters() add/remove that class on mobile now (see that file
+   for the corresponding change) -- they still use the `hidden`
+   attribute exclusively for the desktop collapse/expand case, which
+   needs an instant (non-animated) toggle, not a slide.
 */
 
 /* ── Sidebar shell ──────────────────────────────────────────── */
@@ -679,6 +700,17 @@
     border-radius: 0;
     overflow-y: auto;
     padding: 1rem;
+
+    /* Hidden by default: fully off-screen regardless of the SSR
+       [hidden] attribute state. Only .is-open (added by
+       main-search.js's openFilters()) brings it on-screen -- see the
+       HIDDEN-BY-DEFAULT / SLIDE-IN DRAWER note above. */
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+
+  .search-filter.is-open {
+    transform: translateX(0);
   }
 
   .search-filter__close-btn {
