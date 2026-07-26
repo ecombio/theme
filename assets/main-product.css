@@ -53,6 +53,11 @@
   text-decoration: underline;
 }
 
+.breadcrumbs a:focus-visible {
+  outline:        2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
 .breadcrumbs .breadcrumbs__separator {
   color:   var(--color-border);
   display: inline-block;
@@ -150,6 +155,31 @@
   flex-wrap: wrap;
 }
 
+/*
+ * Color swatch custom properties.
+ * The Liquid template outputs `var(--swatch-{{ value | handle }}, #ccc)`
+ * per color option value, so every handleized color name referenced by
+ * your products needs a matching entry here (or the swatch silently
+ * falls back to #ccc/gray). Add/adjust to match your actual palette —
+ * this is a starting set covering common names only.
+ */
+.color-swatches {
+  --swatch-black:  #000000;
+  --swatch-white:  #ffffff;
+  --swatch-gray:   #808080;
+  --swatch-grey:   #808080;
+  --swatch-red:    #d13c3c;
+  --swatch-blue:   #2f5fb3;
+  --swatch-green:  #3f8f52;
+  --swatch-yellow: #e5c93b;
+  --swatch-orange: #e08a3c;
+  --swatch-purple: #7a4fb3;
+  --swatch-pink:   #e07ba0;
+  --swatch-brown:  #7a5230;
+  --swatch-navy:   #1f2d4d;
+  --swatch-beige:  #d9c8a8;
+}
+
 /* Color swatches */
 .color-swatch-label {
   display:  inline-block;
@@ -177,6 +207,11 @@
 .color-swatch-label .color-input:checked + .color-swatch {
   border-color: var(--color-text);
   box-shadow:   0 0 0 1px var(--color-text);
+}
+
+.color-swatch-label .color-input:focus-visible + .color-swatch {
+  outline:        2px solid var(--color-text);
+  outline-offset: 2px;
 }
 
 .color-swatch-label:hover .color-swatch { border-color: #999; }
@@ -214,6 +249,11 @@
   border-color:     var(--color-text);
 }
 
+.variant-buttons .variant-radio:focus-visible + .variant-button {
+  outline:        2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
 .variant-button:hover { border-color: var(--color-text); }
 
 /* ─── Quantity ────────────────────────────────────────────── */
@@ -243,6 +283,11 @@
 
 .quantity-button:hover { background-color: rgba(0, 0, 0, 0.05); }
 
+.quantity-button:focus-visible {
+  outline:         2px solid var(--color-text);
+  outline-offset:  -2px;
+}
+
 .quantity-input {
   width:           60px;
   height:          48px;
@@ -258,6 +303,11 @@
 .quantity-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.quantity-input:focus-visible {
+  outline:        2px solid var(--color-text);
+  outline-offset: -2px;
 }
 
 /* ─── Actions ─────────────────────────────────────────────── */
@@ -287,13 +337,20 @@
   transition:    all 0.2s;
 }
 
+.button:focus-visible {
+  outline:        2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
 .button-primary {
-  background-color: #F5F5F5;
+  background-color: var(--color-button-primary-bg, #F5F5F5);
   color:            var(--color-text);
   border:           1px solid var(--color-border);
 }
 
-.button-primary:hover:not(:disabled) { background-color: #E0E0E0; }
+.button-primary:hover:not(:disabled) {
+  background-color: var(--color-button-primary-bg-hover, #E0E0E0);
+}
 
 .button-primary:disabled,
 .button-secondary:disabled {
@@ -306,12 +363,21 @@
   color:            var(--color-background);
 }
 
-.button-secondary:hover:not(:disabled) { background-color: #333; }
+.button-secondary:hover:not(:disabled) {
+  background-color: var(--color-text-hover, #333);
+}
 
+/*
+ * .success is defined after .button-primary/.button-secondary so it wins
+ * on the cascade without needing !important. If it's ever applied
+ * together with .button-primary/.button-secondary and stops overriding,
+ * move this block down further or bump specificity
+ * (e.g. `.button-primary.success`) rather than reaching for !important.
+ */
 .button.success {
-  background-color: var(--color-success) !important;
-  color:            #fff !important;
-  border-color:     var(--color-success) !important;
+  background-color: var(--color-success);
+  color:            #fff;
+  border-color:     var(--color-success);
 }
 
 /* ─── Responsive ──────────────────────────────────────────── */
