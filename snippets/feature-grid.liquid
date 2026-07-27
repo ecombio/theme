@@ -7,16 +7,20 @@
     title       - single line text. NOT shown as visible text — used as a
                   hover/focus tooltip on the whole tile (e.g. a longer
                   classification note like "Class 2 (throttle assist up
-                  to 20 mph)"). Also doubles as the icon's accessible label.
+                  to 20 mph)"). Falls back to labeling the icon's alt text
+                  if `label` is blank.
+    label       - single line text. Visible small caption above the
+                  headline (e.g. "Top Speed"). This is the field that used
+                  to live in `title` before `title` became tooltip-only.
     description - single line text (bold visible headline, e.g. "Max 28 MPH")
     subtitle     - single line text, OPTIONAL (small bold line under description)
                    only renders if the field exists and has a value
     link        - url type, OPTIONAL
 
-  Note: title is intentionally hidden from visible layout and only exposed
-  via the native `title` attribute. This means it will NOT be reachable by
-  hover on touch/mobile devices — if that content matters on mobile, it
-  needs to live in `description` or `subtitle` instead.
+  Note: `title` is intentionally hidden from visible layout and only
+  exposed via the native `title` attribute. This means it will NOT be
+  reachable by hover on touch/mobile devices — if that content matters on
+  mobile, it needs to live in `label`, `description`, or `subtitle` instead.
 {% endcomment %}
 
 {% assign feature_items = product.metafields.custom.feature_grid.value %}
@@ -25,7 +29,7 @@
   <div class="feature-grid">
     {% for item in feature_items %}
       {% comment %} Skip entries with nothing meaningful to show {% endcomment %}
-      {% if item.title.value == blank and item.description.value == blank %}
+      {% if item.label.value == blank and item.description.value == blank %}
         {% continue %}
       {% endif %}
 
@@ -33,6 +37,8 @@
       {% if item.link.value != blank %}
         {% assign has_link = true %}
       {% endif %}
+
+      {% assign icon_alt = item.label.value | default: item.title.value | default: '' %}
 
       {% if has_link %}
         <a
@@ -53,12 +59,15 @@
               loading: 'lazy',
               width: 48,
               height: 48,
-              alt: item.title.value | default: ''
+              alt: icon_alt
             }}
           </div>
         {% endif %}
 
         <div class="feature-text">
+          {% if item.label.value != blank %}
+            <p class="feature-uptitle">{{ item.label.value }}</p>
+          {% endif %}
           {% if item.description.value != blank %}
             <p class="feature-headline">{{ item.description.value }}</p>
           {% endif %}
@@ -149,6 +158,15 @@
     .feature-text {
       align-items: flex-start;
     }
+  }
+
+  .feature-uptitle {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.75);
+    margin: 0;
   }
 
   .feature-headline {
