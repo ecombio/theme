@@ -327,9 +327,21 @@
     if (btn) recAddToCart(btn);
   });
 
+  // FIX: don't rely solely on the cached lastSourceId to decide whether to
+  // reload. cart-drawer.js's refreshDrawerHTML() can wipe the recs container
+  // back to a bare skeleton (it re-renders the Liquid section, which never
+  // contains product cards) without this script knowing about it. If that
+  // happens while the "source" product hasn't changed, the old check would
+  // skip reloading and leave the drawer stuck on the skeleton forever. Now
+  // we also check whether the DOM actually has rendered cards, and reload
+  // if not.
   document.addEventListener('cart:drawer:open', () => {
+    const drawer    = getDrawer();
+    const recsShell = drawer?.querySelector(RECS_SEL);
+    const isEmpty   = !recsShell?.querySelector('.ecombio-cart-recs__rail');
     const currentSourceId = getRecsSourceId();
-    if (currentSourceId !== lastSourceId) loadRecommendations();
+
+    if (isEmpty || currentSourceId !== lastSourceId) loadRecommendations();
   });
 
   document.addEventListener('cart:updated', () => {
