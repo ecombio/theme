@@ -54,11 +54,13 @@
   line-height:    1;
 }
 
+/* CHANGED: scroller is now a positioning context for the overlaid nav
+   buttons instead of a flex row that reserves space for them. This is
+   what stops the "You may also like" rail from losing ~32px on each side
+   just to make room for arrows that used to sit in-flow. */
 .ecombio-cart-recs__scroller {
-  display:      flex;
-  align-items:  flex-start;
-  gap:          6px;
-  min-width:    0;
+  position:  relative;
+  min-width: 0;
 }
 
 .ecombio-cart-recs__list {
@@ -68,12 +70,14 @@
   display:                    flex;
   flex-direction:             row;
   align-items:                stretch;
-  flex:                       1 1 auto;
   min-width:                  0;
   gap:                        12px;
   overflow-x:                 auto;
   overscroll-behavior-x:      contain;
   scroll-snap-type:           x mandatory;
+  /* CHANGED: keeps a card from snapping directly underneath an overlaid
+     arrow, so the edge card still peeks out instead of being fully hidden. */
+  scroll-padding-inline:      var(--ecd-rec-nav-size);
   -webkit-overflow-scrolling: touch;
   scrollbar-width:            none;
 }
@@ -82,8 +86,15 @@
   display: none;
 }
 
+/* CHANGED: nav buttons are now absolutely positioned over the rail instead
+   of being flex siblings of the list. They no longer consume horizontal
+   space — they float on top of the first/last card's image, vertically
+   centered against the card image height, with a shadow so they stay
+   legible over photos. */
 .ecombio-cart-recs__nav {
-  flex-shrink:     0;
+  position:        absolute;
+  top:             calc((var(--ecd-rec-card-image-size) - var(--ecd-rec-nav-size)) / 2);
+  z-index:         2;
   appearance:      none;
   border:          none;
   width:           var(--ecd-rec-nav-size);
@@ -96,9 +107,12 @@
   background:      var(--ecd-rec-nav-bg);
   color:           var(--ecd-rec-nav-icon);
   cursor:          pointer;
+  box-shadow:      0 1px 4px rgba(0, 0, 0, 0.15);
   transition:      background 150ms ease, opacity 150ms ease;
-  margin-top:      calc((var(--ecd-rec-card-image-size) - var(--ecd-rec-nav-size)) / 2);
 }
+
+.ecombio-cart-recs__nav--prev { left:  -4px; }
+.ecombio-cart-recs__nav--next { right: -4px; }
 
 .ecombio-cart-recs__nav svg {
   width:  14px;
