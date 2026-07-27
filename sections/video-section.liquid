@@ -10,8 +10,13 @@
 
   Files involved:
     - assets/video-section.css / .js → carousel shell only (this file)
-    - snippets/video-card.liquid + assets/video-card.css / .js → per-slot thumbnail + play trigger
-    - snippets/video-modal.liquid + assets/video-modal.css / .js → shared lightbox, rendered once below
+    - snippets/video-card.liquid + assets/video-card.css / .js → per-slot thumbnail + play trigger + shoppable-product badge/data
+    - snippets/video-modal.liquid + assets/video-modal.css / .js → shared lightbox + product shelf, rendered once below
+
+  Each video block can tag up to 3 products (block.settings.products).
+  When present, video-card.liquid shows a small shop badge on the
+  thumbnail and serializes the product data; video-modal.js renders
+  those products as an "Add to cart" shelf under the player.
 
   NOTE: video-modal is rendered once, at the bottom of this section.
   If a page ever has more than one Video Section on it, only one of
@@ -119,7 +124,7 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Video Section"
+      "default": "Watch & shop"
     },
     {
       "type": "checkbox",
@@ -192,6 +197,17 @@
           "type": "text",
           "id": "caption",
           "label": "Caption"
+        },
+        {
+          "type": "header",
+          "content": "Shoppable products"
+        },
+        {
+          "type": "product_list",
+          "id": "products",
+          "label": "Tagged products",
+          "limit": 3,
+          "info": "Shown in a shelf under the video when it plays."
         }
       ]
     }
