@@ -10,11 +10,19 @@
 
   EXPECTED PARAMS (all required):
     block            — a section block with settings: video,
-                        video_url, thumbnail, caption
+                        video_url, thumbnail, caption, products
     placeholder_name — placeholder_svg_tag name to use when there's
                         no thumbnail, no uploaded video, or no preview
                         image
     show_caption     — boolean, whether to render the caption <p>
+
+  SHOPPABLE PRODUCTS: if block.settings.products has any tagged
+  products, a small "shop" badge is shown on the thumbnail and the
+  tagged products are serialized into a sibling <script type=
+  "application/json"> tag. assets/video-card.js reads that JSON on
+  click and includes it in the 'video-card:play' event detail, so
+  assets/video-modal.js can render a product shelf inside the shared
+  lightbox — no extra network request needed when the video opens.
 
   Usage:
     {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true %}
@@ -32,6 +40,12 @@
   if block.settings.thumbnail != blank
     assign has_thumbnail = true
   endif
+
+  assign tagged_products = block.settings.products
+  assign product_count = 0
+  if tagged_products != blank
+    assign product_count = tagged_products.size
+  endif
 -%}
 <div class="video-card" id="VideoCard-{{ block.id }}" data-video-card>
   <div class="video-card__frame">
@@ -43,6 +57,9 @@
       aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}"
       aria-haspopup="dialog"
       data-video-caption="{{ block.settings.caption | escape }}"
+      {%- if product_count > 0 %}
+        data-video-has-products
+      {%- endif %}
       {%- if has_native_video %}
         data-video-type="native"
         data-video-src="{{ block.settings.video.sources.last.url }}"
@@ -83,9 +100,38 @@
           <path d="M8 5v14l11-7z" fill="currentColor"/>
         </svg>
       </span>
+
+      {%- if product_count > 0 -%}
+        <span class="video-card__shop-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
+            <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          {{ product_count }}
+        </span>
+      {%- endif -%}
     </button>
 
   </div>
+
+  {%- if product_count > 0 -%}
+    <script type="application/json" data-video-products>
+      [
+        {%- for product in tagged_products -%}
+          {%- assign variant = product.selected_or_first_available_variant -%}
+          {
+            "id": {{ product.id | json }},
+            "title": {{ product.title | json }},
+            "price": {{ variant.price | money | json }},
+            "url": {{ product.url | json }},
+            "image": {{ product.featured_image | image_url: width: 200 | json }},
+            "variantId": {{ variant.id | json }},
+            "available": {{ variant.available | json }}
+          }{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      ]
+    </script>
+  {%- endif -%}
 
   {%- if show_caption and block.settings.caption != blank -%}
     <p class="video-card__caption">{{ block.settings.caption }}</p>
