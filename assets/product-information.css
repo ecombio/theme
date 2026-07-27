@@ -1,7 +1,13 @@
-.product-information__anchor {
-  display: block;
-  scroll-margin-top: var(--header-group-height, 68px);
-}
+/* ==========================================================================
+   PRODUCT INFORMATION
+   assets/product-information.css
+
+   Pairs with sections/product-information.liquid and product-information.js.
+   Sections render as one continuous vertical page. Each section is a
+   collapsible <details class="accordion__item"> (styling for the
+   accordion shell itself lives in the sitewide accordion.css — this file
+   only adds the sticky jump-link bar, scroll offsets, and section spacing).
+   ========================================================================== */
 
 .product-information,
 .product-information * {
@@ -12,9 +18,39 @@
   padding-block: 28px;
 }
 
-.product-information__nav {
+/* Sections need extra scroll offset to clear the sticky jump-link bar
+   in addition to the sticky header. */
+.product-information__section {
+  scroll-margin-top: calc(var(--header-group-height, 68px) + 3.25rem);
+}
+
+/* Let accordion__summary's own font-size/weight/color own the look;
+   the <h2> here exists for document outline / SEO, not for its own styling. */
+.product-information__heading {
+  margin: 0;
+  font: inherit;
+}
+
+.product-information__section .accordion__content {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.product-information__sections {
+  padding-top: 1.75rem;
   display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------
+   Sticky jump-link bar
+   --------------------------------------------------------------------- */
+
+.product-information__jumplinks {
+  display: flex;
+  gap: 1.1rem;
   border-bottom: 1px solid #E5E7EB;
   overflow-x: auto;
   scrollbar-width: none;
@@ -25,83 +61,64 @@
   transition: top 0.3s ease;
 }
 
-.product-information__nav::-webkit-scrollbar {
+.product-information__jumplinks ul {
+  display: flex;
+  gap: inherit;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.product-information__jumplinks::-webkit-scrollbar {
   display: none;
 }
 
-:root.header-group-hidden .product-information__nav {
+:root.header-group-hidden .product-information__jumplinks {
   top: 0;
 }
 
-.product-information__tab,
-.product-information__tab:visited {
+.product-information__jumplinks a,
+.product-information__jumplinks a:visited {
+  display: inline-block;
   flex-shrink: 0;
   padding: 0.85rem 0.1rem;
-  background: none;
-  border: none;
   border-bottom: 2px solid transparent;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #6B7280;
-  cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.product-information__tab:hover {
+.product-information__jumplinks a:hover {
   color: #111827;
 }
 
-.product-information__tab.is-active,
-.product-information__tab.is-active:visited {
+.product-information__jumplinks a.is-active,
+.product-information__jumplinks a.is-active:visited {
   color: #111827;
   border-bottom-color: #111827;
 }
 
-.product-information__tab:focus-visible {
+.product-information__jumplinks a:focus-visible {
   outline: 2px solid #4F46E5;
   outline-offset: 2px;
 }
 
-.product-information__panels {
-  padding-top: 1.75rem;
-}
-
-.product-information__panel {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #374151;
-}
-
-.product-information__panel[hidden] {
-  display: none;
-}
-
-.product-information__nav {
-  gap: 1.1rem;
-}
-
-.product-information__tab {
-  font-size: 0.85rem;
-}
-
 @media (min-width: 40rem) {
-  .product-information__nav {
+  .product-information__jumplinks {
     gap: 1.5rem;
   }
 
-  .product-information__tab {
+  .product-information__jumplinks a {
     font-size: 0.95rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .product-information__tab {
-    transition: none;
-  }
-
-  .product-information__nav {
+  .product-information__jumplinks a,
+  .product-information__jumplinks {
     transition: none;
   }
 }
