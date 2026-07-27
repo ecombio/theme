@@ -15,9 +15,11 @@
                         no thumbnail, no uploaded video, or no preview
                         image
     show_caption     — boolean, whether to render the caption <p>
-    cta_style        — 'overlay' | 'icon_button' | 'text_button' |
-                        'card_outside' (section.settings.cta_style).
-                        Ignored when the block has no tagged products.
+    cta_style        — 'overlay' (only active value right now — see
+                        the comments near the badge markup below for
+                        the disabled 'icon_button' / 'text_button' /
+                        'card_outside' variants). Ignored when the
+                        block has no tagged product.
 
   SHOPPABLE PRODUCTS: if block.settings.products has any tagged
   products, the tagged product data is serialized into a sibling
@@ -28,16 +30,13 @@
   video opens.
 
   cta_style controls what shows on the card itself, on top of that:
-    overlay / icon_button / text_button — a badge rendered inside the
-      play trigger, on top of the video thumbnail. Clicking it (like
-      clicking anywhere on the frame) plays the video and opens the
-      modal shelf. icon_button/text_button show a bag icon + tagged-
-      product count; overlay instead shows the first tagged product's
-      image, title, and price (see video-card__shop-badge--overlay).
-    card_outside — no on-video badge. Instead a persistent list of
-      snippets/thumbnail.liquid cards is rendered under the frame.
-      Their "Add to cart" buttons are self-wired by assets/
-      thumbnail.js, so shopping doesn't require opening the video.
+    overlay — the only active style right now. A badge rendered
+      inside the play trigger, on top of the video thumbnail, showing
+      the tagged product's image, title, and price (see
+      video-card__shop-badge--overlay). Clicking it (like clicking
+      anywhere on the frame) plays the video and opens the modal
+      shelf. icon_button / text_button / card_outside are disabled —
+      see the comments further down for how to bring them back.
 
   Usage:
     {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true, cta_style: 'overlay' %}
@@ -68,13 +67,6 @@
     assign show_on_frame_badge = true
   endif
 
-  assign badge_label = ''
-  if product_count == 1
-    assign badge_label = '1 product'
-  elsif product_count > 1
-    assign badge_label = product_count | append: ' products'
-  endif
-
   assign first_product = tagged_products.first
   assign first_variant = first_product.selected_or_first_available_variant
 -%}
@@ -85,7 +77,7 @@
       type="button"
       class="video-card__play-trigger"
       data-video-card-trigger
-      aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}{% if product_count > 0 %} — {{ badge_label }} tagged{% endif %}"
+      aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}{% if product_count > 0 %} — {{ first_product.title }} tagged{% endif %}"
       aria-haspopup="dialog"
       data-video-caption="{{ block.settings.caption | escape }}"
       {%- if product_count > 0 %}
@@ -133,6 +125,26 @@
       </span>
 
       {%- if show_on_frame_badge -%}
+        <span class="video-card__shop-badge video-card__shop-badge--overlay" aria-hidden="true">
+          {%- if first_product.featured_image -%}
+            {{
+              first_product.featured_image
+              | image_url: width: 100
+              | image_tag: loading: 'lazy', class: 'video-card__shop-badge-image', alt: ''
+            }}
+          {%- endif -%}
+          <span class="video-card__shop-badge-info">
+            <span class="video-card__shop-badge-title">{{ first_product.title }}</span>
+            <span class="video-card__shop-badge-price">{{ first_variant.price | money }}</span>
+          </span>
+        </span>
+      {%- endif -%}
+      {%- comment -%}
+        DISABLED cta_style variants — icon_button / text_button.
+        To restore: bring back the cta_style select's other options
+        in sections/video-section.liquid's schema, then replace the
+        block above with this case statement:
+
         {%- case cta_style -%}
           {%- when 'icon_button' -%}
             <span class="video-card__shop-badge video-card__shop-badge--icon" aria-hidden="true">
@@ -150,34 +162,28 @@
               Shop now
             </span>
           {%- else -%}
-            <span class="video-card__shop-badge video-card__shop-badge--overlay" aria-hidden="true">
-              {%- if first_product.featured_image -%}
-                {{
-                  first_product.featured_image
-                  | image_url: width: 100
-                  | image_tag: loading: 'lazy', class: 'video-card__shop-badge-image', alt: ''
-                }}
-              {%- endif -%}
-              <span class="video-card__shop-badge-info">
-                <span class="video-card__shop-badge-title">{{ first_product.title }}</span>
-                <span class="video-card__shop-badge-price">{{ first_variant.price | money }}</span>
-              </span>
-            </span>
+            [overlay markup — see the live block above]
         {%- endcase -%}
-      {%- endif -%}
+      {%- endcomment -%}
     </button>
 
   </div>
 
-  {%- if product_count > 0 and cta_style == 'card_outside' -%}
-    <ul class="video-card__products" data-video-card-products>
-      {%- for product in tagged_products -%}
-        <li class="video-card__product">
-          {%- render 'thumbnail', product: product -%}
-        </li>
-      {%- endfor -%}
-    </ul>
-  {%- endif -%}
+  {%- comment -%}
+    DISABLED cta_style variant — card_outside. To restore, bring back
+    the cta_style select's other options in sections/video-section.
+    liquid's schema, then move this block back out of the comment:
+
+    {%- if product_count > 0 and cta_style == 'card_outside' -%}
+      <ul class="video-card__products" data-video-card-products>
+        {%- for product in tagged_products -%}
+          <li class="video-card__product">
+            {%- render 'thumbnail', product: product -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  {%- endcomment -%}
 
   {%- if product_count > 0 -%}
     <script type="application/json" data-video-products>
