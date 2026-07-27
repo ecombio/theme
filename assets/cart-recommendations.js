@@ -314,14 +314,24 @@
       btn.textContent = '✓';
 
       const cart = await (await fetch('/cart.js')).json();
+
+      // CHANGED: previously this only dispatched 'cart:rec:added' and
+      // trusted cart-drawer.js to refresh the drawer body independently.
+      // That left this script with no signal for *when* the body (and the
+      // recs skeleton inside it) had actually been rebuilt, so the rail
+      // stayed stale until the drawer was closed and reopened. Now we drive
+      // the sequence ourselves: refresh the drawer body first (this also
+      // rebuilds a fresh recs skeleton and syncs item-count badges via the
+      // event below), and only then reload recommendations into that fresh
+      // container — matching the same safe ordering the qty-change flow in
+      // cart-drawer.js already uses for 'cart:updated'.
       document.dispatchEvent(new CustomEvent('cart:rec:added', { detail: { itemCount: cart.item_count } }));
 
-      setTimeout(() => {
-        if (!btn.isConnected) return;
-        btn.classList.remove('is-added');
-        btn.textContent = 'Add';
-        btn.disabled = false;
-      }, 2000);
+      if (window.EcombioCart?.refresh) {
+        await window.EcombioCart.refresh();
+      }
+
+      await loadRecommendations();
 
     } catch (err) {
       console.error('[EcombioRecs] ATC failed', err);
@@ -333,6 +343,11 @@
         btn.disabled = false;
       }, 2000);
     }
+
+    // NOTE: no revert-after-2s timeout for the success path anymore.
+    // loadRecommendations() above rebuilds the entire rail (the just-added
+    // product is now filtered out since it's in the cart), so the original
+    // button node is already gone by the time any timeout would fire.
   }
 
   document.body.addEventListener('click', (e) => {
