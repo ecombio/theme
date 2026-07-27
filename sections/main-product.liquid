@@ -108,7 +108,11 @@
         </div>
 
         <div class="product-reviews-badge">
-          {%- render 'star-rating', product: product -%}
+          {%- if section.settings.reviews_provider == 'judgeme' -%}
+            {%- render 'judgeme-star-rating', product: product -%}
+          {%- else -%}
+            {%- render 'star-rating', product: product -%}
+          {%- endif -%}
         </div>
 
         <div class="product-pricing">
@@ -260,6 +264,23 @@
 
         {%- render 'product-description' -%}
 
+        <div class="product-reviews-widget">
+          {%- if section.settings.reviews_provider == 'judgeme' -%}
+            <div style='clear:both'></div>
+            <div
+              id='judgeme_product_reviews'
+              class='jdgm-widget jdgm-review-widget'
+              data-product-title='{{ product.title | escape }}'
+              data-id='{{ product.id }}'
+              data-auto-install='false'
+            >
+              {{ product.metafields.judgeme.widget }}
+            </div>
+          {%- else -%}
+            {%- render 'yotpo-widgets', widget_type: 'yotpo_reviews_widget', product: product -%}
+          {%- endif -%}
+        </div>
+
         {%- render 'sticky-atc' -%}
 
       </div>
@@ -310,6 +331,21 @@
       "step": 4,
       "unit": "px",
       "default": 28
+    },
+    {
+      "type": "header",
+      "content": "Reviews"
+    },
+    {
+      "type": "select",
+      "id": "reviews_provider",
+      "label": "Reviews app",
+      "info": "Choose which reviews app powers the star rating badge and review widget on this section.",
+      "options": [
+        { "value": "yotpo", "label": "Yotpo" },
+        { "value": "judgeme", "label": "Judge.me" }
+      ],
+      "default": "yotpo"
     }
   ]
 }
