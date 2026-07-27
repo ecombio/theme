@@ -187,8 +187,6 @@
   flex:           1 1 auto; /* fill the stretched card height */
 }
 
-/* Reserve a fixed 2-line slot for the title regardless of actual length,
-   so short one-line titles don't pull everything below them upward. */
 .ecombio-cart-recs__card-title {
   display:            -webkit-box;
   -webkit-line-clamp: 2;
@@ -197,7 +195,6 @@
   font-size:          0.75rem;
   font-weight:        500;
   line-height:        1.35;
-  min-height:         calc(1.35em * 2);
   color:              var(--ecd-color-text-link);
   text-decoration:    none;
 }
@@ -208,15 +205,20 @@
   text-underline-offset:2px;
 }
 
-/* Always rendered by the JS now (empty when the product has only one
-   variant), so every card reserves the same line height here whether or
-   not it actually has variant text to show. */
+/* Always rendered by the JS (empty when the product has only one variant)
+   so the element exists in the DOM either way, but no reserved min-height:
+   when empty it collapses to nothing rather than leaving a gap. The
+   flex-stretch on .card-info plus margin-top:auto on .card-bottom already
+   handles pinning the Add button to the bottom consistently. */
 .ecombio-cart-recs__card-variant {
   margin:      0;
   font-size:   0.6875rem;
   color:       var(--ecd-color-text-muted);
   line-height: 1.3;
-  min-height:  1.3em;
+}
+
+.ecombio-cart-recs__card-variant:empty {
+  display: none;
 }
 
 .ecombio-cart-recs__card-bottom {
@@ -230,9 +232,6 @@
   display:        flex;
   flex-direction: column;
   gap:            1px;
-  /* Always rendered by the JS now (empty <s> when not on sale), reserving
-     the compare-at-price row so prices don't jump between cards. */
-  min-height:     calc(0.6875rem * 1.3 + 1px);
 }
 
 .ecombio-cart-recs__price {
@@ -250,7 +249,7 @@
 }
 
 .ecombio-cart-recs__price--was:empty {
-  text-decoration: none;
+  display: none;
 }
 
 .ecombio-cart-recs__atc {
