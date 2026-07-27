@@ -1,36 +1,85 @@
 {%- comment -%}
   snippets/specification.liquid
-  Renders a product's specification table from the custom.specifications
-  metaobject-list metafield (each entry: label + content).
+
+  Renders the "Technical Specification" metaobject as a collapsible,
+  open-by-default accordion. Each section (Specifications, Size & Fit,
+  Geometry, FAQs) only renders if its linked page has content — blank
+  fields are skipped entirely.
 
   Usage:
-    {% render 'specification', product: product %}
+    {% render 'specification', source: product %}
+
+  The 'source' param can be any object carrying the metafield
+  (product, collection, etc). Defaults to `product` if not passed.
 {%- endcomment -%}
 
 {%- liquid
-  assign specs = product.metafields.custom.specifications.value
+  assign spec_source = source | default: product
+  assign tech_spec = spec_source.metafields.custom.technical_specification.value
 -%}
 
-{%- if specs != blank -%}
+{%- if tech_spec -%}
+  <div class="tech-spec-accordion rte">
 
-  <link rel="stylesheet" href="{{ 'specification.css' | asset_url }}" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="{{ 'specification.css' | asset_url }}"></noscript>
+    {%- if tech_spec.specifications.value != blank -%}
+      <details class="tech-spec-item" open>
+        <summary>Specifications</summary>
+        <div class="tech-spec-content">{{ tech_spec.specifications.value.content }}</div>
+      </details>
+    {%- endif -%}
 
-  <table class="specification-table">
-    <tbody>
-      {%- for spec in specs -%}
-        {%- liquid
-          assign spec_label = spec.label.value
-          assign spec_content = spec.content.value
-        -%}
-        {%- if spec_label != blank and spec_content != blank -%}
-          <tr class="specification-table__row">
-            <th class="specification-table__label" scope="row">{{ spec_label }}</th>
-            <td class="specification-table__value">{{ spec_content }}</td>
-          </tr>
-        {%- endif -%}
-      {%- endfor -%}
-    </tbody>
-  </table>
+    {%- if tech_spec.size_fit.value != blank -%}
+      <details class="tech-spec-item" open>
+        <summary>Size &amp; Fit</summary>
+        <div class="tech-spec-content">{{ tech_spec.size_fit.value.content }}</div>
+      </details>
+    {%- endif -%}
 
+    {%- if tech_spec.geometry.value != blank -%}
+      <details class="tech-spec-item" open>
+        <summary>Geometry</summary>
+        <div class="tech-spec-content">{{ tech_spec.geometry.value.content }}</div>
+      </details>
+    {%- endif -%}
+
+    {%- if tech_spec.faqs.value != blank -%}
+      <details class="tech-spec-item" open>
+        <summary>FAQs</summary>
+        <div class="tech-spec-content">{{ tech_spec.faqs.value.content }}</div>
+      </details>
+    {%- endif -%}
+
+  </div>
+
+  {%- style -%}
+    .tech-spec-accordion {
+      margin-top: 1.5rem;
+    }
+    .tech-spec-item {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 12px 0;
+    }
+    .tech-spec-item summary {
+      cursor: pointer;
+      font-weight: 600;
+      list-style: none;
+      position: relative;
+      padding-right: 24px;
+    }
+    .tech-spec-item summary::-webkit-details-marker {
+      display: none;
+    }
+    .tech-spec-item summary::after {
+      content: '+';
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
+    .tech-spec-item[open] summary::after {
+      content: '\2013';
+    }
+    .tech-spec-content {
+      padding-top: 8px;
+    }
+  {%- endstyle -%}
 {%- endif -%}
