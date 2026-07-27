@@ -15,17 +15,30 @@
                         no thumbnail, no uploaded video, or no preview
                         image
     show_caption     — boolean, whether to render the caption <p>
+    cta_style        — 'overlay' | 'icon_button' | 'text_button' |
+                        'card_outside' (section.settings.cta_style).
+                        Ignored when the block has no tagged products.
 
   SHOPPABLE PRODUCTS: if block.settings.products has any tagged
-  products, a small "shop" badge is shown on the thumbnail and the
-  tagged products are serialized into a sibling <script type=
-  "application/json"> tag. assets/video-card.js reads that JSON on
-  click and includes it in the 'video-card:play' event detail, so
-  assets/video-modal.js can render a product shelf inside the shared
-  lightbox — no extra network request needed when the video opens.
+  products, the tagged product data is serialized into a sibling
+  <script type="application/json"> tag. assets/video-card.js reads
+  that JSON on click and includes it in the 'video-card:play' event
+  detail, so assets/video-modal.js can render a product shelf inside
+  the shared lightbox — no extra network request needed when the
+  video opens.
+
+  cta_style controls what shows on the card itself, on top of that:
+    overlay / icon_button / text_button — a badge rendered inside the
+      play trigger, on top of the video thumbnail. Clicking it (like
+      clicking anywhere on the frame) plays the video and opens the
+      modal shelf. The three styles only change the badge's look.
+    card_outside — no on-video badge. Instead a persistent product
+      card list is rendered under the frame, each with its own
+      "Add to cart" button wired up client-side in video-card.js, so
+      shopping doesn't require opening the video at all.
 
   Usage:
-    {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true %}
+    {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true, cta_style: 'overlay' %}
 {%- endcomment -%}
 {%- liquid
   assign has_native_video = false
@@ -46,6 +59,19 @@
   if tagged_products != blank
     assign product_count = tagged_products.size
   endif
+
+  assign cta_style = cta_style | default: 'overlay'
+  assign show_on_frame_badge = false
+  if product_count > 0 and cta_style != 'card_outside'
+    assign show_on_frame_badge = true
+  endif
+
+  assign badge_label = ''
+  if product_count == 1
+    assign badge_label = '1 product'
+  elsif product_count > 1
+    assign badge_label = product_count | append: ' products'
+  endif
 -%}
 <div class="video-card" id="VideoCard-{{ block.id }}" data-video-card>
   <div class="video-card__frame">
@@ -54,7 +80,7 @@
       type="button"
       class="video-card__play-trigger"
       data-video-card-trigger
-      aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}"
+      aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}{% if product_count > 0 %} — {{ badge_label }} tagged{% endif %}"
       aria-haspopup="dialog"
       data-video-caption="{{ block.settings.caption | escape }}"
       {%- if product_count > 0 %}
@@ -101,18 +127,71 @@
         </svg>
       </span>
 
-      {%- if product_count > 0 -%}
-        <span class="video-card__shop-badge" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
-            <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-          {{ product_count }}
-        </span>
+      {%- if show_on_frame_badge -%}
+        {%- case cta_style -%}
+          {%- when 'icon_button' -%}
+            <span class="video-card__shop-badge video-card__shop-badge--icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" focusable="false">
+                <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </span>
+          {%- when 'text_button' -%}
+            <span class="video-card__shop-badge video-card__shop-badge--text" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
+                <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              Shop now
+            </span>
+          {%- else -%}
+            <span class="video-card__shop-badge video-card__shop-badge--overlay" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
+                <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              {{ badge_label }}
+            </span>
+        {%- endcase -%}
       {%- endif -%}
     </button>
 
   </div>
+
+  {%- if product_count > 0 and cta_style == 'card_outside' -%}
+    <ul class="video-card__products" data-video-card-products>
+      {%- for product in tagged_products -%}
+        {%- assign variant = product.selected_or_first_available_variant -%}
+        <li class="video-card__product">
+          <a class="video-card__product-link" href="{{ product.url }}">
+            {%- if product.featured_image -%}
+              {{
+                product.featured_image
+                | image_url: width: 200
+                | image_tag: loading: 'lazy', class: 'video-card__product-image', alt: product.title
+              }}
+            {%- endif -%}
+            <span class="video-card__product-info">
+              <span class="video-card__product-title">{{ product.title }}</span>
+              <span class="video-card__product-price">{{ variant.price | money }}</span>
+            </span>
+          </a>
+          {%- if variant.available -%}
+            <button
+              type="button"
+              class="video-card__product-add"
+              data-video-card-add-to-cart
+              data-variant-id="{{ variant.id }}"
+            >
+              Add to cart
+            </button>
+          {%- else -%}
+            <button type="button" class="video-card__product-add" disabled>Sold out</button>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
 
   {%- if product_count > 0 -%}
     <script type="application/json" data-video-products>
