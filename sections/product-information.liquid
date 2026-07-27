@@ -1,9 +1,10 @@
 {%- comment -%}
   sections/product-information.liquid
 
-  FIX APPLIED: product.metafields.custom.specifications
-            -> product.metafields.custom.technical_specification
-  (matches the actual metafield definition key: custom.technical_specification)
+  UPDATE: Technical Specification metaobject fields (Specifications,
+  Size & Fit, Geometry, FAQs) are now individual top-level tabs,
+  each rendering its own Page reference's content — no longer a
+  nested accordion under a single "Specifications" tab.
 {%- endcomment -%}
 
 <link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}" media="print" onload="this.media='all'">
@@ -16,10 +17,23 @@
     assign has_description = true
   endif
 
-  assign specifications = product.metafields.custom.technical_specification.value
-  assign has_specification = false
-  if specifications != blank
-    assign has_specification = true
+  assign tech_spec = product.metafields.custom.technical_specification.value
+
+  assign has_specifications = false
+  assign has_size_fit = false
+  assign has_geometry = false
+  assign has_faqs = false
+  if tech_spec.specifications.value != blank
+    assign has_specifications = true
+  endif
+  if tech_spec.size_fit.value != blank
+    assign has_size_fit = true
+  endif
+  if tech_spec.geometry.value != blank
+    assign has_geometry = true
+  endif
+  if tech_spec.faqs.value != blank
+    assign has_faqs = true
   endif
 
   assign shipping_page = pages['shipping-policy']
@@ -70,8 +84,14 @@
   assign active_tab = 'reviews'
   if has_description
     assign active_tab = 'description'
-  elsif has_specification
-    assign active_tab = 'specification'
+  elsif has_specifications
+    assign active_tab = 'specifications'
+  elsif has_size_fit
+    assign active_tab = 'size_fit'
+  elsif has_geometry
+    assign active_tab = 'geometry'
+  elsif has_faqs
+    assign active_tab = 'faqs'
   elsif show_shipping
     assign active_tab = 'shipping'
   elsif show_refund
@@ -80,18 +100,27 @@
     assign active_tab = 'warranty'
   endif
 
-  assign description_selected   = false
-  assign specification_selected = false
-  assign shipping_selected      = false
-  assign refund_selected        = false
-  assign warranty_selected      = false
-  assign reviews_selected       = false
+  assign description_selected    = false
+  assign specifications_selected = false
+  assign size_fit_selected       = false
+  assign geometry_selected       = false
+  assign faqs_selected           = false
+  assign shipping_selected       = false
+  assign refund_selected         = false
+  assign warranty_selected       = false
+  assign reviews_selected        = false
 
   case active_tab
     when 'description'
       assign description_selected = true
-    when 'specification'
-      assign specification_selected = true
+    when 'specifications'
+      assign specifications_selected = true
+    when 'size_fit'
+      assign size_fit_selected = true
+    when 'geometry'
+      assign geometry_selected = true
+    when 'faqs'
+      assign faqs_selected = true
     when 'shipping'
       assign shipping_selected = true
     when 'refund'
@@ -106,8 +135,17 @@
 {%- if has_description -%}
   <span id="description" class="product-information__anchor" aria-hidden="true"></span>
 {%- endif -%}
-{%- if has_specification -%}
-  <span id="specification" class="product-information__anchor" aria-hidden="true"></span>
+{%- if has_specifications -%}
+  <span id="specifications" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if has_size_fit -%}
+  <span id="size_fit" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if has_geometry -%}
+  <span id="geometry" class="product-information__anchor" aria-hidden="true"></span>
+{%- endif -%}
+{%- if has_faqs -%}
+  <span id="faqs" class="product-information__anchor" aria-hidden="true"></span>
 {%- endif -%}
 {%- if show_shipping -%}
   <span id="shipping" class="product-information__anchor" aria-hidden="true"></span>
@@ -142,17 +180,59 @@
       </a>
     {%- endif -%}
 
-    {%- if has_specification -%}
+    {%- if has_specifications -%}
       <a
-        href="#specification"
-        class="product-information__tab{% if active_tab == 'specification' %} is-active{% endif %}"
-        id="tab-specification-{{ section.id }}"
+        href="#specifications"
+        class="product-information__tab{% if active_tab == 'specifications' %} is-active{% endif %}"
+        id="tab-specifications-{{ section.id }}"
         role="tab"
-        aria-selected="{{ specification_selected }}"
-        aria-controls="panel-specification-{{ section.id }}"
-        data-tab-target="specification"
+        aria-selected="{{ specifications_selected }}"
+        aria-controls="panel-specifications-{{ section.id }}"
+        data-tab-target="specifications"
       >
         Specifications
+      </a>
+    {%- endif -%}
+
+    {%- if has_size_fit -%}
+      <a
+        href="#size_fit"
+        class="product-information__tab{% if active_tab == 'size_fit' %} is-active{% endif %}"
+        id="tab-size_fit-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ size_fit_selected }}"
+        aria-controls="panel-size_fit-{{ section.id }}"
+        data-tab-target="size_fit"
+      >
+        Size &amp; Fit
+      </a>
+    {%- endif -%}
+
+    {%- if has_geometry -%}
+      <a
+        href="#geometry"
+        class="product-information__tab{% if active_tab == 'geometry' %} is-active{% endif %}"
+        id="tab-geometry-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ geometry_selected }}"
+        aria-controls="panel-geometry-{{ section.id }}"
+        data-tab-target="geometry"
+      >
+        Geometry
+      </a>
+    {%- endif -%}
+
+    {%- if has_faqs -%}
+      <a
+        href="#faqs"
+        class="product-information__tab{% if active_tab == 'faqs' %} is-active{% endif %}"
+        id="tab-faqs-{{ section.id }}"
+        role="tab"
+        aria-selected="{{ faqs_selected }}"
+        aria-controls="panel-faqs-{{ section.id }}"
+        data-tab-target="faqs"
+      >
+        FAQs
       </a>
     {%- endif -%}
 
@@ -227,16 +307,55 @@
       </div>
     {%- endif -%}
 
-    {%- if has_specification -%}
+    {%- if has_specifications -%}
       <div
         class="product-information__panel"
-        id="panel-specification-{{ section.id }}"
+        id="panel-specifications-{{ section.id }}"
         role="tabpanel"
-        aria-labelledby="tab-specification-{{ section.id }}"
-        data-tab-panel="specification"
-        {% unless active_tab == 'specification' %}hidden{% endunless %}
+        aria-labelledby="tab-specifications-{{ section.id }}"
+        data-tab-panel="specifications"
+        {% unless active_tab == 'specifications' %}hidden{% endunless %}
       >
-        {% render 'specification', product: product %}
+        {% render 'specification', field: tech_spec.specifications %}
+      </div>
+    {%- endif -%}
+
+    {%- if has_size_fit -%}
+      <div
+        class="product-information__panel"
+        id="panel-size_fit-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-size_fit-{{ section.id }}"
+        data-tab-panel="size_fit"
+        {% unless active_tab == 'size_fit' %}hidden{% endunless %}
+      >
+        {% render 'specification', field: tech_spec.size_fit %}
+      </div>
+    {%- endif -%}
+
+    {%- if has_geometry -%}
+      <div
+        class="product-information__panel"
+        id="panel-geometry-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-geometry-{{ section.id }}"
+        data-tab-panel="geometry"
+        {% unless active_tab == 'geometry' %}hidden{% endunless %}
+      >
+        {% render 'specification', field: tech_spec.geometry %}
+      </div>
+    {%- endif -%}
+
+    {%- if has_faqs -%}
+      <div
+        class="product-information__panel"
+        id="panel-faqs-{{ section.id }}"
+        role="tabpanel"
+        aria-labelledby="tab-faqs-{{ section.id }}"
+        data-tab-panel="faqs"
+        {% unless active_tab == 'faqs' %}hidden{% endunless %}
+      >
+        {% render 'specification', field: tech_spec.faqs %}
       </div>
     {%- endif -%}
 

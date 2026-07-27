@@ -1,89 +1,18 @@
 {%- comment -%}
   snippets/specification.liquid
 
-  Renders the "Technical Specification" metaobject as a collapsible,
-  open-by-default accordion. Each section (Specifications, Size & Fit,
-  Geometry, FAQs) only renders if its linked page has content — blank
-  fields are skipped entirely.
+  Renders one Page-reference field from the Technical Specification
+  metaobject. Called once per tab (Specifications, Size & Fit,
+  Geometry, FAQs) from sections/product-information.liquid, e.g.:
 
-  Called from sections/product-information.liquid as:
-    {% render 'specification', product: product %}
+    {% render 'specification', field: tech_spec.specifications %}
 
-  Reads from product.metafields.custom.technical_specification — the
-  same metafield product-information.liquid checks via `has_specification`
-  to decide whether to show the Specifications tab at all.
-
-  FIX APPLIED: product.metafields.custom.specifications
-            -> product.metafields.custom.technical_specification
-  (matches the actual metafield definition key: custom.technical_specification)
+  `field` is the metaobject field itself (not `.value`) so this
+  snippet can blank-check and read `.value.content` in one place.
 {%- endcomment -%}
 
-{%- liquid
-  assign tech_spec = product.metafields.custom.technical_specification.value
--%}
-
-{%- if tech_spec -%}
-  <div class="tech-spec-accordion rte">
-
-    {%- if tech_spec.specifications.value != blank -%}
-      <details class="tech-spec-item" open>
-        <summary>Specifications</summary>
-        <div class="tech-spec-content">{{ tech_spec.specifications.value.content }}</div>
-      </details>
-    {%- endif -%}
-
-    {%- if tech_spec.size_fit.value != blank -%}
-      <details class="tech-spec-item" open>
-        <summary>Size &amp; Fit</summary>
-        <div class="tech-spec-content">{{ tech_spec.size_fit.value.content }}</div>
-      </details>
-    {%- endif -%}
-
-    {%- if tech_spec.geometry.value != blank -%}
-      <details class="tech-spec-item" open>
-        <summary>Geometry</summary>
-        <div class="tech-spec-content">{{ tech_spec.geometry.value.content }}</div>
-      </details>
-    {%- endif -%}
-
-    {%- if tech_spec.faqs.value != blank -%}
-      <details class="tech-spec-item" open>
-        <summary>FAQs</summary>
-        <div class="tech-spec-content">{{ tech_spec.faqs.value.content }}</div>
-      </details>
-    {%- endif -%}
-
+{%- if field.value != blank -%}
+  <div class="tech-spec-panel rte">
+    {{ field.value.content }}
   </div>
-
-  {%- style -%}
-    .tech-spec-accordion {
-      margin-top: 1.5rem;
-    }
-    .tech-spec-item {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-      padding: 12px 0;
-    }
-    .tech-spec-item summary {
-      cursor: pointer;
-      font-weight: 600;
-      list-style: none;
-      position: relative;
-      padding-right: 24px;
-    }
-    .tech-spec-item summary::-webkit-details-marker {
-      display: none;
-    }
-    .tech-spec-item summary::after {
-      content: '+';
-      position: absolute;
-      right: 0;
-      top: 0;
-    }
-    .tech-spec-item[open] summary::after {
-      content: '\2013';
-    }
-    .tech-spec-content {
-      padding-top: 8px;
-    }
-  {%- endstyle -%}
 {%- endif -%}
