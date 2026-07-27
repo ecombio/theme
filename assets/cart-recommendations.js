@@ -1,365 +1,347 @@
-(() => {
-  'use strict';
+:root {
+  --ecd-rec-card-width:       120px;
+  --ecd-rec-card-image-size:  120px;
+  --ecd-rec-atc-bg:           #f2f2f0;
+  --ecd-rec-atc-bg-hover:     #1a1a1a;
+  --ecd-rec-atc-text-hover:   #ffffff;
+  --ecd-rec-atc-bg-added:     #2e7d32;
+  --ecd-rec-atc-text-added:   #ffffff;
+  --ecd-rec-skeleton-base:    #efefed;
+  --ecd-rec-skeleton-shine:   #f8f8f6;
+  --ecd-rec-nav-size:         26px;
+  --ecd-rec-nav-bg:           #f2f2f0;
+  --ecd-rec-nav-bg-hover:     #e5e5e3;
+  --ecd-rec-nav-icon:         #1a1a1a;
+}
 
-  const DRAWER_ID      = 'ecombio-cart-drawer';
-  const RECS_SEL       = '[data-ecombio-recs]';
-  const REC_ATC_SEL    = '[data-ecombio-rec-atc]';
-  const LAST_ADDED_KEY = 'ecombio_last_added_product_id';
-
-  let recsAbort      = null;
-  let lastSourceId   = null;
-
-  const getDrawer = () => document.getElementById(DRAWER_ID);
-
-  function getRecsSourceId() {
-    const stored = sessionStorage.getItem(LAST_ADDED_KEY);
-    const fallback = document.querySelector('[data-cart-product-id]')?.dataset.cartProductId;
-    const id = stored ?? fallback ?? null;
-
-    if (id != null && !/^\d+$/.test(String(id))) {
-      console.warn('[EcombioRecs] source id is not a plain numeric product id, ignoring:', id);
-      return fallback && /^\d+$/.test(String(fallback)) ? fallback : null;
-    }
-    return id;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ecd-rec-atc-bg:          #2a2a2c;
+    --ecd-rec-atc-bg-hover:    #f0f0f0;
+    --ecd-rec-atc-text-hover:  #1c1c1e;
+    --ecd-rec-skeleton-base:   #2a2a2c;
+    --ecd-rec-skeleton-shine:  #333333;
+    --ecd-rec-nav-bg:          #2a2a2c;
+    --ecd-rec-nav-bg-hover:    #3a3a3c;
+    --ecd-rec-nav-icon:        #f0f0f0;
   }
+}
 
-  function getCartProductIds() {
-    const ids = new Set();
-    document.querySelectorAll('[data-cart-product-id]')
-            .forEach((el) => ids.add(el.dataset.cartProductId));
-    return ids;
+.ecombio-cart-recs__status {
+  position: absolute;
+  width:    1px;
+  height:   1px;
+  padding:  0;
+  margin:   -1px;
+  overflow: hidden;
+  clip:     rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border:   0;
+}
+
+.ecombio-cart-recs {
+  margin-top:  4px;
+  padding-top: 20px;
+  border-top:  1px solid var(--ecd-border-color);
+}
+
+.ecombio-cart-recs__rail {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+}
+
+.ecombio-cart-recs__rail + .ecombio-cart-recs__rail {
+  margin-top:  24px;
+  padding-top: 24px;
+  border-top:  1px solid var(--ecd-border-color);
+}
+
+.ecombio-cart-recs__heading {
+  margin:         0;
+  font-size:      0.75rem;
+  font-weight:    600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--ecd-color-text-muted);
+  line-height:    1;
+}
+
+.ecombio-cart-recs__scroller {
+  display:      flex;
+  align-items:  flex-start;
+  gap:          6px;
+  min-width:    0;
+}
+
+.ecombio-cart-recs__list {
+  list-style:                 none;
+  margin:                     0;
+  padding:                    0 0 8px;
+  display:                    flex;
+  flex-direction:             row;
+  align-items:                stretch;
+  flex:                       1 1 auto;
+  min-width:                  0;
+  gap:                        12px;
+  overflow-x:                 auto;
+  overscroll-behavior-x:      contain;
+  scroll-snap-type:           x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width:            none;
+}
+
+.ecombio-cart-recs__list::-webkit-scrollbar {
+  display: none;
+}
+
+.ecombio-cart-recs__nav {
+  flex-shrink:     0;
+  appearance:      none;
+  border:          none;
+  width:           var(--ecd-rec-nav-size);
+  height:          var(--ecd-rec-nav-size);
+  border-radius:   50%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  padding:         0;
+  background:      var(--ecd-rec-nav-bg);
+  color:           var(--ecd-rec-nav-icon);
+  cursor:          pointer;
+  transition:      background 150ms ease, opacity 150ms ease;
+  margin-top:      calc((var(--ecd-rec-card-image-size) - var(--ecd-rec-nav-size)) / 2);
+}
+
+.ecombio-cart-recs__nav svg {
+  width:  14px;
+  height: 14px;
+}
+
+.ecombio-cart-recs__nav:hover:not(:disabled) {
+  background: var(--ecd-rec-nav-bg-hover);
+}
+
+.ecombio-cart-recs__nav:focus-visible {
+  outline:        2px solid var(--ecd-accent);
+  outline-offset: 2px;
+}
+
+.ecombio-cart-recs__nav:disabled {
+  opacity:        0.35;
+  cursor:         default;
+  pointer-events: none;
+}
+
+.ecombio-cart-recs__nav[hidden] {
+  display: none;
+}
+
+/* Cards: every card in a row now stretches to the same height (align-items:
+   stretch on the list), and card-info fills that stretched height so the
+   Add button consistently sits at the bottom via margin-top:auto, instead
+   of trailing wherever that card's own content happens to end. */
+.ecombio-cart-recs__card {
+  flex-shrink:      0;
+  width:            var(--ecd-rec-card-width);
+  display:          flex;
+  flex-direction:   column;
+  gap:              8px;
+  scroll-snap-align:start;
+}
+
+.ecombio-cart-recs__card-image-link {
+  display:        block;
+  width:          var(--ecd-rec-card-image-size);
+  height:         var(--ecd-rec-card-image-size);
+  border-radius:  var(--ecd-border-radius);
+  overflow:       hidden;
+  background:     var(--ecd-qty-bg);
+  flex-shrink:    0;
+  text-decoration:none;
+}
+
+.ecombio-cart-recs__card-image {
+  display:    block;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  transition: opacity 150ms ease;
+}
+
+.ecombio-cart-recs__card-image-link:hover .ecombio-cart-recs__card-image {
+  opacity: 0.85;
+}
+
+.ecombio-cart-recs__card-image--placeholder {
+  width:      100%;
+  height:     100%;
+  background: var(--ecd-qty-bg);
+}
+
+.ecombio-cart-recs__card-info {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  min-width:      0;
+  flex:           1 1 auto; /* fill the stretched card height */
+}
+
+.ecombio-cart-recs__card-title {
+  display:            -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:           hidden;
+  font-size:          0.75rem;
+  font-weight:        500;
+  line-height:        1.35;
+  color:              var(--ecd-color-text-link);
+  text-decoration:    none;
+}
+
+.ecombio-cart-recs__card-title:hover {
+  color:                var(--ecd-color-text-link-hover);
+  text-decoration:      underline;
+  text-underline-offset:2px;
+}
+
+/* Always rendered by the JS (empty when the product has only one variant)
+   so the element exists in the DOM either way, but no reserved min-height:
+   when empty it collapses to nothing rather than leaving a gap. The
+   flex-stretch on .card-info plus margin-top:auto on .card-bottom already
+   handles pinning the Add button to the bottom consistently. */
+.ecombio-cart-recs__card-variant {
+  margin:      0;
+  font-size:   0.6875rem;
+  color:       var(--ecd-color-text-muted);
+  line-height: 1.3;
+}
+
+.ecombio-cart-recs__card-variant:empty {
+  display: none;
+}
+
+.ecombio-cart-recs__card-bottom {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+  margin-top:     auto;
+}
+
+.ecombio-cart-recs__card-price {
+  display:        flex;
+  flex-direction: column;
+  gap:            1px;
+}
+
+.ecombio-cart-recs__price {
+  font-size:   0.8125rem;
+  font-weight: 600;
+  color:       var(--ecd-color-text);
+}
+
+.ecombio-cart-recs__price--was {
+  display:              block;
+  font-size:            0.6875rem;
+  line-height:          1.3;
+  color:                var(--ecd-color-text-muted);
+  text-decoration-color:var(--ecd-color-text-muted);
+}
+
+.ecombio-cart-recs__price--was:empty {
+  display: none;
+}
+
+.ecombio-cart-recs__atc {
+  appearance:   none;
+  border:       none;
+  padding:      6px 10px;
+  border-radius:var(--ecd-qty-border-radius);
+  font-family:  var(--ecd-font-family);
+  font-size:    0.6875rem;
+  font-weight:  600;
+  letter-spacing:0.03em;
+  cursor:       pointer;
+  background:   var(--ecd-rec-atc-bg);
+  color:        var(--ecd-color-text);
+  transition:   background 150ms ease, color 150ms ease, opacity 150ms ease;
+  white-space:  nowrap;
+  width:        100%;
+  text-align:   center;
+  line-height:  1.2;
+  position:     relative;
+}
+
+.ecombio-cart-recs__atc:hover:not(:disabled):not(.is-added) {
+  background: var(--ecd-rec-atc-bg-hover);
+  color:      var(--ecd-rec-atc-text-hover);
+}
+
+.ecombio-cart-recs__atc:focus-visible {
+  outline:        2px solid var(--ecd-accent);
+  outline-offset: 2px;
+}
+
+.ecombio-cart-recs__atc:disabled:not(.is-loading):not(.is-added) {
+  opacity: 0.45;
+  cursor:  not-allowed;
+}
+
+.ecombio-cart-recs__atc.is-loading {
+  opacity:        0.65;
+  cursor:         wait;
+  pointer-events: none;
+}
+
+.ecombio-cart-recs__atc.is-added {
+  background:     var(--ecd-rec-atc-bg-added);
+  color:          var(--ecd-rec-atc-text-added);
+  cursor:         default;
+  pointer-events: none;
+}
+
+.ecombio-cart-recs__skeleton {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+}
+
+.ecombio-cart-recs__skeleton-bar {
+  height:       12px;
+  width:        40%;
+  border-radius:4px;
+  background:   var(--ecd-rec-skeleton-base);
+  animation:    ecd-rec-shimmer 1.4s ease-in-out infinite;
+}
+
+.ecombio-cart-recs__skeleton-cards {
+  display:  flex;
+  gap:      12px;
+  overflow: hidden;
+}
+
+.ecombio-cart-recs__skeleton-card {
+  flex-shrink:  0;
+  width:        var(--ecd-rec-card-width);
+  height:       calc(var(--ecd-rec-card-image-size) + 60px);
+  border-radius:var(--ecd-border-radius);
+  background:   var(--ecd-rec-skeleton-base);
+  animation:    ecd-rec-shimmer 1.4s ease-in-out infinite;
+}
+
+.ecombio-cart-recs__skeleton-card:nth-child(2) { animation-delay: 0.1s; }
+.ecombio-cart-recs__skeleton-card:nth-child(3) { animation-delay: 0.2s; }
+.ecombio-cart-recs__skeleton-card:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes ecd-rec-shimmer {
+  0%   { background-color: var(--ecd-rec-skeleton-base); }
+  50%  { background-color: var(--ecd-rec-skeleton-shine); }
+  100% { background-color: var(--ecd-rec-skeleton-base); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecombio-cart-recs__skeleton-bar,
+  .ecombio-cart-recs__skeleton-card {
+    animation: none;
   }
-
-  async function fetchIntent(productId, intent, limit, signal) {
-    const url = `/recommendations/products.json?product_id=${productId}&intent=${intent}&limit=${limit}`;
-    try {
-      const res = await fetch(url, { signal });
-
-      if (!res.ok) {
-        let detail = '';
-        try {
-          const body = await res.json();
-          detail = body?.description || body?.errors || JSON.stringify(body);
-        } catch (_) { /* body wasn't JSON, ignore */ }
-        console.error(
-          `[EcombioRecs] recommendations fetch failed: ${res.status} ${res.statusText} ` +
-          `(intent=${intent}, product_id=${productId})${detail ? ` — ${detail}` : ''}`
-        );
-        return [];
-      }
-
-      return (await res.json()).products ?? [];
-    } catch (err) {
-      if (err.name !== 'AbortError') console.error(`[EcombioRecs] fetch failed intent=${intent}`, err);
-      return [];
-    }
-  }
-
-  async function loadRecommendations() {
-    const drawer    = getDrawer();
-    const recsShell = drawer?.querySelector(RECS_SEL);
-    if (!recsShell) return;
-
-    const productId = getRecsSourceId();
-    if (!productId) { recsShell.innerHTML = ''; lastSourceId = null; return; }
-
-    const showRelated        = drawer.dataset.showRelated        === 'true';
-    const showComplementary  = drawer.dataset.showComplementary  === 'true';
-    const limit               = Math.min(Math.max(parseInt(drawer.dataset.recLimit, 10) || 4, 1), 10);
-    const relatedLabel       = recsShell.dataset.relatedLabel;
-    const complementaryLabel = recsShell.dataset.complementaryLabel;
-
-    if (!showRelated && !showComplementary) { recsShell.innerHTML = ''; return; }
-
-    if (recsAbort) recsAbort.abort();
-    recsAbort = new AbortController();
-    const { signal } = recsAbort;
-
-    showSkeleton(recsShell);
-
-    try {
-      const [related, complementary] = await Promise.all([
-        showRelated       ? fetchIntent(productId, 'related',       limit, signal) : Promise.resolve([]),
-        showComplementary ? fetchIntent(productId, 'complementary', limit, signal) : Promise.resolve([]),
-      ]);
-
-      const inCart             = getCartProductIds();
-      const filter             = (ps) => ps.filter((p) => !inCart.has(String(p.id)));
-      const filteredRelated    = filter(related);
-      const filteredComplement = filter(complementary);
-
-      if (!filteredRelated.length && !filteredComplement.length) {
-        recsShell.innerHTML = '';
-        lastSourceId = productId;
-        return;
-      }
-
-      renderRecs(recsShell, {
-        related:       { products: filteredRelated,    label: relatedLabel,       intent: 'related' },
-        complementary: { products: filteredComplement, label: complementaryLabel, intent: 'complementary' },
-        showRelated,
-        showComplementary,
-      });
-
-      announce(recsShell, 'Product recommendations loaded.');
-      lastSourceId = productId;
-
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('[EcombioRecs] loadRecommendations failed', err);
-        recsShell.innerHTML = '';
-      }
-    }
-  }
-
-  function announce(shell, message) {
-    const el = shell.querySelector('.ecombio-cart-recs__status');
-    if (el) el.textContent = message;
-  }
-
-  function showSkeleton(shell) {
-    shell.innerHTML = `
-      <span class="ecombio-cart-recs__status" role="status" aria-live="polite" aria-atomic="true"></span>
-      <div class="ecombio-cart-recs__skeleton" aria-hidden="true">
-        <div class="ecombio-cart-recs__skeleton-bar"></div>
-        <div class="ecombio-cart-recs__skeleton-cards">
-          <div class="ecombio-cart-recs__skeleton-card"></div>
-          <div class="ecombio-cart-recs__skeleton-card"></div>
-          <div class="ecombio-cart-recs__skeleton-card"></div>
-          <div class="ecombio-cart-recs__skeleton-card"></div>
-        </div>
-      </div>`;
-  }
-
-  function renderRecs(shell, { related, complementary, showRelated, showComplementary }) {
-    const rails = [];
-    if (showRelated      && related.products.length)       rails.push(buildRail(related.label,       related.products,      'related'));
-    if (showComplementary && complementary.products.length) rails.push(buildRail(complementary.label, complementary.products, 'complementary'));
-    shell.innerHTML = `<span class="ecombio-cart-recs__status" role="status" aria-live="polite" aria-atomic="true"></span>${rails.join('')}`;
-    wireRailNav(shell);
-  }
-
-  const NAV_ICON_PREV = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
-  const NAV_ICON_NEXT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
-
-  function buildRail(label, products, intent) {
-    const cards = products.map((p) => buildCard(p, intent)).filter(Boolean).join('');
-    if (!cards) return '';
-    const safeLabel = escapeHTML(label);
-    return `
-      <div class="ecombio-cart-recs__rail" data-intent="${intent}">
-        <h3 class="ecombio-cart-recs__heading">${safeLabel}</h3>
-        <div class="ecombio-cart-recs__scroller">
-          <button
-            type="button"
-            class="ecombio-cart-recs__nav ecombio-cart-recs__nav--prev"
-            data-rec-nav="prev"
-            aria-label="Scroll ${safeLabel} left"
-          >${NAV_ICON_PREV}</button>
-          <ul class="ecombio-cart-recs__list" role="list">${cards}</ul>
-          <button
-            type="button"
-            class="ecombio-cart-recs__nav ecombio-cart-recs__nav--next"
-            data-rec-nav="next"
-            aria-label="Scroll ${safeLabel} right"
-          >${NAV_ICON_NEXT}</button>
-        </div>
-      </div>`;
-  }
-
-  function wireRailNav(shell) {
-    shell.querySelectorAll('.ecombio-cart-recs__rail').forEach((rail) => {
-      const list    = rail.querySelector('.ecombio-cart-recs__list');
-      const prevBtn = rail.querySelector('[data-rec-nav="prev"]');
-      const nextBtn = rail.querySelector('[data-rec-nav="next"]');
-      if (!list || !prevBtn || !nextBtn) return;
-
-      const update = () => {
-        const max        = Math.max(0, list.scrollWidth - list.clientWidth);
-        const scrollable = max > 4;
-
-        prevBtn.hidden = !scrollable;
-        nextBtn.hidden = !scrollable;
-        if (!scrollable) return;
-
-        prevBtn.disabled = list.scrollLeft <= 2;
-        nextBtn.disabled = list.scrollLeft >= max - 2;
-      };
-
-      const scrollByPage = (dir) => {
-        list.scrollBy({ left: list.clientWidth * 0.9 * dir, behavior: 'smooth' });
-      };
-
-      prevBtn.addEventListener('click', () => scrollByPage(-1));
-      nextBtn.addEventListener('click', () => scrollByPage(1));
-      list.addEventListener('scroll', update, { passive: true });
-
-      new ResizeObserver(update).observe(list);
-
-      update();
-    });
-  }
-
-  function buildCard(product, intent) {
-    const variant = product.variants?.[0];
-    if (!variant) return '';
-
-    const available      = variant.available;
-    const isMultiVariant = product.variants.length > 1;
-
-    const rawUrl = product.url ?? '';
-    const safeUrl = rawUrl.startsWith('/') || rawUrl.startsWith('https://') ? rawUrl : '#';
-
-    const rawFeaturedImage =
-      (typeof product.featured_image === 'string' && product.featured_image) ||
-      product.featured_image?.src ||
-      product.images?.[0]?.src ||
-      product.images?.[0] ||
-      null;
-
-    const imgSrc = rawFeaturedImage
-      ? rawFeaturedImage.replace(/(\.[a-z]+)(\?|$)/i, '_160x160$1$2')
-      : '';
-    const imgAlt = escapeHTML(product.images?.[0]?.alt || product.title);
-
-    const price     = formatMoney(variant.price);
-    const compPrice = variant.compare_at_price > variant.price
-      ? formatMoney(variant.compare_at_price)
-      : null;
-
-    // Variant line and "was" price are now ALWAYS rendered (empty when not
-    // applicable) rather than conditionally omitted. This keeps every
-    // card's reserved-height slots (see CSS) consistent, so Add buttons
-    // land on the same row regardless of whether a given product has a
-    // variant name or a sale price.
-    const variantLine = isMultiVariant
-      ? `<p class="ecombio-cart-recs__card-variant">${escapeHTML(variant.title)}</p>`
-      : `<p class="ecombio-cart-recs__card-variant"></p>`;
-
-    const wasPriceLine = compPrice
-      ? `<s class="ecombio-cart-recs__price--was">${compPrice}</s>`
-      : `<s class="ecombio-cart-recs__price--was"></s>`;
-
-    return `
-      <li class="ecombio-cart-recs__card" data-product-id="${product.id}">
-        <a href="${escapeHTML(safeUrl)}" class="ecombio-cart-recs__card-image-link" tabindex="-1" aria-hidden="true">
-          ${imgSrc
-            ? `<img src="${escapeHTML(imgSrc)}" alt="${imgAlt}" width="120" height="120" loading="lazy" class="ecombio-cart-recs__card-image">`
-            : `<div class="ecombio-cart-recs__card-image ecombio-cart-recs__card-image--placeholder"></div>`}
-        </a>
-        <div class="ecombio-cart-recs__card-info">
-          <a href="${escapeHTML(safeUrl)}" class="ecombio-cart-recs__card-title">${escapeHTML(product.title)}</a>
-          ${variantLine}
-          <div class="ecombio-cart-recs__card-bottom">
-            <div class="ecombio-cart-recs__card-price">
-              ${wasPriceLine}
-              <span class="ecombio-cart-recs__price">${price}</span>
-            </div>
-            <button
-              type="button"
-              class="ecombio-cart-recs__atc"
-              data-ecombio-rec-atc
-              data-variant-id="${variant.id}"
-              data-product-id="${product.id}"
-              data-intent="${intent}"
-              aria-label="Add ${escapeHTML(product.title)} to cart"
-              ${available ? '' : 'disabled'}
-            >${available ? 'Add' : 'Sold out'}</button>
-          </div>
-        </div>
-      </li>`;
-  }
-
-  function formatMoney(cents) {
-    if (cents == null) return '';
-    try {
-      const currency = window.Shopify?.currency?.active ?? 'USD';
-      if (!window.Shopify?.currency?.active) console.warn('[EcombioRecs] Shopify.currency not set, defaulting to USD');
-      return new Intl.NumberFormat(navigator.language, {
-        style: 'currency', currency,
-        minimumFractionDigits: 0, maximumFractionDigits: 2,
-      }).format(cents / 100);
-    } catch (_) {
-      return `$${(cents / 100).toFixed(2)}`;
-    }
-  }
-
-  function escapeHTML(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
-  async function recAddToCart(btn) {
-    if (!btn.dataset.variantId || btn.disabled) return;
-
-    btn.disabled = true;
-    btn.classList.add('is-loading');
-
-    try {
-      const res = await fetch('/cart/add.js', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: btn.dataset.variantId, quantity: 1 }),
-      });
-      if (!res.ok) throw new Error('ATC failed');
-
-      await res.json();
-
-      sessionStorage.setItem(LAST_ADDED_KEY, btn.dataset.productId);
-      lastSourceId = null;
-
-      btn.classList.remove('is-loading');
-      btn.classList.add('is-added');
-      btn.textContent = '✓';
-
-      const cart = await (await fetch('/cart.js')).json();
-      document.dispatchEvent(new CustomEvent('cart:rec:added', { detail: { itemCount: cart.item_count } }));
-
-      setTimeout(() => {
-        if (!btn.isConnected) return;
-        btn.classList.remove('is-added');
-        btn.textContent = 'Add';
-        btn.disabled = false;
-      }, 2000);
-
-    } catch (err) {
-      console.error('[EcombioRecs] ATC failed', err);
-      btn.classList.remove('is-loading');
-      btn.textContent = 'Error';
-      setTimeout(() => {
-        if (!btn.isConnected) return;
-        btn.textContent = 'Add';
-        btn.disabled = false;
-      }, 2000);
-    }
-  }
-
-  document.body.addEventListener('click', (e) => {
-    const btn = e.target.closest(REC_ATC_SEL);
-    if (btn) recAddToCart(btn);
-  });
-
-  // FIX: don't rely solely on the cached lastSourceId to decide whether to
-  // reload. cart-drawer.js's refreshDrawerHTML() can wipe the recs container
-  // back to a bare skeleton (it re-renders the Liquid section, which never
-  // contains product cards) without this script knowing about it. If that
-  // happens while the "source" product hasn't changed, the old check would
-  // skip reloading and leave the drawer stuck on the skeleton forever. Now
-  // we also check whether the DOM actually has rendered cards, and reload
-  // if not.
-  document.addEventListener('cart:drawer:open', () => {
-    const drawer    = getDrawer();
-    const recsShell = drawer?.querySelector(RECS_SEL);
-    const isEmpty   = !recsShell?.querySelector('.ecombio-cart-recs__rail');
-    const currentSourceId = getRecsSourceId();
-
-    if (isEmpty || currentSourceId !== lastSourceId) loadRecommendations();
-  });
-
-  document.addEventListener('cart:updated', () => {
-    lastSourceId = null;
-    if (getDrawer()?.classList.contains('is-open')) loadRecommendations();
-  });
-
-})();
+}
