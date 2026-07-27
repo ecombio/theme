@@ -63,9 +63,17 @@
 
   assign cta_style = cta_style | default: 'overlay'
   assign show_on_frame_badge = false
-  if product_count > 0 and cta_style != 'card_outside'
+  if product_count > 0
     assign show_on_frame_badge = true
   endif
+  # NOTE: this previously also required `cta_style != 'card_outside'`
+  # to hide the badge for that (now-disabled) style. Dropped because a
+  # block/section can still carry a stored cta_style of 'card_outside'
+  # from before the dropdown was locked to Overlay-only (removing an
+  # option from the schema does not clear old saved values) — that
+  # stale value was silently suppressing the badge. If card_outside is
+  # restored later (see the comments further down and in
+  # sections/video-section.liquid), bring this check back.
 
   assign first_product = tagged_products.first
   assign first_variant = first_product.selected_or_first_available_variant
