@@ -4,15 +4,19 @@
 
   Expected metaobject fields per entry:
     icon        - file reference (image/svg)
-    title       - single line text (small uppercase caption, e.g. "Top Speed")
-    description - single line text (bold headline, e.g. "Max 28 MPH")
+    title       - single line text. NOT shown as visible text — used as a
+                  hover/focus tooltip on the whole tile (e.g. a longer
+                  classification note like "Class 2 (throttle assist up
+                  to 20 mph)"). Also doubles as the icon's accessible label.
+    description - single line text (bold visible headline, e.g. "Max 28 MPH")
     subtitle     - single line text, OPTIONAL (small bold line under description)
-                   only renders if the field exists and has a value; safe to
-                   add later without touching this snippet
-    link        - url (optional)
+                   only renders if the field exists and has a value
+    link        - url type, OPTIONAL
 
-  Layout: stacked + centered below 425px, row + left-aligned at 425px and up.
-  Icon: 32px below 768px, 48px at 768px and up.
+  Note: title is intentionally hidden from visible layout and only exposed
+  via the native `title` attribute. This means it will NOT be reachable by
+  hover on touch/mobile devices — if that content matters on mobile, it
+  needs to live in `description` or `subtitle` instead.
 {% endcomment %}
 
 {% assign feature_items = product.metafields.custom.feature_grid.value %}
@@ -26,14 +30,21 @@
       {% endif %}
 
       {% assign has_link = false %}
-      {% if item.link != blank %}
+      {% if item.link.value != blank %}
         {% assign has_link = true %}
       {% endif %}
 
       {% if has_link %}
-        <a href="{{ item.link }}" class="feature-tile">
+        <a
+          href="{{ item.link.value }}"
+          class="feature-tile"
+          {% if item.title.value != blank %}title="{{ item.title.value | escape }}"{% endif %}
+        >
       {% else %}
-        <div class="feature-tile">
+        <div
+          class="feature-tile"
+          {% if item.title.value != blank %}title="{{ item.title.value | escape }}"{% endif %}
+        >
       {% endif %}
 
         {% if item.icon.value != blank %}
@@ -48,9 +59,6 @@
         {% endif %}
 
         <div class="feature-text">
-          {% if item.title.value != blank %}
-            <p class="feature-uptitle">{{ item.title.value }}</p>
-          {% endif %}
           {% if item.description.value != blank %}
             <p class="feature-headline">{{ item.description.value }}</p>
           {% endif %}
@@ -141,15 +149,6 @@
     .feature-text {
       align-items: flex-start;
     }
-  }
-
-  .feature-uptitle {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: rgba(0, 0, 0, 0.75);
-    margin: 0;
   }
 
   .feature-headline {
