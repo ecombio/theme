@@ -1,15 +1,13 @@
 {%- comment -%}
   sections/product-information.liquid
 
-  UPDATE: Technical Specification metaobject fields (Specifications,
-  Size & Fit, Geometry, FAQs) are now individual top-level tabs,
-  each rendering its own Page reference's content — no longer a
-  nested accordion under a single "Specifications" tab.
+  UPDATE: Rendered as one continuous vertical page instead of
+  tabs/panels. A jump-link list at top scrolls down to each
+  section's heading — no JS panel-switching needed anymore.
 {%- endcomment -%}
 
 <link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}"></noscript>
-<script src="{{ 'product-information.js' | asset_url }}" defer></script>
 {{ 'accordion.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -81,83 +79,7 @@
   if has_custom_warranty or has_warranty
     assign show_warranty = true
   endif
-
-  assign active_tab = 'reviews'
-  if has_description
-    assign active_tab = 'description'
-  elsif has_specifications
-    assign active_tab = 'specifications'
-  elsif has_size_fit
-    assign active_tab = 'size_fit'
-  elsif has_geometry
-    assign active_tab = 'geometry'
-  elsif has_faqs
-    assign active_tab = 'faqs'
-  elsif show_shipping
-    assign active_tab = 'shipping'
-  elsif show_refund
-    assign active_tab = 'refund'
-  elsif show_warranty
-    assign active_tab = 'warranty'
-  endif
-
-  assign description_selected    = false
-  assign specifications_selected = false
-  assign size_fit_selected       = false
-  assign geometry_selected       = false
-  assign faqs_selected           = false
-  assign shipping_selected       = false
-  assign refund_selected         = false
-  assign warranty_selected       = false
-  assign reviews_selected        = false
-
-  case active_tab
-    when 'description'
-      assign description_selected = true
-    when 'specifications'
-      assign specifications_selected = true
-    when 'size_fit'
-      assign size_fit_selected = true
-    when 'geometry'
-      assign geometry_selected = true
-    when 'faqs'
-      assign faqs_selected = true
-    when 'shipping'
-      assign shipping_selected = true
-    when 'refund'
-      assign refund_selected = true
-    when 'warranty'
-      assign warranty_selected = true
-    when 'reviews'
-      assign reviews_selected = true
-  endcase
 -%}
-
-{%- if has_description -%}
-  <span id="description" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if has_specifications -%}
-  <span id="specifications" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if has_size_fit -%}
-  <span id="size_fit" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if has_geometry -%}
-  <span id="geometry" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if has_faqs -%}
-  <span id="faqs" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if show_shipping -%}
-  <span id="shipping" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if show_refund -%}
-  <span id="refund" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-{%- if show_warranty -%}
-  <span id="warranty" class="product-information__anchor" aria-hidden="true"></span>
-{%- endif -%}
-<span id="reviews" class="product-information__anchor" aria-hidden="true"></span>
 
 <div
   {% render 'section-width', section: section, extra_class: 'product-information' %}
@@ -165,210 +87,78 @@
   data-product-information
 >
 
-  <div class="product-information__nav" role="tablist" aria-label="Product information">
+  {%- comment -%} Jump links {%- endcomment -%}
+  <nav class="product-information__jumplinks" aria-label="Jump to product information">
+    <ul>
+      {%- if has_description -%}
+        <li><a href="#description-{{ section.id }}">Description</a></li>
+      {%- endif -%}
+      {%- if has_specifications -%}
+        <li><a href="#specifications-{{ section.id }}">Specifications</a></li>
+      {%- endif -%}
+      {%- if has_size_fit -%}
+        <li><a href="#size_fit-{{ section.id }}">Size &amp; Fit</a></li>
+      {%- endif -%}
+      {%- if has_geometry -%}
+        <li><a href="#geometry-{{ section.id }}">Geometry</a></li>
+      {%- endif -%}
+      {%- if has_faqs -%}
+        <li><a href="#faqs-{{ section.id }}">FAQs</a></li>
+      {%- endif -%}
+      {%- if show_shipping -%}
+        <li><a href="#shipping-{{ section.id }}">Shipping Policy</a></li>
+      {%- endif -%}
+      {%- if show_refund -%}
+        <li><a href="#refund-{{ section.id }}">Refund &amp; Return Policy</a></li>
+      {%- endif -%}
+      {%- if show_warranty -%}
+        <li><a href="#warranty-{{ section.id }}">Warranty</a></li>
+      {%- endif -%}
+      <li><a href="#reviews-{{ section.id }}">Customer Reviews</a></li>
+    </ul>
+  </nav>
+
+  {%- comment -%} Sections, rendered in order, all visible {%- endcomment -%}
+  <div class="product-information__sections">
 
     {%- if has_description -%}
-      <a
-        href="#description"
-        class="product-information__tab{% if active_tab == 'description' %} is-active{% endif %}"
-        id="tab-description-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ description_selected }}"
-        aria-controls="panel-description-{{ section.id }}"
-        data-tab-target="description"
-      >
-        Description
-      </a>
-    {%- endif -%}
-
-    {%- if has_specifications -%}
-      <a
-        href="#specifications"
-        class="product-information__tab{% if active_tab == 'specifications' %} is-active{% endif %}"
-        id="tab-specifications-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ specifications_selected }}"
-        aria-controls="panel-specifications-{{ section.id }}"
-        data-tab-target="specifications"
-      >
-        Specifications
-      </a>
-    {%- endif -%}
-
-    {%- if has_size_fit -%}
-      <a
-        href="#size_fit"
-        class="product-information__tab{% if active_tab == 'size_fit' %} is-active{% endif %}"
-        id="tab-size_fit-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ size_fit_selected }}"
-        aria-controls="panel-size_fit-{{ section.id }}"
-        data-tab-target="size_fit"
-      >
-        Size &amp; Fit
-      </a>
-    {%- endif -%}
-
-    {%- if has_geometry -%}
-      <a
-        href="#geometry"
-        class="product-information__tab{% if active_tab == 'geometry' %} is-active{% endif %}"
-        id="tab-geometry-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ geometry_selected }}"
-        aria-controls="panel-geometry-{{ section.id }}"
-        data-tab-target="geometry"
-      >
-        Geometry
-      </a>
-    {%- endif -%}
-
-    {%- if has_faqs -%}
-      <a
-        href="#faqs"
-        class="product-information__tab{% if active_tab == 'faqs' %} is-active{% endif %}"
-        id="tab-faqs-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ faqs_selected }}"
-        aria-controls="panel-faqs-{{ section.id }}"
-        data-tab-target="faqs"
-      >
-        FAQs
-      </a>
-    {%- endif -%}
-
-    {%- if show_shipping -%}
-      <a
-        href="#shipping"
-        class="product-information__tab{% if active_tab == 'shipping' %} is-active{% endif %}"
-        id="tab-shipping-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ shipping_selected }}"
-        aria-controls="panel-shipping-{{ section.id }}"
-        data-tab-target="shipping"
-      >
-        Shipping Policy
-      </a>
-    {%- endif -%}
-
-    {%- if show_refund -%}
-      <a
-        href="#refund"
-        class="product-information__tab{% if active_tab == 'refund' %} is-active{% endif %}"
-        id="tab-refund-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ refund_selected }}"
-        aria-controls="panel-refund-{{ section.id }}"
-        data-tab-target="refund"
-      >
-        Refund &amp; Return Policy
-      </a>
-    {%- endif -%}
-
-    {%- if show_warranty -%}
-      <a
-        href="#warranty"
-        class="product-information__tab{% if active_tab == 'warranty' %} is-active{% endif %}"
-        id="tab-warranty-{{ section.id }}"
-        role="tab"
-        aria-selected="{{ warranty_selected }}"
-        aria-controls="panel-warranty-{{ section.id }}"
-        data-tab-target="warranty"
-      >
-        Warranty
-      </a>
-    {%- endif -%}
-
-    <a
-      href="#reviews"
-      class="product-information__tab{% if active_tab == 'reviews' %} is-active{% endif %}"
-      id="tab-reviews-{{ section.id }}"
-      role="tab"
-      aria-selected="{{ reviews_selected }}"
-      aria-controls="panel-reviews-{{ section.id }}"
-      data-tab-target="reviews"
-    >
-      Customer Reviews
-    </a>
-
-  </div>
-
-  <div class="product-information__panels">
-
-    {%- if has_description -%}
-      <div
-        class="product-information__panel"
-        id="panel-description-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-description-{{ section.id }}"
-        data-tab-panel="description"
-        {% unless active_tab == 'description' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="description-{{ section.id }}">
+        <h2 class="product-information__heading">Description</h2>
         {% render 'description', product: product %}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if has_specifications -%}
-      <div
-        class="product-information__panel"
-        id="panel-specifications-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-specifications-{{ section.id }}"
-        data-tab-panel="specifications"
-        {% unless active_tab == 'specifications' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="specifications-{{ section.id }}">
+        <h2 class="product-information__heading">Specifications</h2>
         {% render 'specification', field: tech_spec.specifications %}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if has_size_fit -%}
-      <div
-        class="product-information__panel"
-        id="panel-size_fit-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-size_fit-{{ section.id }}"
-        data-tab-panel="size_fit"
-        {% unless active_tab == 'size_fit' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="size_fit-{{ section.id }}">
+        <h2 class="product-information__heading">Size &amp; Fit</h2>
         {% render 'specification', field: tech_spec.size_fit %}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if has_geometry -%}
-      <div
-        class="product-information__panel"
-        id="panel-geometry-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-geometry-{{ section.id }}"
-        data-tab-panel="geometry"
-        {% unless active_tab == 'geometry' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="geometry-{{ section.id }}">
+        <h2 class="product-information__heading">Geometry</h2>
         {% render 'specification', field: tech_spec.geometry %}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if has_faqs -%}
-      <div
-        class="product-information__panel"
-        id="panel-faqs-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-faqs-{{ section.id }}"
-        data-tab-panel="faqs"
-        {% unless active_tab == 'faqs' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="faqs-{{ section.id }}">
+        <h2 class="product-information__heading">FAQs</h2>
         {% render 'specification', field: tech_spec.faqs %}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if show_shipping -%}
-      <div
-        class="product-information__panel"
-        id="panel-shipping-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-shipping-{{ section.id }}"
-        data-tab-panel="shipping"
-        {% unless active_tab == 'shipping' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="shipping-{{ section.id }}">
+        <h2 class="product-information__heading">Shipping Policy</h2>
         {%- if has_custom_shipping -%}
           {{ policy.shipping_policy | metafield_tag }}
         {%- elsif has_shipping -%}
@@ -376,18 +166,12 @@
         {%- else -%}
           {{ shop.shipping_policy.body }}
         {%- endif -%}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if show_refund -%}
-      <div
-        class="product-information__panel"
-        id="panel-refund-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-refund-{{ section.id }}"
-        data-tab-panel="refund"
-        {% unless active_tab == 'refund' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="refund-{{ section.id }}">
+        <h2 class="product-information__heading">Refund &amp; Return Policy</h2>
         {%- if has_custom_refund -%}
           {{ policy.returns_refunds | metafield_tag }}
         {%- elsif has_refund -%}
@@ -395,18 +179,12 @@
         {%- else -%}
           {{ shop.refund_policy.body }}
         {%- endif -%}
-      </div>
+      </section>
     {%- endif -%}
 
     {%- if show_warranty -%}
-      <div
-        class="product-information__panel"
-        id="panel-warranty-{{ section.id }}"
-        role="tabpanel"
-        aria-labelledby="tab-warranty-{{ section.id }}"
-        data-tab-panel="warranty"
-        {% unless active_tab == 'warranty' %}hidden{% endunless %}
-      >
+      <section class="product-information__section" id="warranty-{{ section.id }}">
+        <h2 class="product-information__heading">Warranty</h2>
         {%- if has_custom_warranty -%}
           {{ policy.warranty_policy | metafield_tag }}
         {%- elsif has_warranty -%}
@@ -414,19 +192,13 @@
         {%- else -%}
           <p>Please contact us for warranty information.</p>
         {%- endif -%}
-      </div>
+      </section>
     {%- endif -%}
 
-    <div
-      class="product-information__panel"
-      id="panel-reviews-{{ section.id }}"
-      role="tabpanel"
-      aria-labelledby="tab-reviews-{{ section.id }}"
-      data-tab-panel="reviews"
-      {% unless active_tab == 'reviews' %}hidden{% endunless %}
-    >
+    <section class="product-information__section" id="reviews-{{ section.id }}">
+      <h2 class="product-information__heading">Customer Reviews</h2>
       {%- render 'yotpo-widgets', widget_type: 'yotpo_review_widget', product: product -%}
-    </div>
+    </section>
 
   </div>
 
