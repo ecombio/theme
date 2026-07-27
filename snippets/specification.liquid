@@ -6,16 +6,16 @@
   Geometry, FAQs) only renders if its linked page has content — blank
   fields are skipped entirely.
 
-  Usage:
-    {% render 'specification', source: product %}
+  Called from sections/product-information.liquid as:
+    {% render 'specification', product: product %}
 
-  The 'source' param can be any object carrying the metafield
-  (product, collection, etc). Defaults to `product` if not passed.
+  Reads from product.metafields.custom.specifications — the same
+  metafield product-information.liquid checks via `has_specification`
+  to decide whether to show the Specifications tab at all.
 {%- endcomment -%}
 
 {%- liquid
-  assign spec_source = source | default: product
-  assign tech_spec = spec_source.metafields.custom.technical_specification.value
+  assign tech_spec = product.metafields.custom.specifications.value
 -%}
 
 {%- if tech_spec -%}
