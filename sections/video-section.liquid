@@ -1,22 +1,16 @@
 {%- comment -%}
   sections/video-section.liquid
   ============================================
-  Split from the original monolithic videos.liquid. This section
-  owns only the carousel shell (heading, track, arrows) and hands each
-  slot's markup off to snippets/video-card.liquid. Playback happens
-  in one shared lightbox — see snippets/video-modal.liquid — instead
-  of each card revealing its own inline <video>/iframe.
+  Video-only carousel. This section owns the carousel shell (heading,
+  track, arrows) and hands each slot's markup off to
+  snippets/video-card.liquid. Playback happens in one shared lightbox
+  — see snippets/video-modal.liquid — instead of each card revealing
+  its own inline <video>/iframe.
 
   Files involved:
     - assets/video-section.css / .js → carousel shell only (this file)
-    - snippets/video-card.liquid + assets/video-card.css / .js → per-slot thumbnail + play trigger + shoppable-product badge/data
-    - snippets/video-modal.liquid + assets/video-modal.css / .js → shared lightbox + product shelf (including its own add-to-cart handling), rendered once below
-
-  Each video block can tag 1 product (block.settings.products). When
-  present, video-card.liquid shows it via an on-video badge (image +
-  title + price) that opens the shared lightbox's product shelf on
-  click; video-modal.js renders that same product in the shelf as a
-  second chance to buy.
+    - snippets/video-card.liquid + assets/video-card.css / .js → per-slot thumbnail + play trigger
+    - snippets/video-modal.liquid + assets/video-modal.css / .js → shared lightbox, rendered once below
 
   NOTE: video-modal is rendered once, at the bottom of this section.
   If a page ever has more than one Video Section on it, only one of
@@ -124,7 +118,7 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Watch & shop"
+      "default": "Watch"
     },
     {
       "type": "checkbox",
@@ -197,17 +191,6 @@
           "type": "text",
           "id": "caption",
           "label": "Caption"
-        },
-        {
-          "type": "header",
-          "content": "Shoppable products"
-        },
-        {
-          "type": "product_list",
-          "id": "products",
-          "label": "Tagged product",
-          "limit": 1,
-          "info": "Shown as an image/title/price overlay on the video, and in the shelf under the video when it plays."
         }
       ]
     }
