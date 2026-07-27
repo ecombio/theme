@@ -32,10 +32,10 @@
       play trigger, on top of the video thumbnail. Clicking it (like
       clicking anywhere on the frame) plays the video and opens the
       modal shelf. The three styles only change the badge's look.
-    card_outside — no on-video badge. Instead a persistent product
-      card list is rendered under the frame, each with its own
-      "Add to cart" button wired up client-side in video-card.js, so
-      shopping doesn't require opening the video at all.
+    card_outside — no on-video badge. Instead a persistent list of
+      snippets/thumbnail.liquid cards is rendered under the frame.
+      Their "Add to cart" buttons are self-wired by assets/
+      thumbnail.js, so shopping doesn't require opening the video.
 
   Usage:
     {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true, cta_style: 'overlay' %}
@@ -161,33 +161,8 @@
   {%- if product_count > 0 and cta_style == 'card_outside' -%}
     <ul class="video-card__products" data-video-card-products>
       {%- for product in tagged_products -%}
-        {%- assign variant = product.selected_or_first_available_variant -%}
         <li class="video-card__product">
-          <a class="video-card__product-link" href="{{ product.url }}">
-            {%- if product.featured_image -%}
-              {{
-                product.featured_image
-                | image_url: width: 200
-                | image_tag: loading: 'lazy', class: 'video-card__product-image', alt: product.title
-              }}
-            {%- endif -%}
-            <span class="video-card__product-info">
-              <span class="video-card__product-title">{{ product.title }}</span>
-              <span class="video-card__product-price">{{ variant.price | money }}</span>
-            </span>
-          </a>
-          {%- if variant.available -%}
-            <button
-              type="button"
-              class="video-card__product-add"
-              data-video-card-add-to-cart
-              data-variant-id="{{ variant.id }}"
-            >
-              Add to cart
-            </button>
-          {%- else -%}
-            <button type="button" class="video-card__product-add" disabled>Sold out</button>
-          {%- endif -%}
+          {%- render 'thumbnail', product: product -%}
         </li>
       {%- endfor -%}
     </ul>
