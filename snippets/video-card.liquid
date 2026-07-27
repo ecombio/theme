@@ -31,7 +31,9 @@
     overlay / icon_button / text_button — a badge rendered inside the
       play trigger, on top of the video thumbnail. Clicking it (like
       clicking anywhere on the frame) plays the video and opens the
-      modal shelf. The three styles only change the badge's look.
+      modal shelf. icon_button/text_button show a bag icon + tagged-
+      product count; overlay instead shows the first tagged product's
+      image, title, and price (see video-card__shop-badge--overlay).
     card_outside — no on-video badge. Instead a persistent list of
       snippets/thumbnail.liquid cards is rendered under the frame.
       Their "Add to cart" buttons are self-wired by assets/
@@ -72,6 +74,9 @@
   elsif product_count > 1
     assign badge_label = product_count | append: ' products'
   endif
+
+  assign first_product = tagged_products.first
+  assign first_variant = first_product.selected_or_first_available_variant
 -%}
 <div class="video-card" id="VideoCard-{{ block.id }}" data-video-card>
   <div class="video-card__frame">
@@ -146,11 +151,17 @@
             </span>
           {%- else -%}
             <span class="video-card__shop-badge video-card__shop-badge--overlay" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
-                <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-              {{ badge_label }}
+              {%- if first_product.featured_image -%}
+                {{
+                  first_product.featured_image
+                  | image_url: width: 100
+                  | image_tag: loading: 'lazy', class: 'video-card__shop-badge-image', alt: ''
+                }}
+              {%- endif -%}
+              <span class="video-card__shop-badge-info">
+                <span class="video-card__shop-badge-title">{{ first_product.title }}</span>
+                <span class="video-card__shop-badge-price">{{ first_variant.price | money }}</span>
+              </span>
             </span>
         {%- endcase -%}
       {%- endif -%}
