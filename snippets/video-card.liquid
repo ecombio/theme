@@ -1,45 +1,36 @@
 {%- comment -%}
   snippets/video-card.liquid
   ============================================
-  Renders one carousel slot: thumbnail + play trigger only. Clicking
-  the trigger no longer reveals inline media in this slot — instead
-  assets/video-card.js dispatches a 'video-card:play' event carrying
-  this block's video data, and snippets/video-modal.liquid (via
-  assets/video-modal.js) is what actually plays it, in a shared
-  lightbox.
+  Renders one carousel slot: thumbnail + play trigger, with an
+  optional shoppable-product overlay badge.
 
-  EXPECTED PARAMS (all required):
+  Clicking the trigger doesn't reveal inline media in this slot —
+  assets/video-card.js dispatches a 'video-card:play' event carrying
+  this block's video (and product) data, and snippets/video-modal.liquid
+  (via assets/video-modal.js) plays it in a shared lightbox.
+
+  PARAMS (all required):
     block            — a section block with settings: video,
                         video_url, thumbnail, caption, products
     placeholder_name — placeholder_svg_tag name to use when there's
                         no thumbnail, no uploaded video, or no preview
                         image
     show_caption     — boolean, whether to render the caption <p>
-    cta_style        — 'overlay' (only active value right now — see
-                        the comments near the badge markup below for
-                        the disabled 'icon_button' / 'text_button' /
-                        'card_outside' variants). Ignored when the
-                        block has no tagged product.
 
-  SHOPPABLE PRODUCTS: if block.settings.products has any tagged
-  products, the tagged product data is serialized into a sibling
-  <script type="application/json"> tag. assets/video-card.js reads
-  that JSON on click and includes it in the 'video-card:play' event
-  detail, so assets/video-modal.js can render a product shelf inside
-  the shared lightbox — no extra network request needed when the
-  video opens.
-
-  cta_style controls what shows on the card itself, on top of that:
-    overlay — the only active style right now. A badge rendered
-      inside the play trigger, on top of the video thumbnail, showing
-      the tagged product's image, title, and price (see
-      video-card__shop-badge--overlay). Clicking it (like clicking
-      anywhere on the frame) plays the video and opens the modal
-      shelf. icon_button / text_button / card_outside are disabled —
-      see the comments further down for how to bring them back.
+  SHOPPABLE PRODUCT: each block can tag at most one product
+  (block.settings.products, schema limit: 1). If tagged, its data is
+  rendered two ways:
+    - an on-frame badge (image, title, price) layered inside the play
+      trigger, over the thumbnail — see .video-card__shop-badge in
+      assets/video-card.css
+    - a sibling <script type="application/json"> tag that assets/
+      video-card.js reads on click and includes in the
+      'video-card:play' event detail, so assets/video-modal.js can
+      render the same product in the lightbox's shelf — no extra
+      network request needed when the video opens.
 
   Usage:
-    {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true, cta_style: 'overlay' %}
+    {% render 'video-card', block: block, placeholder_name: 'lifestyle-1', show_caption: true %}
 {%- endcomment -%}
 {%- liquid
   assign has_native_video = false
@@ -56,27 +47,13 @@
   endif
 
   assign tagged_products = block.settings.products
-  assign product_count = 0
-  if tagged_products != blank
-    assign product_count = tagged_products.size
+  assign has_product = false
+  if tagged_products != blank and tagged_products.size > 0
+    assign has_product = true
   endif
 
-  assign cta_style = cta_style | default: 'overlay'
-  assign show_on_frame_badge = false
-  if product_count > 0
-    assign show_on_frame_badge = true
-  endif
-  # NOTE: this previously also required `cta_style != 'card_outside'`
-  # to hide the badge for that (now-disabled) style. Dropped because a
-  # block/section can still carry a stored cta_style of 'card_outside'
-  # from before the dropdown was locked to Overlay-only (removing an
-  # option from the schema does not clear old saved values) — that
-  # stale value was silently suppressing the badge. If card_outside is
-  # restored later (see the comments further down and in
-  # sections/video-section.liquid), bring this check back.
-
-  assign first_product = tagged_products.first
-  assign first_variant = first_product.selected_or_first_available_variant
+  assign product = tagged_products.first
+  assign variant = product.selected_or_first_available_variant
 -%}
 <div class="video-card" id="VideoCard-{{ block.id }}" data-video-card>
   <div class="video-card__frame">
@@ -85,10 +62,10 @@
       type="button"
       class="video-card__play-trigger"
       data-video-card-trigger
-      aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}{% if product_count > 0 %} — {{ first_product.title }} tagged{% endif %}"
+      aria-label="Play video{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}{% if has_product %} — {{ product.title }} tagged{% endif %}"
       aria-haspopup="dialog"
       data-video-caption="{{ block.settings.caption | escape }}"
-      {%- if product_count > 0 %}
+      {%- if has_product %}
         data-video-has-products
       {%- endif %}
       {%- if has_native_video %}
@@ -132,83 +109,36 @@
         </svg>
       </span>
 
-      {%- if show_on_frame_badge -%}
-        <span class="video-card__shop-badge video-card__shop-badge--overlay" aria-hidden="true">
-          {%- if first_product.featured_image -%}
+      {%- if has_product -%}
+        <span class="video-card__shop-badge" aria-hidden="true">
+          {%- if product.featured_image -%}
             {{
-              first_product.featured_image
+              product.featured_image
               | image_url: width: 100
               | image_tag: loading: 'lazy', class: 'video-card__shop-badge-image', alt: ''
             }}
           {%- endif -%}
           <span class="video-card__shop-badge-info">
-            <span class="video-card__shop-badge-title">{{ first_product.title }}</span>
-            <span class="video-card__shop-badge-price">{{ first_variant.price | money }}</span>
+            <span class="video-card__shop-badge-title">{{ product.title }}</span>
+            <span class="video-card__shop-badge-price">{{ variant.price | money }}</span>
           </span>
         </span>
       {%- endif -%}
-      {%- comment -%}
-        DISABLED cta_style variants — icon_button / text_button.
-        To restore: bring back the cta_style select's other options
-        in sections/video-section.liquid's schema, then replace the
-        block above with this case statement:
-
-        {%- case cta_style -%}
-          {%- when 'icon_button' -%}
-            <span class="video-card__shop-badge video-card__shop-badge--icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="16" height="16" focusable="false">
-                <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </span>
-          {%- when 'text_button' -%}
-            <span class="video-card__shop-badge video-card__shop-badge--text" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
-                <path d="M6 7h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                <path d="M9 7V5.5a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-              Shop now
-            </span>
-          {%- else -%}
-            [overlay markup — see the live block above]
-        {%- endcase -%}
-      {%- endcomment -%}
     </button>
 
   </div>
 
-  {%- comment -%}
-    DISABLED cta_style variant — card_outside. To restore, bring back
-    the cta_style select's other options in sections/video-section.
-    liquid's schema, then move this block back out of the comment:
-
-    {%- if product_count > 0 and cta_style == 'card_outside' -%}
-      <ul class="video-card__products" data-video-card-products>
-        {%- for product in tagged_products -%}
-          <li class="video-card__product">
-            {%- render 'thumbnail', product: product -%}
-          </li>
-        {%- endfor -%}
-      </ul>
-    {%- endif -%}
-  {%- endcomment -%}
-
-  {%- if product_count > 0 -%}
+  {%- if has_product -%}
     <script type="application/json" data-video-products>
-      [
-        {%- for product in tagged_products -%}
-          {%- assign variant = product.selected_or_first_available_variant -%}
-          {
-            "id": {{ product.id | json }},
-            "title": {{ product.title | json }},
-            "price": {{ variant.price | money | json }},
-            "url": {{ product.url | json }},
-            "image": {{ product.featured_image | image_url: width: 200 | json }},
-            "variantId": {{ variant.id | json }},
-            "available": {{ variant.available | json }}
-          }{%- unless forloop.last -%},{%- endunless -%}
-        {%- endfor -%}
-      ]
+      [{
+        "id": {{ product.id | json }},
+        "title": {{ product.title | json }},
+        "price": {{ variant.price | money | json }},
+        "url": {{ product.url | json }},
+        "image": {{ product.featured_image | image_url: width: 200 | json }},
+        "variantId": {{ variant.id | json }},
+        "available": {{ variant.available | json }}
+      }]
     </script>
   {%- endif -%}
 

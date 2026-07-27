@@ -1,26 +1,21 @@
 {%- comment -%}
   sections/video-section.liquid
   ============================================
-  Split from the original monolithic videos.liquid. This section now
+  Split from the original monolithic videos.liquid. This section
   owns only the carousel shell (heading, track, arrows) and hands each
-  slot's markup off to snippets/video-card.liquid. Playback has moved
-  out of the slot entirely and into one shared lightbox — see
-  snippets/video-modal.liquid — instead of each card revealing its own
-  inline <video>/iframe.
+  slot's markup off to snippets/video-card.liquid. Playback happens
+  in one shared lightbox — see snippets/video-modal.liquid — instead
+  of each card revealing its own inline <video>/iframe.
 
   Files involved:
     - assets/video-section.css / .js → carousel shell only (this file)
     - snippets/video-card.liquid + assets/video-card.css / .js → per-slot thumbnail + play trigger + shoppable-product badge/data
-    - snippets/video-modal.liquid + assets/video-modal.css / .js → shared lightbox + product shelf, rendered once below
-    - snippets/thumbnail.liquid + assets/thumbnail.css / .js → the reusable card markup used by video-card's "card outside video" CTA style. Named generically (not "product-thumbnail") since it's meant to grow beyond plain products — branded collab / influencer / creator cards later. Its add-to-cart button is fully self-wired by thumbnail.js.
+    - snippets/video-modal.liquid + assets/video-modal.css / .js → shared lightbox + product shelf (including its own add-to-cart handling), rendered once below
 
   Each video block can tag 1 product (block.settings.products). When
-  present, video-card.liquid shows it via the "overlay" badge (image +
-  title + price, opens the shared lightbox's product shelf on click).
-  Other CTA styles (icon_button / text_button / card_outside) are
-  temporarily disabled — see the comment just above the schema block
-  near the bottom of this file for how to restore them.
-  video-modal.js still renders its own shelf on open regardless, as a
+  present, video-card.liquid shows it via an on-video badge (image +
+  title + price) that opens the shared lightbox's product shelf on
+  click; video-modal.js renders that same product in the shelf as a
   second chance to buy.
 
   NOTE: video-modal is rendered once, at the bottom of this section.
@@ -32,17 +27,14 @@
 <link rel="stylesheet" href="{{ 'video-section.css' | asset_url }}" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="{{ 'video-card.css' | asset_url }}" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="{{ 'video-modal.css' | asset_url }}" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="{{ 'thumbnail.css' | asset_url }}" media="print" onload="this.media='all'">
 <noscript>
   <link rel="stylesheet" href="{{ 'video-section.css' | asset_url }}">
   <link rel="stylesheet" href="{{ 'video-card.css' | asset_url }}">
   <link rel="stylesheet" href="{{ 'video-modal.css' | asset_url }}">
-  <link rel="stylesheet" href="{{ 'thumbnail.css' | asset_url }}">
 </noscript>
 <script src="{{ 'video-section.js' | asset_url }}" defer></script>
 <script src="{{ 'video-card.js' | asset_url }}" defer></script>
 <script src="{{ 'video-modal.js' | asset_url }}" defer></script>
-<script src="{{ 'thumbnail.js' | asset_url }}" defer></script>
 
 {%- liquid
   assign placeholder_names = 'lifestyle-1,lifestyle-2,product-1,product-2,product-3,product-4' | split: ','
@@ -99,8 +91,7 @@
             {%- render 'video-card',
               block: block,
               placeholder_name: placeholder_name,
-              show_caption: section.settings.show_caption,
-              cta_style: section.settings.cta_style
+              show_caption: section.settings.show_caption
             -%}
           </div>
         {%- endfor -%}
@@ -125,16 +116,6 @@
 
 {%- render 'video-modal' -%}
 
-{%- comment -%}
-  CTA style is temporarily locked to "overlay" only (single tagged
-  product: image + title + price). The icon_button / text_button /
-  card_outside variants are disabled, not deleted:
-    - schema below: re-add their entries to the cta_style select's
-      "options" array to bring them back in the theme editor.
-    - snippets/video-card.liquid: their markup is preserved in a
-      commented-out block near the end of the file — move it back
-      into the {% case cta_style %} statement to re-enable rendering.
-{%- endcomment -%}
 {% schema %}
 {
   "name": "Video Section",
@@ -150,20 +131,6 @@
       "id": "show_caption",
       "label": "Show video captions",
       "default": true
-    },
-    {
-      "type": "header",
-      "content": "Shoppable products"
-    },
-    {
-      "type": "select",
-      "id": "cta_style",
-      "label": "CTA style",
-      "options": [
-        { "value": "overlay", "label": "Overlay" }
-      ],
-      "default": "overlay",
-      "info": "How a tagged product is surfaced on the video. Other CTA styles are temporarily disabled — see the comment just above this settings block to restore them."
     },
     {
       "type": "header",
