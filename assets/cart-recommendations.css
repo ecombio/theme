@@ -80,6 +80,7 @@
   padding:                    0 0 8px;
   display:                    flex;
   flex-direction:             row;
+  align-items:                stretch;
   flex:                       1 1 auto;
   min-width:                  0;
   gap:                        12px;
@@ -136,6 +137,10 @@
   display: none;
 }
 
+/* Cards: every card in a row now stretches to the same height (align-items:
+   stretch on the list), and card-info fills that stretched height so the
+   Add button consistently sits at the bottom via margin-top:auto, instead
+   of trailing wherever that card's own content happens to end. */
 .ecombio-cart-recs__card {
   flex-shrink:      0;
   width:            var(--ecd-rec-card-width);
@@ -179,8 +184,11 @@
   flex-direction: column;
   gap:            4px;
   min-width:      0;
+  flex:           1 1 auto; /* fill the stretched card height */
 }
 
+/* Reserve a fixed 2-line slot for the title regardless of actual length,
+   so short one-line titles don't pull everything below them upward. */
 .ecombio-cart-recs__card-title {
   display:            -webkit-box;
   -webkit-line-clamp: 2;
@@ -189,6 +197,7 @@
   font-size:          0.75rem;
   font-weight:        500;
   line-height:        1.35;
+  min-height:         calc(1.35em * 2);
   color:              var(--ecd-color-text-link);
   text-decoration:    none;
 }
@@ -199,11 +208,15 @@
   text-underline-offset:2px;
 }
 
+/* Always rendered by the JS now (empty when the product has only one
+   variant), so every card reserves the same line height here whether or
+   not it actually has variant text to show. */
 .ecombio-cart-recs__card-variant {
   margin:      0;
   font-size:   0.6875rem;
   color:       var(--ecd-color-text-muted);
   line-height: 1.3;
+  min-height:  1.3em;
 }
 
 .ecombio-cart-recs__card-bottom {
@@ -217,6 +230,9 @@
   display:        flex;
   flex-direction: column;
   gap:            1px;
+  /* Always rendered by the JS now (empty <s> when not on sale), reserving
+     the compare-at-price row so prices don't jump between cards. */
+  min-height:     calc(0.6875rem * 1.3 + 1px);
 }
 
 .ecombio-cart-recs__price {
@@ -226,9 +242,15 @@
 }
 
 .ecombio-cart-recs__price--was {
+  display:              block;
   font-size:            0.6875rem;
+  line-height:          1.3;
   color:                var(--ecd-color-text-muted);
   text-decoration-color:var(--ecd-color-text-muted);
+}
+
+.ecombio-cart-recs__price--was:empty {
+  text-decoration: none;
 }
 
 .ecombio-cart-recs__atc {

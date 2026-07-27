@@ -227,6 +227,19 @@
       ? formatMoney(variant.compare_at_price)
       : null;
 
+    // Variant line and "was" price are now ALWAYS rendered (empty when not
+    // applicable) rather than conditionally omitted. This keeps every
+    // card's reserved-height slots (see CSS) consistent, so Add buttons
+    // land on the same row regardless of whether a given product has a
+    // variant name or a sale price.
+    const variantLine = isMultiVariant
+      ? `<p class="ecombio-cart-recs__card-variant">${escapeHTML(variant.title)}</p>`
+      : `<p class="ecombio-cart-recs__card-variant"></p>`;
+
+    const wasPriceLine = compPrice
+      ? `<s class="ecombio-cart-recs__price--was">${compPrice}</s>`
+      : `<s class="ecombio-cart-recs__price--was"></s>`;
+
     return `
       <li class="ecombio-cart-recs__card" data-product-id="${product.id}">
         <a href="${escapeHTML(safeUrl)}" class="ecombio-cart-recs__card-image-link" tabindex="-1" aria-hidden="true">
@@ -236,10 +249,10 @@
         </a>
         <div class="ecombio-cart-recs__card-info">
           <a href="${escapeHTML(safeUrl)}" class="ecombio-cart-recs__card-title">${escapeHTML(product.title)}</a>
-          ${isMultiVariant ? `<p class="ecombio-cart-recs__card-variant">${escapeHTML(variant.title)}</p>` : ''}
+          ${variantLine}
           <div class="ecombio-cart-recs__card-bottom">
             <div class="ecombio-cart-recs__card-price">
-              ${compPrice ? `<s class="ecombio-cart-recs__price--was">${compPrice}</s>` : ''}
+              ${wasPriceLine}
               <span class="ecombio-cart-recs__price">${price}</span>
             </div>
             <button
