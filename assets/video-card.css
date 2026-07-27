@@ -1,0 +1,201 @@
+/*
+  video-card.css
+  ============================================
+  Styles snippets/video-card.liquid: a single carousel slot's
+  thumbnail + play trigger. There's no [data-video-media] or iframe
+  sizing here anymore — playback happens in the shared lightbox, see
+  video-modal.css.
+
+  Shoppable products (section.settings.cta_style):
+    .video-card__shop-badge--overlay/--icon/--text — the three
+      on-video badge variants, layered inside .video-card__frame.
+      --overlay additionally lays out a small product image
+      (.video-card__shop-badge-image) beside a title/price stack
+      (.video-card__shop-badge-info/-title/-price) for the first
+      tagged product.
+    .video-card__products / .video-card__product — the "card outside
+      video" variant's layout wrapper (list + row background) only.
+      Each row's actual content (image, title, price, add-to-cart) is
+      snippets/thumbnail.liquid, styled by assets/thumbnail.css and
+      wired up by assets/thumbnail.js — include both wherever
+      cta_style can be 'card_outside'.
+*/
+
+.video-card,
+.video-card * {
+  box-sizing: border-box;
+}
+
+.video-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  height: 100%;
+}
+
+.video-card__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111827;
+}
+
+.video-card__play-trigger {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  display: block;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.video-card__play-trigger:disabled {
+  cursor: default;
+}
+
+.video-card__play-trigger:focus-visible {
+  outline: 2px solid #4F46E5;
+  outline-offset: 2px;
+}
+
+.video-card__thumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-card__thumbnail--placeholder {
+  background: #E5E7EB;
+}
+
+.video-card__play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.video-card__play-icon svg {
+  margin-left: 3px;
+}
+
+.video-card__play-trigger:hover .video-card__play-icon,
+.video-card__play-trigger:focus-visible .video-card__play-icon {
+  background: rgba(17, 24, 39, 0.8);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.video-card__shop-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.video-card__shop-badge--overlay {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  background: linear-gradient(to top, rgba(17, 24, 39, 0.75), rgba(17, 24, 39, 0));
+}
+
+.video-card__shop-badge-image {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+  background: #E5E7EB;
+}
+
+.video-card__shop-badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.video-card__shop-badge-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-card__shop-badge-price {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.video-card__shop-badge--icon {
+  right: 10px;
+  bottom: 10px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.7);
+}
+
+.video-card__shop-badge--text {
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: rgba(17, 24, 39, 0.85);
+}
+
+.video-card__products {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.video-card__product {
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+}
+
+.video-card__caption {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #374151;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-card__play-icon {
+    transition: none;
+  }
+}
