@@ -1,18 +1,18 @@
 {% comment %}
-  Renders the benefit grid from the product's custom.benefit_grid metafield
+  Renders the benefit grid from the product's custom.benefits_grid metafield
   Usage: {% render 'benefit-grid', product: product %}
 
-  Expected metaobject fields per entry:
+  Expected metaobject fields per entry (definition: Benefits):
     icon    - file reference (image/svg)
     title   - single line text (e.g. "2 Year Warranty")
     tooltip - single line text, OPTIONAL (shown on hover/focus for more detail)
-    link    - url, OPTIONAL (opens in a new tab, e.g. a policy page or certificate)
+    link    - link type, OPTIONAL (has .url and .text — opens in a new tab)
 
   Layout: 2 columns on small screens, 4 columns at 1024px and up, matching
   a typical trust-badge row placed after the buybox or under the gallery.
 {% endcomment %}
 
-{% assign benefit_items = product.metafields.custom.benefit_grid.value %}
+{% assign benefit_items = product.metafields.custom.benefits_grid.value %}
 
 {% if benefit_items != blank %}
   <div class="benefit-grid">
@@ -23,7 +23,7 @@
       {% endif %}
 
       {% assign has_link = false %}
-      {% if item.link != blank %}
+      {% if item.link.url != blank %}
         {% assign has_link = true %}
       {% endif %}
 
@@ -34,7 +34,7 @@
 
       {% if has_link %}
         <a
-          href="{{ item.link }}"
+          href="{{ item.link.url }}"
           class="benefit-item"
           target="_blank"
           rel="noopener noreferrer"
