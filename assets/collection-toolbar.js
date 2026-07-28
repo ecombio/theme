@@ -89,9 +89,11 @@
       sheet.setAttribute('aria-modal', 'true');
       sheet.setAttribute('aria-label', 'Sort options');
 
-      var inner = '<div class="mobile-sort-sheet__inner">';
-      inner += '<div class="mobile-sort-sheet__handle"></div>';
-      inner += '<p class="mobile-sort-sheet__heading">Sort by</p>';
+      var inner = '<div class="mobile-sort-sheet__header">';
+      inner += '<span class="mobile-sort-sheet__title">Sort by</span>';
+      inner += '<button type="button" class="mobile-sort-sheet__close-btn" aria-label="Close sort options" data-sort-close>&times;</button>';
+      inner += '</div>';
+      inner += '<div class="mobile-sort-sheet__inner">';
       inner += '<ul class="mobile-sort-sheet__list">';
 
       if (sortSelect) {
@@ -113,6 +115,14 @@
           window.location.href = url.toString();
         });
       });
+
+      var closeBtn = sheet.querySelector('[data-sort-close]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          closeSortSheet();
+          mobileSortBtn.focus();
+        });
+      }
 
       document.body.appendChild(sheet);
       return sheet;
