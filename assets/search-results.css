@@ -25,7 +25,24 @@
    BRAND TOKENS: same --hs-* variables as main-search.css, always as
    a var(--token, fallback) read -- see main-search.css's BRAND TOKENS
    note for why.
-*/
+
+   COLUMN-SETTING FIX (2026-07): .search-results-grid's responsive
+   breakpoints previously hardcoded flat column counts (repeat(3,...),
+   repeat(2,...)) below 1024px and dropped the --columns custom
+   property entirely at those widths -- unlike
+   assets/collection-feed.css's .product-feed__grid, which wraps every
+   breakpoint in min(var(--columns, 4), N) so the merchant's "Columns"
+   section setting is always respected, just capped per breakpoint.
+   Since Main search's Columns setting is independent from Main
+   collection's, a lower value there (e.g. 2) rendered incorrectly:
+   the 768px breakpoint below ignored it and forced a flat 2-column
+   grid regardless of viewport width narrower than that, squeezing
+   cards and cropping their images instead of dropping to 1 column
+   the way collection's equivalent setting would have. Rewritten to
+   use the exact same min() pattern as collection-feed.css so both
+   grids behave identically for the same Columns value at the same
+   breakpoint.
+   ------------------------------------------------------------------ */
 
 .search-feed {
   display: flex;
@@ -110,10 +127,11 @@
    Products panel grid
    Card-level styling lives in product-card.css -- this only owns the
    grid container arranging those cards, plus the panel wrapper it
-   sits inside. Breakpoints mirror main-collection.css's grid (1 col
-   <=480px, 2 col <768px, 3 col <1024px) so this stays visually
-   consistent with the rest of the site, per the note in
-   product-card.liquid's IMAGE SIZES FIX.
+   sits inside. Breakpoints now mirror collection-feed.css's
+   min(var(--columns, 4), N) pattern exactly -- see COLUMN-SETTING
+   FIX above -- so this respects the merchant's Columns setting for
+   Main search the same way collection-feed.css already does for
+   Main collection, instead of hardcoding flat counts.
    ------------------------------------------------------------------ */
 
 #panel-products {
@@ -122,25 +140,25 @@
 
 .search-results-grid {
   display: grid;
-  grid-template-columns: repeat(var(--columns, 4), minmax(0, 1fr));
+  grid-template-columns: repeat(min(var(--columns, 4), 4), minmax(0, 1fr));
   gap: 1.5rem 1rem;
 }
 
 @media (max-width: 1024px) {
   .search-results-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(min(var(--columns, 4), 3), minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
   .search-results-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(min(var(--columns, 4), 2), minmax(0, 1fr));
   }
 }
 
 @media (max-width: 480px) {
   .search-results-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(min(var(--columns, 4), 1), minmax(0, 1fr));
   }
 }
 
