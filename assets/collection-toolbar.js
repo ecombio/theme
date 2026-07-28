@@ -77,6 +77,7 @@
 
   if (mobileSortBtn) {
     var sortSheet = null;
+    var scrollY = 0;
 
     function buildSortSheet() {
       var sheet = document.createElement('div');
@@ -114,21 +115,51 @@
       return sheet;
     }
 
+    // iOS Safari ignores `overflow: hidden` on the body while a touch
+    // scroll is in progress underneath a fixed-position sheet, so the
+    // page behind the sheet can still scroll. Pinning the body with
+    // position: fixed (and restoring the scroll offset on close) is
+    // the reliable cross-browser fix for that background-scroll leak.
+    function lockBodyScroll() {
+      scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = -scrollY + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+    }
+
+    function unlockBodyScroll() {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      window.scrollTo(0, scrollY);
+    }
+
     function openSortSheet() {
       if (!sortSheet) sortSheet = buildSortSheet();
       sortSheet.getBoundingClientRect();
       sortSheet.classList.add('is-open');
       mobileSortBtn.setAttribute('aria-expanded', 'true');
-      document.body.style.overflow = 'hidden';
+      lockBodyScroll();
       if (window.CollectionBackdrop) window.CollectionBackdrop.open(closeSortSheet);
+      document.addEventListener('keydown', onSortSheetKeydown);
     }
 
     function closeSortSheet() {
       if (!sortSheet) return;
       sortSheet.classList.remove('is-open');
       mobileSortBtn.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
+      unlockBodyScroll();
       if (window.CollectionBackdrop) window.CollectionBackdrop.close(closeSortSheet);
+      document.removeEventListener('keydown', onSortSheetKeydown);
+    }
+
+    function onSortSheetKeydown(e) {
+      if (e.key === 'Escape') {
+        closeSortSheet();
+        mobileSortBtn.focus();
+      }
     }
 
     mobileSortBtn.addEventListener('click', function () {
