@@ -73,7 +73,10 @@
     });
   }
 
-  var mobileSortBtn = toolbar.querySelector('[data-mobile-sort-toggle]');
+  // .collection-mobile-bar (which holds this button) is a sibling of
+  // #collection-toolbar in the markup, not a descendant, so it must be
+  // queried at the document level rather than scoped to `toolbar`.
+  var mobileSortBtn = document.querySelector('[data-mobile-sort-toggle]');
 
   if (mobileSortBtn) {
     var sortSheet = null;
