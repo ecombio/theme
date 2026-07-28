@@ -19,7 +19,24 @@
    same way here: read --header-group-height instead, and add the
    :root.header-group-hidden override collection-toolbar.css already
    has, so this toolbar collapses its offset in sync when
-   header-group.js hides the fixed header on scroll-down. */
+   header-group.js hides the fixed header on scroll-down.
+
+   MOBILE TAB WIDTH FIX (2026-07): .tab-switcher__tab in the mobile
+   media query below previously used flex: 0 0 auto / width: auto,
+   which let each tab shrink to its label's width instead of filling
+   the row -- unlike collection-toolbar.css's mobile tabs, which use
+   flex: 1 1 0 so both tabs share the full width equally. Matched
+   that here, plus min-height: 44px for a consistent tap target with
+   collection's version.
+
+   MOBILE BAR SAFE-AREA FIX (2026-07): .search-mobile-bar was missing
+   the padding-left / padding-right env(safe-area-inset-*) rules
+   collection-mobile-bar.css already has, so on notched devices in
+   landscape the bar's buttons could sit under the screen's rounded
+   corners / home-indicator margins. Added those, plus
+   min-height: 44px on .search-mobile-bar__btn for the same tap-target
+   consistency as the tab fix above.
+*/
 
 .search-toolbar {
   display: flex;
@@ -179,6 +196,8 @@
   background: #fff;
   border-top: 1px solid #e5e5e5;
   padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .search-mobile-bar__btn {
@@ -193,6 +212,7 @@
   justify-content: center;
   gap: 0.4rem;
   padding: 0.9rem 1rem;
+  min-height: 44px;
   font-size: 0.9rem;
   font-weight: 500;
   color: #1a1a1a;
@@ -319,8 +339,9 @@
   }
 
   .tab-switcher__tab {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     width: auto;
+    min-height: 44px;
   }
 
   .search-toolbar__active {
