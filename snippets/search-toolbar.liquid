@@ -1,28 +1,4 @@
-{%- comment -%}
-  snippets/search-toolbar.liquid
-  ------------------------------------------------------------------
-  Renders the search results toolbar: the filter-drawer toggle, the
-  Products/Articles tab switcher, and the sort <select> (desktop),
-  plus the equivalent condensed mobile bar. Split out of
-  sections/main-search.liquid so this UI (and its CSS/JS) travels
-  together as its own component, matching search-filter.liquid and
-  search-results.liquid.
-
-  Expects:
-    - search_terms (string)  the current search query, e.g. search.terms
-    - active_type   (string)  'product' or 'article'
-    - show_filters  (boolean) whether the filter drawer starts expanded
-    - section       (object)  the parent section, for settings:
-                               show_filters, show_sort, tab_products_label,
-                               tab_articles_label, ajax_navigation
-
-  data-ajax-navigation on the outer element mirrors
-  section.settings.ajax_navigation so search-toolbar.js can decide,
-  client-side, whether to intercept tab clicks or let them navigate
-  normally. Tabs stay real <a href> elements either way -- this is
-  read by JS as progressive enhancement, not a replacement for the
-  href, so search still works with JS disabled.
-{%- endcomment -%}
+{%- comment -%} snippets/search-toolbar.liquid {%- endcomment -%}
 {{ 'search-toolbar.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -135,14 +111,3 @@
 
   </div>
 {%- endif -%}
-
-{%- comment -%}
-  No <script> tag here on purpose. search-toolbar.js's responsibilities
-  (sort <select> + tab keyboard nav) were merged into assets/main-search.js
-  in 2026-07 (see that file's header comment) -- but this snippet kept
-  loading the old file too, and both guarded their IIFEs with the same
-  window.__searchToolbarLoaded flag. Whichever script tag executed first
-  silently "won" and the other's setup never ran. main-search.js is
-  already loaded by sections/main-search.liquid and is the single owner
-  of this behavior now, so nothing needs to load from here.
-{%- endcomment -%}
