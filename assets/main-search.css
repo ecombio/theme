@@ -1,51 +1,4 @@
-/* assets/main-search.css
-   Owned by sections/main-search.liquid.
-   Covers the hero, the section-level body layout (filter aside +
-   feed), and the toolbar (filter toggle, tab switcher, sort select)
-   plus its condensed mobile-bar counterpart.
-
-   RESULTS FEED SPLIT BACK OUT (2026-07): the results-feed styling
-   (panel wrapper, pagination/empty-state, product/article grids) has
-   moved to assets/search-results.css, loaded directly by
-   snippets/search-results.liquid via its own stylesheet_tag -- same
-   self-contained pattern as search-filter.liquid/.css. This reverses
-   the earlier merge documented in this file's prior revision, now
-   that product-results.liquid / article-results.liquid have been
-   inlined into search-results.liquid rather than staying separate
-   snippets: the CSS boundary now matches the current snippet
-   boundary again instead of sitting one level up from it.
-
-   FILTER DRAWER CSS: everything styling the .search-filter drawer
-   itself (the <aside> and its contents -- groups, price_range
-   histogram/slider/brackets, submit button, placeholder, mobile
-   positioning, etc.) lives in assets/search-filter.css, loaded
-   directly by snippets/search-filter.liquid via its own
-   stylesheet_tag. That snippet is self-contained, so its styling
-   doesn't depend on this file. The one exception: .search-filter__active
-   and .search-filter__pill* below are NOT in search-filter.css,
-   because despite the class prefix they render inside
-   snippets/search-toolbar.liquid's markup (the active-filter pills
-   next to the Products/Articles tabs), not inside search-filter's
-   <aside> -- so they stay here with the rest of the toolbar styling.
-
-   BRAND TOKENS: uses the --hs-* variables main-collection.css already
-   reads, so both sections pull from the same global tokens and fall
-   back to the same palette when a store hasn't defined those
-   variables yet. Every color in this file is still a
-   var(--token, fallback) read, never a bare hex value, so a future
-   preset system can swap the whole section's palette by redefining
-   the --hs-* tokens at a higher scope -- no changes needed here when
-   that lands.
-
-   PILL STYLE SYNC (2026-07): .search-filter__pill / --clear below
-   were previously a plain outlined style, out of sync with
-   .collection-filter__pill in assets/collection-filter.css (filled
-   pill background, no border, solid "Clear all" on hover). Copied
-   that block over verbatim, same --color-* token names, so this
-   stays in sync automatically whenever those tokens change --
-   nothing here should need editing again unless collection-filter.css's
-   markup itself changes shape.
-*/
+/* assets/main-search.css */
 
 .main-search {
   position: relative;
@@ -67,14 +20,6 @@
 .search-page__full-width {
   max-width: 100%;
 }
-
-/* Hero
-   Left-aligned to match collection-hero.css's pattern (main-collection.css)
-   rather than the previous centered treatment — same padding-block scale
-   and mobile breakpoint behavior, adapted to this section's own class
-   names. .search-title intentionally doesn't set its own font-size,
-   same as .collection-title, so both headings pick up the theme's
-   default h1 styling and stay visually consistent with each other. */
 
 .search-hero {
   padding-block: 40px 32px;
@@ -113,10 +58,6 @@
   color: var(--hs-text-muted, #6b6b6b);
 }
 
-/* Toolbar
-   Covers the desktop toolbar (filter toggle, tab switcher, sort
-   select) and its condensed mobile-bar counterpart. */
-
 .tab-switcher {
   display: flex;
   gap: 0.5rem;
@@ -152,7 +93,6 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  /*padding-block: 1rem;*/
   border-bottom: 1px solid var(--hs-border, #e5e5e5);
 }
 
@@ -183,8 +123,6 @@
   border-radius: 4px;
   font-size: 0.9rem;
 }
-
-/* Mobile bar (hidden on desktop, shown under the toolbar breakpoint) */
 
 .search-mobile-bar {
   display: none;
@@ -219,11 +157,6 @@
     display: flex;
   }
 }
-
-/* Active filter pills (toolbar)
-   Renders inside snippets/search-toolbar.liquid's markup, to the
-   right of the Products/Articles tabs -- not inside search-filter's
-   <aside>, so it stays here rather than in search-filter.css. */
 
 .search-filter__active {
   display: flex;
@@ -265,25 +198,6 @@
   color: #fff;
 }
 
-/* Body layout: filter aside + feed
-   FLEXBOX FIX (2026-07): this used to be `display: grid` with
-   explicit tracks (16rem 1fr). That broke when search-filter.js
-   toggled the aside's `hidden` attribute client-side: an element with
-   `display: none` is removed from grid layout entirely, so with only
-   one item left, grid auto-placement dropped .search-body__feed into
-   the FIRST track (16rem) instead of the 1fr track, squeezing the
-   whole product grid into a narrow column with empty space beside it.
-   The old `.search-body--filters-hidden` class only handled the
-   equivalent server-rendered case (show_filters false at initial
-   load) — it never re-applied when JS toggled the aside after the
-   page had already rendered.
-
-   Flexbox doesn't have this failure mode: a hidden sibling just stops
-   taking up space and the remaining item naturally fills the row, so
-   no JS-vs-CSS state mismatch is possible. .search-filter carries its
-   own explicit width in assets/search-filter.css instead of borrowing
-   it from a grid track. */
-
 .search-body {
   display: flex;
   align-items: flex-start;
@@ -310,11 +224,6 @@
   z-index: 199;
 }
 
-/* BACKDROP FIX (2026-07): scoped to the same breakpoint the drawer
-   itself uses (see .search-filter's mobile positioning in
-   assets/search-filter.css), as a defensive second layer alongside
-   the JS check in main-search.js — even if `.is-visible` somehow got
-   added outside of mobile, it still can't render there. */
 @media (min-width: 769px) {
   .search-mobile-backdrop.is-visible {
     display: none;

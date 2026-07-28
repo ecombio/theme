@@ -1,142 +1,5 @@
-/* assets/main-search.js
-   Owned by sections/main-search.liquid.
+/* assets/main-search.js */
 
-   This file was previously retired, then briefly revived to hold the
-   filter-drawer/live-filtering logic merged in from assets/search-
-   filter.js, then merged again with assets/search-toolbar.js (was
-   owned by snippets/search-toolbar.liquid).
-
-   SCROLL-RESTORE SPLIT BACK OUT (2026-07): the third responsibility
-   this file briefly held — scroll-restore for both result grids —
-   has moved to assets/search-results.js, loaded directly by
-   snippets/search-results.liquid, mirroring the CSS split done in
-   the same pass. This file now owns only the filter drawer/live-
-   filtering and toolbar (sort + tab keyboard nav) behavior described
-   below.
-
-   MOBILE DRAWER: HIDDEN BY DEFAULT / SLIDE-IN (2026-07-25): openFilters()
-   and closeFilters() below now add/remove an `is-open` class on the
-   filter <aside> in addition to (on desktop only) toggling the
-   native `hidden` attribute. This split exists because the two
-   breakpoints need different behavior:
-     - Desktop: the aside is a permanent sidebar; opening/closing it
-       is an instant collapse/expand, handled by toggling `hidden`
-       (assets/main-search.css's FLEXBOX FIX makes the feed reflow to
-       fill the space on its own when the aside is hidden).
-     - Mobile: the aside is a slide-in drawer. assets/search-filter.css
-       keeps it permanently translated off-screen by default
-       (regardless of the `hidden` attribute's state -- see that
-       file's HIDDEN-BY-DEFAULT / SLIDE-IN DRAWER note) and only
-       slides it on-screen when `.is-open` is present. Toggling the
-       native `hidden` attribute on mobile would force `display: none`
-       instantly and defeat the slide transition entirely, so mobile
-       never touches `hidden` -- only the class.
-   isMobileViewport() (already used for the backdrop) decides which
-   path each call takes.
-
-   Laid out as independent IIFEs below rather than one combined
-   block, since each bails out early when its target element isn't on
-   the page (filters disabled, or a control not present on this
-   page) — merging everything into one function would make unrelated
-   behaviors incorrectly depend on each other's markup existing.
-
-   Responsibilities:
-
-   1. Filter drawer + live filtering (formerly search-filter.js):
-      - Opening/closing the drawer: the toggle buttons live in the
-        section toolbar/mobile bar, the backdrop element lives in the
-        section markup too — this owns all of that behavior since
-        it's all "does the filter drawer show or not."
-      - The dimming backdrop is a MOBILE-ONLY drawer affordance (see
-        isMobileViewport() below) — it no longer appears on desktop,
-        where the filter aside is just a normal in-flow sidebar.
-      - Price filter UI (2026-07): the price_range group now renders
-        a histogram + dual-thumb slider + quick-pick brackets
-        (initPriceFilters(), below), not just two plain number
-        inputs. The number inputs stay the source of truth for what
-        gets submitted; the slider/radios just write into them and
-        dispatch 'change', which the live-filtering listeners already
-        handle. Needs re-running after every AJAX swap since the
-        form's innerHTML (and therefore these elements) gets
-        replaced.
-      - Live filtering (AJAX via the Section Rendering API): checking
-        a filter or editing a price field re-fetches just the
-        main-search section's HTML with the new query params and
-        swaps in the updated product grid, filter form, pagination,
-        and result count — no full page reload. Ported from
-        main-collection's collection-filter.js, which does the same
-        thing for the collection page's product-filter form; see that
-        file for the original. Differences here:
-          - This form already carries `q` and `type` as hidden inputs
-            (collection's form didn't need either, since
-            collection.url is already scoped to one collection), so
-            FormData picks them up for free — no separate "preserve
-            q/type" step.
-          - Filters only ever render on the Products tab (Shopify has
-            no faceted search for articles), so this bails out early
-            if the filter <form> isn't present at all — no
-            live-filtering setup needed on the Articles tab.
-          - Tab switching itself is NOT live here (unlike
-            collection's tab switching, which collection-feed.js does
-            intercept) — search's tabs are deliberately plain links
-            to ?type=product|article, per responsibility #2 below.
-            This only makes the FILTER FORM's fields live; it never
-            touches tab navigation. IMPORTANT: because of this, the
-            filterForm/sectionId references below are captured once
-            at load and assumed to stay attached to the live DOM for
-            the rest of the page's life. If tab navigation is ever
-            made AJAX (replacing #main-search wholesale) without also
-            reworking this file to re-acquire those references after
-            the swap, live filtering will silently start writing into
-            detached, disconnected elements. Do not add AJAX tab
-            switching without addressing this.
-          - Also swaps the hero's result count ("N results for
-            'query'") since that changes as filters narrow the
-            results, which collection's hero text doesn't have an
-            equivalent of.
-          - Also swaps the toolbar's active-filter pills
-            (.search-toolbar__active, rendered by search-toolbar.liquid)
-            (2026-07 fix): this block previously only updated on a
-            full page reload, since applyFiltersLive's swap list never
-            included anything from search-toolbar.liquid's markup —
-            checking a filter would update the grid/count/form but
-            leave stale (or missing) pills in the toolbar until the
-            user manually refreshed. syncActivePills() below handles
-            all three cases a fetch can produce: pills existed and
-            still do (replace), pills didn't exist and now do (first
-            filter applied — insert after the tab switcher), and
-            pills existed but no longer do (last filter cleared —
-            remove).
-          - The price_bracket radios are UI-only (they just write
-            into the min./max. number fields, see initPriceFilters)
-            and are explicitly excluded from the submitted query
-            params in buildFilterUrl — submitting a `price_bracket`
-            param wouldn't mean anything to the storefront filter
-            engine.
-
-   2. Sort <select> + tab keyboard navigation (formerly
-      search-toolbar.js): the sort <select> redirects with an updated
-      sort_by param, and arrow-key navigation between the Products/
-      Articles tabs follows the WAI-ARIA "Tabs" pattern (Left/Right/
-      Home/End move focus + roving tabindex). Deliberately does NOT
-      intercept the tab links' click/Enter navigation itself — each
-      tab is a real link to ?type=product|article, which is the
-      simplest, most reliable way to hand off to Shopify's own
-      pagination/filter state for that result type. This only
-      enhances keyboard travel between the two tabs; it never blocks
-      the default navigation.
-
-      NOTE (2026-07): assets/search-toolbar.js still exists as a
-      separate file and snippets/search-toolbar.liquid still loads it
-      via its own <script> tag, even though its responsibilities were
-      merged into this IIFE. Both files guard with the same flag name
-      (window.__searchToolbarLoaded) — whichever script tag executes
-      first "wins" and the other's setup silently never runs. This
-      predates the pill-sync fix above and is a separate bug: resolve
-      by removing search-toolbar.liquid's <script> tag now that this
-      file is the single owner of that logic (see accompanying
-      search-toolbar.liquid change).
-*/
 (function () {
   if (window.__searchFilterLoaded) return;
   window.__searchFilterLoaded = true;
@@ -159,10 +22,6 @@
   }
 
   function openFilters() {
-    // Mobile: slide-in via class only -- never touch `hidden` here,
-    // it would force display:none and skip the transition entirely.
-    // Desktop: instant collapse/expand via the `hidden` attribute,
-    // as before.
     if (isMobileViewport()) {
       filterAside.classList.add('is-open');
       if (backdrop) backdrop.classList.add('is-visible');
@@ -328,13 +187,6 @@
     });
   }
 
-  // 2026-07 fix: keeps the toolbar's active-filter pill strip
-  // (.search-toolbar__active, from search-toolbar.liquid) in sync
-  // with whatever the fetched section actually rendered. Handles all
-  // three cases: pills existed and still do (replace in place),
-  // pills didn't exist and now do (first filter just got checked —
-  // insert right after the tab switcher), and pills existed but no
-  // longer do (last filter just got cleared — remove).
   function syncActivePills(doc) {
     var toolbar = document.getElementById('search-toolbar');
     if (!toolbar) return;
