@@ -1,42 +1,4 @@
-/* assets/search-toolbar.css
-   Owned by snippets/search-toolbar.liquid.
-   Rebuilt to match assets/collection-toolbar.css exactly — same
-   colors (hardcoded, not theme vars, to guarantee visual parity
-   regardless of --color-* overrides elsewhere), same sticky toolbar
-   behavior, same custom select, same fixed mobile bar. Class names
-   are kept as search-* so existing JS hooks in search-toolbar.js are
-   untouched; only the declarations changed.
-
-   STICKY OFFSET FIX (2026-07): .search-toolbar previously read
-   var(--sticky-header-height, 0) for its top offset. That variable is
-   never set anywhere in this theme -- header-group.js (the script
-   that measures and publishes the fixed header's real height) only
-   ever writes --header-group-height. --sticky-header-height silently
-   fell back to its 0 default 100% of the time, so this toolbar was
-   sticking flush to the very top of the viewport with no allowance
-   for the fixed header above it -- the exact same bug
-   collection-filter.css and search-filter.css both had, fixed the
-   same way here: read --header-group-height instead, and add the
-   :root.header-group-hidden override collection-toolbar.css already
-   has, so this toolbar collapses its offset in sync when
-   header-group.js hides the fixed header on scroll-down.
-
-   MOBILE TAB WIDTH FIX (2026-07): .tab-switcher__tab in the mobile
-   media query below previously used flex: 0 0 auto / width: auto,
-   which let each tab shrink to its label's width instead of filling
-   the row -- unlike collection-toolbar.css's mobile tabs, which use
-   flex: 1 1 0 so both tabs share the full width equally. Matched
-   that here, plus min-height: 44px for a consistent tap target with
-   collection's version.
-
-   MOBILE BAR SAFE-AREA FIX (2026-07): .search-mobile-bar was missing
-   the padding-left / padding-right env(safe-area-inset-*) rules
-   collection-mobile-bar.css already has, so on notched devices in
-   landscape the bar's buttons could sit under the screen's rounded
-   corners / home-indicator margins. Added those, plus
-   min-height: 44px on .search-mobile-bar__btn for the same tap-target
-   consistency as the tab fix above.
-*/
+/* assets/search-toolbar.css */
 
 .search-toolbar {
   display: flex;
@@ -51,17 +13,9 @@
   transition: top 0.3s ease;
 }
 
-/* When header-group.js hides the fixed header on scroll-down, close
-   the gap it leaves behind instead of stranding the toolbar with a
-   header-height offset pointing at nothing -- mirrors
-   collection-toolbar.css's identical rule. */
 :root.header-group-hidden .search-toolbar {
   top: 0;
 }
-
-/* ---------- Tabs (shares .tab-switcher / .tab-switcher__tab class
-   names with collection-toolbar.liquid — width/mechanism now mirror
-   collection's exactly since both have exactly 2 tabs) ---------- */
 
 .tab-switcher {
   display: flex;
@@ -115,8 +69,6 @@
   background: #1a1a1a;
 }
 
-/* ---------- Active filters ---------- */
-
 .search-toolbar__active {
   display: flex;
   align-items: center;
@@ -138,8 +90,6 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
-
-/* ---------- Sort (desktop) — same custom select as collection ---------- */
 
 .search-toolbar__sort {
   flex: 0 0 auto;
@@ -182,9 +132,6 @@
   white-space: nowrap;
   border: 0;
 }
-
-/* ---------- Mobile bar — now fixed to viewport bottom, 50/50 split,
-   matching collection-mobile-bar exactly ---------- */
 
 .search-mobile-bar {
   display: none;
@@ -236,10 +183,6 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-/* ---------- Mobile sort sheet — copied verbatim from
-   collection-toolbar.css so it's ready as soon as search-toolbar.js
-   builds the matching markup (see note below). ---------- */
 
 .mobile-sort-sheet {
   position: fixed;
@@ -312,8 +255,6 @@
 .mobile-sort-sheet__option--active::after {
   content: ' ✓';
 }
-
-/* ---------- Responsive ---------- */
 
 @media (max-width: 768px) {
   .search-toolbar {
