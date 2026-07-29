@@ -1,49 +1,4 @@
-{%- comment -%}
-  snippets/search-results.liquid
-  ------------------------------------------------------------------
-  Renders the two result panels (tabpanels) AND the per-type result
-  rendering (grid, cards, pagination) directly — product-results.liquid
-  and article-results.liquid were merged in here (2026-07) since each
-  was only ever rendered from this one call site.
-
-  The Products/Articles tab switcher itself lives in
-  search-toolbar.liquid (the ids referenced by aria-labelledby below —
-  tab-products / tab-articles — are defined there); this snippet used
-  to render its own duplicate copy of that tab switcher, which
-  produced two conflicting sets of the same DOM ids on the page.
-  Removed in favor of a single tab switcher owned by the toolbar.
-
-  Expects:
-    - search_terms  (string)  the current search query, e.g. search.terms
-    - active_type    (string)  'product' or 'article'
-    - section        (object)  the parent section, for settings:
-                                columns, results_per_page, and for
-                                section.blocks (promo_banner /
-                                promo_carousel — products panel only)
-
-  data-panel FIX (2026-07): these values must match main-collection.js's
-  activateTab(key), which is fed key = tab.dataset.tab — i.e. the
-  PLURAL "products" / "articles" from the tab switcher's data-tab
-  attributes, not the singular active_type param this snippet
-  receives. They were previously "product" / "article" (singular),
-  which meant `p.dataset.panel === key` never matched either panel,
-  so main-collection.js's activateTab() hid BOTH panels on every tab
-  click instead of showing the clicked one. Kept in sync with
-  data-tab in main-search.liquid.
-
-  ASSET OWNERSHIP: product-card.css, article-card.css, promo-banner.css,
-  and promo-carousel.css are NOT loaded here — snippets/sections don't
-  load their own assets in this theme. They're loaded by the parent
-  section (main-search.liquid).
-
-  BANNER/CAROUSEL SUPPORT (2026-07, carried over from product-results.liquid):
-  the section's promo_banner / promo_carousel blocks are products-tab-only
-  content (see main-search.liquid's schema paragraphs under "In-feed
-  banners" / "Promo carousels"), so this reads section.blocks directly.
-  absolute_index uses paginate.current_offset, not forloop.index alone,
-  so a block positioned at e.g. slot 20 renders once overall instead of
-  on every page.
-{%- endcomment -%}
+{%- comment -%} snippets/search-results.liquid {%- endcomment -%}
 {{ 'search-results.css' | asset_url | stylesheet_tag }}
 {{ 'promo-banner.css' | asset_url | stylesheet_tag }}
 {{ 'promo-carousel.css' | asset_url | stylesheet_tag }}
@@ -69,7 +24,7 @@
         <div
           id="search-results-grid"
           class="search-results-grid"
-          style="--columns: {{ section.settings.columns | default: 4 }};"
+          style="--columns: {{ section.settings.columns | default: 4 }}; --mobile-columns: {{ section.settings.mobile_columns | default: 1 }};"
         >
           {%- for result in search.results -%}
             {%- assign absolute_index = paginate.current_offset | plus: forloop.index -%}
