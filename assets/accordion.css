@@ -16,7 +16,7 @@
    as many items as you need:
 
      <div class="accordion">
-       <details class="accordion__item">
+       <details class="accordion__item" id="faq-your-slug-here">
          <summary class="accordion__summary">
            Your question here?
            <span class="accordion__icon"></span>
@@ -38,12 +38,20 @@
      NOT put an <svg> inside it, just leave the <span> empty.
    - Class names are fixed: accordion / accordion__item / accordion__summary
      / accordion__icon / accordion__content. Don't rename them per article.
+   - Give each <details> a unique id (e.g. id="faq-waterproof") so the
+     item can be deep-linked to directly (yoursite.com/page#faq-waterproof).
+     This matters for SEO/AI citation — search engines and LLM tools often
+     link to a specific answer rather than the whole page. The [open]
+     forcing and :target highlight rules below make sure that when someone
+     lands on the link, the answer is actually visible and briefly
+     highlighted, not just scrolled-to while still collapsed.
    ========================================================================== */
 
 .accordion {
   --accordion-border: #e5e5e5;
   --accordion-text: #1a1a1a;
   --accordion-text-hover: #4a4a4a;
+  --accordion-target-highlight: #fff8dc; /* subtle highlight for deep-linked item */
 
   margin: 2rem 0;
   border-top: 1px solid var(--accordion-border);
@@ -52,6 +60,29 @@
 .accordion__item {
   padding: 0;
   border-bottom: 1px solid var(--accordion-border);
+  scroll-margin-top: 6rem; /* offset for sticky headers when jumping to an anchor */
+}
+
+/* Force the item open when it's the target of a deep link (e.g. #faq-waterproof),
+   even if the visitor arrives with the accordion collapsed. Browsers don't add
+   the `open` attribute automatically just because a fragment link points at a
+   <details> element, so we do it via CSS. */
+.accordion__item:target {
+  animation: accordion-target-flash 2s ease-out;
+}
+
+.accordion__item:target .accordion__content {
+  display: block !important;
+}
+
+.accordion__item:target .accordion__icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+
+@keyframes accordion-target-flash {
+  0% { background-color: var(--accordion-target-highlight); }
+  100% { background-color: transparent; }
 }
 
 .accordion__summary {
