@@ -7,6 +7,11 @@
   merchant-block version — content now lives on the product as data,
   not as section blocks tied to a specific template instance.
 
+  Metaobject "Featured highlight" fields expected:
+    - image       -> Image field type (NOT generic File field)
+    - heading     -> Single line text
+    - description -> Rich text
+
   Usage:
     {% render 'featured-highlights', product: product %}
 {%- endcomment -%}
@@ -43,7 +48,7 @@
             <div class="feature-highlights__frame">
               {%- if highlight.image != blank -%}
                 {{
-                  highlight.image.image
+                  highlight.image
                   | image_url: width: 800
                   | image_tag:
                     loading: 'lazy',
@@ -61,7 +66,7 @@
             {%- endif -%}
 
             {%- if highlight.description != blank -%}
-              <div class="feature-highlights__item-description">{{ highlight.description }}</div>
+              <div class="feature-highlights__item-description">{{ highlight.description.value }}</div>
             {%- endif -%}
           </div>
         {%- endfor -%}
