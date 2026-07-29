@@ -6,8 +6,6 @@
 <script src="{{ 'newsletter-form.js' | asset_url }}" defer="defer"></script>
 
 {%- liquid
-  assign content_blocks = article.metafields.custom.content_blocks.value
-
   assign width_type = section.settings.section_width
   if width_type == blank
     assign width_class = 'main-article__default-width'
@@ -53,20 +51,7 @@
   <article class="article-content">
 
     <div class="article-content-body">
-      {%- if content_blocks.size > 0 -%}
-        {%- for block in content_blocks -%}
-          {%- case block.type -%}
-            {%- when 'rich_text_block' -%}
-              {%- render 'block-rich-text', block: block -%}
-            {%- when 'product_row_block' -%}
-              {%- render 'block-product-row', block: block -%}
-            {%- when 'accordion_block' -%}
-              {%- render 'block-accordion', block: block -%}
-          {%- endcase -%}
-        {%- endfor -%}
-      {%- else -%}
-        {{ article.content }}
-      {%- endif -%}
+      {{ article.content }}
     </div>
 
     {% comment %} Comments {% endcomment %}
