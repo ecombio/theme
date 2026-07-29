@@ -43,15 +43,14 @@
      This matters for SEO/AI citation — search engines and LLM tools often
      link to a specific answer rather than the whole page. The :target
      rules below make sure that when someone lands on the link, the
-     answer is actually visible and briefly highlighted, not just
-     scrolled-to while still collapsed.
+     answer is actually visible, not just scrolled-to while still
+     collapsed. (No flash/highlight animation — just a silent force-open.)
    ========================================================================== */
 
 .accordion {
   --accordion-border: #e5e5e5;
   --accordion-text: #1a1a1a;
   --accordion-text-hover: #4a4a4a;
-  --accordion-target-highlight: #fff8dc; /* subtle highlight for deep-linked item */
 
   margin: 2rem 0;
   border-top: 1px solid var(--accordion-border);
@@ -67,10 +66,6 @@
    even if the visitor arrives with the accordion collapsed. Browsers don't add
    the `open` attribute automatically just because a fragment link points at a
    <details> element, so we do it via CSS. */
-.accordion__item:target {
-  animation: accordion-target-flash 2s ease-out;
-}
-
 .accordion__item:target .accordion__content {
   display: block !important;
 }
@@ -78,11 +73,6 @@
 .accordion__item:target .accordion__icon::after {
   transform: translate(-50%, -50%) rotate(90deg);
   opacity: 0;
-}
-
-@keyframes accordion-target-flash {
-  0% { background-color: var(--accordion-target-highlight); }
-  100% { background-color: transparent; }
 }
 
 .accordion__summary {
