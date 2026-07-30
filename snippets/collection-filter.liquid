@@ -73,15 +73,26 @@
               {%- endfor -%}
 
             {%- when 'price_range' -%}
-              {%- assign range_max_decimal = filter.range_max | divided_by: 100.0 -%}
+              {%- assign range_max_cents = filter.range_max -%}
+              {%- assign range_max_num = range_max_cents | divided_by: 100.0 -%}
+              {%- assign range_max_dollars = range_max_cents | divided_by: 100 -%}
+              {%- assign range_max_cents_part = range_max_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+              {%- assign range_max_decimal = range_max_dollars | append: '.' | append: range_max_cents_part -%}
+
               {%- assign min_val_decimal = blank -%}
-              {%- assign max_val_decimal = blank -%}
               {%- if filter.min_value.value -%}
-                {%- assign min_val_decimal = filter.min_value.value | divided_by: 100.0 -%}
+                {%- assign min_dollars = filter.min_value.value | divided_by: 100 -%}
+                {%- assign min_cents_part = filter.min_value.value | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                {%- assign min_val_decimal = min_dollars | append: '.' | append: min_cents_part -%}
               {%- endif -%}
+
+              {%- assign max_val_decimal = blank -%}
               {%- if filter.max_value.value -%}
-                {%- assign max_val_decimal = filter.max_value.value | divided_by: 100.0 -%}
+                {%- assign max_dollars = filter.max_value.value | divided_by: 100 -%}
+                {%- assign max_cents_part = filter.max_value.value | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                {%- assign max_val_decimal = max_dollars | append: '.' | append: max_cents_part -%}
               {%- endif -%}
+
               <div class="collection-filter__price-wrap" data-price-filter>
                 <div class="collection-filter__price-fields">
                   <div class="collection-filter__price-field">
@@ -125,12 +136,39 @@
                   </div>
                 </div>
 
+                {%- assign bar_count = 16 -%}
+                {%- assign bin_width = range_max_num | divided_by: bar_count -%}
+                {%- if bin_width <= 0 -%}
+                  {%- assign bin_width = 1 -%}
+                {%- endif -%}
+
+                {%- assign max_bucket_count = 0 -%}
+                {%- assign bucket_counts_str = '' -%}
+                {%- for bucket in (1..bar_count) -%}
+                  {%- assign bucket_lower = bucket | minus: 1 | times: bin_width -%}
+                  {%- assign bucket_upper = bucket | times: bin_width -%}
+                  {%- assign bucket_count = 0 -%}
+                  {%- for product in collection.products limit: 50 -%}
+                    {%- assign p_price = product.price_min | divided_by: 100.0 -%}
+                    {%- if bucket == bar_count and p_price >= bucket_lower -%}
+                      {%- assign bucket_count = bucket_count | plus: 1 -%}
+                    {%- elsif p_price >= bucket_lower and p_price < bucket_upper -%}
+                      {%- assign bucket_count = bucket_count | plus: 1 -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- assign bucket_counts_str = bucket_counts_str | append: bucket_count | append: ',' -%}
+                  {%- if bucket_count > max_bucket_count -%}
+                    {%- assign max_bucket_count = bucket_count -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- assign bucket_counts = bucket_counts_str | split: ',' -%}
+
                 <div class="collection-filter__histogram" aria-hidden="true">
-                  {%- assign bar_count = 16 -%}
-                  {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
-                  {%- for i in (1..bar_count) -%}
-                    {%- assign dist = i | minus: mid | abs -%}
-                    {%- assign bar_height = bar_count | minus: dist | times: 6 -%}
+                  {%- for bucket_count in bucket_counts -%}
+                    {%- assign bar_height = 6 -%}
+                    {%- if max_bucket_count > 0 -%}
+                      {%- assign bar_height = bucket_count | times: 100 | divided_by: max_bucket_count | at_least: 6 -%}
+                    {%- endif -%}
                     <span class="collection-filter__histogram-bar" style="height: {{ bar_height }}%"></span>
                   {%- endfor -%}
                 </div>
@@ -164,9 +202,15 @@
                 {%- assign b1_cents = quarter_cents | round -%}
                 {%- assign b2_cents = quarter_cents | times: 2 | round -%}
                 {%- assign b3_cents = quarter_cents | times: 3 | round -%}
-                {%- assign b1 = b1_cents | divided_by: 100.0 -%}
-                {%- assign b2 = b2_cents | divided_by: 100.0 -%}
-                {%- assign b3 = b3_cents | divided_by: 100.0 -%}
+                {%- assign b1_dollars = b1_cents | divided_by: 100 -%}
+                {%- assign b1_cents_part = b1_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                {%- assign b1 = b1_dollars | append: '.' | append: b1_cents_part -%}
+                {%- assign b2_dollars = b2_cents | divided_by: 100 -%}
+                {%- assign b2_cents_part = b2_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                {%- assign b2 = b2_dollars | append: '.' | append: b2_cents_part -%}
+                {%- assign b3_dollars = b3_cents | divided_by: 100 -%}
+                {%- assign b3_cents_part = b3_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                {%- assign b3 = b3_dollars | append: '.' | append: b3_cents_part -%}
                 <div class="collection-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
                   <label class="collection-filter__price-option">
                     <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
