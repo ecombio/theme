@@ -62,6 +62,7 @@
                   {%- if value.count == 0 and value.active == false %} collection-filter__option--disabled{%- endif %}">
                   <input
                     type="checkbox"
+                    class="collection-filter__option-checkbox"
                     name="{{ value.param_name }}"
                     value="{{ value.value }}"
                     {%- if value.active %} checked{%- endif %}
@@ -72,6 +73,15 @@
               {%- endfor -%}
 
             {%- when 'price_range' -%}
+              {%- assign range_max_decimal = filter.range_max | divided_by: 100.0 -%}
+              {%- assign min_val_decimal = blank -%}
+              {%- assign max_val_decimal = blank -%}
+              {%- if filter.min_value.value -%}
+                {%- assign min_val_decimal = filter.min_value.value | divided_by: 100.0 -%}
+              {%- endif -%}
+              {%- if filter.max_value.value -%}
+                {%- assign max_val_decimal = filter.max_value.value | divided_by: 100.0 -%}
+              {%- endif -%}
               <div class="collection-filter__price-wrap" data-price-filter>
                 <div class="collection-filter__price-fields">
                   <div class="collection-filter__price-field">
@@ -83,9 +93,10 @@
                         class="collection-filter__price-input"
                         id="CollectionFilterPriceMin-{{ forloop.index }}"
                         name="{{ filter.min_value.param_name }}"
-                        value="{{ filter.min_value.value }}"
+                        value="{{ min_val_decimal }}"
                         min="0"
-                        max="{{ filter.range_max }}"
+                        max="{{ range_max_decimal }}"
+                        step="0.01"
                         placeholder="0"
                         data-price-input="min"
                       >
@@ -103,10 +114,11 @@
                         class="collection-filter__price-input"
                         id="CollectionFilterPriceMax-{{ forloop.index }}"
                         name="{{ filter.max_value.param_name }}"
-                        value="{{ filter.max_value.value }}"
+                        value="{{ max_val_decimal }}"
                         min="0"
-                        max="{{ filter.range_max }}"
-                        placeholder="{{ filter.range_max }}"
+                        max="{{ range_max_decimal }}"
+                        step="0.01"
+                        placeholder="{{ range_max_decimal }}"
                         data-price-input="max"
                       >
                     </div>
@@ -130,8 +142,9 @@
                     type="range"
                     class="collection-filter__range-input collection-filter__range-input--min"
                     min="0"
-                    max="{{ filter.range_max }}"
-                    value="{{ filter.min_value.value | default: 0 }}"
+                    max="{{ range_max_decimal }}"
+                    step="0.01"
+                    value="{{ min_val_decimal | default: 0 }}"
                     data-range-thumb="min"
                     aria-label="Minimum price"
                   >
@@ -139,37 +152,41 @@
                     type="range"
                     class="collection-filter__range-input collection-filter__range-input--max"
                     min="0"
-                    max="{{ filter.range_max }}"
-                    value="{{ filter.max_value.value | default: filter.range_max }}"
+                    max="{{ range_max_decimal }}"
+                    step="0.01"
+                    value="{{ max_val_decimal | default: range_max_decimal }}"
                     data-range-thumb="max"
                     aria-label="Maximum price"
                   >
                 </div>
 
-                {%- assign quarter = filter.range_max | divided_by: 4.0 -%}
-                {%- assign b1 = quarter | round -%}
-                {%- assign b2 = quarter | times: 2 | round -%}
-                {%- assign b3 = quarter | times: 3 | round -%}
+                {%- assign quarter_cents = filter.range_max | divided_by: 4.0 -%}
+                {%- assign b1_cents = quarter_cents | round -%}
+                {%- assign b2_cents = quarter_cents | times: 2 | round -%}
+                {%- assign b3_cents = quarter_cents | times: 3 | round -%}
+                {%- assign b1 = b1_cents | divided_by: 100.0 -%}
+                {%- assign b2 = b2_cents | divided_by: 100.0 -%}
+                {%- assign b3 = b3_cents | divided_by: 100.0 -%}
                 <div class="collection-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
                   <label class="collection-filter__price-option">
                     <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
-                    Less than ${{ b1 }}
+                    Less than {{ b1_cents | money }}
                   </label>
                   <label class="collection-filter__price-option">
                     <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}">
-                    ${{ b1 }} to ${{ b2 }}
+                    {{ b1_cents | money }} to {{ b2_cents | money }}
                   </label>
                   <label class="collection-filter__price-option">
                     <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}">
-                    ${{ b2 }} to ${{ b3 }}
+                    {{ b2_cents | money }} to {{ b3_cents | money }}
                   </label>
                   <label class="collection-filter__price-option">
-                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ filter.range_max }}">
-                    ${{ b3 }} to ${{ filter.range_max }}
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ range_max_decimal }}">
+                    {{ b3_cents | money }} to {{ filter.range_max | money }}
                   </label>
                   <label class="collection-filter__price-option">
-                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ filter.range_max }}" data-max="">
-                    More than ${{ filter.range_max }}
+                    <input type="radio" name="price_bracket" data-price-bracket data-min="{{ range_max_decimal }}" data-max="">
+                    More than {{ filter.range_max | money }}
                   </label>
                 </div>
               </div>
