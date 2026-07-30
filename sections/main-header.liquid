@@ -134,12 +134,12 @@
                   id="main-header-search-trigger"
                   aria-haspopup="dialog"
                   aria-expanded="false"
-                  aria-controls="main-header-search-overlay"
-                  aria-label="Open search">
+                  aria-controls="main-header-search-overlay">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
+            <span class="main-header__search-trigger-label">Search</span>
           </button>
         </li>
         {%- if show_comp != false -%}
@@ -173,28 +173,31 @@
   </div>
 
   {%- comment -%}
-    ADDED — desktop search overlay. Only reachable via
-    #main-header-search-trigger, which is display:none below 1024px, so
-    this never opens on mobile/tablet. hidden by default; main-header.js
-    toggles [hidden] + .is-open and handles focus/Escape/backdrop.
+    CHANGED — desktop search overlay restyled as a full-width top
+    takeover (edge-to-edge panel below the header, no dark backdrop,
+    "Cancel" text link instead of an X) rather than a centered modal
+    card. Still only reachable via #main-header-search-trigger, which is
+    display:none below 1024px, so this never opens on mobile/tablet.
+    Same [data-search-overlay-close] pattern on both the backdrop and
+    the Cancel button — main-header.js's open/close logic is unchanged.
   {%- endcomment -%}
   <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
     <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
     <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
-      <button type="button" class="main-header__search-overlay-close" data-search-overlay-close aria-label="Close search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-      <div class="main-header__search-overlay-inner">
-        {%- render 'header-search',
-          enable_predictive_search: section.settings.enable_predictive_search,
-          variant: 'overlay',
-          trending_terms: trending_terms,
-          enable_typewriter: section.settings.enable_typewriter,
-          typewriter_type_speed: section.settings.typewriter_type_speed,
-          typewriter_hold_ms: section.settings.typewriter_hold_ms
-        -%}
+      <div class="main-header__search-overlay-top">
+        <div class="main-header__search-overlay-inner">
+          {%- render 'header-search',
+            enable_predictive_search: section.settings.enable_predictive_search,
+            variant: 'overlay',
+            trending_terms: trending_terms,
+            enable_typewriter: section.settings.enable_typewriter,
+            typewriter_type_speed: section.settings.typewriter_type_speed,
+            typewriter_hold_ms: section.settings.typewriter_hold_ms
+          -%}
+        </div>
+        <button type="button" class="main-header__search-overlay-cancel" data-search-overlay-close>
+          Cancel
+        </button>
       </div>
     </div>
   </div>
