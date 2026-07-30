@@ -225,57 +225,70 @@
 }
 .ecombio-search__submit:hover { color: var(--hdr-text); }
 
-/* ADDED — desktop search icon trigger. Hidden until >=1024px (see media
-   query below); at every smaller breakpoint the existing drawer/row
-   search UI is what shows instead. */
+/* CHANGED — desktop search trigger is now a labeled pill (Nike-style:
+   icon + "Search" text on light grey fill) instead of a bare icon
+   button. Hidden until >=1024px (see media query below); at every
+   smaller breakpoint the existing drawer/row search UI shows instead. */
 .main-header__search-trigger {
   display: none;
   align-items: center;
-  justify-content: center;
-  width: 40px;
+  gap: 8px;
   height: 40px;
+  padding: 0 16px 0 14px;
   flex-shrink: 0;
   border: none;
-  background: transparent;
-  border-radius: 50%;
-  color: var(--hdr-text);
+  background: var(--hdr-search-bg);
+  border-radius: var(--hdr-radius-pill);
+  color: var(--hdr-muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.main-header__search-trigger:hover { background: var(--hdr-search-bg); }
-.main-header__search-trigger svg { width: 20px; height: 20px; }
+.main-header__search-trigger:hover { background: var(--hdr-pill-bg-hover); color: var(--hdr-text); }
+.main-header__search-trigger svg { width: 16px; height: 16px; flex-shrink: 0; }
 .main-header__search-trigger:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-/* ADDED — full-screen search overlay. Only ever opened via
-   #main-header-search-trigger (desktop-only), so no media-query gating
-   is needed here — it simply can't be reached below 1024px. */
+/* CHANGED — overlay is now a full-width top takeover (edge-to-edge
+   panel sitting right under the header, no dark page backdrop, sharp
+   corners, "Cancel" text link) rather than a centered modal card.
+   Only ever opened via #main-header-search-trigger (desktop-only), so
+   no media-query gating is needed here — it simply can't be reached
+   below 1024px. */
 .main-header__search-overlay {
   position: fixed;
   inset: 0;
   z-index: var(--hdr-overlay-z);
+  pointer-events: none;
 }
 .main-header__search-overlay[hidden] { display: none; }
+.main-header__search-overlay.is-open { pointer-events: auto; }
 
+/* Transparent click-catcher — closes the overlay on click outside the
+   panel. No dark tint: matches the reference, which leaves the rest of
+   the page at full brightness under the panel. */
 .main-header__search-overlay-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 17, 17, 0.5);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  background: transparent;
 }
-.main-header__search-overlay.is-open .main-header__search-overlay-backdrop { opacity: 1; }
 
 .main-header__search-overlay-panel {
-  position: relative;
-  max-width: 720px;
-  margin: 0 auto;
-  margin-top: min(18vh, 160px);
-  padding: 32px 28px;
+  position: absolute;
+  top: var(--hdr-height-desktop);
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
   background: var(--hdr-bg);
-  border-radius: 16px;
-  box-shadow: var(--hdr-shadow-drop);
+  border-radius: 0;
+  border-bottom: 1px solid var(--hdr-border);
+  box-shadow: 0 12px 28px rgba(0,0,0,.08);
+  padding: 28px clamp(20px, 5vw, 64px) 36px;
   opacity: 0;
-  transform: translateY(-12px);
+  transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .main-header__search-overlay.is-open .main-header__search-overlay-panel {
@@ -283,30 +296,43 @@
   transform: translateY(0);
 }
 
-.main-header__search-overlay-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
+.main-header__search-overlay-top {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
+  gap: 20px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.main-header__search-overlay-inner { flex: 1; min-width: 0; }
+
+.main-header__search-overlay-cancel {
+  flex-shrink: 0;
   border: none;
   background: transparent;
-  border-radius: 50%;
-  color: var(--hdr-muted);
+  color: var(--hdr-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  padding: 8px 2px;
 }
-.main-header__search-overlay-close:hover { background: var(--hdr-search-bg); color: var(--hdr-text); }
-.main-header__search-overlay-close:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
+.main-header__search-overlay-cancel:hover { text-decoration: underline; }
+.main-header__search-overlay-cancel:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-.main-header__search-overlay-inner { width: 100%; }
-
-@media (max-width: 39.9375rem) {
-  .main-header__search-overlay-panel { margin: 0 16px; padding: 24px 18px; margin-top: 10vh; }
+/* Overlay-scoped nudges to the shared header-search / trending-pill
+   styling — deliberately scoped under .main-header__search-overlay
+   rather than edited in header-search.css, so the drawer/row variants
+   elsewhere keep their existing look untouched. */
+.main-header__search-overlay .header-search__form { height: 52px; }
+.main-header__search-overlay .hs-empty__label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hdr-muted);
 }
+.main-header__search-overlay .hs-empty__pill-list { padding-left: 0; padding-right: 0; }
 
 .main-header__search-row { border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
 .main-header__search-row-inner { max-width: 100%; margin: 0 auto; }
