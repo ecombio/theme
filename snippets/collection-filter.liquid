@@ -1,32 +1,3 @@
-{%- comment -%}
-  snippets/collection-filter.liquid
-
-  Renders the filter sidebar/drawer: header, filter groups (list +
-  price range types), and the Apply button. Active-filter pills live
-  in the toolbar (snippets/collection-toolbar.liquid), not here.
-
-  STRUCTURE MATCH (matches search-filter.liquid's look):
-    - Static header ("Filters" + mobile close button)
-    - Each group uses a <button aria-expanded> + SVG chevron accordion
-      instead of native <details>/<summary>, so open/close state and
-      styling matches the search page exactly.
-    - Price fields are labeled (MIN/MAX) with a "$" symbol, instead of
-      bare placeholder text.
-
-  IMPORTANT: group accordion buttons use `data-group-toggle` /
-  `data-group-body`, NOT `data-filter-toggle`. `data-filter-toggle` is
-  already used elsewhere (collection-filter.js) for the whole-panel
-  open/close control -- reusing it here would collide with that and
-  break the show/hide-sidebar behavior. Keep these separate.
-
-  Two calling conventions:
-    1. Collection page (unchanged):
-       {%- render 'collection-filter', collection: collection -%}
-
-    2. Search results page:
-       {%- render 'collection-filter', search_terms: search.terms, result_type: 'product' -%}
-{%- endcomment -%}
-
 {%- liquid
   if collection
     assign filters = collection.filters
@@ -142,12 +113,6 @@
                   </div>
                 </div>
 
-                {%- comment -%}
-                  Decorative distribution bars. Shopify's price_range
-                  filter only exposes range_max -- it doesn't hand back
-                  per-bucket product counts -- so this renders a plain
-                  bell-shaped curve rather than a real histogram.
-                {%- endcomment -%}
                 <div class="collection-filter__histogram" aria-hidden="true">
                   {%- assign bar_count = 16 -%}
                   {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
