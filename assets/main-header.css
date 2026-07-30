@@ -276,7 +276,16 @@
 
 .main-header__search-overlay-panel {
   position: absolute;
-  top: var(--hdr-height-desktop);
+  /* FIX — was var(--hdr-height-desktop), i.e. main-header's own height
+     only. This header is part of a group (announcement bar + utility
+     bar + main header) made sticky together by header-group.js, which
+     already publishes the group's real combined height on :root as
+     --header-group-height for exactly this kind of positioning — using
+     that instead of guessing main-header's height alone is what fixes
+     the panel opening underneath the utility bar instead of below the
+     whole header stack. Falls back to the old value if that custom
+     property isn't present for any reason. */
+  top: var(--header-group-height, var(--hdr-height-desktop));
   left: 0;
   right: 0;
   width: 100%;
@@ -319,6 +328,33 @@
 }
 .main-header__search-overlay-cancel:hover { text-decoration: underline; }
 .main-header__search-overlay-cancel:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
+
+/* FIX — header-search.css positions .header-search__panel (the
+   trending/recent/results dropdown) with position:absolute, designed
+   for it to float over whatever page content sits below the input in
+   its original drawer/row usage. Inside our overlay sheet that meant it
+   never contributed to the sheet's own height — the sheet only ever
+   wrapped the input row, then clipped the dropdown at whatever sliver
+   of it happened to overlap before hitting overflow:hidden from the
+   scroll container above. Making it position:static here lets it join
+   normal flow instead, so the whole sheet (input + trending pills or
+   results) grows together and scrolls as one unit via
+   .main-header__search-overlay-panel's own max-height/overflow-y above
+   — matching the single continuous scrollbar in the reference. Scoped
+   to the overlay only; the drawer/row variants elsewhere keep the
+   floating-dropdown behavior they were built for. */
+.main-header__search-overlay .header-search__panel {
+  position: static;
+  margin-top: 20px;
+  max-width: 760px;
+  margin-inline: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  animation: none;
+  max-height: none;
+  overflow: visible;
+}
 
 /* Overlay-scoped nudges to the shared header-search / trending-pill
    styling — deliberately scoped under .main-header__search-overlay
