@@ -70,20 +70,6 @@
     });
   });
 
-  // ── Breakpoint-crossing state reset ──────────────────────────────
-  // Both the mobile close animation and the desktop toggle branch set
-  // the same `hidden` attribute on filterPanel. If the panel is closed
-  // while the viewport is mobile-width, `hidden` stays set; if the
-  // viewport then crosses back to desktop width without a click to
-  // reopen it (e.g. resizing the window, or switching between
-  // mobile/desktop preview in the theme customizer without a reload),
-  // nothing clears it. An element with `hidden` gets `display: none`
-  // and CSS Grid drops it from layout — leaving `.collection-body__feed`
-  // as the grid's only child, which auto-places into the first track
-  // (the one sized for the filter), squeezing the whole product grid
-  // into that narrow column with a blank gap beside it and no visible
-  // filter panel. Resetting state on every breakpoint crossing prevents
-  // that stale-attribute leak from ever reaching the other mode.
   var MOBILE_BREAKPOINT = 768;
   var wasMobile = window.innerWidth <= MOBILE_BREAKPOINT;
   var resizeTimer = null;
@@ -99,10 +85,8 @@
     });
 
     if (isMobile) {
-      // Entering mobile: panel should start fully closed/off-screen.
       filterPanel.setAttribute('hidden', '');
     } else {
-      // Entering desktop: panel must always occupy its grid column.
       filterPanel.removeAttribute('hidden');
       var body = document.querySelector('.collection-body');
       if (body) body.classList.remove('collection-body--filters-hidden');
