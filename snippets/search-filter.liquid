@@ -28,7 +28,7 @@
             class="search-filter__group-toggle"
             aria-expanded="true"
             aria-controls="{{ group_body_id }}"
-            data-filter-toggle
+            data-filter-group-toggle
           >
             <span class="search-filter__group-label">
               {{ filter.label }}
@@ -56,6 +56,17 @@
                       {%- if value.active %} checked{%- endif %}
                       {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
                     >
+                    {%- if value.swatch -%}
+                      <span
+                        class="search-filter__swatch{% if value.swatch.image %} search-filter__swatch--image{% endif %}"
+                        {%- if value.swatch.image -%}
+                          style="background-image: url({{ value.swatch.image | image_url: width: 50 }})"
+                        {%- elsif value.swatch.color -%}
+                          style="background-color: {{ value.swatch.color }}"
+                        {%- endif -%}
+                        aria-hidden="true"
+                      ></span>
+                    {%- endif -%}
                     <span>{{ value.label }} <span class="search-filter__option-count">({{ value.count }})</span></span>
                   </label>
                 {%- endfor -%}
