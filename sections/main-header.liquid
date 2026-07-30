@@ -1,25 +1,30 @@
 {%- comment -%}
   sections/main-header.liquid
 
-  CHANGED — sticky/autohide is now controlled by the GLOBAL theme
-  settings (settings.enable_sticky_header / settings.enable_header_autohide),
-  applied as data attributes on <body> in theme.liquid, and acted on by
-  assets/header-group.css + assets/header-group.js, which are loaded
-  centrally in theme.liquid (not from this section).
+  CHANGED (this pass) — desktop (>=1024px) layout reworked:
+    - header-menu now renders inline in .main-header__inner, wrapped in
+      .main-header__nav, right after the logo — NOT as its own full-width
+      row below the bar anymore. See main-header.css for the overrides
+      that turn .menu-bar from a full-bleed row into a plain flex item
+      when nested here.
+    - the old always-on .main-header__search--inline bar is gone. In its
+      place, a single icon button (#main-header-search-trigger) sits in
+      the icons list. Clicking it opens #main-header-search-overlay, a
+      fixed full-screen takeover with the same header-search predictive
+      component mounted inside it (variant: 'overlay'). Open/close logic
+      lives in the new IIFE at the bottom of main-header.js.
+    - Mobile (<640px) and tablet (640-1023px) are UNTOUCHED: hamburger,
+      main-header__search-drawer-*-only triggers, main-header__search-row,
+      and the mobile nav drawer (rendered inside 'header-menu' itself)
+      all still work exactly as before. .main-header__nav collapses to
+      display:none below 1024px so nothing extra shows there.
 
-  Removed from this section as a result, since none of it is needed
-  anymore:
-    - the enable_sticky / enable_autohide section settings (superseded by
-      the global toggles — having both was two switches controlling the
-      same behavior)
-    - data-sticky-fixed / data-autohide / data-header-stack-member
-      attributes on <header> (header-group.css targets the shared
-      #shopify-section-group-header-group wrapper directly, not
-      per-section attributes)
-    - #header-group-sticky-spacer (position: sticky keeps the wrapper in
-      normal flow, so nothing needs to reserve space for it)
-    - the <script src="header-group.js"> tag here (loaded once, centrally,
-      in theme.liquid instead — loading it here too would run it twice)
+  Still true from the previous pass — sticky/autohide is controlled by
+  the GLOBAL theme settings (settings.enable_sticky_header /
+  settings.enable_header_autohide), applied as data attributes on <body>
+  in theme.liquid, acted on by assets/header-group.css +
+  assets/header-group.js, loaded centrally in theme.liquid. Nothing here
+  changes that.
 {%- endcomment -%}
 
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
@@ -111,18 +116,32 @@
         {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
       </div>
 
-      <div class="main-header__search--inline">
-        {%- render 'header-search',
-          enable_predictive_search: section.settings.enable_predictive_search,
-          variant: 'desktop',
-          trending_terms: trending_terms,
-          enable_typewriter: section.settings.enable_typewriter,
-          typewriter_type_speed: section.settings.typewriter_type_speed,
-          typewriter_hold_ms: section.settings.typewriter_hold_ms
-        -%}
+      {%- comment -%}
+        ADDED — nav now lives here, next to the logo, instead of as its
+        own row below the bar. Only visible >=1024px (main-header.css);
+        header-menu.liquid itself is untouched, so the mobile drawer it
+        also renders keeps working exactly as before regardless of where
+        this wrapper sits in the DOM (it's position:fixed).
+      {%- endcomment -%}
+      <div class="main-header__nav">
+        {%- render 'header-menu', blocks: section.blocks -%}
       </div>
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
+        <li>
+          <button type="button"
+                  class="main-header__search-trigger"
+                  id="main-header-search-trigger"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                  aria-controls="main-header-search-overlay"
+                  aria-label="Open search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </li>
         {%- if show_comp != false -%}
           <li>{%- render 'header-compare', show_label: label_comp -%}</li>
         {%- endif -%}
@@ -153,7 +172,33 @@
     </div>
   </div>
 
-  {%- render 'header-menu', blocks: section.blocks -%}
+  {%- comment -%}
+    ADDED — desktop search overlay. Only reachable via
+    #main-header-search-trigger, which is display:none below 1024px, so
+    this never opens on mobile/tablet. hidden by default; main-header.js
+    toggles [hidden] + .is-open and handles focus/Escape/backdrop.
+  {%- endcomment -%}
+  <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
+    <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
+    <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
+      <button type="button" class="main-header__search-overlay-close" data-search-overlay-close aria-label="Close search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="main-header__search-overlay-inner">
+        {%- render 'header-search',
+          enable_predictive_search: section.settings.enable_predictive_search,
+          variant: 'overlay',
+          trending_terms: trending_terms,
+          enable_typewriter: section.settings.enable_typewriter,
+          typewriter_type_speed: section.settings.typewriter_type_speed,
+          typewriter_hold_ms: section.settings.typewriter_hold_ms
+        -%}
+      </div>
+    </div>
+  </div>
+
 </header>
 
 <script src="{{ 'main-header.js' | asset_url }}" defer="defer"></script>
