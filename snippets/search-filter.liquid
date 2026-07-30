@@ -6,7 +6,6 @@
   class="search-filter"
   id="search-filter"
   aria-label="Product filters"
-  data-search-filter
   {%- unless show_filters %} hidden{%- endunless %}
 >
 
@@ -28,7 +27,7 @@
             class="search-filter__group-toggle"
             aria-expanded="true"
             aria-controls="{{ group_body_id }}"
-            data-filter-toggle
+            data-group-toggle
           >
             <span class="search-filter__group-label">
               {{ filter.label }}
@@ -41,7 +40,7 @@
             </svg>
           </button>
 
-          <div class="search-filter__group-body" id="{{ group_body_id }}" data-filter-body>
+          <div class="search-filter__group-body" id="{{ group_body_id }}" data-group-body>
             {%- case filter.type -%}
               {%- when 'list' -%}
                 {%- for value in filter.values -%}
@@ -56,15 +55,41 @@
                       {%- if value.active %} checked{%- endif %}
                       {%- if value.count == 0 and value.active == false %} disabled{%- endif %}
                     >
+                    {%- if value.swatch -%}
+                      <span
+                        class="search-filter__swatch{% if value.swatch.image %} search-filter__swatch--image{% endif %}"
+                        {%- if value.swatch.image -%}
+                          style="background-image: url({{ value.swatch.image | image_url: width: 50 }})"
+                        {%- elsif value.swatch.color -%}
+                          style="background-color: {{ value.swatch.color }}"
+                        {%- endif -%}
+                        aria-hidden="true"
+                      ></span>
+                    {%- endif -%}
                     <span>{{ value.label }} <span class="search-filter__option-count">({{ value.count }})</span></span>
                   </label>
                 {%- endfor -%}
 
               {%- when 'price_range' -%}
-                {%- assign display_min = 0 | money_without_currency -%}
-                {%- assign display_max = filter.range_max | money_without_currency -%}
-                {%- assign applied_min = filter.min_value.value | money_without_currency | default: display_min -%}
-                {%- assign applied_max = filter.max_value.value | money_without_currency | default: display_max -%}
+                {%- assign range_max_cents = filter.range_max -%}
+                {%- assign range_max_num = range_max_cents | divided_by: 100.0 -%}
+                {%- assign range_max_dollars = range_max_cents | divided_by: 100 -%}
+                {%- assign range_max_cents_part = range_max_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                {%- assign range_max_decimal = range_max_dollars | append: '.' | append: range_max_cents_part -%}
+
+                {%- assign min_val_decimal = blank -%}
+                {%- if filter.min_value.value -%}
+                  {%- assign min_dollars = filter.min_value.value | divided_by: 100 -%}
+                  {%- assign min_cents_part = filter.min_value.value | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                  {%- assign min_val_decimal = min_dollars | append: '.' | append: min_cents_part -%}
+                {%- endif -%}
+
+                {%- assign max_val_decimal = blank -%}
+                {%- if filter.max_value.value -%}
+                  {%- assign max_dollars = filter.max_value.value | divided_by: 100 -%}
+                  {%- assign max_cents_part = filter.max_value.value | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                  {%- assign max_val_decimal = max_dollars | append: '.' | append: max_cents_part -%}
+                {%- endif -%}
 
                 <div class="search-filter__price-wrap" data-price-filter>
                   <div class="search-filter__price-fields">
@@ -77,10 +102,11 @@
                           class="search-filter__price-input"
                           id="SearchFilterPriceMin-{{ forloop.index }}"
                           name="{{ filter.min_value.param_name }}"
-                          value="{{ applied_min }}"
+                          value="{{ min_val_decimal }}"
                           min="0"
-                          max="{{ display_max }}"
-                          placeholder="{{ display_min }}"
+                          max="{{ range_max_decimal }}"
+                          step="0.01"
+                          placeholder="0"
                           data-price-input="min"
                         >
                       </div>
@@ -97,22 +123,59 @@
                           class="search-filter__price-input"
                           id="SearchFilterPriceMax-{{ forloop.index }}"
                           name="{{ filter.max_value.param_name }}"
-                          value="{{ applied_max }}"
+                          value="{{ max_val_decimal }}"
                           min="0"
-                          max="{{ display_max }}"
-                          placeholder="{{ display_max }}"
+                          max="{{ range_max_decimal }}"
+                          step="0.01"
+                          placeholder="{{ range_max_decimal }}"
                           data-price-input="max"
                         >
                       </div>
                     </div>
                   </div>
 
+                  {%- comment -%}
+                    Real histogram: bucket actual product prices from the
+                    current search results, same approach as collection-filter.
+                    search.results can include non-product objects (articles,
+                    pages) depending on result_type, so each result is checked
+                    for object_type == 'product' before its price is counted.
+                  {%- endcomment -%}
+                  {%- assign bar_count = 16 -%}
+                  {%- assign bin_width = range_max_num | divided_by: bar_count -%}
+                  {%- if bin_width <= 0 -%}
+                    {%- assign bin_width = 1 -%}
+                  {%- endif -%}
+
+                  {%- assign max_bucket_count = 0 -%}
+                  {%- assign bucket_counts_str = '' -%}
+                  {%- for bucket in (1..bar_count) -%}
+                    {%- assign bucket_lower = bucket | minus: 1 | times: bin_width -%}
+                    {%- assign bucket_upper = bucket | times: bin_width -%}
+                    {%- assign bucket_count = 0 -%}
+                    {%- for result in search.results limit: 50 -%}
+                      {%- if result.object_type == 'product' -%}
+                        {%- assign p_price = result.price_min | divided_by: 100.0 -%}
+                        {%- if bucket == bar_count and p_price >= bucket_lower -%}
+                          {%- assign bucket_count = bucket_count | plus: 1 -%}
+                        {%- elsif p_price >= bucket_lower and p_price < bucket_upper -%}
+                          {%- assign bucket_count = bucket_count | plus: 1 -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- assign bucket_counts_str = bucket_counts_str | append: bucket_count | append: ',' -%}
+                    {%- if bucket_count > max_bucket_count -%}
+                      {%- assign max_bucket_count = bucket_count -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- assign bucket_counts = bucket_counts_str | split: ',' -%}
+
                   <div class="search-filter__histogram" aria-hidden="true">
-                    {%- assign bar_count = 16 -%}
-                    {%- assign mid = bar_count | plus: 1 | divided_by: 2.0 -%}
-                    {%- for i in (1..bar_count) -%}
-                      {%- assign dist = i | minus: mid | abs -%}
-                      {%- assign bar_height = bar_count | minus: dist | times: 6 -%}
+                    {%- for bucket_count in bucket_counts -%}
+                      {%- assign bar_height = 6 -%}
+                      {%- if max_bucket_count > 0 -%}
+                        {%- assign bar_height = bucket_count | times: 100 | divided_by: max_bucket_count | at_least: 6 -%}
+                      {%- endif -%}
                       <span class="search-filter__histogram-bar" style="height: {{ bar_height }}%"></span>
                     {%- endfor -%}
                   </div>
@@ -124,8 +187,9 @@
                       type="range"
                       class="search-filter__range-input search-filter__range-input--min"
                       min="0"
-                      max="{{ display_max }}"
-                      value="{{ applied_min }}"
+                      max="{{ range_max_decimal }}"
+                      step="0.01"
+                      value="{{ min_val_decimal | default: 0 }}"
                       data-range-thumb="min"
                       aria-label="Minimum price"
                     >
@@ -133,37 +197,51 @@
                       type="range"
                       class="search-filter__range-input search-filter__range-input--max"
                       min="0"
-                      max="{{ display_max }}"
-                      value="{{ applied_max }}"
+                      max="{{ range_max_decimal }}"
+                      step="0.01"
+                      value="{{ max_val_decimal | default: range_max_decimal }}"
                       data-range-thumb="max"
                       aria-label="Maximum price"
                     >
                   </div>
 
-                  {%- assign quarter = display_max | divided_by: 4.0 -%}
-                  {%- assign b1 = quarter | round -%}
-                  {%- assign b2 = quarter | times: 2 | round -%}
-                  {%- assign b3 = quarter | times: 3 | round -%}
+                  {%- comment -%}
+                    Real money formatting via the `money` filter (respects the
+                    shop's currency symbol/format) instead of a hardcoded "$".
+                  {%- endcomment -%}
+                  {%- assign quarter_cents = filter.range_max | divided_by: 4.0 -%}
+                  {%- assign b1_cents = quarter_cents | round -%}
+                  {%- assign b2_cents = quarter_cents | times: 2 | round -%}
+                  {%- assign b3_cents = quarter_cents | times: 3 | round -%}
+                  {%- assign b1_dollars = b1_cents | divided_by: 100 -%}
+                  {%- assign b1_cents_part = b1_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                  {%- assign b1 = b1_dollars | append: '.' | append: b1_cents_part -%}
+                  {%- assign b2_dollars = b2_cents | divided_by: 100 -%}
+                  {%- assign b2_cents_part = b2_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                  {%- assign b2 = b2_dollars | append: '.' | append: b2_cents_part -%}
+                  {%- assign b3_dollars = b3_cents | divided_by: 100 -%}
+                  {%- assign b3_cents_part = b3_cents | modulo: 100 | prepend: '00' | slice: -2, 2 -%}
+                  {%- assign b3 = b3_dollars | append: '.' | append: b3_cents_part -%}
                   <div class="search-filter__price-brackets" role="radiogroup" aria-label="Price brackets">
                     <label class="search-filter__price-option">
                       <input type="radio" name="price_bracket" data-price-bracket data-min="0" data-max="{{ b1 }}">
-                      Less than ${{ b1 }}
+                      Less than {{ b1_cents | money }}
                     </label>
                     <label class="search-filter__price-option">
                       <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b1 }}" data-max="{{ b2 }}">
-                      ${{ b1 }} to ${{ b2 }}
+                      {{ b1_cents | money }} to {{ b2_cents | money }}
                     </label>
                     <label class="search-filter__price-option">
                       <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b2 }}" data-max="{{ b3 }}">
-                      ${{ b2 }} to ${{ b3 }}
+                      {{ b2_cents | money }} to {{ b3_cents | money }}
                     </label>
                     <label class="search-filter__price-option">
-                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ display_max }}">
-                      ${{ b3 }} to ${{ display_max }}
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ b3 }}" data-max="{{ range_max_decimal }}">
+                      {{ b3_cents | money }} to {{ filter.range_max | money }}
                     </label>
                     <label class="search-filter__price-option">
-                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ display_max }}" data-max="">
-                      More than ${{ display_max }}
+                      <input type="radio" name="price_bracket" data-price-bracket data-min="{{ range_max_decimal }}" data-max="">
+                      More than {{ filter.range_max | money }}
                     </label>
                   </div>
                 </div>
