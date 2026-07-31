@@ -148,8 +148,23 @@
 .main-header__search-trigger:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 .main-header__search-trigger-label { text-align: left; }
 
-/* CHANGED — real dim now, not transparent. The panel behind it should
-   not read as clickable while the overlay is open. */
+/* ADDED — hides the entire sticky header group (announcement bar +
+   utility bar + main header) while search is active, instead of
+   leaving it visible/dimmed underneath the overlay. Opacity+
+   pointer-events rather than display:none so header-group.js's own
+   ResizeObserver-driven height sync doesn't get confused by the
+   element disappearing from layout — it's still there, just invisible
+   and inert. Toggled by main-header.js on open()/close(). */
+#header-group-wrapper.is-search-active {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* CHANGED — full top:0 takeover now that the real header is hidden
+   rather than dimmed; the overlay supplies its own logo/search/Cancel
+   row in its place. Real dim on the backdrop (was transparent) so the
+   page content further down doesn't read as clickable. */
 .main-header__search-overlay {
   position: fixed;
   inset: 0;
@@ -186,15 +201,16 @@
 
 .main-header__search-overlay-panel {
   position: absolute;
-  top: var(--header-group-height, var(--hdr-height-desktop));
+  top: 10px;
   left: 10px;
   right: 10px;
-  max-height: min(70vh, 620px);
+  bottom: 10px;
+  max-height: none;
   overflow-y: auto;
   background: var(--hdr-bg);
   border-radius: 0;
   box-shadow: 0 12px 28px rgba(0,0,0,.18);
-  padding: 28px clamp(20px, 5vw, 64px) 40px;
+  padding: 20px clamp(20px, 5vw, 64px) 40px;
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -204,13 +220,23 @@
   transform: translateY(0);
 }
 
+/* ADDED — the overlay's own top row: logo, input, Cancel. Stands in
+   for the real header while it's hidden. */
 .main-header__search-overlay-top {
   display: flex;
   align-items: center;
-  gap: 20px;
-  max-width: 820px;
+  gap: 24px;
+  max-width: 900px;
   margin: 0 auto;
 }
+
+.main-header__search-overlay-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.main-header__search-overlay-logo img,
+.main-header__search-overlay-logo svg { display: block; height: auto; }
 
 .main-header__search-overlay-inner { flex: 1; min-width: 0; }
 
@@ -228,13 +254,15 @@
 .main-header__search-overlay-cancel:hover { text-decoration: underline; }
 .main-header__search-overlay-cancel:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-/* ADDED — Ask AI row. Sits between the search input and the trending
-   pills, matching the reference's placement. Delete this whole block
-   (and its liquid markup) if you don't have an assistant to link it
-   to yet. */
+/* CHANGED — Ask AI now renders inside header-search.liquid itself
+   (between the form and the results panel), so this only needs its
+   own top spacing — it's a normal-flow sibling now, not a trailing
+   block bolted on after everything else. Delete the block in
+   header-search.liquid (search for "Ask AI") if you don't want this
+   feature. */
 .main-header__search-overlay-ask-wrap {
-  max-width: 820px;
-  margin: 20px auto 0;
+  max-width: 900px;
+  margin: 18px auto 0;
 }
 
 .main-header__search-overlay-ask {
@@ -270,7 +298,7 @@
 .main-header__search-overlay .header-search__panel {
   position: static;
   margin-top: 28px;
-  max-width: 820px;
+  max-width: 900px;
   margin-inline: auto;
   border: none;
   box-shadow: none;
