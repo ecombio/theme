@@ -6,6 +6,7 @@
   var DEBOUNCE_MS      = 300;
   var CACHE_TTL_MS     = 60000;
   var MAX_RECENT       = 5;
+  var MAX_RECENT_IN_RAIL = 3; // ADDED — cap for recent items injected into the active-search rail
 
   var _cache = new Map();
 
@@ -149,6 +150,36 @@
       html += '</ul></div>';
     }
 
+    return html;
+  }
+
+  // ADDED — small "Recent" group appended into the suggestions rail
+  // once live results are showing, so recent searches aren't lost
+  // once you've typed something (predictive-search.liquid only
+  // renders the query/collection suggestions itself, since recent
+  // searches are session-storage/client-side only).
+  function buildRailRecentGroup(recent, searchUrl) {
+    if (!recent.length) return '';
+
+    var html = '<div class="predictive-search__group">'
+              + '<p class="predictive-search__group-label" id="PredictiveSearchRecent">Recent</p>'
+              + '<ul class="predictive-search__list" role="group" aria-labelledby="PredictiveSearchRecent">';
+
+    recent.forEach(function (term) {
+      var e    = esc(term);
+      var href = searchUrl + '?q=' + encodeURIComponent(term) + '&type=product';
+
+      html += '<li role="option" class="predictive-search__list-item">'
+            +   '<a href="' + href + '" '
+            +      'class="predictive-search__item predictive-search__item--query" '
+            +      'tabindex="-1" '
+            +      'data-hs-recent-term="' + e + '">'
+            +     e
+            +   '</a>'
+            + '</li>';
+    });
+
+    html += '</ul></div>';
     return html;
   }
 
@@ -550,6 +581,12 @@
     if (!optionCount) {
       this.panel.innerHTML =
         '<p class="header-search__state">No results found.</p>';
+    } else {
+      // ADDED — fold recent searches into the suggestions rail now
+      // that it's rendered, and wire up the product carousel's
+      // scroll arrows.
+      this._injectRecentIntoRail();
+      this._initCarousel();
     }
 
     this._open();
@@ -559,6 +596,58 @@
         ? optionCount + ' result' + (optionCount === 1 ? '' : 's') + ' available'
         : 'No results found'
     );
+  };
+
+  // ADDED
+  HeaderSearch.prototype._injectRecentIntoRail = function () {
+    var rail = this.panel.querySelector('[data-predictive-rail]');
+    if (!rail) return;
+
+    var recent = RecentSearches.load().slice(0, MAX_RECENT_IN_RAIL);
+    var html   = buildRailRecentGroup(recent, this.searchUrl);
+    if (!html) return;
+
+    rail.insertAdjacentHTML('beforeend', html);
+  };
+
+  // ADDED — mirrors the has-scroll-left/right edge-fade pattern
+  // already used for the desktop nav menu bar (see main-header.js),
+  // applied here to the product results carousel.
+  HeaderSearch.prototype._initCarousel = function () {
+    var carousel = this.panel.querySelector('[data-predictive-carousel]');
+    if (!carousel) return;
+
+    var track   = carousel.querySelector('[data-predictive-carousel-track]');
+    var prevBtn = carousel.querySelector('[data-predictive-carousel-prev]');
+    var nextBtn = carousel.querySelector('[data-predictive-carousel-next]');
+    if (!track) return;
+
+    var BUFFER = 1;
+
+    function updateEdges() {
+      var maxScroll = track.scrollWidth - track.clientWidth;
+
+      if (maxScroll <= BUFFER) {
+        carousel.classList.remove('has-scroll-left', 'has-scroll-right');
+        return;
+      }
+
+      carousel.classList.toggle('has-scroll-left', track.scrollLeft > BUFFER);
+      carousel.classList.toggle('has-scroll-right', track.scrollLeft < maxScroll - BUFFER);
+    }
+
+    function scrollByPage(dir) {
+      var amount = Math.round(track.clientWidth * 0.9) * dir;
+      track.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', function () { scrollByPage(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { scrollByPage(1); });
+
+    track.addEventListener('scroll', updateEdges, { passive: true });
+    window.addEventListener('resize', updateEdges);
+
+    updateEdges();
   };
 
   HeaderSearch.prototype._announce = function (text) {
