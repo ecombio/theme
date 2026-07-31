@@ -11,7 +11,23 @@
  *   2. The desktop search-icon overlay: open/close, focus management,
  *      Escape + backdrop dismissal.
  *
- * CHANGED (this pass):
+ * FIX (this pass):
+ *   - #header-group-wrapper has `will-change: transform` set
+ *     permanently (header-group.css), so it *always* acts as a
+ *     containing block for any `position: fixed` descendant — the
+ *     same effect a real `transform` has. .main-header__search-overlay
+ *     is `position: fixed` and lives inside #header-group-wrapper, so
+ *     instead of covering the viewport it was being boxed into the
+ *     header's own ~56–68px height, producing the tiny scrollable
+ *     strip instead of a full-screen takeover.
+ *   - Fix: move the overlay to be a direct child of <body> on init,
+ *     so it's no longer a descendant of #header-group-wrapper and is
+ *     free to size against the real viewport. See relocateOverlay()
+ *     below. Re-run on 'shopify:section:load' too, since a section
+ *     reload re-renders main-header.liquid's markup back inside the
+ *     header wrapper.
+ *
+ * CHANGED (previous pass, unrelated to the fix above):
  *   - Opening the overlay now also hides #header-group-wrapper
  *     entirely (adds 'is-search-active' to it — see main-header.css),
  *     instead of leaving it visible/dimmed behind a transparent or
@@ -85,10 +101,30 @@
   var isOpen = false;
   var CLOSE_TRANSITION_MS = 200; // matches .main-header__search-overlay-panel transition duration
 
+  // ADDED — see file header comment. #header-group-wrapper carries a
+  // permanent `will-change: transform`, which makes it a containing
+  // block for any `position: fixed` descendant. Moving the overlay to
+  // be a direct child of <body> takes it out from under that
+  // containing block entirely, so `position: fixed; inset: 0;` sizes
+  // against the real viewport again.
+  function relocateOverlay() {
+    if (overlay.parentElement !== document.body) {
+      document.body.appendChild(overlay);
+    }
+  }
+
+  relocateOverlay();
+
   function open() {
     if (isOpen) return;
     isOpen = true;
     lastFocused = document.activeElement;
+
+    // Section reloads (theme editor, shopify:section:load) re-render
+    // main-header.liquid's markup back inside the header wrapper, so
+    // re-check placement every time the overlay opens, not just once
+    // at parse time.
+    relocateOverlay();
 
     overlay.hidden = false;
     // wait a frame so the hidden -> visible change and the opacity/transform
@@ -172,4 +208,9 @@
   closeEls.forEach(function (el) {
     el.addEventListener('click', close);
   });
+
+  // Section re-render (theme editor) drops fresh markup for the
+  // overlay back inside #header-group-wrapper — re-run relocation so
+  // it doesn't silently regress next time it's opened.
+  document.addEventListener('shopify:section:load', relocateOverlay);
 })();
