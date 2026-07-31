@@ -1,37 +1,38 @@
 {%- comment -%}
   sections/main-header.liquid
 
-  CHANGED (this pass) — desktop (>=1024px) layout reworked:
-    - header-menu now renders inline in .main-header__inner, wrapped in
-      .main-header__nav, right after the logo — NOT as its own full-width
-      row below the bar anymore. See main-header.css for the overrides
-      that turn .menu-bar from a full-bleed row into a plain flex item
-      when nested here.
-    - the old always-on .main-header__search--inline bar is gone. In its
-      place, a single icon button (#main-header-search-trigger) sits in
-      the icons list. Clicking it opens #main-header-search-overlay, a
-      fixed full-screen takeover with the same header-search predictive
-      component mounted inside it (variant: 'overlay'). Open/close logic
-      lives in the new IIFE at the bottom of main-header.js.
-    - Mobile (<640px) and tablet (640-1023px) are UNTOUCHED: hamburger,
-      main-header__search-drawer-*-only triggers, main-header__search-row,
-      and the mobile nav drawer (rendered inside 'header-menu' itself)
-      all still work exactly as before. .main-header__nav collapses to
-      display:none below 1024px so nothing extra shows there.
+  NIKE-STYLE REDESIGN (this pass):
+    - Search trigger is now a visible pill (icon + "Search" text, grey
+      fill, ~220px wide) sitting inline in the icons row — not a bare
+      icon button. It still opens the exact same overlay as before;
+      only its own appearance changed. See main-header.css for the
+      new .main-header__search-trigger styling.
+    - Overlay panel gains an "Ask AI" row above the trending-terms
+      grid — a static link/button for now (points to /search by
+      default). Wire it to a real assistant endpoint if you have one,
+      or delete the whole .main-header__search-overlay-ask block if
+      you don't want it.
+    - Overlay backdrop is no longer fully transparent — see
+      main-header.css, .main-header__search-overlay-backdrop now
+      dims the page for real, so it stops pretending the content
+      behind it is still clickable.
+    - Icons row is pared down to match Nike's chrome-free look:
+      account icon defaults to hidden, wishlist icon defaults to
+      shown, and all icon labels default to off. These are still
+      controlled by the existing schema checkboxes below — nothing
+      here is hardcoded, only the JSON defaults changed
+      (see header-group.json).
 
-  Still true from the previous pass — sticky/autohide is controlled by
-  the GLOBAL theme settings (settings.enable_sticky_header /
-  settings.enable_header_autohide), applied as data attributes on <body>
-  in theme.liquid, acted on by assets/header-group.css +
-  assets/header-group.js, loaded centrally in theme.liquid. Nothing here
-  changes that.
+  Everything else (mobile/tablet drawer, predictive search wiring,
+  sticky/autohide via header-group.js) is untouched from the previous
+  pass.
 {%- endcomment -%}
 
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign logo       = settings.logo
-  assign logo_width = settings.logo_width | default: 140
+  assign logo_width = settings.logo_width | default: 110
   assign show_acct  = section.settings.show_icon_account
   assign show_cart  = section.settings.show_icon_cart
   assign show_wish  = section.settings.show_icon_wishlist
@@ -116,37 +117,31 @@
         {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
       </div>
 
-      {%- comment -%}
-        ADDED — nav now lives here, next to the logo, instead of as its
-        own row below the bar. Only visible >=1024px (main-header.css);
-        header-menu.liquid itself is untouched, so the mobile drawer it
-        also renders keeps working exactly as before regardless of where
-        this wrapper sits in the DOM (it's position:fixed).
-      {%- endcomment -%}
       <div class="main-header__nav">
         {%- render 'header-menu', blocks: section.blocks -%}
       </div>
 
+      <div class="main-header__search-pill-wrap">
+        <button type="button"
+                class="main-header__search-trigger"
+                id="main-header-search-trigger"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                aria-controls="main-header-search-overlay">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span class="main-header__search-trigger-label">Search</span>
+        </button>
+      </div>
+
       <ul class="main-header__icons" role="list" aria-label="Header actions">
-        <li>
-          <button type="button"
-                  class="main-header__search-trigger"
-                  id="main-header-search-trigger"
-                  aria-haspopup="dialog"
-                  aria-expanded="false"
-                  aria-controls="main-header-search-overlay">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <span class="main-header__search-trigger-label">Search</span>
-          </button>
-        </li>
-        {%- if show_comp != false -%}
-          <li>{%- render 'header-compare', show_label: label_comp -%}</li>
-        {%- endif -%}
         {%- if show_wish != false -%}
           <li>{%- render 'header-wishlist', show_label: label_wish -%}</li>
+        {%- endif -%}
+        {%- if show_comp != false -%}
+          <li>{%- render 'header-compare', show_label: label_comp -%}</li>
         {%- endif -%}
         {%- if show_acct != false -%}
           <li>{%- render 'header-account', show_label: label_acct -%}</li>
@@ -172,15 +167,6 @@
     </div>
   </div>
 
-  {%- comment -%}
-    CHANGED — desktop search overlay restyled as a full-width top
-    takeover (edge-to-edge panel below the header, no dark backdrop,
-    "Cancel" text link instead of an X) rather than a centered modal
-    card. Still only reachable via #main-header-search-trigger, which is
-    display:none below 1024px, so this never opens on mobile/tablet.
-    Same [data-search-overlay-close] pattern on both the backdrop and
-    the Cancel button — main-header.js's open/close logic is unchanged.
-  {%- endcomment -%}
   <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
     <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
     <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
@@ -198,6 +184,24 @@
         <button type="button" class="main-header__search-overlay-cancel" data-search-overlay-close>
           Cancel
         </button>
+      </div>
+
+      {%- comment -%}
+        ADDED — static "Ask AI" row, styled after the reference. Points
+        to /search by default since there's no assistant endpoint wired
+        up yet. Replace the href with your real endpoint, or delete this
+        whole block if you don't have (or don't want) this feature.
+      {%- endcomment -%}
+      <div class="main-header__search-overlay-ask-wrap">
+        <a href="{{ routes.search_url }}" class="main-header__search-overlay-ask">
+          <span class="main-header__search-overlay-ask-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/>
+              <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z"/>
+            </svg>
+          </span>
+          <span class="main-header__search-overlay-ask-label">Ask AI</span>
+        </a>
       </div>
     </div>
   </div>
@@ -235,7 +239,7 @@
       "type": "range",
       "id": "section_padding",
       "label": "Side padding",
-      "min": 0, "max": 80, "step": 4, "unit": "px", "default": 24
+      "min": 0, "max": 80, "step": 4, "unit": "px", "default": 32
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
@@ -256,7 +260,7 @@
 
     { "type": "header", "content": "Search (all breakpoints)" },
     { "type": "checkbox", "id": "enable_predictive_search", "label": "Enable predictive search", "default": true },
-    { "type": "checkbox", "id": "enable_typewriter", "label": "Animate placeholder (typewriter effect)", "default": true, "visible_if": "{{ section.settings.enable_predictive_search }}" },
+    { "type": "checkbox", "id": "enable_typewriter", "label": "Animate placeholder (typewriter effect)", "default": false, "visible_if": "{{ section.settings.enable_predictive_search }}" },
     { "type": "range", "id": "typewriter_type_speed", "label": "Typing speed", "min": 30, "max": 150, "step": 5, "default": 70, "unit": "ms", "visible_if": "{{ section.settings.enable_predictive_search and section.settings.enable_typewriter }}" },
     { "type": "range", "id": "typewriter_hold_ms", "label": "Pause on full word", "min": 1000, "max": 5000, "step": 100, "default": 3200, "unit": "ms", "visible_if": "{{ section.settings.enable_predictive_search and section.settings.enable_typewriter }}" },
     { "type": "text", "id": "trending_1", "label": "Trending term 1", "default": "electric scooters", "visible_if": "{{ section.settings.enable_predictive_search }}" },
@@ -273,14 +277,14 @@
     { "type": "text", "id": "trending_12", "label": "Trending term 12", "default": "youth electric scooters", "visible_if": "{{ section.settings.enable_predictive_search }}" },
 
     { "type": "header", "content": "Icons (all breakpoints)" },
-    { "type": "checkbox", "id": "show_icon_account", "label": "Show account icon", "default": true },
-    { "type": "checkbox", "id": "show_label_account", "label": "Show account label", "default": true },
+    { "type": "checkbox", "id": "show_icon_account", "label": "Show account icon", "default": false },
+    { "type": "checkbox", "id": "show_label_account", "label": "Show account label", "default": false },
     { "type": "checkbox", "id": "show_icon_wishlist", "label": "Show wishlist icon", "default": true },
-    { "type": "checkbox", "id": "show_label_wishlist", "label": "Show wishlist label", "default": true },
-    { "type": "checkbox", "id": "show_icon_compare", "label": "Show compare icon", "default": true },
-    { "type": "checkbox", "id": "show_label_compare", "label": "Show compare label", "default": true },
+    { "type": "checkbox", "id": "show_label_wishlist", "label": "Show wishlist label", "default": false },
+    { "type": "checkbox", "id": "show_icon_compare", "label": "Show compare icon", "default": false },
+    { "type": "checkbox", "id": "show_label_compare", "label": "Show compare label", "default": false },
     { "type": "checkbox", "id": "show_icon_cart", "label": "Show cart icon", "default": true },
-    { "type": "checkbox", "id": "show_label_cart", "label": "Show cart label", "default": true }
+    { "type": "checkbox", "id": "show_label_cart", "label": "Show cart label", "default": false }
   ],
   "blocks": [
     { "type": "single-link", "name": "Single Link", "settings": [

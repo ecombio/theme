@@ -1,85 +1,70 @@
 /* main-header.css
 
    Changelog:
-     2026-07-30 — Desktop (>=1024px) header restructure: nav now renders
-                  inline next to the logo (wrapped in .main-header__nav,
-                  see main-header.liquid) instead of as its own full-width
-                  row, and the always-on search bar is replaced with a
-                  single icon (.main-header__search-trigger) that opens
-                  a full-screen overlay (.main-header__search-overlay).
-                  Mobile/tablet (<1024px) rules are untouched — the old
-                  .ecombio-search__* classes below are now unused (they
-                  belonged to the removed always-on desktop bar) but are
-                  left in place in case another section still references
-                  them; safe to delete once confirmed nothing else does.
+     2026-07-30 (b) — NIKE-STYLE REDESIGN. Visual language only; none
+                  of the structural/positioning fixes from the previous
+                  pass (stacking context, section-width variables, menu
+                  bar edge-fade, sticky/spacer sync) were touched.
+                  Summary of what changed:
+                    - Header is shorter, quieter: no drop shadow at
+                      rest, hairline border only, more side padding.
+                    - Nav links: no dropdown chevrons at top level
+                      (Nike's own header has none), tighter letter
+                      spacing, larger gap between items.
+                    - Search trigger is now a full pill sitting inline
+                      in the header (icon + "Search" text, ~220px wide,
+                      light grey fill) instead of a small icon-only
+                      button — see .main-header__search-pill-wrap /
+                      .main-header__search-trigger below.
+                    - Icons row: just heart + bag, no background
+                      circles/pills, no labels, generous spacing.
+                    - Overlay backdrop is a real dim now (was fully
+                      transparent) — page content behind the panel is
+                      visibly non-interactive instead of only acting
+                      that way.
+                    - Overlay panel now sits inside a thick outer frame
+                      (a colored border on the overlay itself) similar
+                      to the reference, and gained the Ask AI row.
+
+     2026-07-30 (a) — Desktop (>=1024px) header restructure: nav now
+                  renders inline next to the logo (wrapped in
+                  .main-header__nav, see main-header.liquid) instead of
+                  as its own full-width row, and the always-on search
+                  bar was replaced with the overlay-triggering pattern.
+                  Mobile/tablet (<1024px) rules are untouched.
 
      2026-07-26 — Converted every breakpoint in this file from
-                  desktop-first (max-width, cascading down) to the
-                  theme's mobile-first system (min-width, cascading
-                  up — base rules are unqualified/mobile, then md and
-                  lg override upward). See the token table at the top
-                  of base.css for the full six-tier scale (xs–2xl)
-                  and why md=640/lg=1024 were chosen.
-
-                  This also FIXES a real bug: mobile sizing used to
-                  flip at two different cutoffs that disagreed with
-                  each other — 599px (header height/padding, via a
-                  `max-width: 599px` rule) vs 639px (search-drawer
-                  visibility + menu-bar scroll mode, via `max-width:
-                  639px` / `min-width: 640px`). A viewport between
-                  600–639px was "tablet" by one rule and "mobile" by
-                  the other simultaneously. It also contradicted this
-                  section's own schema, which explicitly labels the
-                  tiers "Mobile Division (< 640px)" / "Tablet Division
-                  (640px – 1023px)". Everything below now agrees on a
-                  single md=640px / lg=1024px boundary, matching that
-                  schema exactly. No visual values changed (same
-                  heights, padding, gaps as before) — only where the
-                  line falls and which direction the query reads. */
+                  desktop-first (max-width) to mobile-first (min-width),
+                  fixing a real bug where mobile sizing flipped at two
+                  disagreeing cutoffs (599px vs 639px). No visual values
+                  changed by that pass — only where the line falls. */
 
 :root {
-  --hdr-height-desktop : 68px;
+  --hdr-height-desktop : 72px;
   --hdr-height-tablet  : 64px;
   --hdr-height-mobile  : 56px;
   --hdr-search-row-h   : 56px;
   --hdr-bg             : #ffffff;
   --hdr-border         : #e5e5e5;
   --hdr-text           : #111111;
-  --hdr-muted          : #6b6b6b;
-  --hdr-accent         : #e11d27;
-  --hdr-search-bg      : #f2f2f2;
-  --hdr-pill-bg        : #e5e5e5;
-  --hdr-pill-bg-hover  : #d8d8d8;
+  --hdr-muted          : #707072;
+  --hdr-accent         : #111111;
+  --hdr-search-bg      : #f5f5f5;
+  --hdr-pill-bg        : #f5f5f5;
+  --hdr-pill-bg-hover  : #eaeaea;
   --hdr-radius-pill    : 9999px;
-  --hdr-radius-drop    : 12px;
+  --hdr-radius-drop    : 8px;
   --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
-  --hdr-shadow-sticky  : 0 2px 8px rgba(0,0,0,.08);
-  --hdr-font           : -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --hdr-shadow-sticky  : 0 1px 0 rgba(0,0,0,.08);
+  --hdr-font           : -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   --hdr-z              : 200;
   --hdr-drawer-z       : 400;
   --hdr-overlay-z      : 500;
+  --hdr-overlay-frame  : #35414d;
 
-  /* ASSUMPTION — this is the boxed max-width used when "Section width"
-     is set to "Default". This section is intentionally decoupled from
-     the theme's global --page-width (see the Section layout comment
-     below), so there's no existing value to borrow here. 90rem (1440px)
-     is a common Shopify container width — change this one value if it
-     doesn't match the rest of your theme. */
   --hdr-default-max-width : 90rem;
 }
 
-/* FIX — .showcase-backdrop (header-menu.js) is appended directly to
-   <body> with z-index:150. If the header establishes its own stacking
-   context (position:fixed/sticky + a transform, common for the autohide
-   effect), any position:fixed descendant of the header — including
-   .showcase__panel — gets trapped inside that context. Its z-index:300
-   then only wins against other elements *inside* the header, not
-   against the backdrop sitting at the body level, so the backdrop paints
-   over the panel content. Giving the header itself a z-index above the
-   backdrop's 150 fixes this regardless of what else is happening inside
-   its stacking context. Kept here (rather than moved to header-group.css)
-   since this is about main-header's own stacking context specifically,
-   not shared group-stacking mechanics. */
 #main-header {
   position: relative;
   z-index: var(--hdr-z);
@@ -91,15 +76,16 @@
   background: var(--hdr-bg);
   font-family: var(--hdr-font);
   width: 100%;
+  border-bottom: 1px solid var(--hdr-border);
 }
 
 .main-header__inner {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 28px;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 var(--section-padding, 24px);
+  padding: 0 var(--section-padding, 32px);
 }
 
 .ecombio-header__hamburger {
@@ -130,132 +116,40 @@
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* UNUSED as of this pass — belonged to the removed always-on desktop
-   search bar (.main-header__search--inline). Left in place; delete once
-   confirmed nothing else in the theme references .ecombio-search__*. */
-.ecombio-search__form {
-  display: flex;
-  align-items: center;
-  background: var(--hdr-search-bg);
-  border-radius: var(--hdr-radius-pill);
-  height: 44px;
-  padding: 0;
-  gap: 0;
-  width: 100%;
-}
-
-.ecombio-search__category { position: relative; flex-shrink: 0; display: flex; align-items: center; }
-
-.ecombio-search__cat-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--hdr-pill-bg);
-  border: none;
-  border-radius: var(--hdr-radius-pill);
-  padding: 0 12px;
-  height: 34px;
-  margin: 5px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--hdr-text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.ecombio-search__cat-btn:hover { background: var(--hdr-pill-bg-hover); }
-
-.ecombio-search__chevron { color: var(--hdr-muted); transition: transform 0.2s; flex-shrink: 0; }
-.ecombio-search__cat-btn[aria-expanded="true"] .ecombio-search__chevron { transform: rotate(180deg); }
-
-.ecombio-search__cat-list {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  min-width: 200px;
-  background: #fff;
-  border-radius: var(--hdr-radius-drop);
-  box-shadow: var(--hdr-shadow-drop);
-  border: 1px solid var(--hdr-border);
-  list-style: none;
-  margin: 0;
-  padding: 6px 0;
-  z-index: calc(var(--hdr-z) + 10);
-}
-.ecombio-search__cat-list[hidden] { display: none; }
-
-.ecombio-search__cat-list li {
-  padding: 9px 16px;
-  font-size: 0.875rem;
-  color: var(--hdr-text);
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.ecombio-search__cat-list li:hover,
-.ecombio-search__cat-list li[aria-selected="true"] { background: var(--hdr-search-bg); }
-
-.ecombio-search__divider { display: block; width: 1px; height: 20px; background: #cccccc; flex-shrink: 0; margin: 0 2px 0 0; }
-
-.ecombio-search__input {
-  flex: 1 1 auto;
-  border: none;
-  background: transparent;
-  font-size: 0.9375rem;
-  color: var(--hdr-text);
-  padding: 0 8px;
-  height: 100%;
-  outline: none;
-  min-width: 0;
-}
-.ecombio-search__input::placeholder { color: #aaaaaa; }
-.ecombio-search__input::-webkit-search-cancel-button { display: none; }
-
-.ecombio-search__submit {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--hdr-muted);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  transition: color 0.15s;
-}
-.ecombio-search__submit:hover { color: var(--hdr-text); }
-
-/* CHANGED — desktop search trigger is now a labeled pill (Nike-style:
-   icon + "Search" text on light grey fill) instead of a bare icon
-   button. Hidden until >=1024px (see media query below); at every
-   smaller breakpoint the existing drawer/row search UI shows instead. */
-.main-header__search-trigger {
+/* CHANGED — search trigger is now a wide, always-visible pill instead
+   of an icon-only button. Sits in its own flex item
+   (.main-header__search-pill-wrap) between the nav and the icons list
+   so it doesn't get squeezed by either. */
+.main-header__search-pill-wrap {
   display: none;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.main-header__search-trigger {
+  display: flex;
   align-items: center;
   gap: 8px;
+  width: 220px;
   height: 40px;
-  padding: 0 16px 0 14px;
-  flex-shrink: 0;
+  padding: 0 16px;
   border: none;
   background: var(--hdr-search-bg);
   border-radius: var(--hdr-radius-pill);
   color: var(--hdr-muted);
   font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 .main-header__search-trigger:hover { background: var(--hdr-pill-bg-hover); color: var(--hdr-text); }
-.main-header__search-trigger svg { width: 16px; height: 16px; flex-shrink: 0; }
+.main-header__search-trigger svg { width: 17px; height: 17px; flex-shrink: 0; }
 .main-header__search-trigger:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
+.main-header__search-trigger-label { text-align: left; }
 
-/* CHANGED — overlay is now a full-width top takeover (edge-to-edge
-   panel sitting right under the header, no dark page backdrop, sharp
-   corners, "Cancel" text link) rather than a centered modal card.
-   Only ever opened via #main-header-search-trigger (desktop-only), so
-   no media-query gating is needed here — it simply can't be reached
-   below 1024px. */
+/* CHANGED — real dim now, not transparent. The panel behind it should
+   not read as clickable while the overlay is open. */
 .main-header__search-overlay {
   position: fixed;
   inset: 0;
@@ -265,37 +159,42 @@
 .main-header__search-overlay[hidden] { display: none; }
 .main-header__search-overlay.is-open { pointer-events: auto; }
 
-/* Transparent click-catcher — closes the overlay on click outside the
-   panel. No dark tint: matches the reference, which leaves the rest of
-   the page at full brightness under the panel. */
 .main-header__search-overlay-backdrop {
   position: absolute;
   inset: 0;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
+.main-header__search-overlay.is-open .main-header__search-overlay-backdrop {
+  opacity: 1;
+}
+
+/* ADDED — thick outer frame around the whole viewport while the
+   overlay is open, echoing the reference. Implemented as an inset box
+   shadow on the overlay itself so it doesn't affect layout. */
+.main-header__search-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 10px var(--hdr-overlay-frame);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.main-header__search-overlay.is-open::after { opacity: 1; }
 
 .main-header__search-overlay-panel {
   position: absolute;
-  /* FIX — was var(--hdr-height-desktop), i.e. main-header's own height
-     only. This header is part of a group (announcement bar + utility
-     bar + main header) made sticky together by header-group.js, which
-     already publishes the group's real combined height on :root as
-     --header-group-height for exactly this kind of positioning — using
-     that instead of guessing main-header's height alone is what fixes
-     the panel opening underneath the utility bar instead of below the
-     whole header stack. Falls back to the old value if that custom
-     property isn't present for any reason. */
   top: var(--header-group-height, var(--hdr-height-desktop));
-  left: 0;
-  right: 0;
-  width: 100%;
+  left: 10px;
+  right: 10px;
   max-height: min(70vh, 620px);
   overflow-y: auto;
   background: var(--hdr-bg);
   border-radius: 0;
-  border-bottom: 1px solid var(--hdr-border);
-  box-shadow: 0 12px 28px rgba(0,0,0,.08);
-  padding: 28px clamp(20px, 5vw, 64px) 36px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.18);
+  padding: 28px clamp(20px, 5vw, 64px) 40px;
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -309,7 +208,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  max-width: 760px;
+  max-width: 820px;
   margin: 0 auto;
 }
 
@@ -329,24 +228,49 @@
 .main-header__search-overlay-cancel:hover { text-decoration: underline; }
 .main-header__search-overlay-cancel:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-/* FIX — header-search.css positions .header-search__panel (the
-   trending/recent/results dropdown) with position:absolute, designed
-   for it to float over whatever page content sits below the input in
-   its original drawer/row usage. Inside our overlay sheet that meant it
-   never contributed to the sheet's own height — the sheet only ever
-   wrapped the input row, then clipped the dropdown at whatever sliver
-   of it happened to overlap before hitting overflow:hidden from the
-   scroll container above. Making it position:static here lets it join
-   normal flow instead, so the whole sheet (input + trending pills or
-   results) grows together and scrolls as one unit via
-   .main-header__search-overlay-panel's own max-height/overflow-y above
-   — matching the single continuous scrollbar in the reference. Scoped
-   to the overlay only; the drawer/row variants elsewhere keep the
-   floating-dropdown behavior they were built for. */
+/* ADDED — Ask AI row. Sits between the search input and the trending
+   pills, matching the reference's placement. Delete this whole block
+   (and its liquid markup) if you don't have an assistant to link it
+   to yet. */
+.main-header__search-overlay-ask-wrap {
+  max-width: 820px;
+  margin: 20px auto 0;
+}
+
+.main-header__search-overlay-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 8px;
+  border-radius: var(--hdr-radius-pill);
+  text-decoration: none;
+  color: var(--hdr-text);
+  transition: background 0.15s;
+}
+.main-header__search-overlay-ask:hover { background: var(--hdr-search-bg); }
+
+.main-header__search-overlay-ask-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #e8ff6b, #9ad35a 70%);
+  color: #1a1a1a;
+  flex-shrink: 0;
+}
+.main-header__search-overlay-ask-icon svg { width: 18px; height: 18px; }
+
+.main-header__search-overlay-ask-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .main-header__search-overlay .header-search__panel {
   position: static;
-  margin-top: 20px;
-  max-width: 760px;
+  margin-top: 28px;
+  max-width: 820px;
   margin-inline: auto;
   border: none;
   box-shadow: none;
@@ -356,41 +280,24 @@
   overflow: visible;
 }
 
-/* Overlay-scoped nudges to the shared header-search / trending-pill
-   styling — deliberately scoped under .main-header__search-overlay
-   rather than edited in header-search.css, so the drawer/row variants
-   elsewhere keep their existing look untouched. */
 .main-header__search-overlay .header-search__form { height: 52px; }
 .main-header__search-overlay .hs-empty__label {
   text-transform: none;
   letter-spacing: 0;
   font-size: 13px;
-  font-weight: 500;
-  color: var(--hdr-muted);
+  font-weight: 600;
+  color: var(--hdr-text);
 }
 .main-header__search-overlay .hs-empty__pill-list { padding-left: 0; padding-right: 0; }
+.main-header__search-overlay .hs-empty__pill {
+  background: var(--hdr-search-bg);
+  font-weight: 600;
+}
+.main-header__search-overlay .hs-empty__pill:hover { background: var(--hdr-pill-bg-hover); }
 
 .main-header__search-row { border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
 .main-header__search-row-inner { max-width: 100%; margin: 0 auto; }
 
-/* FIX — Section layout (Section width / Custom width / Side padding)
-   was wired up correctly in main-header.liquid — same pattern as
-   sections/example-width-section.liquid — but these classes and
-   variables were never actually implemented here, so none of those
-   settings did anything. This also caused the nav row (.menu-bar) to
-   visually drift out of alignment with the logo/search/icons row
-   whenever a boxed width was expected: .menu-bar had its own separate
-   hardcoded width/padding that never matched. Scoping all three header
-   rows (icons row, search row, nav row) to the same classes and the
-   same --section-padding / --custom-width variables keeps them aligned
-   together no matter which "Section width" option is chosen.
-
-   NOTE — as of this pass .menu-bar no longer renders as its own row at
-   desktop (it's nested in .main-header__nam next to the logo instead),
-   so these three rules now only actually matter for
-   .main-header__inner / .main-header__search-row-inner. They're left
-   applying to .menu-bar too since it's harmless there and still correct
-   for anyone who reverts to the old standalone-row layout. */
 #main-header.main-header--default-width .main-header__inner,
 #main-header.main-header--default-width .main-header__search-row-inner {
   max-width: var(--hdr-default-max-width);
@@ -409,19 +316,6 @@
   margin-inline: auto;
 }
 
-/* FIX — .menu-bar specifically breaks its max-width only once
-   main-header--sticky-enabled is active, even though the rule above
-   applies to it too. The CSS itself doesn't check for sticky, so
-   something else with higher priority than a normal stylesheet rule is
-   winning in that state — almost always a script setting an inline
-   style directly (element.style.width = ...), most likely whatever
-   drives the .has-scroll-left / .has-scroll-right edge-fade classes
-   further down this file, since that's the only scroll/resize-aware
-   logic touching .menu-bar. Inline styles beat any non-!important
-   stylesheet rule regardless of selector specificity, so rather than
-   guess at unseen JS, these three rules are forced with !important to
-   win the fight outright. Narrowly scoped to just these two properties
-   on .menu-bar — nothing else here is touched. */
 #main-header.main-header--default-width .menu-bar {
   max-width: var(--hdr-default-max-width) !important;
   margin-inline: auto !important;
@@ -437,17 +331,29 @@
   margin-inline: auto !important;
 }
 
-/* ASSUMPTION — new, not present in header.css; flex row to fix the bulleted-list bug in your screenshot */
+/* CHANGED — heart + bag only, no background pills, no labels, more
+   breathing room between them. */
 .main-header__icons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 24px;
+  gap: 20px;
   list-style: none;
-  margin: 0 0 0 auto;
+  margin: 0;
   padding: 0;
   flex-shrink: 0;
 }
+.main-header__icons svg { width: 21px; height: 21px; }
+.main-header__icons a,
+.main-header__icons button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hdr-text);
+  transition: opacity 0.15s;
+}
+.main-header__icons a:hover,
+.main-header__icons button:hover { opacity: 0.6; }
 
 .ecombio-mobile-nav { position: fixed; inset: 0; z-index: var(--hdr-drawer-z); pointer-events: none; visibility: hidden; }
 .ecombio-mobile-nav.is-open { pointer-events: auto; visibility: visible; }
@@ -570,9 +476,6 @@
   border: 0;
 }
 
-/* ADDED — wraps the header-menu render call in main-header.liquid.
-   Collapsed by default; becomes a flex item at >=1024px (see media
-   query below), sitting between the logo and the icons list. */
 .main-header__nav { display: none; }
 
 .menu-bar__container { position: relative; }
@@ -588,32 +491,34 @@
 
 .menu-bar__item { position: relative; }
 
+/* CHANGED — plain text, no chevrons at top level, tighter tracking,
+   bit more horizontal room per item. */
 .menu-bar__link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 14px 16px;
-  font-weight: 600;
-  font-size: 13.5px;
+  padding: 14px 14px;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
   color: #1a1a1a;
   text-decoration: none;
   white-space: nowrap;
-  transition: color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 .menu-bar__link:hover,
-.menu-bar__item:hover > .menu-bar__link { color: var(--hdr-accent); }
+.menu-bar__item:hover > .menu-bar__link { opacity: 0.6; }
 
 .menu-bar__icon { display: inline-flex; align-items: center; margin-right: 6px; flex-shrink: 0; }
 .menu-bar__icon svg { width: 16px; height: 16px; }
 
-.icon-caret-down { display: inline-block; width: 13px; height: 13px; flex-shrink: 0; transition: transform 0.2s ease; }
-.menu-bar__item:hover > .menu-bar__link .icon-caret-down { transform: rotate(180deg); }
+/* CHANGED — chevrons hidden at top-level nav to match Nike's plain
+   text links; still present in the DOM in case you rely on it for
+   mega-menu affordance elsewhere, just visually removed here. */
+.icon-caret-down { display: none; }
 
 /* ============================================
    Base (xs/sm) — mobile styles, unqualified.
-   This is the mobile-first "floor": everything below is what
-   ships to every viewport unless overridden by an md/lg query
-   further down.
    ============================================ */
 .main-header__inner {
   height: var(--hdr-height-mobile);
@@ -621,7 +526,6 @@
   gap: 8px;
 }
 .main-header__search-row-inner { padding: 6px 12px; }
-.ecombio-search__form { height: 42px; }
 
 .ecombio-header__hamburger { display: flex; }
 .main-header__search-row { display: block; }
@@ -629,8 +533,6 @@
 .menu-bar { display: none; }
 .menu-bar__edge-fade { display: none; }
 
-/* ASSUMPTION — verify against your actual breakpoint intent.
-   Consolidated from the old 599px/639px split onto md=640px. */
 .main-header__search-drawer-mobile-only { display: none; }
 .main-header__search-drawer-tablet-only { display: none; }
 .main-header__search-drawer-mobile-only { display: flex; align-items: center; }
@@ -655,9 +557,6 @@
 
 /* ============================================
    md: 640px (40rem) — tablet division
-   Was two disagreeing cutoffs (599px for height/padding, 639px for
-   search-drawer/menu-bar visibility). Now one boundary, matching
-   main-header.liquid's own "Tablet Division (640px – 1023px)" label.
    ============================================ */
 @media (min-width: 40rem) {
   .main-header__inner {
@@ -687,11 +586,8 @@
   .main-header__search-row { display: none; }
   .main-header__search-drawer-tablet-only { display: none; }
 
-  /* ADDED — search icon shows only here; overlay is unreachable below
-     this breakpoint since this is its only trigger. */
-  .main-header__search-trigger { display: flex; }
+  .main-header__search-pill-wrap { display: block; }
 
-  /* ADDED — nav sits inline next to the logo instead of below. */
   .main-header__nav {
     display: flex;
     align-items: center;
@@ -702,35 +598,17 @@
   .menu-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 4px;
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 0 var(--section-padding, 24px);
+    padding: 0 var(--section-padding, 32px);
     border-top: 0;
     background: #ffffff;
     position: relative;
     z-index: 100;
   }
 
-  /* FIX — .menu-bar is both the outer row AND the element we cap to
-     the section's width, unlike the row above it (.main-header__bar is
-     a separate full-width wrapper around the boxed .main-header__inner).
-     Once .menu-bar itself gets boxed to a custom/default width, its own
-     background box shrinks with it, leaving the page background
-     visible on either side instead of white reaching the page edges.
-     This pseudo-element bleeds a white backdrop the full viewport width
-     regardless of how narrow .menu-bar's own box is, sitting behind its
-     content, so the row reads as one continuous white bar just like the
-     row above it.
-
-     NOTE — this bleed trick is neutralized below (.main-header__nav
-     .menu-bar::before { content: none }) now that .menu-bar lives inside
-     .main-header__inner, which is already the right background — the
-     bleed would otherwise paint a white rectangle over the header row
-     itself, which does nothing visible but is wasted work. Left defined
-     here (rather than deleted) so a standalone .menu-bar row — e.g. if
-     you ever revert this section — keeps working without edits. */
   .menu-bar::before {
     content: "";
     position: absolute;
@@ -777,16 +655,6 @@
   .menu-bar.has-scroll-left .menu-bar__edge-fade--left,
   .menu-bar.has-scroll-right .menu-bar__edge-fade--right { opacity: 1; }
 
-  /* ADDED — this is the actual "inline next to the logo" fix. Without
-     this block, .menu-bar keeps behaving like the full-bleed row it
-     used to be (100vw white backdrop bleeding across the whole header,
-     forced max-width/margin from the width-variant !important rules
-     above, its own left/right section padding on top of
-     .main-header__inner's) even though it's now nested one level
-     deeper. Specificity here matches the width-variant rules above
-     (1 ID + 2 classes) and this block comes later in the file, so it
-     wins the cascade for any width variant without needing to repeat
-     three near-identical selectors. */
   .main-header__nav .menu-bar {
     width: auto;
     max-width: none !important;
