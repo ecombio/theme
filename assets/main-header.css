@@ -148,14 +148,27 @@
 .main-header__search-trigger:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 .main-header__search-trigger-label { text-align: left; }
 
-/* ADDED — hides the entire sticky header group (announcement bar +
-   utility bar + main header) while search is active, instead of
-   leaving it visible/dimmed underneath the overlay. Opacity+
-   pointer-events rather than display:none so header-group.js's own
-   ResizeObserver-driven height sync doesn't get confused by the
-   element disappearing from layout — it's still there, just invisible
-   and inert. Toggled by main-header.js on open()/close(). */
-#header-group-wrapper.is-search-active {
+/* FIX — opacity on #header-group-wrapper itself was wrong: the
+   overlay markup (.main-header__search-overlay) is a DESCENDANT of
+   this same wrapper (nested inside #main-header), so hiding the
+   wrapper via opacity would hide the overlay along with it — opacity
+   cascades to children with no way for a child to opt back in.
+   Instead, target only the actually-visible bars: the announcement +
+   utility bar section wrappers (the group's first children — main-header
+   is always last, per header-group.json's "order" array, so
+   :not(:last-child) reliably catches just those two regardless of
+   which one is enabled) and .main-header__bar / .main-header__search-row
+   specifically within main-header itself. .main-header__search-overlay
+   is a sibling of those, inside #main-header, and is never touched by
+   either rule below — it stays fully visible and interactive. */
+#header-group-wrapper.is-search-active > *:not(:last-child) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+#header-group-wrapper.is-search-active .main-header__bar,
+#header-group-wrapper.is-search-active .main-header__search-row {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -220,25 +233,50 @@
   transform: translateY(0);
 }
 
-/* ADDED — the overlay's own top row: logo, input, Cancel. Stands in
-   for the real header while it's hidden. */
+/* FIX — was align-items: center. The inner flex item now wraps the
+   FULL search component (input + Ask AI row + trending panel — tall,
+   stacked content), not just a single-line input like before. Centering
+   against that whole height is what pulled the logo and Cancel button
+   down to roughly the middle of the block instead of staying pinned
+   next to the input. flex-start aligns all three items to the top of
+   the row regardless of how tall the content below the input grows —
+   logo and Cancel now track the input's position specifically. */
 .main-header__search-overlay-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
   max-width: 900px;
   margin: 0 auto;
 }
 
+/* Both given the same height as the search input (52px, set below)
+   and centered within that band, so they align vertically with the
+   input itself rather than sitting flush at y:0. */
 .main-header__search-overlay-logo {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  height: 52px;
 }
 .main-header__search-overlay-logo img,
-.main-header__search-overlay-logo svg { display: block; height: auto; }
+.main-header__search-overlay-logo svg { display: block; height: auto; max-height: 32px; }
 
 .main-header__search-overlay-inner { flex: 1; min-width: 0; }
+
+.main-header__search-overlay-cancel {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  border: none;
+  background: transparent;
+  color: var(--hdr-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0 2px;
+}
 
 .main-header__search-overlay-cancel {
   flex-shrink: 0;
