@@ -1,6 +1,31 @@
 /* main-header.css
 
    Changelog:
+     2026-07-30 (c) — Overlay is no longer a full-screen dark takeover.
+                  Matches the real Nike overlay: the panel sits at the
+                  top of the viewport, sized to its own content (search
+                  bar + suggestions + product row), and the rest of the
+                  page stays fully visible/interactive underneath —
+                  no dimmed backdrop, no thick frame border. Clicking
+                  outside the panel (or Cancel/Escape) still closes it,
+                  via the same full-viewport backdrop element, just
+                  made invisible instead of dark.
+                  Summary of what changed vs the previous pass:
+                    - .main-header__search-overlay-backdrop: background
+                      is now transparent instead of a dark scrim, and
+                      it no longer fades in/out (nothing to fade).
+                    - .main-header__search-overlay-panel: no longer
+                      stretches to bottom: 10px / inset frame; now
+                      top: 0, sized to content with a max-height +
+                      scroll fallback, flat corners, and a soft drop
+                      shadow along its bottom edge instead of a full
+                      dark backdrop to separate it from the page.
+                    - Removed the .main-header__search-overlay::after
+                      inset box-shadow "frame" — Nike's real overlay
+                      doesn't have one.
+                  #header-group-wrapper is still hidden (opacity: 0)
+                  while the overlay is open — unchanged from before.
+
      2026-07-30 (b) — NIKE-STYLE REDESIGN. Visual language only; none
                   of the structural/positioning fixes from the previous
                   pass (stacking context, section-width variables, menu
@@ -18,13 +43,7 @@
                       .main-header__search-trigger below.
                     - Icons row: just heart + bag, no background
                       circles/pills, no labels, generous spacing.
-                    - Overlay backdrop is a real dim now (was fully
-                      transparent) — page content behind the panel is
-                      visibly non-interactive instead of only acting
-                      that way.
-                    - Overlay panel now sits inside a thick outer frame
-                      (a colored border on the overlay itself) similar
-                      to the reference, and gained the Ask AI row.
+                    - Overlay panel gained the Ask AI row.
 
      2026-07-30 (a) — Desktop (>=1024px) header restructure: nav now
                   renders inline next to the logo (wrapped in
@@ -60,7 +79,6 @@
   --hdr-z              : 200;
   --hdr-drawer-z       : 400;
   --hdr-overlay-z      : 500;
-  --hdr-overlay-frame  : #35414d;
 
   --hdr-default-max-width : 90rem;
 }
@@ -116,8 +134,8 @@
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* CHANGED — search trigger is now a wide, always-visible pill instead
-   of an icon-only button. Sits in its own flex item
+/* Search trigger is a wide, always-visible pill instead of an
+   icon-only button. Sits in its own flex item
    (.main-header__search-pill-wrap) between the nav and the icons list
    so it doesn't get squeezed by either. */
 .main-header__search-pill-wrap {
@@ -174,10 +192,13 @@
   transition: opacity 0.15s ease;
 }
 
-/* CHANGED — full top:0 takeover now that the real header is hidden
-   rather than dimmed; the overlay supplies its own logo/search/Cancel
-   row in its place. Real dim on the backdrop (was transparent) so the
-   page content further down doesn't read as clickable. */
+/* CHANGED (2026-07-30c) — no longer a full-screen dark takeover.
+   The overlay element itself still spans the full viewport (fixed,
+   inset: 0) but purely so its backdrop can catch outside clicks to
+   close — it carries no visual dimming of its own. The visible panel
+   inside it (.main-header__search-overlay-panel, below) is sized to
+   its own content and pinned to the top, so the rest of the page
+   shows through underneath exactly like nike.com's real overlay. */
 .main-header__search-overlay {
   position: fixed;
   inset: 0;
@@ -187,43 +208,27 @@
 .main-header__search-overlay[hidden] { display: none; }
 .main-header__search-overlay.is-open { pointer-events: auto; }
 
+/* CHANGED — invisible click-catcher only, no dark scrim. Covers the
+   full viewport (same as the overlay itself) so clicking anywhere
+   outside the panel closes it, same as before — it just doesn't dim
+   the page anymore. */
 .main-header__search-overlay-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  background: transparent;
 }
-.main-header__search-overlay.is-open .main-header__search-overlay-backdrop {
-  opacity: 1;
-}
-
-/* ADDED — thick outer frame around the whole viewport while the
-   overlay is open, echoing the reference. Implemented as an inset box
-   shadow on the overlay itself so it doesn't affect layout. */
-.main-header__search-overlay::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 10px var(--hdr-overlay-frame);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.main-header__search-overlay.is-open::after { opacity: 1; }
 
 .main-header__search-overlay-panel {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  max-height: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  max-height: 85vh;
   overflow-y: auto;
   background: var(--hdr-bg);
   border-radius: 0;
-  box-shadow: 0 12px 28px rgba(0,0,0,.18);
-  padding: 20px clamp(20px, 5vw, 64px) 40px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.10);
+  padding: 20px clamp(20px, 5vw, 64px) 32px;
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -292,12 +297,11 @@
 .main-header__search-overlay-cancel:hover { text-decoration: underline; }
 .main-header__search-overlay-cancel:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-/* CHANGED — Ask AI now renders inside header-search.liquid itself
-   (between the form and the results panel), so this only needs its
-   own top spacing — it's a normal-flow sibling now, not a trailing
-   block bolted on after everything else. Delete the block in
-   header-search.liquid (search for "Ask AI") if you don't want this
-   feature. */
+/* Ask AI renders inside header-search.liquid itself (between the form
+   and the results panel), so this only needs its own top spacing —
+   it's a normal-flow sibling now, not a trailing block bolted on
+   after everything else. Delete the block in header-search.liquid
+   (search for "Ask AI") if you don't want this feature. */
 .main-header__search-overlay-ask-wrap {
   max-width: 900px;
   margin: 18px auto 0;
@@ -397,8 +401,8 @@
   margin-inline: auto !important;
 }
 
-/* CHANGED — heart + bag only, no background pills, no labels, more
-   breathing room between them. */
+/* Heart + bag only, no background pills, no labels, more breathing
+   room between them. */
 .main-header__icons {
   display: flex;
   align-items: center;
@@ -557,8 +561,8 @@
 
 .menu-bar__item { position: relative; }
 
-/* CHANGED — plain text, no chevrons at top level, tighter tracking,
-   bit more horizontal room per item. */
+/* Plain text, no chevrons at top level, tighter tracking, bit more
+   horizontal room per item. */
 .menu-bar__link {
   display: inline-flex;
   align-items: center;
@@ -578,9 +582,9 @@
 .menu-bar__icon { display: inline-flex; align-items: center; margin-right: 6px; flex-shrink: 0; }
 .menu-bar__icon svg { width: 16px; height: 16px; }
 
-/* CHANGED — chevrons hidden at top-level nav to match Nike's plain
-   text links; still present in the DOM in case you rely on it for
-   mega-menu affordance elsewhere, just visually removed here. */
+/* Chevrons hidden at top-level nav to match Nike's plain text links;
+   still present in the DOM in case you rely on it for mega-menu
+   affordance elsewhere, just visually removed here. */
 .icon-caret-down { display: none; }
 
 /* ============================================
@@ -739,6 +743,5 @@
   .ecombio-header__hamburger span,
   .icon-caret-down,
   .menu-bar__edge-fade,
-  .main-header__search-overlay-backdrop,
   .main-header__search-overlay-panel { transition: none !important; animation: none !important; }
 }
