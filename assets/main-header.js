@@ -7,40 +7,30 @@
  * theme.liquid, before this file). Nothing here duplicates that.
  *
  * This file owns two things specific to main-header.liquid:
- *   1. The menu-bar horizontal-scroll edge-fade (unchanged from
- *      before — targets #main-header-menu-bar, rendered by
- *      header-menu.liquid regardless of where in the DOM it sits).
- *   2. ADDED — the desktop search-icon overlay: open/close, focus
- *      management, Escape + backdrop dismissal. It does not touch
- *      header-search.js — focusing the input on open is enough to
- *      trigger the existing trending/recent-searches panel, since
- *      that's already wired to the input's native focus event there.
+ *   1. The menu-bar horizontal-scroll edge-fade.
+ *   2. The desktop search-icon overlay: open/close, focus management,
+ *      Escape + backdrop dismissal.
+ *
+ * CHANGED (this pass):
+ *   - Opening the overlay now also hides #header-group-wrapper
+ *     entirely (adds 'is-search-active' to it — see main-header.css),
+ *     instead of leaving it visible/dimmed behind a transparent or
+ *     semi-transparent backdrop. The overlay carries its own compact
+ *     logo + search + Cancel row (see main-header.liquid), so nothing
+ *     essential is lost by hiding the real header underneath.
+ *   - The trigger button now acts as a toggle: clicking it again while
+ *     the overlay is already open closes it, instead of re-running
+ *     open() and just re-focusing the input.
  * ------------------------------------------------------------
  */
 
-/*
- * FIX — menu-bar.has-scroll-left / has-scroll-right (main-header.css) and
- * the .menu-bar__edge-fade--left / --right elements (header-menu.liquid)
- * were both already in place, but nothing ever toggled those classes, so
- * the white edge-fade never appeared regardless of overflow state. This
- * lives here (rather than inside mega-menu.js / showcase.js / link-list.js)
- * because .menu-bar renders whenever section.blocks.size > 0, independent
- * of which block types are present — those three scripts only load
- * conditionally per block type and can't be relied on to cover every case.
- *
- * The actual scrolling element changes by breakpoint:
- *   - >=1024px: overflow-x lives on .menu-bar__container
- *   - <640px with .main-header--menu-bar-mobile-visible: overflow-x lives
- *     on .menu-bar itself
- * getScrollEl() below picks whichever one is actually overflowing.
- */
 (function () {
   'use strict';
 
   var menuBar = document.getElementById('main-header-menu-bar');
   if (!menuBar) return;
 
-  var BUFFER = 1; // guards against sub-pixel scrollLeft/maxScroll mismatches at the true end
+  var BUFFER = 1;
 
   var getScrollEl = function () {
     var container = menuBar.querySelector('.menu-bar__container');
@@ -54,7 +44,6 @@
     var maxScroll = el.scrollWidth - el.clientWidth;
 
     if (maxScroll <= BUFFER) {
-      // nothing to scroll in either direction — no fade either side
       menuBar.classList.remove('has-scroll-left', 'has-scroll-right');
       return;
     }
@@ -67,7 +56,7 @@
 
   update();
   scrollTarget.addEventListener('scroll', update, { passive: true });
-  menuBar.addEventListener('scroll', update, { passive: true }); // covers the <640px mobile-visible case where .menu-bar itself scrolls
+  menuBar.addEventListener('scroll', update, { passive: true });
   window.addEventListener('resize', update);
 
   if ('ResizeObserver' in window) {
@@ -76,7 +65,7 @@
 })();
 
 /*
- * ADDED — desktop search icon -> full-screen overlay takeover.
+ * Desktop search icon -> full-screen overlay takeover.
  * #main-header-search-trigger is only visible >=1024px (main-header.css),
  * so this can never be opened on mobile/tablet — no breakpoint check
  * needed here.
@@ -88,13 +77,17 @@
   var overlay = document.getElementById('main-header-search-overlay');
   if (!trigger || !overlay) return;
 
+  var headerGroup = document.getElementById('header-group-wrapper');
   var panel = overlay.querySelector('.main-header__search-overlay-panel');
   var input = overlay.querySelector('[data-search-input]');
   var closeEls = overlay.querySelectorAll('[data-search-overlay-close]');
   var lastFocused = null;
+  var isOpen = false;
   var CLOSE_TRANSITION_MS = 200; // matches .main-header__search-overlay-panel transition duration
 
   function open() {
+    if (isOpen) return;
+    isOpen = true;
     lastFocused = document.activeElement;
 
     overlay.hidden = false;
@@ -103,6 +96,12 @@
     requestAnimationFrame(function () {
       overlay.classList.add('is-open');
     });
+
+    // ADDED — hide the real header entirely while search is active,
+    // rather than leaving it visible (dimmed or otherwise) behind the
+    // overlay. The overlay's own top row (logo + input + Cancel)
+    // stands in for it.
+    if (headerGroup) headerGroup.classList.add('is-search-active');
 
     trigger.setAttribute('aria-expanded', 'true');
     document.body.style.overflow = 'hidden';
@@ -118,10 +117,15 @@
   }
 
   function close() {
+    if (!isOpen) return;
+    isOpen = false;
+
     overlay.classList.remove('is-open');
     document.body.style.overflow = '';
     trigger.setAttribute('aria-expanded', 'false');
     document.removeEventListener('keydown', onKeydown);
+
+    if (headerGroup) headerGroup.classList.remove('is-search-active');
 
     setTimeout(function () {
       overlay.hidden = true;
@@ -131,6 +135,14 @@
     }, CLOSE_TRANSITION_MS);
   }
 
+  function toggle() {
+    if (isOpen) {
+      close();
+    } else {
+      open();
+    }
+  }
+
   function onKeydown(e) {
     if (e.key === 'Escape') {
       close();
@@ -138,9 +150,8 @@
     }
 
     if (e.key === 'Tab' && panel) {
-      // simple focus trap — keeps Tab/Shift+Tab cycling within the panel
       var focusable = panel.querySelectorAll(
-        'input, button, [href], [tabindex]:not([tabindex="-1"])'
+        'input, button, a[href], [tabindex]:not([tabindex="-1"])'
       );
       if (!focusable.length) return;
 
@@ -157,7 +168,7 @@
     }
   }
 
-  trigger.addEventListener('click', open);
+  trigger.addEventListener('click', toggle);
   closeEls.forEach(function (el) {
     el.addEventListener('click', close);
   });
