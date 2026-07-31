@@ -8,6 +8,16 @@
   var MAX_RECENT       = 5;
   var MAX_RECENT_IN_RAIL = 3; // ADDED — cap for recent items injected into the active-search rail
 
+  // ADDED — with resources[limit_scope]='each' (see _fetch), queries
+  // and collections now each independently get up to 8 results from
+  // the API too, not just products. Left uncapped, the rail can balloon
+  // to 8 query suggestions + 8 collection suggestions. These trim the
+  // rendered rail back down to a sane, fixed count client-side —
+  // independent of the product carousel, which still gets its full
+  // pool. Tune these two numbers to taste.
+  var MAX_SUGGESTED_QUERIES      = 3;
+  var MAX_SUGGESTED_COLLECTIONS  = 2;
+
   var _cache = new Map();
 
   var STORAGE_KEY = 'HS_RECENT_' + window.location.hostname;
@@ -587,6 +597,11 @@
     this._emptyVisible = false;
     this.panel.innerHTML = html;
 
+    // ADDED — trim the suggestion rail down to a fixed count before
+    // anything else measures/announces the result set. See the
+    // MAX_SUGGESTED_* constants above for why this exists.
+    this._trimSuggestions();
+
     var optionCount = this.panel.querySelectorAll('[role="option"]').length;
 
     if (!optionCount) {
@@ -607,6 +622,44 @@
         ? optionCount + ' result' + (optionCount === 1 ? '' : 's') + ' available'
         : 'No results found'
     );
+  };
+
+  // ADDED — removes excess query/collection suggestion rows beyond
+  // the MAX_SUGGESTED_* caps. Shopify's predictive-search.liquid
+  // section renders <li role="option"> items tagged
+  // .predictive-search__item--query / --collection inside the rail
+  // (data-predictive-rail); this walks each list and drops anything
+  // past the cap. If a group ends up fully empty, its whole
+  // .predictive-search__group wrapper (label + list) is removed too,
+  // so no dangling "Top Suggestions" heading with nothing under it.
+  HeaderSearch.prototype._trimSuggestions = function () {
+    var rail = this.panel.querySelector('[data-predictive-rail]');
+    if (!rail) return;
+
+    this._trimSuggestionType(rail, '.predictive-search__item--query', MAX_SUGGESTED_QUERIES);
+    this._trimSuggestionType(rail, '.predictive-search__item--collection', MAX_SUGGESTED_COLLECTIONS);
+  };
+
+  HeaderSearch.prototype._trimSuggestionType = function (rail, selector, max) {
+    var items = rail.querySelectorAll(selector);
+    for (var i = max; i < items.length; i++) {
+      var li = items[i].closest('[role="option"]') || items[i].parentElement;
+      if (li && li.parentElement) li.parentElement.removeChild(li);
+    }
+
+    // Clean up a group left with no <li> children at all (label with
+    // nothing under it) — walks up from whatever's left of this
+    // selector's list, or does nothing if items still remain.
+    var remaining = rail.querySelectorAll(selector);
+    if (remaining.length) return;
+
+    var lists = rail.querySelectorAll('.predictive-search__list');
+    lists.forEach(function (list) {
+      if (list.children.length === 0) {
+        var group = list.closest('.predictive-search__group');
+        if (group && group.parentElement) group.parentElement.removeChild(group);
+      }
+    });
   };
 
   // ADDED
