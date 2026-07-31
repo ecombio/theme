@@ -167,10 +167,29 @@
     </div>
   </div>
 
+  {%- comment -%}
+    CHANGED — overlay is now a true full-screen takeover, not a panel
+    that drops in under a still-visible (dimmed) header. main-header.js
+    hides #header-group-wrapper entirely when this opens (see the
+    'is-search-active' class toggle there), so the overlay carries its
+    own compact top row — logo, search input, Cancel — to replace it,
+    matching the reference where the real nav/icons disappear and only
+    logo + search + cancel remain up top.
+
+    Ask AI now lives inside snippets/header-search.liquid itself
+    (gated to variant == 'overlay'), rendered between the form and the
+    results panel, so it stays in that position regardless of whether
+    header-search.js is currently showing trending pills, recent
+    searches, or live results — none of that JS touches anything
+    outside .header-search__panel.
+  {%- endcomment -%}
   <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
     <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
     <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
       <div class="main-header__search-overlay-top">
+        <a href="{{ routes.root_url }}" class="main-header__search-overlay-logo" aria-label="{{ shop.name }} home">
+          {%- render 'header-logo', logo: logo, logo_width: 84 -%}
+        </a>
         <div class="main-header__search-overlay-inner">
           {%- render 'header-search',
             enable_predictive_search: section.settings.enable_predictive_search,
@@ -184,24 +203,6 @@
         <button type="button" class="main-header__search-overlay-cancel" data-search-overlay-close>
           Cancel
         </button>
-      </div>
-
-      {%- comment -%}
-        ADDED — static "Ask AI" row, styled after the reference. Points
-        to /search by default since there's no assistant endpoint wired
-        up yet. Replace the href with your real endpoint, or delete this
-        whole block if you don't have (or don't want) this feature.
-      {%- endcomment -%}
-      <div class="main-header__search-overlay-ask-wrap">
-        <a href="{{ routes.search_url }}" class="main-header__search-overlay-ask">
-          <span class="main-header__search-overlay-ask-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/>
-              <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z"/>
-            </svg>
-          </span>
-          <span class="main-header__search-overlay-ask-label">Ask AI</span>
-        </a>
       </div>
     </div>
   </div>

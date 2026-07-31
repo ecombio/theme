@@ -1,3 +1,21 @@
+{%- comment -%}
+  snippets/header-search.liquid
+
+  CHANGED — added a static "Ask AI" row, rendered only when
+  variant == 'overlay' (sfx == 'overlay' below), placed between the
+  search form and the results panel. This is the one reliable spot for
+  it: header-search.js only ever rewrites .header-search__panel's
+  innerHTML (trending pills / recent searches / live results), so
+  putting Ask AI as a sibling here means it's never at the mercy of
+  that re-render and always sits in the same place relative to the
+  input, regardless of what's currently showing below it.
+
+  Points to routes.search_url by default since there's no assistant
+  endpoint wired up yet — replace the href with a real one, or delete
+  the whole {%- if sfx == 'overlay' -%} block below if you don't want
+  this feature at all.
+{%- endcomment -%}
+
 {%- liquid
   assign predictive = true
   if enable_predictive_search == false
@@ -92,6 +110,20 @@
     </button>
 
   </form>
+
+  {%- if sfx == 'overlay' -%}
+    <div class="main-header__search-overlay-ask-wrap">
+      <a href="{{ routes.search_url }}" class="main-header__search-overlay-ask">
+        <span class="main-header__search-overlay-ask-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/>
+            <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z"/>
+          </svg>
+        </span>
+        <span class="main-header__search-overlay-ask-label">Ask AI</span>
+      </a>
+    </div>
+  {%- endif -%}
 
   {%- if predictive -%}
     <div class="header-search__panel"
