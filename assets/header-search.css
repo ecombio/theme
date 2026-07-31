@@ -385,6 +385,14 @@
   background: rgba(176,64,64,.08);
 }
 
+/* FIX — arrows were easy to miss: small (32px), low-contrast (white
+   bg/thin border blending into the page), sitting half off the edge
+   (-14px), and hidden entirely on touch devices. That made it look
+   like only the visible ~3 cards existed even when more were fetched
+   (up to 8, see header-search.js) and sitting in the DOM off-screen.
+   Bigger, solid-dark, fully inside the visible area, and no longer
+   hidden on touch — so "there are more products" is obvious instead
+   of relying on a barely-visible affordance. */
 .predictive-search__carousel-btn {
   position: absolute;
   top: 50%;
@@ -392,21 +400,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--hs-bg);
-  border: 1px solid var(--hs-border);
-  box-shadow: var(--hs-shadow);
-  color: var(--hs-text);
+  background: var(--hdr-text, #111111);
+  border: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,.28);
+  color: #ffffff;
   cursor: pointer;
-  z-index: 2;
+  z-index: 3;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 150ms ease;
+  transition: opacity 150ms ease, transform 150ms ease;
 }
-.predictive-search__carousel-btn--prev { left: -14px; }
-.predictive-search__carousel-btn--next { right: -14px; }
+.predictive-search__carousel-btn:hover { transform: translateY(-50%) scale(1.06); }
+.predictive-search__carousel-btn--prev { left: 4px; }
+.predictive-search__carousel-btn--next { right: 4px; }
 
 .predictive-search__carousel.has-scroll-left  .predictive-search__carousel-btn--prev,
 .predictive-search__carousel.has-scroll-right .predictive-search__carousel-btn--next {
@@ -414,9 +423,12 @@
   pointer-events: auto;
 }
 
-@media (hover: none) {
-  .predictive-search__carousel-btn { display: none; }
-}
+/* Was `display: none` on any touch device — meaning touch users had
+   zero visual indicator more products existed beyond a blind swipe.
+   Keep the buttons for touch too; they still only appear when
+   has-scroll-left/right is set, so they don't clutter a fully-visible
+   row. */
+
 
 /* Old vertical product-list classes kept in case anything else in
    the theme still references them — unused by the carousel markup
