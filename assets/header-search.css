@@ -292,14 +292,23 @@
 }
 .predictive-search__carousel-track::-webkit-scrollbar { display: none; }
 
+/* FIX — cards were growing wider on longer product titles even
+   though this item has a fixed flex-basis (168px) and flex-shrink: 0.
+   Flex items carry a default min-width: auto, which lets a fixed
+   flex-basis be overridden by the item's own content min-content
+   size (e.g. an unbreakable title string). min-width: 0 removes that
+   floor so the 168px basis is actually respected regardless of how
+   long the product title is. */
 .predictive-search__carousel-item {
   flex: 0 0 168px;
+  min-width: 0;
   scroll-snap-align: start;
 }
 
 .predictive-search__card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   color: var(--hs-text);
   text-decoration: none;
   border-radius: 8px;
@@ -323,13 +332,25 @@
   border: 1px solid var(--hs-border);
 }
 
+/* FIX — same min-width: auto issue one level down: this column was
+   the actual box stretching to fit the title text before it could
+   wrap/truncate. min-width: 0 lets it shrink to the card's real
+   168px width so the title below can truncate correctly. */
 .predictive-search__card-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 2px;
   margin-top: 8px;
 }
+/* FIX — explicit width: 100% (rather than relying on this span being
+   auto-blockified as a flex child) guarantees the truncation box has
+   a real width to measure against in every browser, so
+   white-space: nowrap + text-overflow: ellipsis reliably kicks in
+   instead of letting the text stretch its container. */
 .predictive-search__card-title {
+  display: block;
+  width: 100%;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
