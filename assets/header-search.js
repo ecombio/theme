@@ -528,11 +528,22 @@
 
     this._showLoading();
 
+    // FIX — 'resources[limit_scope]' was missing, so Shopify's
+    // predictive search API defaulted to sharing a single combined
+    // budget of 8 results across ALL requested resource types
+    // (product + collection + query) rather than giving each type
+    // its own limit of 8. In practice that meant query/collection
+    // suggestions were consistently eating ~5 of the 8 slots, so the
+    // product carousel only ever had ~3 left — regardless of how
+    // many actual product matches existed in the catalog. Setting
+    // this to 'each' gives products (and collections, and queries)
+    // their own independent pool of up to 8 results.
     var params = new URLSearchParams({
       q: query,
       section_id: 'predictive-search',
       'resources[type]': 'product,collection,query',
       'resources[limit]': '8',
+      'resources[limit_scope]': 'each',
       'resources[options][unavailable_products]': 'last',
     });
 
