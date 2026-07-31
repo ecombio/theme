@@ -1,6 +1,17 @@
 /* main-header.css
 
    Changelog:
+     2026-07-30 (d) — FIX: restored the dark + blurred backdrop behind
+                  the search overlay. The previous pass (c, below) had
+                  removed it entirely (transparent, no blur, no fade),
+                  which no longer matched the intended design (dimmed,
+                  blurred page behind the search panel). Reverted
+                  .main-header__search-overlay-backdrop back to a
+                  dark scrim with backdrop-filter: blur, with an
+                  opacity fade tied to .main-header__search-overlay.is-open,
+                  the same pattern already used for the mega-menu's
+                  .showcase-backdrop (see showcase.css) for consistency.
+
      2026-07-30 (c) — Overlay is no longer a full-screen dark takeover.
                   Matches the real Nike overlay: the panel sits at the
                   top of the viewport, sized to its own content (search
@@ -192,13 +203,11 @@
   transition: opacity 0.15s ease;
 }
 
-/* CHANGED (2026-07-30c) — no longer a full-screen dark takeover.
-   The overlay element itself still spans the full viewport (fixed,
-   inset: 0) but purely so its backdrop can catch outside clicks to
-   close — it carries no visual dimming of its own. The visible panel
-   inside it (.main-header__search-overlay-panel, below) is sized to
-   its own content and pinned to the top, so the rest of the page
-   shows through underneath exactly like nike.com's real overlay. */
+/* The overlay element itself still spans the full viewport (fixed,
+   inset: 0) so its backdrop can catch outside clicks to close, and so
+   the dark/blurred scrim (below) covers the whole page behind the
+   panel. The visible panel inside it (.main-header__search-overlay-panel,
+   below) is sized to its own content and pinned to the top. */
 .main-header__search-overlay {
   position: fixed;
   inset: 0;
@@ -208,14 +217,23 @@
 .main-header__search-overlay[hidden] { display: none; }
 .main-header__search-overlay.is-open { pointer-events: auto; }
 
-/* CHANGED — invisible click-catcher only, no dark scrim. Covers the
-   full viewport (same as the overlay itself) so clicking anywhere
-   outside the panel closes it, same as before — it just doesn't dim
-   the page anymore. */
+/* RESTORED (2026-07-30d) — dark, blurred scrim behind the search
+   panel, matching the mega-menu's .showcase-backdrop (showcase.css)
+   for a consistent look across both overlay types. Covers the full
+   viewport (same as .main-header__search-overlay) so clicking
+   anywhere outside the panel still closes it. Fades in/out with the
+   overlay's open state. */
 .main-header__search-overlay-backdrop {
   position: absolute;
   inset: 0;
-  background: transparent;
+  background: rgba(20, 20, 20, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.main-header__search-overlay.is-open .main-header__search-overlay-backdrop {
+  opacity: 1;
 }
 
 .main-header__search-overlay-panel {
@@ -741,5 +759,6 @@
   .ecombio-header__hamburger span,
   .icon-caret-down,
   .menu-bar__edge-fade,
+  .main-header__search-overlay-backdrop,
   .main-header__search-overlay-panel { transition: none !important; animation: none !important; }
 }
