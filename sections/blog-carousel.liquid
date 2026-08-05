@@ -123,14 +123,14 @@
                   {{ block.shopify_attributes }}
                   data-slide-index="{{ forloop.index0 }}"
                 >
-                  {%- render 'article-card', article: block.settings.article, loading: forloop.index <= 2 ? 'eager' : 'lazy' -%}
+                  {%- render 'article-card', article: block.settings.article, loading: forloop.index -%}
                 </li>
               {%- endif -%}
             {%- endfor -%}
           {%- else -%}
             {%- for article in blog.articles limit: section.settings.articles_to_show -%}
               <li class="blog-carousel__slide" data-slide-index="{{ forloop.index0 }}">
-                {%- render 'article-card', article: article, loading: forloop.index <= 2 ? 'eager' : 'lazy' -%}
+                {%- render 'article-card', article: article, loading: forloop.index -%}
               </li>
             {%- endfor -%}
           {%- endif -%}
@@ -368,3 +368,19 @@
   ]
 }
 {% endschema %}
+{% comment %}
+
+This file has been rewritten to preserve the original behavior.
+
+---
+Changes:
+- from: "{%- render 'article-card', article: block.settings.article, loading: forloop.index
+    <= 2 ? 'eager' : 'lazy' -%}"
+  to: "{%- render 'article-card', article: block.settings.article, loading: forloop.index
+    -%}"
+  position: 5159..5245
+- from: "{%- render 'article-card', article: article, loading: forloop.index <= 2
+    ? 'eager' : 'lazy' -%}"
+  to: "{%- render 'article-card', article: article, loading: forloop.index -%}"
+  position: 5540..5611
+{% endcomment %}
