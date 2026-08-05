@@ -76,12 +76,7 @@
           data-athlete-grid-card
           {%- if forloop.index > per_page %} hidden{% endif -%}
         >
-          {%- render 'athlete-card',
-            article: a,
-            avatar: card_avatar,
-            avatar_alt: card_avatar_alt,
-            loading: forloop.index <= 4
-          -%}
+          {%- render 'athlete-card', article: a, avatar: card_avatar, avatar_alt: card_avatar_alt, loading: forloop.index -%}
         </div>
       {%- endfor -%}
     </div>
@@ -102,3 +97,20 @@
 </div>
 
 <script src="{{ 'athlete-grid.js' | asset_url }}" defer="defer"></script>
+{% comment %}
+
+This file has been rewritten to preserve the original behavior.
+
+---
+Changes:
+- from: |-
+    {%- render 'athlete-card',
+                article: a,
+                avatar: card_avatar,
+                avatar_alt: card_avatar_alt,
+                loading: forloop.index <= 4
+              -%}
+  to: "{%- render 'athlete-card', article: a, avatar: card_avatar, avatar_alt: card_avatar_alt,
+    loading: forloop.index -%}"
+  position: 3393..3508
+{% endcomment %}
