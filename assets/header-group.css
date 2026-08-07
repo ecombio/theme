@@ -3,6 +3,37 @@
    Paired with header-group.js (scroll/hover/focus behavior).
 
    Changelog:
+     2026-08-06 — ADDED: transparent-over-hero header state
+                  (.is-transparent), toggled by header-group.js only
+                  when #main-header carries
+                  data-transparent-header="true" (homepage only —
+                  see main-header.liquid). Two pieces:
+                    1. #header-group-wrapper.is-transparent below,
+                       which drops the wrapper's background/shadow.
+                       The actual text/icon/logo color flip and the
+                       inner .main-header__bar / .menu-bar background
+                       overrides live in main-header.css, scoped under
+                       the same class, since those elements belong to
+                       main-header.liquid, not this file.
+                    2. .template-index main[role="main"] below, which
+                       removes the reserved header-height padding on
+                       the homepage specifically, so the hero can sit
+                       directly behind the transparent header instead
+                       of being pushed down below it. ASSUMPTION: your
+                       theme adds a `template-index` class to <body>
+                       on the homepage (the common Shopify/Dawn
+                       convention, `template-{{ template.name }}`).
+                       This is set in layout/theme.liquid, which
+                       wasn't shared — if the body class differs,
+                       swap the selector below to match, otherwise
+                       this rule simply won't match and the hero will
+                       still render below the header instead of behind
+                       it (everything else in this feature will still
+                       work, just without the overlap).
+                  Also widened the base wrapper's `transition` to
+                  include background-color/box-shadow (previously only
+                  `transform`) so the transparent <-> solid swap
+                  crossfades instead of snapping.
      2026-07-26 — Converted --header-group-height from desktop-first
                   max-width queries (1023px / 599px) to the theme's
                   mobile-first breakpoint system (see the token table
@@ -37,12 +68,23 @@
   z-index: 500 !important;
   background: #ffffff !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  transition: transform 0.3s ease !important;
+  transition: transform 0.3s ease, background-color 0.25s ease, box-shadow 0.25s ease !important;
   will-change: transform;
 }
 
 #header-group-wrapper.header--hidden {
   transform: translateY(-100%) !important;
+}
+
+/* ADDED — transparent-over-hero state. Only ever toggled on by
+   header-group.js when data-transparent-header="true" is present
+   (homepage only), so this can't fire on any other page regardless
+   of scroll position or specificity. Higher specificity than the
+   base rule above (ID + class beats ID alone) so it wins even though
+   both use !important. */
+#header-group-wrapper.is-transparent {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Single source of truth for the header's height. header-group.js
@@ -85,6 +127,14 @@
    sibling div only occupies its own space and doesn't stop that. */
 main[role="main"] {
   padding-top: var(--header-group-height, 68px);
+}
+
+/* ADDED — homepage-only override: let the hero sit directly behind
+   the transparent header instead of being pushed down by the
+   reserved space above. See the changelog note at the top of this
+   file re: the .template-index assumption. */
+.template-index main[role="main"] {
+  padding-top: 0;
 }
 
 /* Stacking-context reset.
