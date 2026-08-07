@@ -47,6 +47,26 @@
   endif
 -%}
 
+{%- if transparent_header_enabled -%}
+  {%- comment -%}
+    ADDED — pairs with data-transparent-header below. Emitted as an
+    inline server-rendered style rather than a class on <body> (which
+    we don't control from this file, and header-group.css's earlier
+    guess at that class — .template-index — didn't match this theme).
+    This is computed from the same request.page_type check above, so
+    it's guaranteed correct with zero dependency on theme.liquid or
+    JS timing: overrides header-group.css's
+    `main[role="main"] { padding-top: var(--header-group-height...) }`
+    so the hero/slideshow section starts at the very top of the page
+    instead of leaving a gap the height of the header above it.
+    !important since header-group.css's rule loads from a separate
+    stylesheet and doesn't use one itself.
+  {%- endcomment -%}
+  <style>
+    main[role="main"] { padding-top: 0 !important; }
+  </style>
+{%- endif -%}
+
 <header
   class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
   id="main-header"
