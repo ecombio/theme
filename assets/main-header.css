@@ -1,6 +1,30 @@
 /* main-header.css
 
    Changelog:
+     2026-08-06 (g) — FIX: header nav/icons rendered in a visibly
+                  different font than the utility bar / rest of the
+                  theme on non-Apple platforms (Windows, Android).
+                  Root cause: this file defined its own standalone
+                  --hdr-font stack instead of using the theme's real
+                  font variable (--font-primary--family / --font-body,
+                  set in theme.css and, for merchant-editable font
+                  settings, css-variables.liquid). The two stacks look
+                  identical on Mac/iOS because both start with
+                  -apple-system/BlinkMacSystemFont, but diverge after
+                  that: this file fell back to 'Helvetica Neue', Arial
+                  while the theme-wide stack falls back to "Segoe UI",
+                  Roboto, Helvetica, Arial — so on any OS where the
+                  first two entries aren't available, the header and
+                  the utility bar rendered in genuinely different
+                  fonts. Fixed by pointing --hdr-font at
+                  var(--font-primary--family, ...), keeping the old
+                  local stack only as the var()'s fallback in case
+                  theme.css/css-variables.liquid isn't loaded for some
+                  reason. No other rule in this file changed — every
+                  selector below already consumed font-family via
+                  var(--hdr-font), so this single definition change
+                  fixes the whole section.
+
      2026-08-06 (f) — FIX: icon group (search/wishlist/account/cart)
                   was not reliably anchored to the far right of the
                   header on desktop. .main-header__inner is a flex row
@@ -117,7 +141,7 @@
   --hdr-radius-drop    : 8px;
   --hdr-shadow-drop    : 0 4px 20px rgba(0,0,0,.10);
   --hdr-shadow-sticky  : 0 1px 0 rgba(0,0,0,.08);
-  --hdr-font           : -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --hdr-font           : var(--font-primary--family, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif);
   --hdr-z              : 200;
   --hdr-drawer-z       : 400;
   --hdr-overlay-z      : 500;
