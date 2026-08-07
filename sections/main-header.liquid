@@ -61,9 +61,20 @@
     instead of leaving a gap the height of the header above it.
     !important since header-group.css's rule loads from a separate
     stylesheet and doesn't use one itself.
+
+    FIX (desktop-only transparency) — wrapped in the same
+    min-width: 64rem breakpoint used everywhere else the transparent
+    header is scoped (main-header.css, header-group.css,
+    header-group.js). Transparency is a desktop-only effect; on
+    mobile/tablet the header stays solid (see the other three files),
+    so the padding this rule removes must stay reserved on those
+    breakpoints too — otherwise page content would render underneath
+    the solid fixed header instead of below it.
   {%- endcomment -%}
   <style>
-    main[role="main"] { padding-top: 0 !important; }
+    @media (min-width: 64rem) {
+      main[role="main"] { padding-top: 0 !important; }
+    }
   </style>
 {%- endif -%}
 
