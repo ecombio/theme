@@ -160,37 +160,24 @@
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* Search trigger is a wide, always-visible pill instead of an
-   icon-only button. Sits in its own flex item
-   (.main-header__search-pill-wrap) between the nav and the icons list
-   so it doesn't get squeezed by either. */
-.main-header__search-pill-wrap {
+/* Search trigger lives inside .main-header__icons, matching the
+   wishlist/cart icons in size, color, and hover behavior. Hidden
+   until desktop (>=1024px) — see the @media (min-width: 64rem) block
+   below — since mobile/tablet use the search-drawer icon instead. */
+.main-header__icons .main-header__search-trigger {
   display: none;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.main-header__search-trigger {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  width: 220px;
-  height: 40px;
-  padding: 0 16px;
+  justify-content: center;
   border: none;
-  background: var(--hdr-search-bg);
-  border-radius: var(--hdr-radius-pill);
-  color: var(--hdr-muted);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 400;
+  background: transparent;
+  padding: 0;
+  color: var(--hdr-text);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: opacity 0.15s;
 }
-.main-header__search-trigger:hover { background: var(--hdr-pill-bg-hover); color: var(--hdr-text); }
-.main-header__search-trigger svg { width: 17px; height: 17px; flex-shrink: 0; }
+.main-header__search-trigger:hover { opacity: 0.6; }
+.main-header__search-trigger svg { width: 21px; height: 21px; flex-shrink: 0; }
 .main-header__search-trigger:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
-.main-header__search-trigger-label { text-align: left; }
 
 /* FIX — opacity on #header-group-wrapper itself was wrong: the
    overlay markup (.main-header__search-overlay) is a DESCENDANT of
@@ -687,7 +674,7 @@
   .main-header__search-row { display: none; }
   .main-header__search-drawer-tablet-only { display: none; }
 
-  .main-header__search-pill-wrap { display: block; }
+  .main-header__icons .main-header__search-trigger { display: flex; }
 
   .main-header__nav {
     display: flex;
