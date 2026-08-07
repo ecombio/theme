@@ -1,33 +1,3 @@
-{%- comment -%}
-  sections/main-header.liquid
-
-  NIKE-STYLE REDESIGN (this pass):
-    - Search trigger is now a visible pill (icon + "Search" text, grey
-      fill, ~220px wide) sitting inline in the icons row — not a bare
-      icon button. It still opens the exact same overlay as before;
-      only its own appearance changed. See main-header.css for the
-      new .main-header__search-trigger styling.
-    - Overlay panel gains an "Ask AI" row above the trending-terms
-      grid — a static link/button for now (points to /search by
-      default). Wire it to a real assistant endpoint if you have one,
-      or delete the whole .main-header__search-overlay-ask block if
-      you don't want it.
-    - Overlay backdrop is no longer fully transparent — see
-      main-header.css, .main-header__search-overlay-backdrop now
-      dims the page for real, so it stops pretending the content
-      behind it is still clickable.
-    - Icons row is pared down to match Nike's chrome-free look:
-      account icon defaults to hidden, wishlist icon defaults to
-      shown, and all icon labels default to off. These are still
-      controlled by the existing schema checkboxes below — nothing
-      here is hardcoded, only the JSON defaults changed
-      (see header-group.json).
-
-  Everything else (mobile/tablet drawer, predictive search wiring,
-  sticky/autohide via header-group.js) is untouched from the previous
-  pass.
-{%- endcomment -%}
-
 {{ 'main-header.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -167,22 +137,6 @@
     </div>
   </div>
 
-  {%- comment -%}
-    CHANGED — overlay is now a true full-screen takeover, not a panel
-    that drops in under a still-visible (dimmed) header. main-header.js
-    hides #header-group-wrapper entirely when this opens (see the
-    'is-search-active' class toggle there), so the overlay carries its
-    own compact top row — logo, search input, Cancel — to replace it,
-    matching the reference where the real nav/icons disappear and only
-    logo + search + cancel remain up top.
-
-    Ask AI now lives inside snippets/header-search.liquid itself
-    (gated to variant == 'overlay'), rendered between the form and the
-    results panel, so it stays in that position regardless of whether
-    header-search.js is currently showing trending pills, recent
-    searches, or live results — none of that JS touches anything
-    outside .header-search__panel.
-  {%- endcomment -%}
   <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
     <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
     <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
