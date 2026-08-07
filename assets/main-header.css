@@ -273,34 +273,27 @@
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
   }
 
-  /* FIX (2026-08-06k) — .menu-bar__edge-fade (further down this file)
-     is a scroll-affordance hint: a gradient fading from opaque white
-     to transparent at each edge of the nav, shown only when the nav
-     is horizontally scrollable (.has-scroll-left / .has-scroll-right).
-     It's hardcoded to white independently of --hdr-bg, so it never
-     picked up the transparent override above and painted a white
-     smudge over the see-through hero image behind the nav links.
-
-     Originally scoped to `#header-group-wrapper.is-transparent`, but
-     that class is added/removed constantly — on every scroll-past-
-     threshold AND on every hover/focus of the header (see the
-     hover-lock in header-group.js, which intentionally flips the
-     header solid the instant the pointer enters it so nav text stays
-     readable). Each removal of .is-transparent momentarily un-hid the
-     edge-fade again — whenever the nav happened to be scrollable at
-     that instant — causing it to flash back in essentially at random,
-     any time a visitor moved their mouse near the nav.
-
-     Scoped instead to [data-transparent-header="true"], which is set
-     server-side once per pageview (homepage only) and never toggles,
-     so there's no race condition possible: the edge-fade is simply
-     disabled for the whole homepage visit, regardless of scroll
-     position or hover state. Trade-off: the edge-fade won't reappear
-     on the homepage even after the header settles into its solid
-     scrolled state — an acceptable loss for a minor scroll-affordance
-     hint, given the alternative was a recurring visible glitch. */
-  #main-header[data-transparent-header="true"] .menu-bar__edge-fade {
-    display: none !important;
+  /* FIX (2026-08-06l) — the previous pass (k, below) disabled the
+     edge-fade for the entire homepage via the static
+     [data-transparent-header="true"] attribute, which also killed it
+     once the header settles into its solid/sticky scrolled state —
+     that's wrong, the edge-fade is legitimate, useful functionality
+     there (it hints the nav is horizontally scrollable) and was only
+     ever a problem while genuinely transparent over the hero.
+     Reverted to scoping under #header-group-wrapper.is-transparent
+     (which is absent once the header goes solid, so the edge-fade
+     returns normally on scroll/sticky), but switched from
+     `display: none` to `opacity: 0`: .menu-bar__edge-fade already
+     carries `transition: opacity 0.2s ease` (see its base rule
+     further down), so this now fades in/out smoothly along with the
+     rest of the transparent<->solid swap instead of popping visible/
+     invisible instantly — which should also head off the earlier
+     flicker (see pass k's writeup) more gracefully than the hard
+     display toggle did. pointer-events: none kept as a no-cost safety
+     net since the element has no click handlers of its own anyway. */
+  #header-group-wrapper.is-transparent .menu-bar__edge-fade {
+    opacity: 0 !important;
+    pointer-events: none;
   }
 }
 
