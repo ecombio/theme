@@ -66,12 +66,25 @@
       this.autoplayTimer = null;
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+      // Drag/momentum state
+      this.isDragging = false;
+      this.dragMoved = false;
+      this.startX = 0;
+      this.startScrollLeft = 0;
+      this.lastX = 0;
+      this.lastTs = 0;
+      this.velocity = 0; // px per ms
+      this.momentumRaf = null;
+
       this.onPrevClick = this.onPrevClick.bind(this);
       this.onNextClick = this.onNextClick.bind(this);
       this.onScroll = this.onScroll.bind(this);
       this.onResize = this.onResize.bind(this);
       this.stopAutoplay = this.stopAutoplay.bind(this);
       this.maybeStartAutoplay = this.maybeStartAutoplay.bind(this);
+      this.onPointerDown = this.onPointerDown.bind(this);
+      this.onPointerMove = this.onPointerMove.bind(this);
+      this.onPointerUp = this.onPointerUp.bind(this);
 
       this.buildDots();
       this.bindEvents();
@@ -132,6 +145,12 @@
       ['pointerup', 'focusout', 'mouseleave'].forEach((evt) => {
         this.root.addEventListener(evt, this.maybeStartAutoplay);
       });
+
+      this.track.addEventListener('pointerdown', this.onPointerDown);
+      this.track.addEventListener('pointermove', this.onPointerMove);
+      this.track.addEventListener('pointerup', this.onPointerUp);
+      this.track.addEventListener('pointercancel', this.onPointerUp);
+      this.track.addEventListener('dragstart', (e) => e.preventDefault());
     }
 
     getStep() {
@@ -139,6 +158,152 @@
       const styles = getComputedStyle(this.track);
       const gap = parseFloat(styles.columnGap || styles.gap || '0');
       return card.getBoundingClientRect().width + gap;
+    }
+
+    /* ---------- Free drag + momentum ---------- */
+
+    onPointerDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+      this.cancelMomentum();
+      this.isDragging = true;
+      this.dragMoved = false;
+      this.startX = e.clientX;
+      this.startScrollLeft = this.track.scrollLeft;
+      this.lastX = e.clientX;
+      this.lastTs = performance.now();
+      this.velocity = 0;
+      this.track.classList.add('is-dragging');
+
+      if (this.track.setPointerCapture) {
+        try {
+          this.track.setPointerCapture(e.pointerId);
+        } catch (err) {
+          /* ignore — capture is a nicety, not required */
+        }
+      }
+    }
+
+    onPointerMove(e) {
+      if (!this.isDragging) return;
+
+      const dx = e.clientX - this.startX;
+      if (Math.abs(dx) > 3) this.dragMoved = true;
+
+      // Direct scrollLeft assignment is instant regardless of the
+      // track's CSS scroll-behavior, so this tracks the pointer 1:1
+      // with no lag from the "smooth" behavior used for arrows/dots.
+      this.track.scrollLeft = this.startScrollLeft - dx;
+
+      const now = performance.now();
+      const dt = now - this.lastTs;
+      if (dt > 0) {
+        const instVelocity = (e.clientX - this.lastX) / dt; // px/ms
+        // Light smoothing so one noisy sample right before release
+        // doesn't dictate the whole fling.
+        this.velocity = this.velocity * 0.7 + instVelocity * 0.3;
+      }
+      this.lastX = e.clientX;
+      this.lastTs = now;
+    }
+
+    onPointerUp(e) {
+      if (!this.isDragging) return;
+
+      this.isDragging = false;
+      this.track.classList.remove('is-dragging');
+
+      if (this.track.releasePointerCapture) {
+        try {
+          this.track.releasePointerCapture(e.pointerId);
+        } catch (err) {
+          /* ignore */
+        }
+      }
+
+      if (this.dragMoved) {
+        // A drag that moved the track shouldn't also fire a click on
+        // the card underneath the pointer — swallow the next click.
+        const suppressClick = (evt) => {
+          evt.preventDefault();
+          evt.stopPropagation();
+        };
+        this.track.addEventListener('click', suppressClick, { capture: true, once: true });
+      }
+
+      if (!this.reducedMotion && Math.abs(this.velocity) > 0.02) {
+        this.startMomentum(this.velocity);
+      } else {
+        this.snapToNearest();
+      }
+    }
+
+    cancelMomentum() {
+      if (this.momentumRaf) {
+        cancelAnimationFrame(this.momentumRaf);
+        this.momentumRaf = null;
+      }
+    }
+
+    startMomentum(initialVelocity) {
+      let velocity = initialVelocity; // px/ms, decays over time
+      let lastTs = null;
+      const decayPerMs = 0.003; // higher = friction kicks in faster
+      const minSpeed = 0.02;
+      const maxScroll = this.track.scrollWidth - this.track.clientWidth;
+
+      const step = (ts) => {
+        if (lastTs === null) lastTs = ts;
+        const dt = ts - lastTs;
+        lastTs = ts;
+
+        // Frame-rate-independent exponential decay, so the coast
+        // feels the same on a 60Hz and a 120Hz display.
+        velocity *= Math.exp(-decayPerMs * dt);
+
+        let next = this.track.scrollLeft - velocity * dt;
+        if (next <= 0) {
+          next = 0;
+          velocity = 0;
+        } else if (next >= maxScroll) {
+          next = maxScroll;
+          velocity = 0;
+        }
+        this.track.scrollLeft = next;
+
+        if (Math.abs(velocity) > minSpeed) {
+          this.momentumRaf = requestAnimationFrame(step);
+        } else {
+          this.momentumRaf = null;
+          this.snapToNearest();
+        }
+      };
+
+      this.momentumRaf = requestAnimationFrame(step);
+    }
+
+    snapToNearest() {
+      if (this.cards.length === 0) return;
+
+      if (this.reducedMotion) {
+        this.update();
+        this.updateActiveDot();
+        return;
+      }
+
+      const scrollLeft = this.track.scrollLeft;
+      let nearest = this.cards[0];
+      let nearestDist = Infinity;
+
+      this.cards.forEach((card) => {
+        const dist = Math.abs(card.offsetLeft - this.track.offsetLeft - scrollLeft);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = card;
+        }
+      });
+
+      this.track.scrollTo({ left: nearest.offsetLeft - this.track.offsetLeft, behavior: 'smooth' });
     }
 
     onPrevClick() {
@@ -172,6 +337,7 @@
     }
 
     onResize() {
+      this.cancelMomentum();
       this.buildDots();
       this.update();
     }
