@@ -249,21 +249,57 @@
 
   #header-group-wrapper.is-transparent .main-header__logo img,
   #header-group-wrapper.is-transparent .main-header__logo svg {
-    filter: brightness(0) invert(1);
+    /* drop-shadow added alongside the existing invert so the white
+       logo stays legible against bright/light patches of hero art,
+       not just dark ones */
+    filter: brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
   }
 
-  /* FIX — .menu-bar__edge-fade (further down this file) is a
-     scroll-affordance hint: a gradient fading from opaque white to
-     transparent at each edge of the nav, shown only when the nav is
-     horizontally scrollable (.has-scroll-left / .has-scroll-right).
-     It's hardcoded to white — rgba(255,255,255,...) — independently
-     of --hdr-bg, so it never picked up the transparent override
-     above and kept painting a solid white smudge over the see-through
-     hero image behind the nav links. Since it's a minor affordance
-     rather than essential UI, simplest fix is to switch it off
-     entirely while transparent, rather than trying to retint a
-     white-based gradient to match an arbitrary hero image/color. */
-  #header-group-wrapper.is-transparent .menu-bar__edge-fade {
+  /* ADDED — text/icon shadow for legibility over variable-brightness
+     hero art. White nav text and icons can wash out against bright
+     or busy sections of a hero image; a soft dark shadow keeps them
+     readable regardless of what's behind them, without depending on
+     the header's own background (unlike the edge-fade approach,
+     which required precise state-syncing and still glitched — see
+     the note on .menu-bar__edge-fade below). text-shadow covers the
+     nav links; SVG icons need the filter equivalent (drop-shadow)
+     since text-shadow doesn't apply to SVG shapes. */
+  #header-group-wrapper.is-transparent .menu-bar__link {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 1px rgba(0, 0, 0, 0.3);
+  }
+
+  #header-group-wrapper.is-transparent .main-header__icons svg,
+  #header-group-wrapper.is-transparent .main-header__search-trigger svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  /* FIX (2026-08-06k) — .menu-bar__edge-fade (further down this file)
+     is a scroll-affordance hint: a gradient fading from opaque white
+     to transparent at each edge of the nav, shown only when the nav
+     is horizontally scrollable (.has-scroll-left / .has-scroll-right).
+     It's hardcoded to white independently of --hdr-bg, so it never
+     picked up the transparent override above and painted a white
+     smudge over the see-through hero image behind the nav links.
+
+     Originally scoped to `#header-group-wrapper.is-transparent`, but
+     that class is added/removed constantly — on every scroll-past-
+     threshold AND on every hover/focus of the header (see the
+     hover-lock in header-group.js, which intentionally flips the
+     header solid the instant the pointer enters it so nav text stays
+     readable). Each removal of .is-transparent momentarily un-hid the
+     edge-fade again — whenever the nav happened to be scrollable at
+     that instant — causing it to flash back in essentially at random,
+     any time a visitor moved their mouse near the nav.
+
+     Scoped instead to [data-transparent-header="true"], which is set
+     server-side once per pageview (homepage only) and never toggles,
+     so there's no race condition possible: the edge-fade is simply
+     disabled for the whole homepage visit, regardless of scroll
+     position or hover state. Trade-off: the edge-fade won't reappear
+     on the homepage even after the header settles into its solid
+     scrolled state — an acceptable loss for a minor scroll-affordance
+     hint, given the alternative was a recurring visible glitch. */
+  #main-header[data-transparent-header="true"] .menu-bar__edge-fade {
     display: none !important;
   }
 }
@@ -597,7 +633,7 @@
   padding: 0;
   flex-shrink: 0;
 }
-.main-header__icons svg { width: 21px; height: 21px; }
+.main-header__icons svg { width: 21px; height: 21px; transition: filter 0.2s ease; }
 .main-header__icons a,
 .main-header__icons button {
   display: flex;
@@ -773,7 +809,7 @@
   color: var(--hdr-text); /* was hardcoded #1a1a1a — switched to the shared var (2026-08-06h) so it responds to the transparent-header override above; visually ~identical against the default #111111 */
   text-decoration: none;
   white-space: nowrap;
-  transition: opacity 0.15s ease, color 0.2s ease;
+  transition: opacity 0.15s ease, color 0.2s ease, text-shadow 0.2s ease;
 }
 .menu-bar__link:hover,
 .menu-bar__item:hover > .menu-bar__link { opacity: 0.6; }
