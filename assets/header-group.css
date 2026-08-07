@@ -3,6 +3,22 @@
    Paired with header-group.js (scroll/hover/focus behavior).
 
    Changelog:
+     2026-08-06 (i) — REMOVED the .template-index main[role="main"]
+                  override added in the previous pass. It guessed
+                  Shopify's common `template-{{ template.name }}` body
+                  class convention to zero out the reserved header
+                  padding on the homepage, but that class doesn't
+                  match this theme's actual body markup, so the rule
+                  never matched — the hero rendered with a
+                  header-height gap above it instead of sitting behind
+                  the transparent header. Replaced with a
+                  server-rendered inline <style> emitted directly from
+                  main-header.liquid (guarded by the same
+                  request.page_type check that drives
+                  data-transparent-header), which has zero dependency
+                  on any class this file can't see. See
+                  main-header.liquid for the actual override.
+
      2026-08-06 — ADDED: transparent-over-hero header state
                   (.is-transparent), toggled by header-group.js only
                   when #main-header carries
@@ -127,14 +143,6 @@
    sibling div only occupies its own space and doesn't stop that. */
 main[role="main"] {
   padding-top: var(--header-group-height, 68px);
-}
-
-/* ADDED — homepage-only override: let the hero sit directly behind
-   the transparent header instead of being pushed down by the
-   reserved space above. See the changelog note at the top of this
-   file re: the .template-index assumption. */
-.template-index main[role="main"] {
-  padding-top: 0;
 }
 
 /* Stacking-context reset.
