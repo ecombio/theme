@@ -35,15 +35,41 @@
   comment
     ADDED — transparent-over-hero header (see main-header.css /
     header-group.css / header-group.js for the rest of the
-    implementation). Homepage-only by design: computed server-side
-    from request.page_type rather than any client-side URL check, so
-    it can never be spoofed or drift out of sync, and it degrades
-    safely to "false" (today's normal solid header) on every other
-    page even if the JS fails to load.
+    implementation). Enabled on the homepage always, plus any Page
+    resource whose handle is listed in the "Additional pages"
+    setting below (for landing pages built with the same slideshow
+    hero as the homepage). Computed entirely server-side — from
+    request.page_type / page.handle rather than any client-side URL
+    check — so it can never be spoofed or drift out of sync, and it
+    degrades safely to "false" (today's normal solid header) on every
+    other page even if the JS fails to load.
+
+    Kept handle-based rather than checking page.template_suffix, so
+    this works no matter which template file each landing page
+    happens to use — it only cares about the page's URL handle, which
+    is what was actually given for this feature. handleize is applied
+    to both sides of the comparison: page.handle is already lowercase
+    /hyphenated (Shopify generates it that way), and running the
+    merchant-entered list through the same filter means stray spaces,
+    capitalization, or double-spaces typed into the setting (e.g.
+    "Electric  Bikes") still resolve to the correct "electric-bikes"
+    instead of silently failing to match.
   endcomment
   assign transparent_header_enabled = false
   if request.page_type == 'index'
     assign transparent_header_enabled = true
+  elsif request.page_type == 'page' and page.handle != blank
+    assign extra_pages_raw = section.settings.transparent_header_page_handles
+    if extra_pages_raw != blank
+      assign extra_pages = extra_pages_raw | split: ','
+      for raw_handle in extra_pages
+        assign candidate_handle = raw_handle | handleize
+        if candidate_handle == page.handle
+          assign transparent_header_enabled = true
+          break
+        endif
+      endfor
+    endif
   endif
 -%}
 
@@ -53,14 +79,16 @@
     inline server-rendered style rather than a class on <body> (which
     we don't control from this file, and header-group.css's earlier
     guess at that class — .template-index — didn't match this theme).
-    This is computed from the same request.page_type check above, so
-    it's guaranteed correct with zero dependency on theme.liquid or
-    JS timing: overrides header-group.css's
+    This is computed from the same transparent_header_enabled check
+    above, so it's guaranteed correct with zero dependency on
+    theme.liquid or JS timing: overrides header-group.css's
     `main[role="main"] { padding-top: var(--header-group-height...) }`
     so the hero/slideshow section starts at the very top of the page
     instead of leaving a gap the height of the header above it.
     !important since header-group.css's rule loads from a separate
-    stylesheet and doesn't use one itself.
+    stylesheet and doesn't use one itself. Applies equally to the
+    homepage and any landing page listed in "Additional pages" below,
+    since both share this same variable.
 
     FIX (desktop-only transparency) — wrapped in the same
     min-width: 64rem breakpoint used everywhere else the transparent
@@ -241,6 +269,15 @@
       "id": "section_padding",
       "label": "Side padding",
       "min": 0, "max": 80, "step": 4, "unit": "px", "default": 32
+    },
+
+    { "type": "header", "content": "Transparent header" },
+    {
+      "type": "textarea",
+      "id": "transparent_header_page_handles",
+      "label": "Additional pages (comma-separated)",
+      "info": "The homepage always gets the transparent-over-hero header. To use it on a landing page (Page template) too, enter its handle here — the part of its URL after /pages/. Separate multiple handles with commas, e.g. electric-scooters, electric-skateboards, electric-bikes. Only works on pages that have a full-width hero/slideshow at the top, same as the homepage.",
+      "default": "electric-scooters, electric-skateboards, electric-bikes"
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
