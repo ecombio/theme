@@ -1,6 +1,47 @@
 /* main-header.css
 
    Changelog:
+     2026-08-06 (h) — ADDED: transparent-over-hero header state
+                  (homepage only). Paired with header-group.js, which
+                  toggles .is-transparent on #header-group-wrapper,
+                  and header-group.css, which drops that wrapper's
+                  own background/shadow. This file handles everything
+                  belonging to main-header.liquid's own markup:
+                    - .main-header__bar and .main-header__nav .menu-bar
+                      both paint their own opaque white background
+                      independently of the wrapper (var(--hdr-bg) and
+                      a hardcoded #ffffff respectively) — dropping the
+                      wrapper's background alone wasn't enough, these
+                      two would still paint solid white on top of it.
+                    - --hdr-text / --hdr-muted / --hdr-accent /
+                      --hdr-border are overridden to white/transparent
+                      variants scoped under .is-transparent #main-header,
+                      so nav links, icons, and the hamburger — every-
+                      thing that already consumes these vars — flips
+                      to white automatically with no per-element rule
+                      needed.
+                    - .menu-bar__link previously hardcoded color:
+                      #1a1a1a instead of consuming var(--hdr-text) like
+                      every other text element in this file. Changed
+                      it to var(--hdr-text) (visually ~identical to
+                      the old #1a1a1a against --hdr-text's #111111
+                      default) specifically so it responds to the
+                      override above instead of needing a duplicate
+                      transparent-mode rule.
+                    - Logo: no dedicated light-logo asset/setting was
+                      available, so a CSS filter (brightness(0)
+                      invert(1)) forces any dark logo image/SVG to
+                      white while transparent. This is a blunt
+                      instrument — it'll distort a multi-color or
+                      already-light logo. If settings.logo has a
+                      dedicated light/reversed variant, swap this for
+                      that instead.
+                  Added `transition: color 0.2s ease` to the elements
+                  that change color (nav links, icons, hamburger bars)
+                  so the white<->dark swap crossfades instead of
+                  snapping, matching the background transition already
+                  added in header-group.css.
+
      2026-08-06 (g) — FIX: header nav/icons rendered in a visibly
                   different font than the utility bar / rest of the
                   theme on non-Apple platforms (Windows, Android).
@@ -154,6 +195,36 @@
   z-index: var(--hdr-z);
 }
 
+/* ADDED — transparent-over-hero color overrides. Scoped under the
+   class header-group.js adds to the wrapper, so these can never take
+   effect on a non-homepage page. Redefining the vars here (rather
+   than writing white directly into each selector) means every
+   existing rule in this file that already consumes --hdr-text /
+   --hdr-muted / --hdr-accent / --hdr-border / --hdr-bg just inherits
+   the new values for free. */
+#header-group-wrapper.is-transparent #main-header {
+  --hdr-bg: transparent;
+  --hdr-text: #ffffff;
+  --hdr-muted: rgba(255, 255, 255, 0.75);
+  --hdr-accent: #ffffff;
+  --hdr-border: transparent;
+}
+
+/* .main-header__bar's background/border already read var(--hdr-bg)/
+   var(--hdr-border), so those go transparent automatically via the
+   override above. .main-header__nav .menu-bar is the one place that
+   paints its own opaque white independently (hardcoded, not a var —
+   see the base .menu-bar rule further down) and needs its own line
+   here to actually go transparent. */
+#header-group-wrapper.is-transparent .menu-bar {
+  background: transparent;
+}
+
+#header-group-wrapper.is-transparent .main-header__logo img,
+#header-group-wrapper.is-transparent .main-header__logo svg {
+  filter: brightness(0) invert(1);
+}
+
 .main-header__bar {
   position: relative;
   top: auto;
@@ -194,7 +265,7 @@
   height: 2px;
   background: var(--hdr-text);
   border-radius: 2px;
-  transition: transform 0.25s, opacity 0.25s;
+  transition: transform 0.25s, opacity 0.25s, background-color 0.2s ease;
 }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
@@ -490,7 +561,7 @@
   align-items: center;
   justify-content: center;
   color: var(--hdr-text);
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, color 0.2s ease;
 }
 .main-header__icons a:hover,
 .main-header__icons button:hover { opacity: 0.6; }
@@ -641,10 +712,10 @@
   font-weight: 500;
   font-size: 14px;
   letter-spacing: -0.005em;
-  color: #1a1a1a;
+  color: var(--hdr-text); /* was hardcoded #1a1a1a — switched to the shared var (2026-08-06h) so it responds to the transparent-header override above; visually ~identical against the default #111111 */
   text-decoration: none;
   white-space: nowrap;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, color 0.2s ease;
 }
 .menu-bar__link:hover,
 .menu-bar__item:hover > .menu-bar__link { opacity: 0.6; }
