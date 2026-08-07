@@ -1,6 +1,22 @@
 /* main-header.css
 
    Changelog:
+     2026-08-06 (f) — FIX: icon group (search/wishlist/account/cart)
+                  was not reliably anchored to the far right of the
+                  header on desktop. .main-header__inner is a flex row
+                  with no justify-content set, so with no item
+                  configured to absorb leftover space, extra room
+                  simply appeared *after* the last flex item (the
+                  icons) instead of pushing the icons to the row's
+                  end — most noticeable once labels were hidden and
+                  the icons group got narrower. Added
+                  margin-left: auto to .main-header__icons: an auto
+                  margin on a flex item consumes all remaining free
+                  space on that side, which pins the icons to the far
+                  right regardless of how much width the logo/nav take
+                  up, at every breakpoint (mobile/tablet/desktop all
+                  share this same flex row).
+
      2026-08-06 (e) — FIX: search pill overlapping the last nav item at
                   desktop widths. Root cause was a broken flex-shrink
                   chain: .main-header__nav had min-width:0 + flex-shrink:1
@@ -420,14 +436,26 @@
 }
 
 /* Heart + bag only, no background pills, no labels, more breathing
-   room between them. */
+   room between them.
+   FIX 2026-08-06f — margin-left: auto added so this group always
+   pins to the far right edge of .main-header__inner, regardless of
+   how wide the logo/nav content is. Without this, .main-header__inner
+   (a flex row with no justify-content set) simply packs every item
+   to the start and leaves any leftover space after the LAST item —
+   so the icons sat right after the nav links instead of at the row's
+   end. An auto margin on a flex item absorbs all free space on that
+   side, which is the standard way to push a single item to the end
+   of a flex row without touching justify-content on the parent
+   (which would also affect the logo/hamburger/search-drawer items
+   sharing this same row). Applies at every breakpoint since
+   .main-header__inner is display:flex from mobile up. */
 .main-header__icons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 20px;
   list-style: none;
-  margin: 0;
+  margin: 0 0 0 auto;
   padding: 0;
   flex-shrink: 0;
 }
