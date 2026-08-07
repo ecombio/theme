@@ -1,6 +1,21 @@
 /* main-header.css
 
    Changelog:
+     2026-08-06 (e) — FIX: search pill overlapping the last nav item at
+                  desktop widths. Root cause was a broken flex-shrink
+                  chain: .main-header__nav had min-width:0 + flex-shrink:1
+                  so it *should* shrink to make room for the fixed-width
+                  220px search pill, but its child .menu-bar never got
+                  min-width:0 — so .menu-bar's automatic minimum fell
+                  back to its content's natural (min-content) size and
+                  blocked the shrink before it ever reached the actual
+                  scrollable .menu-bar__container. Added min-width:0 to
+                  .menu-bar and overflow:hidden to .main-header__nav as
+                  a safety net. Also restored .main-header__nav .menu-bar
+                  to position:relative (was position:static) so
+                  .menu-bar__edge-fade anchors to .menu-bar again instead
+                  of escaping up to .main-header__bar.
+
      2026-07-30 (d) — FIX: restored the dark + blurred backdrop behind
                   the search overlay. The previous pass (c, below) had
                   removed it entirely (transparent, no blur, no fade),
@@ -679,6 +694,7 @@
     align-items: center;
     min-width: 0;
     flex-shrink: 1;
+    overflow: hidden; /* FIX 2026-08-06e — safety net so this item can always shrink to 0 instead of overflowing into the search pill */
   }
 
   .menu-bar {
@@ -693,6 +709,7 @@
     background: #ffffff;
     position: relative;
     z-index: 100;
+    min-width: 0; /* FIX 2026-08-06e — without this, .menu-bar's automatic minimum falls back to its content's min-content size, which blocks .main-header__nav's shrink from ever reaching .menu-bar__container and causes the search pill to overlap the last nav item */
   }
 
   .menu-bar::before {
@@ -746,7 +763,7 @@
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    position: static;
+    position: relative; /* FIX 2026-08-06e — was: static. Keeping this positioned means .menu-bar__edge-fade (position:absolute) anchors to .menu-bar itself again, instead of escaping up to .main-header__bar (the next positioned ancestor) and covering the whole header row */
     z-index: auto;
   }
   .main-header__nav .menu-bar::before { content: none; }
