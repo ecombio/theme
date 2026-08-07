@@ -114,7 +114,7 @@
   grid-template-columns: none;
   overflow-x: auto;
   scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   -ms-overflow-style: none;
   scrollbar-width: none;
   /* Clearance for the card hover lift/shadow, same reasoning as
@@ -122,6 +122,26 @@
      otherwise clip the shadow/lift flush at the scroll edges. */
   padding: 14px 4px 10px;
   scroll-padding-inline: 4px;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Applied by JS for the duration of an active pointer drag. Native
+   scroll-snap and scroll-behavior are switched off so nothing fights
+   the direct scrollLeft assignment happening every pointermove —
+   featured-images.js's snapToNearest() re-aligns manually once the
+   momentum animation settles. */
+.featured-images-carousel--enabled .featured-images-grid.is-dragging {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  cursor: grabbing;
+}
+
+.featured-images-carousel--enabled .featured-images-card__image,
+.featured-images-carousel--enabled .featured-images-card__link {
+  -webkit-user-drag: none;
 }
 
 .featured-images-carousel--enabled .featured-images-grid::-webkit-scrollbar {
@@ -468,6 +488,10 @@
   .featured-images-carousel__btn,
   .featured-images-carousel__dot {
     transition: none !important;
+  }
+
+  .featured-images-carousel--enabled .featured-images-grid {
+    scroll-behavior: auto !important;
   }
 
   .featured-images-card__link:hover,
