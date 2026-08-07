@@ -31,12 +31,27 @@
       assign trending_terms = trending_terms | append: term | append: '||'
     endif
   endfor
+
+  comment
+    ADDED — transparent-over-hero header (see main-header.css /
+    header-group.css / header-group.js for the rest of the
+    implementation). Homepage-only by design: computed server-side
+    from request.page_type rather than any client-side URL check, so
+    it can never be spoofed or drift out of sync, and it degrades
+    safely to "false" (today's normal solid header) on every other
+    page even if the JS fails to load.
+  endcomment
+  assign transparent_header_enabled = false
+  if request.page_type == 'index'
+    assign transparent_header_enabled = true
+  endif
 -%}
 
 <header
   class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
   id="main-header"
   role="banner"
+  data-transparent-header="{{ transparent_header_enabled }}"
   style="
     --section-padding: {{ section.settings.section_padding }}px;
     {%- if section_width == 'custom-width' %}
