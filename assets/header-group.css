@@ -3,6 +3,23 @@
    Paired with header-group.js (scroll/hover/focus behavior).
 
    Changelog:
+     2026-08-06 (j) — FIX: transparent-over-hero header was applying
+                  at every viewport width. It's a desktop-only effect
+                  by design, so #header-group-wrapper.is-transparent
+                  below is now wrapped in the same min-width: 64rem
+                  breakpoint main-header.css already uses for its own
+                  desktop division (nav layout, search overlay
+                  trigger, etc). Below 1024px this rule simply won't
+                  match, so the wrapper keeps its normal solid
+                  background/shadow from the base rule above,
+                  regardless of what header-group.js does with the
+                  .is-transparent class (also gated to desktop now —
+                  see header-group.js). The color/logo overrides in
+                  main-header.css and the padding-removal override in
+                  main-header.liquid received matching fixes so all
+                  three pieces of this feature agree on the same
+                  breakpoint.
+
      2026-08-06 (i) — REMOVED the .template-index main[role="main"]
                   override added in the previous pass. It guessed
                   Shopify's common `template-{{ template.name }}` body
@@ -97,10 +114,19 @@
    (homepage only), so this can't fire on any other page regardless
    of scroll position or specificity. Higher specificity than the
    base rule above (ID + class beats ID alone) so it wins even though
-   both use !important. */
-#header-group-wrapper.is-transparent {
-  background: transparent !important;
-  box-shadow: none !important;
+   both use !important.
+
+   FIX 2026-08-06j — desktop-only. Wrapped in the same min-width:
+   64rem breakpoint main-header.css uses for its own desktop
+   division, so the wrapper never goes transparent below 1024px even
+   if .is-transparent somehow ends up on the element (it shouldn't —
+   header-group.js is also gated now — but keeping the CSS gated too
+   means mobile/tablet stay correct regardless of JS state). */
+@media (min-width: 64rem) {
+  #header-group-wrapper.is-transparent {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
 }
 
 /* Single source of truth for the header's height. header-group.js

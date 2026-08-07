@@ -28,7 +28,17 @@
    On any other page this block still runs (cheap: one dataset read)
    but transparentEnabled is false, updateTransparency() no-ops
    immediately, and .is-transparent is never added — today's existing
-   solid-header behavior is unchanged. */
+   solid-header behavior is unchanged.
+
+   FIX (desktop-only transparency) — the transparent-over-hero effect
+   was only ever meant to apply on desktop; on mobile/tablet the
+   header should stay solid the way it always has. Gated with the
+   same min-width: 64rem breakpoint main-header.css already uses for
+   its own desktop division, via a matchMedia query (desktopMql)
+   rather than reading window.innerWidth once — matchMedia lets us
+   react live if the viewport crosses the breakpoint (window resize,
+   or a tablet rotating from portrait to landscape) instead of only
+   evaluating it once on page load. */
 (function () {
   const header = document.getElementById('header-group-wrapper');
   if (!header) return;
@@ -44,9 +54,16 @@
   const TRANSPARENT_THRESHOLD = 10; // px — "sticky" trigger point; flips solid almost as soon as the page moves at all
   let isTransparent = false;
 
+  // FIX — desktop-only gate (matches main-header.css's own
+  // min-width: 64rem desktop division). Re-checked live via the
+  // 'change' listener registered below, so resizing across the
+  // breakpoint updates state immediately instead of requiring a
+  // page reload.
+  const desktopMql = window.matchMedia('(min-width: 64rem)');
+
   function updateTransparency() {
     if (!transparentEnabled) return;
-    const shouldBeTransparent = !isLocked && window.scrollY <= TRANSPARENT_THRESHOLD;
+    const shouldBeTransparent = desktopMql.matches && !isLocked && window.scrollY <= TRANSPARENT_THRESHOLD;
     if (shouldBeTransparent === isTransparent) return;
     isTransparent = shouldBeTransparent;
     header.classList.toggle('is-transparent', shouldBeTransparent);
@@ -83,6 +100,17 @@
   // scroll or hover event fires, so a homepage load that starts at
   // the top doesn't flash solid-white for a frame first.
   updateTransparency();
+
+  // FIX — react live to viewport changes crossing the desktop
+  // breakpoint (browser resize, tablet orientation change), so the
+  // header doesn't get stuck transparent/solid until the next
+  // scroll/hover event happens to fire.
+  if (typeof desktopMql.addEventListener === 'function') {
+    desktopMql.addEventListener('change', updateTransparency);
+  } else if (typeof desktopMql.addListener === 'function') {
+    // Safari < 14 fallback
+    desktopMql.addListener(updateTransparency);
+  }
 
   if ('ResizeObserver' in window) {
     const resizeObserver = new ResizeObserver(syncHeaderHeightVar);
