@@ -65,6 +65,9 @@
       {%- for block in section.blocks -%}
         {%- liquid
           assign image = block.settings.image
+          if image == blank and block.settings.collection != blank and block.settings.collection.image != blank
+            assign image = block.settings.collection.image
+          endif
           assign mobile_image = block.settings.mobile_image
           assign link = block.settings.link
           assign heading = block.settings.heading
@@ -382,6 +385,12 @@
           "type": "url",
           "id": "link",
           "label": "Link"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection",
+          "info": "Optional. If no image is chosen above, this collection's image is used automatically."
         },
         {
           "type": "header",
