@@ -1,6 +1,27 @@
 /* main-header.css
 
    Changelog:
+     2026-08-06 (i) — FIX: transparent-over-hero header was applying
+                  at every viewport width, but it's a desktop-only
+                  effect by design. Wrapped the three overrides added
+                  in pass (h) below — the --hdr-* var overrides, the
+                  .menu-bar background override, and the logo filter
+                  — in the same @media (min-width: 64rem) breakpoint
+                  this file already uses for its own desktop division
+                  (see the lg: 1024px block further down). Below
+                  1024px these selectors simply won't match, so the
+                  header stays visually solid the way it always has,
+                  regardless of whether header-group.js adds
+                  .is-transparent to the wrapper (that's also gated to
+                  desktop now — see header-group.js — but keeping the
+                  CSS gated too means mobile/tablet render correctly
+                  even if JS state and viewport width ever briefly
+                  disagree, e.g. mid-resize). header-group.css's own
+                  .is-transparent rule and main-header.liquid's inline
+                  padding-removal <style> received matching fixes so
+                  all three pieces of this feature agree on the same
+                  breakpoint.
+
      2026-08-06 (h) — ADDED: transparent-over-hero header state
                   (homepage only). Paired with header-group.js, which
                   toggles .is-transparent on #header-group-wrapper,
@@ -201,28 +222,35 @@
    than writing white directly into each selector) means every
    existing rule in this file that already consumes --hdr-text /
    --hdr-muted / --hdr-accent / --hdr-border / --hdr-bg just inherits
-   the new values for free. */
-#header-group-wrapper.is-transparent #main-header {
-  --hdr-bg: transparent;
-  --hdr-text: #ffffff;
-  --hdr-muted: rgba(255, 255, 255, 0.75);
-  --hdr-accent: #ffffff;
-  --hdr-border: transparent;
-}
+   the new values for free.
 
-/* .main-header__bar's background/border already read var(--hdr-bg)/
-   var(--hdr-border), so those go transparent automatically via the
-   override above. .main-header__nav .menu-bar is the one place that
-   paints its own opaque white independently (hardcoded, not a var —
-   see the base .menu-bar rule further down) and needs its own line
-   here to actually go transparent. */
-#header-group-wrapper.is-transparent .menu-bar {
-  background: transparent;
-}
+   FIX 2026-08-06i — desktop-only. Wrapped in the same min-width:
+   64rem breakpoint used for this file's own desktop division further
+   down, so none of these overrides can apply on mobile/tablet even
+   if .is-transparent is present on the wrapper. */
+@media (min-width: 64rem) {
+  #header-group-wrapper.is-transparent #main-header {
+    --hdr-bg: transparent;
+    --hdr-text: #ffffff;
+    --hdr-muted: rgba(255, 255, 255, 0.75);
+    --hdr-accent: #ffffff;
+    --hdr-border: transparent;
+  }
 
-#header-group-wrapper.is-transparent .main-header__logo img,
-#header-group-wrapper.is-transparent .main-header__logo svg {
-  filter: brightness(0) invert(1);
+  /* .main-header__bar's background/border already read var(--hdr-bg)/
+     var(--hdr-border), so those go transparent automatically via the
+     override above. .main-header__nav .menu-bar is the one place that
+     paints its own opaque white independently (hardcoded, not a var —
+     see the base .menu-bar rule further down) and needs its own line
+     here to actually go transparent. */
+  #header-group-wrapper.is-transparent .menu-bar {
+    background: transparent;
+  }
+
+  #header-group-wrapper.is-transparent .main-header__logo img,
+  #header-group-wrapper.is-transparent .main-header__logo svg {
+    filter: brightness(0) invert(1);
+  }
 }
 
 .main-header__bar {
