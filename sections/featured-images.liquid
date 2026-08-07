@@ -50,8 +50,12 @@
     {%- endif -%}
 
     <div
-      class="featured-images-grid"
-      {% if section.settings.enable_scroll_reveal %}data-featured-images-reveal{% endif %}
+      class="featured-images-carousel{% if section.settings.enable_carousel %} featured-images-carousel--enabled{% endif %}"
+      {% if section.settings.enable_carousel %}
+        data-featured-images-carousel
+        data-autoplay="{{ section.settings.autoplay }}"
+        data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
+      {% endif %}
       style="
         --columns-mobile: {{ section.settings.columns_mobile }};
         --columns-tablet: {{ section.settings.columns_tablet }};
@@ -60,9 +64,15 @@
         --card-radius: {{ section.settings.card_radius }}px;
         --card-height-desktop: {{ section.settings.height_desktop }}px;
         --card-height-mobile: {{ section.settings.height_mobile }}px;
+        --fi-btn-bg: {{ section.settings.bg_color }};
       "
     >
-      {%- for block in section.blocks -%}
+      <div
+        class="featured-images-grid"
+        data-featured-images-track
+        {% if section.settings.enable_scroll_reveal %}data-featured-images-reveal{% endif %}
+      >
+        {%- for block in section.blocks -%}
         {%- liquid
           assign image = block.settings.image
           if image == blank and block.settings.collection != blank and block.settings.collection.image != blank
@@ -158,12 +168,34 @@
           </span>
         </div>
       {%- endfor -%}
+      </div>
+
+      {%- if section.settings.enable_carousel and section.blocks.size > 1 and section.settings.show_arrows -%}
+        <button type="button" class="featured-images-carousel__btn featured-images-carousel__btn--prev" data-featured-images-prev aria-label="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button type="button" class="featured-images-carousel__btn featured-images-carousel__btn--next" data-featured-images-next aria-label="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      {%- endif -%}
+
+      {%- if section.settings.enable_carousel and section.blocks.size > 1 and section.settings.show_dots -%}
+        <div class="featured-images-carousel__dots" data-featured-images-dots>
+          {%- for block in section.blocks -%}
+            <button type="button" class="featured-images-carousel__dot" data-featured-images-dot aria-label="Go to slide {{ forloop.index }}"></button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
     </div>
 
   </div>
 </div>
 
-{%- if section.settings.enable_scroll_reveal -%}
+{%- if section.settings.enable_scroll_reveal or section.settings.enable_carousel -%}
   <script src="{{ 'featured-images.js' | asset_url }}" defer="defer"></script>
 {%- endif -%}
 
@@ -305,6 +337,49 @@
       "unit": "px",
       "label": "Card corner radius",
       "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Carousel (optional)"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_carousel",
+      "label": "Enable carousel / horizontal scroll",
+      "info": "Turn this on when you have more cards than fit in one row (e.g. 5+). Cards per row still follow the Columns settings above — extra cards scroll instead of wrapping to a new row.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Show arrows",
+      "default": true,
+      "visible_if": "{{ section.settings.enable_carousel }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dots",
+      "label": "Show pagination dots",
+      "default": true,
+      "visible_if": "{{ section.settings.enable_carousel }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Auto-rotate",
+      "default": false,
+      "visible_if": "{{ section.settings.enable_carousel }}"
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Change slides every",
+      "default": 5,
+      "visible_if": "{{ section.settings.enable_carousel }}"
     },
     {
       "type": "header",
