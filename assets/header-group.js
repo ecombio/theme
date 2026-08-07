@@ -6,7 +6,29 @@
    Note: previously there were two separate scroll listeners doing
    this (one without the lock, one with it) attached to the same
    element — they raced against each other and could cause the
-   header to flicker mid-hover. Consolidated into one here. */
+   header to flicker mid-hover. Consolidated into one here.
+
+   ADDED — transparent-over-hero header state.
+   Only ever active when #main-header carries
+   data-transparent-header="true" (set server-side in
+   main-header.liquid from request.page_type == 'index', so it can
+   never fire on non-homepage pages regardless of what happens here).
+   When active:
+     - #header-group-wrapper starts transparent (see header-group.css
+       for the actual background/box-shadow/color overrides gated
+       behind the .is-transparent class added below).
+     - It flips solid as soon as the page scrolls even slightly past
+       the very top (TRANSPARENT_THRESHOLD) — i.e. as soon as the
+       header is in its "stuck" state rather than sitting at rest
+       over the hero.
+     - It also flips solid on hover/focus, reusing the same isLocked
+       flag the hide-on-scroll behavior already tracks, so a user
+       parked at the very top can still mouse over the nav and read
+       it against a solid background before ever scrolling.
+   On any other page this block still runs (cheap: one dataset read)
+   but transparentEnabled is false, updateTransparency() no-ops
+   immediately, and .is-transparent is never added — today's existing
+   solid-header behavior is unchanged. */
 (function () {
   const header = document.getElementById('header-group-wrapper');
   if (!header) return;
@@ -15,6 +37,20 @@
   let ticking = false;
   let isLocked = false; // true while hovering/focusing header
   const SCROLL_THRESHOLD = 10; // ignore tiny jitters
+
+  // ADDED — transparent-over-hero state.
+  const mainHeaderEl = document.getElementById('main-header');
+  const transparentEnabled = !!mainHeaderEl && mainHeaderEl.dataset.transparentHeader === 'true';
+  const TRANSPARENT_THRESHOLD = 10; // px — "sticky" trigger point; flips solid almost as soon as the page moves at all
+  let isTransparent = false;
+
+  function updateTransparency() {
+    if (!transparentEnabled) return;
+    const shouldBeTransparent = !isLocked && window.scrollY <= TRANSPARENT_THRESHOLD;
+    if (shouldBeTransparent === isTransparent) return;
+    isTransparent = shouldBeTransparent;
+    header.classList.toggle('is-transparent', shouldBeTransparent);
+  }
 
   // Recomputed whenever the header's real height changes, so it
   // doesn't go stale if content changes (announcement bar dismissed,
@@ -42,6 +78,11 @@
   }
 
   syncHeaderHeightVar();
+
+  // ADDED — set the initial transparent/solid state before the first
+  // scroll or hover event fires, so a homepage load that starts at
+  // the top doesn't flash solid-white for a frame first.
+  updateTransparency();
 
   if ('ResizeObserver' in window) {
     const resizeObserver = new ResizeObserver(syncHeaderHeightVar);
@@ -74,6 +115,7 @@
     if (isLocked) {
       // While locked, always keep it visible and just track position
       setHeaderHidden(false);
+      updateTransparency();
       lastScrollY = currentScrollY;
       ticking = false;
       return;
@@ -91,6 +133,8 @@
     else if (delta < -SCROLL_THRESHOLD) {
       setHeaderHidden(false);
     }
+
+    updateTransparency();
 
     lastScrollY = currentScrollY;
     ticking = false;
@@ -111,17 +155,20 @@
   header.addEventListener('mouseenter', () => {
     isLocked = true;
     setHeaderHidden(false);
+    updateTransparency();
   });
 
   header.addEventListener('mouseleave', () => {
     isLocked = false;
     lastScrollY = window.scrollY; // reset baseline so it doesn't jump-hide immediately
+    updateTransparency();
   });
 
   // --- Focus lock (keyboard users tabbing through nav/menu links) ---
   header.addEventListener('focusin', () => {
     isLocked = true;
     setHeaderHidden(false);
+    updateTransparency();
   });
 
   header.addEventListener('focusout', (e) => {
@@ -129,6 +176,7 @@
     if (!header.contains(e.relatedTarget)) {
       isLocked = false;
       lastScrollY = window.scrollY;
+      updateTransparency();
     }
   });
 })();
