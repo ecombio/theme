@@ -1,105 +1,112 @@
-{%- comment -%}
-  snippets/expert-review-card.liquid
-  ============================================
-  Renders one review card for sections/expert-reviews.liquid.
-
-  ⚠️ BEST-EFFORT REWRITE — I don't have your original
-  expert-review-card.liquid, video-card.js, or video-modal.liquid/js.
-  This markup is inferred from the section's own comments (a
-  play-trigger dispatching 'video-card:play', picked up by
-  video-modal.js). Please check data-video-card-trigger's attributes
-  against what those two JS files actually read before shipping —
-  I did not copy this from your real files.
-
-  `review` is a metaobject entry (type: expert_reviews), not a section
-  block, so fields are read as review.<field_key>.value instead of
-  block.settings.<field_key>.
-{%- endcomment -%}
-
 {%- liquid
-  assign review_video = review.video.value
-  assign review_url = review.video_url.value
-  assign thumbnail = review.thumbnail.value
-  assign title = review.title.value
-  assign view_count = review.view_count.value
-  assign source_icon = review.source_icon.value
-  assign source_name = review.source_name.value
+  assign has_native_video = false
+  assign has_external_video = false
+  assign external_provider = blank
+  assign external_video_id = blank
 
-  assign video_type = blank
-  assign video_id = blank
+  if review.video.value != blank
+    assign has_native_video = true
+  elsif review.video_url.value != blank
+    assign raw_url = review.video_url.value
 
-  if review_video != blank
-    assign video_type = 'hosted'
-    assign video_id = review_video.id
-  elsif review_url != blank
-    if review_url contains 'youtube.com' or review_url contains 'youtu.be'
-      assign video_type = 'youtube'
-      if review_url contains 'v='
-        assign video_id = review_url | split: 'v=' | last | split: '&' | first
-      else
-        assign video_id = review_url | split: '/' | last | split: '?' | first
+    if raw_url contains 'youtube.com' or raw_url contains 'youtu.be'
+      assign external_provider = 'youtube'
+      if raw_url contains 'watch?v='
+        assign external_video_id = raw_url | split: 'watch?v=' | last | split: '&' | first
+      elsif raw_url contains 'youtu.be/'
+        assign external_video_id = raw_url | split: 'youtu.be/' | last | split: '?' | first
+      elsif raw_url contains '/embed/'
+        assign external_video_id = raw_url | split: '/embed/' | last | split: '?' | first
       endif
-    elsif review_url contains 'vimeo.com'
-      assign video_type = 'vimeo'
-      assign video_id = review_url | split: '/' | last | split: '?' | first
+    elsif raw_url contains 'vimeo.com'
+      assign external_provider = 'vimeo'
+      assign external_video_id = raw_url | split: 'vimeo.com/' | last | split: '?' | first
+    endif
+
+    if external_provider != blank and external_video_id != blank
+      assign has_external_video = true
     endif
   endif
+
+  assign has_thumbnail = false
+  if review.thumbnail.value != blank
+    assign has_thumbnail = true
+  endif
 -%}
+<div class="expert-review-card" id="ExpertReviewCard-{{ review.id | split: '/' | last }}" data-video-card>
+  <div class="expert-review-card__frame">
 
-<div class="expert-review-card">
-
-  <button
-    type="button"
-    class="expert-review-card__trigger"
-    data-video-card-trigger
-    data-video-type="{{ video_type }}"
-    data-video-id="{{ video_id }}"
-    aria-label="Play {{ title | default: 'review video' | escape }}"
-  >
-    {%- if thumbnail != blank -%}
-      <img
-        src="{{ thumbnail | image_url: width: 640 }}"
-        srcset="{{ thumbnail | image_url: width: 640 }} 640w, {{ thumbnail | image_url: width: 960 }} 960w"
-        alt="{{ thumbnail.alt | default: title | escape }}"
-        width="{{ thumbnail.width }}"
-        height="{{ thumbnail.height }}"
-        loading="lazy"
-      >
-    {%- elsif review_video.preview_image != blank -%}
-      <img
-        src="{{ review_video.preview_image | image_url: width: 640 }}"
-        alt="{{ title | escape }}"
-        width="{{ review_video.preview_image.width }}"
-        height="{{ review_video.preview_image.height }}"
-        loading="lazy"
-      >
-    {%- endif -%}
-    <span class="expert-review-card__play-icon" aria-hidden="true">▶</span>
-  </button>
-
-  <div class="expert-review-card__meta">
-    {%- if title != blank -%}
-      <p class="expert-review-card__title">{{ title }}</p>
-    {%- endif -%}
-
-    <div class="expert-review-card__source">
-      {%- if source_icon != blank -%}
-        <img
-          class="expert-review-card__source-icon"
-          src="{{ source_icon | image_url: width: 40 }}"
-          alt=""
-          width="20"
-          height="20"
-          loading="lazy"
-        >
+    <button
+      type="button"
+      class="expert-review-card__play-trigger"
+      data-video-card-trigger
+      aria-label="Play video{% if review.title.value != blank %}: {{ review.title.value | escape }}{% endif %}"
+      aria-haspopup="dialog"
+      data-video-caption=""
+      {%- if has_native_video %}
+        data-video-type="native"
+        data-video-src="{{ review.video.value.sources.last.url }}"
+      {%- elsif has_external_video %}
+        data-video-type="external"
+        data-provider="{{ external_provider }}"
+        data-video-id="{{ external_video_id }}"
+      {%- else %}
+        disabled
+      {%- endif %}
+    >
+      {%- if has_thumbnail -%}
+        {{
+          review.thumbnail.value
+          | image_url: width: 800
+          | image_tag:
+            loading: 'lazy',
+            class: 'expert-review-card__thumbnail',
+            sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 80vw',
+            widths: '400,600,800,1000'
+        }}
+      {%- elsif has_native_video and review.video.value.preview_image -%}
+        {{
+          review.video.value.preview_image
+          | image_url: width: 800
+          | image_tag:
+            loading: 'lazy',
+            class: 'expert-review-card__thumbnail',
+            sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 80vw',
+            widths: '400,600,800,1000'
+        }}
+      {%- else -%}
+        {{ 'lifestyle-1' | placeholder_svg_tag: 'expert-review-card__thumbnail expert-review-card__thumbnail--placeholder' }}
       {%- endif -%}
-      {%- if source_name != blank -%}
-        <span class="expert-review-card__source-name">{{ source_name }}</span>
-      {%- endif -%}
-      {%- if view_count != blank -%}
-        <span class="expert-review-card__view-count">{{ view_count }}</span>
-      {%- endif -%}
-    </div>
+
+      <span class="expert-review-card__play-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+          <path d="M8 5v14l11-7z" fill="currentColor"/>
+        </svg>
+      </span>
+    </button>
+
   </div>
 
+  <div class="expert-review-card__body">
+    {%- if review.title.value != blank -%}
+      <p class="expert-review-card__title">{{ review.title.value }}</p>
+    {%- endif -%}
+
+    {%- if review.view_count.value != blank -%}
+      <p class="expert-review-card__views">{{ review.view_count.value }}</p>
+    {%- endif -%}
+
+    {%- if review.source_name.value != blank -%}
+      <div class="expert-review-card__source">
+        {%- if review.source_icon.value != blank -%}
+          {{
+            review.source_icon.value
+            | image_url: width: 40
+            | image_tag: loading: 'lazy', class: 'expert-review-card__source-icon', alt: ''
+          }}
+        {%- endif -%}
+        <span class="expert-review-card__source-name">{{ review.source_name.value }}</span>
+      </div>
+    {%- endif -%}
+  </div>
 </div>
