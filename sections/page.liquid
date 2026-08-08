@@ -1,17 +1,27 @@
-{% comment %}
+{%- comment -%}
+  sections/page.liquid
+
   This section is used in the page template to render store pages like About us
   or Contact us.
 
   https://shopify.dev/docs/storefronts/themes/architecture/templates/page
-{% endcomment %}
+
+  Section width (Default / Full width / Custom width) is rendered via
+  snippets/section-width.liquid rather than hand-rolled here — see that
+  snippet's header comment for the pattern this follows. Don't
+  reintroduce width_type/width_class logic in this file; change it
+  once in the snippet instead.
+{%- endcomment -%}
 
 {{ 'page.css' | asset_url | stylesheet_tag }}
 
-<div class="page-section">
-  <h1 class="page-section__heading">{{ page.title }}</h1>
+<div {% render 'section-width', section: section %}>
+  <div class="page-section" style="padding-block: var(--section-spacing, 48px);">
+    <h1 class="page-section__heading">{{ page.title }}</h1>
 
-  <div class="page-section__content" data-page-content>
-    {{ page.content }}
+    <div class="page-section__content" data-page-content>
+      {{ page.content }}
+    </div>
   </div>
 </div>
 
@@ -20,6 +30,43 @@
 {% schema %}
 {
   "name": "t:general.page",
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "", "label": "Default" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "rem",
+      "default": 80,
+      "visible_if": "{{ section.settings.section_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Side padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    }
+  ]
 }
 {% endschema %}
