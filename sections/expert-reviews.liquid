@@ -1,54 +1,52 @@
 {%- comment -%}
   sections/expert-reviews.liquid
   ============================================
-  Video-only carousel for third-party review videos (YouTube/Vimeo
-  clips or uploaded files), with a title, view count, and source
-  attribution shown under each card — see snippets/expert-review-card.liquid.
+  Metaobject-driven video carousel for third-party review videos.
 
-  This section deliberately reuses, unchanged:
+  Reviews are no longer authored as theme blocks — this section reads
+  from a list of `expert_reviews` metaobject entries, picked via the
+  "Reviews" setting below (Shopify's metaobject_list setting type).
+
+  If no metaobject entries are assigned, this section renders NOTHING —
+  no wrapper markup, no CSS/JS asset requests, no video-modal include —
+  so it drops cleanly out of the page.
+
+  Still reuses, unchanged:
     - assets/video-section.js   → carousel arrow/scroll behavior
     - assets/video-card.js      → play-trigger click → 'video-card:play' dispatch
     - snippets/video-modal.liquid + assets/video-modal.css/js → shared lightbox
 
-  Those scripts already query generic data-* attributes (not class
-  names), so this section's markup below carries the same
-  data-video-section / data-video-track / data-video-prev /
-  data-video-next / data-video-item / data-video-card-trigger
-  attributes as sections/video-section.liquid. No new JS file exists
-  for this section — writing one would just duplicate logic that
-  already works.
-
-  Only the card's own look (snippets/expert-review-card.liquid +
-  assets/expert-reviews.css) is new.
-
-  NOTE: like video-section.liquid, this renders its own copy of
-  video-modal. If a page has this section AND a Video Section on it,
-  video-modal.js's de-dupe keeps only the first instance in the DOM —
-  see the note in video-modal.liquid.
+  snippets/expert-review-card.liquid was updated to read metaobject
+  fields (review.field.value) instead of block.settings.*.
 {%- endcomment -%}
-<link rel="stylesheet" href="{{ 'expert-reviews.css' | asset_url }}" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="{{ 'video-modal.css' | asset_url }}" media="print" onload="this.media='all'">
-<noscript>
-  <link rel="stylesheet" href="{{ 'expert-reviews.css' | asset_url }}">
-  <link rel="stylesheet" href="{{ 'video-modal.css' | asset_url }}">
-</noscript>
-<script src="{{ 'video-section.js' | asset_url }}" defer></script>
-<script src="{{ 'video-card.js' | asset_url }}" defer></script>
-<script src="{{ 'video-modal.js' | asset_url }}" defer></script>
 
-<div
-  {% render 'section-width', section: section, extra_class: 'expert-reviews' %}
-  id="ExpertReviews-{{ section.id }}"
-  data-video-section
->
+{%- liquid
+  assign reviews = section.settings.reviews
+-%}
 
-  {%- if section.settings.heading != blank -%}
-    <div class="expert-reviews__header">
-      <h2 class="expert-reviews__heading">{{ section.settings.heading }}</h2>
-    </div>
-  {%- endif -%}
+{%- if reviews != blank and reviews.size > 0 -%}
+  <link rel="stylesheet" href="{{ 'expert-reviews.css' | asset_url }}" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="{{ 'video-modal.css' | asset_url }}" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="{{ 'expert-reviews.css' | asset_url }}">
+    <link rel="stylesheet" href="{{ 'video-modal.css' | asset_url }}">
+  </noscript>
+  <script src="{{ 'video-section.js' | asset_url }}" defer></script>
+  <script src="{{ 'video-card.js' | asset_url }}" defer></script>
+  <script src="{{ 'video-modal.js' | asset_url }}" defer></script>
 
-  {%- if section.blocks.size > 0 -%}
+  <div
+    {% render 'section-width', section: section, extra_class: 'expert-reviews' %}
+    id="ExpertReviews-{{ section.id }}"
+    data-video-section
+  >
+
+    {%- if section.settings.heading != blank -%}
+      <div class="expert-reviews__header">
+        <h2 class="expert-reviews__heading">{{ section.settings.heading }}</h2>
+      </div>
+    {%- endif -%}
+
     <div class="expert-reviews__carousel" data-video-carousel>
 
       <button
@@ -69,15 +67,14 @@
         data-video-track
         role="list"
       >
-        {%- for block in section.blocks -%}
+        {%- for review in reviews -%}
           <div
             class="expert-reviews__item"
-            id="ExpertReview-{{ block.id }}"
+            id="ExpertReview-{{ review.id | split: '/' | last }}"
             data-video-item
             role="listitem"
-            {{ block.shopify_attributes }}
           >
-            {%- render 'expert-review-card', block: block -%}
+            {%- render 'expert-review-card', review: review -%}
           </div>
         {%- endfor -%}
       </div>
@@ -95,11 +92,10 @@
       </button>
 
     </div>
-  {%- endif -%}
+  </div>
 
-</div>
-
-{%- render 'video-modal' -%}
+  {%- render 'video-modal' -%}
+{%- endif -%}
 
 {% schema %}
 {
@@ -110,6 +106,13 @@
       "id": "heading",
       "label": "Heading",
       "default": "Expert Reviews"
+    },
+    {
+      "type": "metaobject_list",
+      "id": "reviews",
+      "label": "Reviews",
+      "metaobject_type": "expert_reviews",
+      "info": "Pulls video reviews from Expert Reviews metaobject entries. Leave empty to hide this section entirely."
     },
     {
       "type": "header",
@@ -148,68 +151,9 @@
       "default": 28
     }
   ],
-  "blocks": [
-    {
-      "type": "review",
-      "name": "Review",
-      "settings": [
-        {
-          "type": "video",
-          "id": "video",
-          "label": "Video",
-          "info": "Upload a video file. Takes priority over an external video link."
-        },
-        {
-          "type": "video_url",
-          "id": "video_url",
-          "label": "External video link",
-          "accept": ["youtube", "vimeo"],
-          "info": "Used only if no video file is uploaded above."
-        },
-        {
-          "type": "image_picker",
-          "id": "thumbnail",
-          "label": "Thumbnail",
-          "info": "If left blank, uses the uploaded video's preview image, or a placeholder."
-        },
-        {
-          "type": "header",
-          "content": "Review details"
-        },
-        {
-          "type": "text",
-          "id": "title",
-          "label": "Review title"
-        },
-        {
-          "type": "text",
-          "id": "view_count",
-          "label": "View count",
-          "info": "e.g. \"20,211 views\""
-        },
-        {
-          "type": "image_picker",
-          "id": "source_icon",
-          "label": "Source icon"
-        },
-        {
-          "type": "text",
-          "id": "source_name",
-          "label": "Source name",
-          "info": "e.g. \"Electric Bike Report\""
-        }
-      ]
-    }
-  ],
   "presets": [
     {
-      "name": "Expert Reviews",
-      "blocks": [
-        { "type": "review" },
-        { "type": "review" },
-        { "type": "review" },
-        { "type": "review" }
-      ]
+      "name": "Expert Reviews"
     }
   ]
 }
