@@ -35,7 +35,6 @@
       this.track.addEventListener('scroll', this.onScroll, { passive: true });
       window.addEventListener('resize', this.onResize);
 
-      // Pointer-based drag to scroll (mouse + pen; touch already scrolls natively)
       this.track.addEventListener('pointerdown', this.onPointerDown);
       this.track.addEventListener('pointermove', this.onPointerMove);
       this.track.addEventListener('pointerup', this.onPointerUp);
@@ -75,7 +74,7 @@
     }
 
     onPointerDown(event) {
-      if (event.pointerType === 'touch') return; // let native touch scrolling handle this
+      if (event.pointerType === 'touch') return;
       this.isDragging = true;
       this.dragMoved = false;
       this.startX = event.clientX;
@@ -98,12 +97,10 @@
       try {
         this.track.releasePointerCapture(event.pointerId);
       } catch (e) {
-        /* no-op */
       }
     }
 
     onClickCapture(event) {
-      // Suppress the click that follows a drag so links aren't triggered accidentally
       if (this.dragMoved) {
         event.preventDefault();
         event.stopPropagation();
@@ -139,7 +136,6 @@
     init();
   }
 
-  // Re-init when Shopify theme editor injects/re-renders a section
   document.addEventListener('shopify:section:load', (event) => {
     const root = event.target.querySelector(SELECTOR);
     if (root) new PillCarousel(root);
