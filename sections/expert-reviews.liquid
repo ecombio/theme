@@ -1,27 +1,33 @@
 {%- comment -%}
   sections/expert-reviews.liquid
   ============================================
-  Metaobject-driven video carousel for third-party review videos.
+  Metafield-driven video carousel for third-party review videos.
 
-  Reviews are no longer authored as theme blocks — this section reads
-  from a list of `expert_reviews` metaobject entries, picked via the
-  "Reviews" setting below (Shopify's metaobject_list setting type).
+  Reviews are pulled directly from the product's `custom.expert_reviews`
+  metafield (List of metaobject references, type `expert_reviews`) —
+  NOT from a section setting. There is nothing to configure in the
+  theme editor for which reviews show; whatever is assigned to the
+  product's metafield is what renders, in that order.
 
-  If no metaobject entries are assigned, this section renders NOTHING —
-  no wrapper markup, no CSS/JS asset requests, no video-modal include —
-  so it drops cleanly out of the page.
+  If the product has no metafield value, or this section is rendered
+  outside product context, this renders NOTHING — no wrapper markup,
+  no CSS/JS asset requests, no video-modal include — so it drops
+  cleanly out of the page.
 
   Still reuses, unchanged:
     - assets/video-section.js   → carousel arrow/scroll behavior
     - assets/video-card.js      → play-trigger click → 'video-card:play' dispatch
     - snippets/video-modal.liquid + assets/video-modal.css/js → shared lightbox
 
-  snippets/expert-review-card.liquid was updated to read metaobject
-  fields (review.field.value) instead of block.settings.*.
+  snippets/expert-review-card.liquid reads metaobject fields
+  (review.field.value) — unchanged by this switch.
 {%- endcomment -%}
 
 {%- liquid
-  assign reviews = section.settings.reviews
+  assign reviews = blank
+  if product
+    assign reviews = product.metafields.custom.expert_reviews.value
+  endif
 -%}
 
 {%- if reviews != blank and reviews.size > 0 -%}
@@ -108,11 +114,8 @@
       "default": "Expert Reviews"
     },
     {
-      "type": "metaobject_list",
-      "id": "reviews",
-      "label": "Reviews",
-      "metaobject_type": "expert_reviews",
-      "info": "Pulls video reviews from Expert Reviews metaobject entries. Leave empty to hide this section entirely."
+      "type": "paragraph",
+      "content": "Reviews are pulled automatically from this product's Expert Reviews metafield. Assign entries to the product to control what shows here."
     },
     {
       "type": "header",
