@@ -12,7 +12,19 @@
 
    Also owns the sub-collections carousel, since that markup
    (rendered via snippets/sub-collection.liquid) only ever appears
-   inside this feed's product panel. */
+   inside this feed's product panel.
+
+   PATCH (see notes below): showPanel() now validates the requested
+   key against the panels that actually exist before touching any
+   `hidden` attribute, so a premature, undefined, or unrecognized
+   `collection:tabchange` dispatch (e.g. firing on toolbar init
+   before it has finished reading `?tab=`) can no longer blank out
+   every panel — including the pagination nav inside panel-products.
+   This is a defensive guard in collection-feed.js, not a fix to
+   whatever in collection-toolbar.js is dispatching the bad event —
+   if the toolbar is dispatching an early/wrong tab, that should
+   still be fixed at the source once we can see that file.
+*/
 
 (function () {
   'use strict';
@@ -25,7 +37,19 @@
   ══════════════════════════════════════════════════════════ */
   var panels = feed.querySelectorAll('[data-panel]');
 
+  var validKeys = Array.prototype.map.call(panels, function (p) {
+    return p.dataset.panel;
+  });
+
   function showPanel(key) {
+    // Guard: ignore missing/unrecognized keys instead of hiding
+    // every panel. Without this, an early or malformed
+    // `collection:tabchange` dispatch (key undefined, empty, or a
+    // typo) would fall through to the `else` branch below for
+    // EVERY panel and hide panel-products (and its pagination)
+    // even though nothing valid asked for that.
+    if (!key || validKeys.indexOf(key) === -1) return;
+
     panels.forEach(function (p) {
       if (p.dataset.panel === key) {
         p.removeAttribute('hidden');
@@ -36,7 +60,7 @@
   }
 
   document.addEventListener('collection:tabchange', function (e) {
-    showPanel(e.detail.tab);
+    showPanel(e && e.detail && e.detail.tab);
   });
 
   window.addEventListener('popstate', function () {
