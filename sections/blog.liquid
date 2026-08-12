@@ -6,13 +6,6 @@
   assign per_page         = section.settings.per_page | default: 6
   assign pagination_style = section.settings.pagination_style | default: 'numbered'
 
-  assign width_type = section.settings.section_width
-  if width_type == blank
-    assign width_class = 'blog-feed__default-width'
-  else
-    assign width_class = 'blog-feed__' | append: width_type
-  endif
-
   if current_tags.size > 0
     assign raw_tag     = current_tags | join: ' & '
     assign tag_words   = raw_tag | replace: '-', ' ' | split: ' '
@@ -29,15 +22,7 @@
 
 {%- paginate blog.articles by per_page -%}
 
-<div
-  class="{{ width_class }}"
-  style="
-    --section-padding: {{ section.settings.section_padding }}px;
-    {%- if width_type == 'custom-width' %}
-      --custom-width: {{ section.settings.custom_width }}rem;
-    {%- endif %}
-  "
->
+<div {% render 'section-width', section: section %}>
 <div class="blog-feed">
 
   <h1 class="blog-feed__title">{{ page_title }}</h1>
@@ -104,10 +89,7 @@
 {
   "name": "t:general.blog",
   "settings": [
-    {
-      "type": "header",
-      "content": "Section layout"
-    },
+    { "type": "header", "content": "Section layout" },
     {
       "type": "select",
       "id": "section_width",
