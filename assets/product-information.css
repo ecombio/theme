@@ -4,9 +4,16 @@
 
    Pairs with sections/product-information.liquid and product-information.js.
    Sections render as one continuous vertical page. Each section is a
-   collapsible <details class="accordion__item"> (styling for the
-   accordion shell itself lives in the sitewide accordion.css — this file
-   only adds the sticky jump-link bar, scroll offsets, and section spacing).
+   collapsible <details>.
+
+   UPDATE: No longer depends on the sitewide .accordion / .accordion__item
+   classes from accordion.css — that component is reserved for FAQ-style
+   accordions (see accordion.css's own doc comment), and this section
+   used to reuse the same class names for every section (Description,
+   Specifications, Shipping, etc.), which collided with the FAQ section's
+   own inner accordion markup. Every section here now uses its own
+   product-information__item / __summary / __icon / __content classes,
+   styled below to look identical to the shared component.
    ========================================================================== */
 
 .product-information,
@@ -15,7 +22,28 @@
 }
 
 .product-information {
+  --pi-border: #e5e5e5;
+  --pi-text: #1a1a1a;
+  --pi-text-hover: #4a4a4a;
+
   padding-block: 28px;
+}
+
+/* ---------------------------------------------------------------------
+   Section list (replaces the shared .accordion wrapper)
+   --------------------------------------------------------------------- */
+
+.product-information__sections {
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--pi-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.product-information__item {
+  padding: 0;
+  border-bottom: 1px solid var(--pi-border);
 }
 
 /* Sections need extra scroll offset to clear the sticky jump-link bar
@@ -24,24 +52,85 @@
   scroll-margin-top: calc(var(--header-group-height, 68px) + 3.25rem);
 }
 
-/* Let accordion__summary's own font-size/weight/color own the look;
-   the <h2> here exists for document outline / SEO, not for its own styling. */
-.product-information__heading {
-  margin: 0;
-  font: inherit;
+/* Force the item open when it's the target of a deep link, even if the
+   visitor arrives with it collapsed (mirrors accordion.css's :target rule,
+   namespaced so it only affects our own sections, not FAQ accordions). */
+.product-information__item:target .product-information__content {
+  display: block !important;
 }
 
-.product-information__section .accordion__content {
+.product-information__item:target .product-information__icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+
+.product-information__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 1.1rem 0.25rem;
+  list-style: none;
+}
+
+.product-information__summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-information__summary:hover .product-information__heading {
+  color: var(--pi-text-hover);
+}
+
+/* Let the heading own the visible label styling. */
+.product-information__heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--pi-text);
+  transition: color 0.15s ease;
+}
+
+/* Plus/minus icon, pure CSS. Vertical bar rotates away and fades on [open]. */
+.product-information__icon {
+  flex-shrink: 0;
+  position: relative;
+  width: 1rem;
+  height: 1rem;
+}
+
+.product-information__icon::before,
+.product-information__icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: currentColor;
+  color: var(--pi-text);
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.product-information__icon::before {
+  width: 1rem;
+  height: 2px;
+}
+
+.product-information__icon::after {
+  width: 2px;
+  height: 1rem;
+}
+
+.product-information__item[open] .product-information__icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+
+.product-information__content {
+  padding: 0 0.25rem 1.25rem;
   font-size: 0.95rem;
   line-height: 1.6;
   color: #374151;
-}
-
-.product-information__sections {
-  padding-top: 1.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
 /* ---------------------------------------------------------------------

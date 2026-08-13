@@ -3,9 +3,19 @@
 
   Rendered as one continuous vertical page instead of tabs/panels.
   A sticky jump-link bar scrolls down to each section. Each section is
-  a collapsible <details class="accordion__item">, open by default, reusing
-  the sitewide accordion.css. Clicking a jump link force-opens its target
-  section before the browser's native anchor scroll happens.
+  a collapsible <details>, open by default.
+
+  UPDATE: Sections no longer use the shared sitewide .accordion /
+  .accordion__item classes from accordion.css — that component is
+  reserved for FAQ-style accordions (per accordion.css's own doc
+  comment) and reusing it here caused class collisions when the FAQs
+  section's own content (rendered via the 'specification' snippet)
+  also builds FAQ accordions with those classes. Every section here
+  now uses its own namespaced classes (product-information__item,
+  __summary, __icon, __content), styled locally in
+  product-information.css to look identical. accordion.css/js are
+  still loaded because the FAQs section's inner content relies on
+  them for its own Q&A accordion.
 
   UPDATE: Customer Reviews accordion item now respects the sitewide
   reviews_provider theme setting (falls back to Yotpo if unset), matching
@@ -125,76 +135,77 @@
     </ul>
   </nav>
 
-  {%- comment -%} Sections — each a collapsible accordion item, open by default {%- endcomment -%}
-  <div class="product-information__sections accordion" data-sections>
+  {%- comment -%} Sections — each a collapsible <details>, open by default. Namespaced classes, NOT the shared .accordion component. {%- endcomment -%}
+  <div class="product-information__sections" data-sections>
 
     {%- if has_description -%}
-      <details class="accordion__item product-information__section" id="description-{{ section.id }}" data-section="description-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="description-{{ section.id }}" data-section="description-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Description</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {% render 'description', product: product %}
         </div>
       </details>
     {%- endif -%}
 
     {%- if has_specifications -%}
-      <details class="accordion__item product-information__section" id="specifications-{{ section.id }}" data-section="specifications-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="specifications-{{ section.id }}" data-section="specifications-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Specifications</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {% render 'specification', field: tech_spec.specifications %}
         </div>
       </details>
     {%- endif -%}
 
     {%- if has_size_fit -%}
-      <details class="accordion__item product-information__section" id="size_fit-{{ section.id }}" data-section="size_fit-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="size_fit-{{ section.id }}" data-section="size_fit-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Size &amp; Fit</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {% render 'specification', field: tech_spec.size_fit %}
         </div>
       </details>
     {%- endif -%}
 
     {%- if has_geometry -%}
-      <details class="accordion__item product-information__section" id="geometry-{{ section.id }}" data-section="geometry-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="geometry-{{ section.id }}" data-section="geometry-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Geometry</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {% render 'specification', field: tech_spec.geometry %}
         </div>
       </details>
     {%- endif -%}
 
     {%- if has_faqs -%}
-      <details class="accordion__item product-information__section" id="faqs-{{ section.id }}" data-section="faqs-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="faqs-{{ section.id }}" data-section="faqs-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">FAQs</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
+          {%- comment -%} The 'specification' snippet renders each Q&A here as its own .accordion / .accordion__item — that's the FAQ use case accordion.css is meant for. {%- endcomment -%}
           {% render 'specification', field: tech_spec.faqs %}
         </div>
       </details>
     {%- endif -%}
 
     {%- if show_shipping -%}
-      <details class="accordion__item product-information__section" id="shipping-{{ section.id }}" data-section="shipping-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="shipping-{{ section.id }}" data-section="shipping-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Shipping Policy</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {%- if has_custom_shipping -%}
             {{ policy.shipping_policy | metafield_tag }}
           {%- elsif has_shipping -%}
@@ -207,12 +218,12 @@
     {%- endif -%}
 
     {%- if show_refund -%}
-      <details class="accordion__item product-information__section" id="refund-{{ section.id }}" data-section="refund-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="refund-{{ section.id }}" data-section="refund-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Refund &amp; Return Policy</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {%- if has_custom_refund -%}
             {{ policy.returns_refunds | metafield_tag }}
           {%- elsif has_refund -%}
@@ -225,12 +236,12 @@
     {%- endif -%}
 
     {%- if show_warranty -%}
-      <details class="accordion__item product-information__section" id="warranty-{{ section.id }}" data-section="warranty-{{ section.id }}" open>
-        <summary class="accordion__summary">
+      <details class="product-information__item product-information__section" id="warranty-{{ section.id }}" data-section="warranty-{{ section.id }}" open>
+        <summary class="product-information__summary">
           <h2 class="product-information__heading">Warranty</h2>
-          <span class="accordion__icon"></span>
+          <span class="product-information__icon"></span>
         </summary>
-        <div class="accordion__content">
+        <div class="product-information__content">
           {%- if has_custom_warranty -%}
             {{ policy.warranty_policy | metafield_tag }}
           {%- elsif has_warranty -%}
