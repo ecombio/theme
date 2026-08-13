@@ -10,6 +10,10 @@
   UPDATE: Customer Reviews accordion item now respects the sitewide
   reviews_provider theme setting (falls back to Yotpo if unset), matching
   the same pattern used in snippets/star-rating.liquid.
+
+  UPDATE: Added "Allow sections to be collapsed" setting. When disabled,
+  all sections stay open and the summary header is inert (no click/keyboard
+  toggle, icon hidden).
 {%- endcomment -%}
 
 <link rel="stylesheet" href="{{ 'product-information.css' | asset_url }}" media="print" onload="this.media='all'">
@@ -125,7 +129,11 @@
   </nav>
 
   {%- comment -%} Sections — each a collapsible accordion item, open by default {%- endcomment -%}
-  <div class="product-information__sections accordion" data-sections>
+  <div
+    class="product-information__sections accordion"
+    data-sections
+    data-collapsible="{{ section.settings.collapsible_sections }}"
+  >
 
     {%- if has_description -%}
       <details class="accordion__item product-information__section" id="description-{{ section.id }}" data-section="description-{{ section.id }}" open>
@@ -284,6 +292,16 @@
       "step": 4,
       "unit": "px",
       "default": 28
+    },
+    {
+      "type": "header",
+      "content": "Section behavior"
+    },
+    {
+      "type": "checkbox",
+      "id": "collapsible_sections",
+      "label": "Allow sections to be collapsed",
+      "default": true
     }
   ],
   "presets": [
