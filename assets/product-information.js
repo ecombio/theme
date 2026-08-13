@@ -4,15 +4,10 @@
 
    Pairs with sections/product-information.liquid and product-information.css.
 
-   Unchanged by the accordion-class rename: this script only targets
-   [data-sections]/[data-section] and checks tagName === 'DETAILS', so it
-   never depended on the shared .accordion classes.
-
-     1. Force-opens a section's <details> before the browser's native
-        anchor scroll happens, in case a visitor had collapsed it.
-     2. Highlights whichever jump link matches the section currently in
-        view, via IntersectionObserver (a scrollspy), since there's no
-        single "active panel" anymore to drive that state from.
+   UPDATE: Sections are plain always-visible <div>s now, not <details> —
+   there's nothing to force open anymore. This script now only does one
+   thing: highlight whichever jump link matches the section currently in
+   view, via IntersectionObserver (a scrollspy).
    ========================================================================== */
 
 (() => {
@@ -33,18 +28,6 @@
       });
     }
 
-    // Force the target section open before the browser scrolls to it,
-    // in case the visitor had collapsed it.
-    links.forEach((link) => {
-      link.addEventListener('click', () => {
-        const id = link.getAttribute('data-jumplink');
-        const target = document.getElementById(id);
-        if (target && target.tagName === 'DETAILS' && !target.open) {
-          target.open = true;
-        }
-      });
-    });
-
     const headerHeight = parseInt(
       getComputedStyle(document.documentElement).getPropertyValue('--header-group-height') || '68',
       10
@@ -52,6 +35,7 @@
 
     const observer = new IntersectionObserver(
       (entries) => {
+        // Pick the entry closest to the top of the viewport that's currently intersecting.
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -61,6 +45,7 @@
         }
       },
       {
+        // Trigger when a section is roughly in the "reading band" below the sticky bar.
         rootMargin: `-${headerHeight + 60}px 0px -70% 0px`,
         threshold: 0
       }
@@ -68,6 +53,7 @@
 
     sections.forEach((section) => observer.observe(section));
 
+    // Sync active state on load if the URL already has a hash.
     const hash = window.location.hash.replace('#', '');
     if (hash && linkByTarget.has(hash)) {
       setActive(hash);
