@@ -4,9 +4,9 @@
 
    Pairs with sections/product-information.liquid and product-information.css.
 
-   Replaces the old tab click-to-activate/hide-panel behavior (there are no
-   more panels to hide — every section renders inline as a collapsible
-   <details> that's open by default). This script does two things:
+   Unchanged by the accordion-class rename: this script only targets
+   [data-sections]/[data-section] and checks tagName === 'DETAILS', so it
+   never depended on the shared .accordion classes.
 
      1. Force-opens a section's <details> before the browser's native
         anchor scroll happens, in case a visitor had collapsed it.
@@ -52,7 +52,6 @@
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Pick the entry closest to the top of the viewport that's currently intersecting.
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -62,7 +61,6 @@
         }
       },
       {
-        // Trigger when a section is roughly in the "reading band" below the sticky bar.
         rootMargin: `-${headerHeight + 60}px 0px -70% 0px`,
         threshold: 0
       }
@@ -70,7 +68,6 @@
 
     sections.forEach((section) => observer.observe(section));
 
-    // Sync active state on load if the URL already has a hash.
     const hash = window.location.hash.replace('#', '');
     if (hash && linkByTarget.has(hash)) {
       setActive(hash);
