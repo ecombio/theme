@@ -6,17 +6,13 @@
 
    Replaces the old tab click-to-activate/hide-panel behavior (there are no
    more panels to hide — every section renders inline as a collapsible
-   <details> that's open by default). This script does three things:
+   <details> that's open by default). This script does two things:
 
      1. Force-opens a section's <details> before the browser's native
         anchor scroll happens, in case a visitor had collapsed it.
      2. Highlights whichever jump link matches the section currently in
         view, via IntersectionObserver (a scrollspy), since there's no
         single "active panel" anymore to drive that state from.
-     3. Respects the "Allow sections to be collapsed" section setting
-        (data-collapsible="false"): when disabled, every section is forced
-        open and its summary header is locked so it can't be toggled by
-        mouse or keyboard.
    ========================================================================== */
 
 (() => {
@@ -30,23 +26,6 @@
     const sections = sectionsRoot.querySelectorAll('[data-section]');
     const linkByTarget = new Map();
     links.forEach((link) => linkByTarget.set(link.getAttribute('data-jumplink'), link));
-
-    // "Allow sections to be collapsed" section setting. Defaults to true
-    // unless explicitly set to "false".
-    const collapsible = sectionsRoot.getAttribute('data-collapsible') !== 'false';
-
-    if (!collapsible) {
-      sections.forEach((section) => {
-        // Force-open and lock it so it can't be collapsed by mouse or keyboard.
-        if (section.tagName === 'DETAILS') section.open = true;
-
-        const summary = section.querySelector(':scope > summary');
-        if (summary) {
-          summary.addEventListener('click', (e) => e.preventDefault());
-          summary.setAttribute('tabindex', '-1');
-        }
-      });
-    }
 
     function setActive(id) {
       links.forEach((link) => {
