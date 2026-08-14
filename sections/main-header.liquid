@@ -36,6 +36,23 @@
     assign menu_below = true
   endif
 
+  comment
+    ADDED — search style (icon+overlay vs always-visible bar).
+    Desktop-only distinction (see main-header.css @media min-width:
+    64rem) — mobile/tablet are unaffected either way, since they
+    always use the dedicated .main-header__search-row bar (rendered
+    further down) regardless of this setting; that row was never the
+    icon/overlay pattern to begin with. When search_bar is true, the
+    desktop search-trigger icon and its full overlay markup are
+    omitted entirely (see further down) rather than just hidden with
+    CSS, since a bar makes them fully redundant.
+  endcomment
+  assign search_style = section.settings.search_style | default: 'icon'
+  assign search_bar = false
+  if search_style == 'bar'
+    assign search_bar = true
+  endif
+
   assign trending_terms = ''
   for i in (1..12)
     assign key = 'trending_' | append: i
@@ -131,7 +148,7 @@
 {%- endcapture -%}
 
 <header
-  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if section.settings.logo_position == 'center' %} main-header--logo-center{% endif %}{% if menu_below %} main-header--menu-below{% endif %}"
+  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if section.settings.logo_position == 'center' %} main-header--logo-center{% endif %}{% if menu_below %} main-header--menu-below{% endif %}{% if search_bar %} main-header--search-bar{% endif %}"
   id="main-header"
   role="banner"
   data-transparent-header="{{ transparent_header_enabled }}"
@@ -186,34 +203,75 @@
       </div>
 
       {%- comment -%}
-        ADDED — only rendered inline here when menu_position is
-        "inline" (the default / previous behavior). When
-        menu_position is "below", this div is omitted entirely and
-        header_nav_markup is placed in .main-header__menu-row instead
-        (below .main-header__bar) — see that block further down.
+        ADDED — .main-header__nav-group wraps the nav AND (when
+        search_style is "bar") the inline search bar, and is always
+        rendered — even when both are empty (menu_position: below
+        with search_style: icon) — so it always occupies the same
+        DOM/grid slot. This matters specifically for
+        main-header--logo-center's 3-column grid (nav | logo | icons)
+        further down in main-header.css: with a stable 3-item
+        structure at all times, the grid's normal auto-placement
+        always lands logo in the middle column and icons on the
+        right, with no per-combination grid-column overrides needed
+        — previously, omitting the nav entirely (menu-below +
+        logo-center) required a special-cased override; that's no
+        longer necessary now that this wrapper is never omitted.
+
+        Inside the wrapper: the nav itself is still omitted when
+        menu_below is true (rendered in .main-header__menu-row
+        instead, further down), and the inline search bar is only
+        rendered when search_bar is true — each independently, so
+        this wrapper can hold nav only, bar only, both, or neither.
       {%- endcomment -%}
-      {%- unless menu_below -%}
-        <div class="main-header__nav">
-          {{ header_nav_markup }}
-        </div>
-      {%- endunless -%}
+      <div class="main-header__nav-group">
+        {%- unless menu_below -%}
+          <div class="main-header__nav">
+            {{ header_nav_markup }}
+          </div>
+        {%- endunless -%}
+        {%- if search_bar -%}
+          <div class="main-header__search-bar-inline">
+            {%- render 'header-search',
+              enable_predictive_search: section.settings.enable_predictive_search,
+              variant: 'desktop-bar',
+              trending_terms: trending_terms,
+              enable_typewriter: section.settings.enable_typewriter,
+              typewriter_type_speed: section.settings.typewriter_type_speed,
+              typewriter_hold_ms: section.settings.typewriter_hold_ms
+            -%}
+          </div>
+        {%- endif -%}
+      </div>
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
-        <li>
-          <button type="button"
-                  class="main-header__search-trigger"
-                  id="main-header-search-trigger"
-                  aria-haspopup="dialog"
-                  aria-expanded="false"
-                  aria-controls="main-header-search-overlay"
-                  aria-label="Search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <span class="visually-hidden">Search</span>
-          </button>
-        </li>
+        {%- comment -%}
+          ADDED — the search-trigger icon is only rendered when
+          search_style is "icon" (the default / previous behavior).
+          When search_style is "bar", the inline bar above already
+          covers this, and the icon + its overlay (further down) are
+          omitted entirely rather than just hidden with CSS, since
+          they'd be fully redundant. main-header.js's overlay IIFE
+          already no-ops safely when the trigger/overlay elements
+          aren't present (`if (!trigger || !overlay) return;`), so
+          nothing else needs to change there.
+        {%- endcomment -%}
+        {%- unless search_bar -%}
+          <li>
+            <button type="button"
+                    class="main-header__search-trigger"
+                    id="main-header-search-trigger"
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                    aria-controls="main-header-search-overlay"
+                    aria-label="Search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span class="visually-hidden">Search</span>
+            </button>
+          </li>
+        {%- endunless -%}
         {%- if show_wish != false -%}
           <li class="main-header__icons-item--wishlist">{%- render 'header-wishlist', show_label: label_wish -%}</li>
         {%- endif -%}
@@ -260,29 +318,38 @@
     </div>
   </div>
 
-  <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
-    <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
-    <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
-      <div class="main-header__search-overlay-top">
-        <a href="{{ routes.root_url }}" class="main-header__search-overlay-logo" aria-label="{{ shop.name }} home">
-          {%- render 'header-logo', logo: logo, logo_width: 84 -%}
-        </a>
-        <div class="main-header__search-overlay-inner">
-          {%- render 'header-search',
-            enable_predictive_search: section.settings.enable_predictive_search,
-            variant: 'overlay',
-            trending_terms: trending_terms,
-            enable_typewriter: section.settings.enable_typewriter,
-            typewriter_type_speed: section.settings.typewriter_type_speed,
-            typewriter_hold_ms: section.settings.typewriter_hold_ms
-          -%}
+  {%- comment -%}
+    ADDED — only rendered when search_style is "icon" (the default).
+    When search_style is "bar", the inline bar in .main-header__nav-group
+    covers search directly with no trigger/overlay needed, so this
+    entire block — including header-search's 'overlay' variant render
+    — is skipped rather than left in the DOM hidden.
+  {%- endcomment -%}
+  {%- unless search_bar -%}
+    <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
+      <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
+      <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
+        <div class="main-header__search-overlay-top">
+          <a href="{{ routes.root_url }}" class="main-header__search-overlay-logo" aria-label="{{ shop.name }} home">
+            {%- render 'header-logo', logo: logo, logo_width: 84 -%}
+          </a>
+          <div class="main-header__search-overlay-inner">
+            {%- render 'header-search',
+              enable_predictive_search: section.settings.enable_predictive_search,
+              variant: 'overlay',
+              trending_terms: trending_terms,
+              enable_typewriter: section.settings.enable_typewriter,
+              typewriter_type_speed: section.settings.typewriter_type_speed,
+              typewriter_hold_ms: section.settings.typewriter_hold_ms
+            -%}
+          </div>
+          <button type="button" class="main-header__search-overlay-cancel" data-search-overlay-close>
+            Cancel
+          </button>
         </div>
-        <button type="button" class="main-header__search-overlay-cancel" data-search-overlay-close>
-          Cancel
-        </button>
       </div>
     </div>
-  </div>
+  {%- endunless -%}
 
 </header>
 
@@ -323,7 +390,7 @@
       "type": "select",
       "id": "logo_position",
       "label": "Logo position",
-      "info": "Center moves the menu to the left (where the logo currently sits) and places the logo in the middle. Desktop only (1024px+) — mobile and tablet are unaffected. Not compatible with \"Below header row\" menu position — if both are set, the logo falls back to centering between the empty nav column and the icons.",
+      "info": "Center moves the menu to the left (where the logo currently sits) and places the logo in the middle. Desktop only (1024px+) — mobile and tablet are unaffected. Works with any Menu position or Search style combination.",
       "options": [
         { "value": "left", "label": "Left (menu next to logo)" },
         { "value": "center", "label": "Center (menu on the left)" }
@@ -342,6 +409,19 @@
         { "value": "below", "label": "Below header row" }
       ],
       "default": "inline"
+    },
+
+    { "type": "header", "content": "Search style" },
+    {
+      "type": "select",
+      "id": "search_style",
+      "label": "Search style",
+      "info": "Desktop only (1024px+) — mobile/tablet always use the search bar shown below the header, and the \"search drawer\" toggles under Mobile/Tablet Division below control that separately. \"Icon\" opens a full-screen search overlay when clicked. \"Bar\" shows an always-visible search input inline in the header, next to the menu.",
+      "options": [
+        { "value": "icon", "label": "Icon (opens overlay)" },
+        { "value": "bar", "label": "Always-visible bar" }
+      ],
+      "default": "icon"
     },
 
     { "type": "header", "content": "Transparent header" },
