@@ -11,7 +11,6 @@
   assign label_cart = section.settings.show_label_cart
   assign label_wish = section.settings.show_label_wishlist
   assign label_comp = section.settings.show_label_compare
-  assign enable_search_drawer_tablet = section.settings.enable_search_drawer_tablet
 
   assign section_width = section.settings.section_width
   case section_width
@@ -23,15 +22,9 @@
       assign width_class = 'main-header--default-width'
   endcase
 
-  # trending_terms is kept (always blank) so the header-search-drawer
-  # render calls below don't need their signatures changed -- that snippet
-  # still lives on its own and falls back to its own defaults on a blank
-  # value, same as before.
-  assign trending_terms = ''
-
   # Search behavior shared by every inline search instance on this page
-  # (the two header-search markup blocks below, plus the header-search-drawer
-  # renders). Computed once here instead of per-instance.
+  # (the two header-search markup blocks below). Computed once here
+  # instead of per-instance.
   assign hs_predictive = section.settings.enable_predictive_search
   if hs_predictive == blank
     assign hs_predictive = true
@@ -59,7 +52,7 @@
 </script>
 
 <header
-  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
+  class="main-header {{ width_class }}"
   id="main-header"
   role="banner"
   style="
@@ -83,23 +76,6 @@
           <span></span>
           <span></span>
         </button>
-      {%- endif -%}
-
-      {%- if section.settings.enable_search_drawer -%}
-        <div class="main-header__search-drawer-mobile-only">
-          {%- render 'header-search-drawer',
-            enable_predictive_search: section.settings.enable_predictive_search,
-            trending_terms: trending_terms
-          -%}
-        </div>
-      {%- endif -%}
-      {%- if enable_search_drawer_tablet -%}
-        <div class="main-header__search-drawer-tablet-only">
-          {%- render 'header-search-drawer',
-            enable_predictive_search: section.settings.enable_predictive_search,
-            trending_terms: trending_terms
-          -%}
-        </div>
       {%- endif -%}
 
       <div class="main-header__logo">
@@ -207,7 +183,7 @@
     {%- render 'header-menu', blocks: section.blocks -%}
   </div>
 
-  <div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
+  <div class="main-header__search-row">
     <div class="main-header__search-row-inner">
       {%- comment -%} Inlined from snippets/header-search.liquid, variant: mobile {%- endcomment -%}
       {%- liquid
@@ -320,22 +296,6 @@
       "id": "section_padding",
       "label": "Side padding",
       "min": 0, "max": 80, "step": 4, "unit": "px", "default": 32
-    },
-
-    { "type": "header", "content": "Mobile Division (< 640px)" },
-    {
-      "type": "checkbox",
-      "id": "enable_search_drawer",
-      "label": "Enable search drawer icon (mobile only, < 640px)",
-      "default": false
-    },
-
-    { "type": "header", "content": "Tablet Division (640px – 1023px)" },
-    {
-      "type": "checkbox",
-      "id": "enable_search_drawer_tablet",
-      "label": "Enable search drawer icon (tablet only, 640px – 1023px)",
-      "default": false
     },
 
     { "type": "header", "content": "Search (all breakpoints)" },
