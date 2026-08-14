@@ -509,6 +509,46 @@
   color: rgba(217, 64, 64, .6);
 }
 
+/* Typewriter overlay: sits on top of the (empty) input, cycling
+   through window.HS_TRENDING terms one character at a time. Hidden
+   via the `hidden` attribute (toggled in JS) as soon as the input
+   has a real value or voice search is listening. */
+.header-search__typewriter {
+  position: absolute;
+  left: 12px;
+  right: 80px;
+  top: 50%;
+  transform: translateY(-50%);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 15px;
+  color: var(--hs-text-muted);
+  pointer-events: none;
+}
+.header-search__typewriter[hidden] { display: none; }
+
+.hs-tw-char {
+  display: inline-block;
+  color: var(--hs-text-muted);
+}
+
+/* Vanish animation for characters being deleted: blue -> purple ->
+   red while fading out, then the JS removes the span on
+   `animationend`. */
+.hs-tw-char--vanish {
+  animation: hs-tw-vanish 260ms ease forwards;
+}
+
+@keyframes hs-tw-vanish {
+  0%   { color: #2563eb; opacity: 1;    transform: translateY(0); }
+  50%  { color: #9333ea; opacity: .65; }
+  100% { color: #dc2626; opacity: 0;    transform: translateY(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-tw-char--vanish { animation: none; opacity: 0; }
+}
+
 .header-search__clear,
 .header-search__voice,
 .header-search__submit {

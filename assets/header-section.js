@@ -209,6 +209,128 @@
     return html;
   }
 
+  // Typewriter effect for the search overlay. Built as an ES class +
+  // async/await loop rather than the old prototype + manual rAF-tick
+  // + resumable-state-map pattern: each term is typed and deleted a
+  // character at a time; deleting adds .hs-tw-char--vanish (the
+  // blue -> purple -> red fade lives entirely in CSS) and waits for
+  // `animationend` before removing the span. pause()/resume() stop
+  // and restart the cycle cleanly rather than trying to preserve
+  // mid-word state across a pause.
+  function HSTypewriter(el, terms, opts) {
+    opts = opts || {};
+    this.el = el;
+    this.terms = terms;
+    this.typeMs = opts.typeMs || 70;
+    this.deleteMs = opts.deleteMs || 40;
+    this.holdMs = opts.holdMs || 3200;
+    this.gapMs = opts.gapMs || 400;
+    this.destroyed = false;
+    this.paused = false;
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.run();
+  }
+
+  HSTypewriter.prototype.sleep = function (ms) {
+    var self = this;
+    return new Promise(function (resolve) {
+      self._timeoutId = setTimeout(resolve, ms);
+    });
+  };
+
+  HSTypewriter.prototype.waitWhilePaused = function () {
+    var self = this;
+    return (async function () {
+      while (self.paused && !self.destroyed) {
+        await self.sleep(150);
+      }
+    })();
+  };
+
+  HSTypewriter.prototype.run = async function () {
+    var i = 0;
+    while (!this.destroyed) {
+      await this.waitWhilePaused();
+      if (this.destroyed) return;
+
+      var term = this.terms[i % this.terms.length];
+
+      if (this.reduced) {
+        this.el.textContent = term;
+        await this.sleep(this.holdMs);
+      } else {
+        await this.typeTerm(term);
+        if (this.destroyed) return;
+        await this.waitWhilePaused();
+        if (this.destroyed) return;
+        await this.sleep(this.holdMs);
+        if (this.destroyed) return;
+        await this.deleteTerm();
+        if (this.destroyed) return;
+        await this.sleep(this.gapMs);
+      }
+
+      i++;
+    }
+  };
+
+  HSTypewriter.prototype.typeTerm = async function (term) {
+    for (var idx = 0; idx < term.length; idx++) {
+      if (this.destroyed || this.paused) { this.clearChars(); return; }
+      var span = document.createElement('span');
+      span.className = 'hs-tw-char';
+      span.textContent = term[idx];
+      this.el.appendChild(span);
+      await this.sleep(this.typeMs);
+    }
+  };
+
+  HSTypewriter.prototype.deleteTerm = async function () {
+    while (this.el.lastElementChild) {
+      if (this.destroyed) return;
+      var last = this.el.lastElementChild;
+      last.classList.add('hs-tw-char--vanish');
+      await this.waitForVanish(last);
+      if (last.parentNode) last.remove();
+      await this.sleep(this.deleteMs);
+    }
+  };
+
+  HSTypewriter.prototype.waitForVanish = function (el) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var finish = function () {
+        if (done) return;
+        done = true;
+        resolve();
+      };
+      el.addEventListener('animationend', finish, { once: true });
+      // Fallback in case the animation never fires (display:none
+      // ancestor, etc) so deletion can't stall indefinitely.
+      setTimeout(finish, 320);
+    });
+  };
+
+  HSTypewriter.prototype.clearChars = function () {
+    this.el.textContent = '';
+  };
+
+  HSTypewriter.prototype.pause = function () {
+    this.paused = true;
+  };
+
+  HSTypewriter.prototype.resume = function () {
+    if (!this.paused) return;
+    this.paused = false;
+    this.clearChars();
+  };
+
+  HSTypewriter.prototype.destroy = function () {
+    this.destroyed = true;
+    clearTimeout(this._timeoutId);
+  };
+
+
   function buildRailRecentGroup(recent, searchUrl) {
     if (!recent.length) return '';
 
@@ -261,6 +383,7 @@
     this.controller    = null;
     this._emptyVisible = false;
     this._recognition  = null;
+    this._typewriter   = null;
 
     this._listeners = [];
 
@@ -269,6 +392,7 @@
     this._syncClear();
 
     this._bindClear();
+    this._initTypewriter();
 
     if (!this.isPredictive) return;
 
@@ -305,6 +429,33 @@
           self._showEmpty();
         }
       });
+    }
+  };
+
+
+  HeaderSearch.prototype._initTypewriter = function () {
+    if (!this.root.hasAttribute('data-typewriter-enabled')) return;
+
+    var overlay = this.root.querySelector('[data-search-typewriter]');
+    var terms   = window.HS_TRENDING || [];
+    if (!overlay || !terms.length) return;
+
+    this._typewriter = new HSTypewriter(overlay, terms);
+
+    var self = this;
+    this._on(this.input, 'input', function () { self._syncTypewriterVisibility(); });
+    this._syncTypewriterVisibility();
+  };
+
+  HeaderSearch.prototype._syncTypewriterVisibility = function () {
+    if (!this._typewriter) return;
+    var overlay  = this.root.querySelector('[data-search-typewriter]');
+    var hasValue = this.input.value.length > 0;
+    if (overlay) overlay.hidden = hasValue;
+    if (hasValue) {
+      this._typewriter.pause();
+    } else {
+      this._typewriter.resume();
     }
   };
 
@@ -674,12 +825,18 @@
       self.voiceBtn.classList.add('header-search__voice--listening');
       self.root.classList.add('header-search--listening');
       self.voiceBtn.setAttribute('aria-label', 'Listening\u2026 tap to stop');
+      if (self._typewriter) {
+        self._typewriter.pause();
+        var overlay = self.root.querySelector('[data-search-typewriter]');
+        if (overlay) overlay.hidden = true;
+      }
     });
 
     recognition.addEventListener('end', function () {
       self.voiceBtn.classList.remove('header-search__voice--listening');
       self.root.classList.remove('header-search--listening');
       self.voiceBtn.setAttribute('aria-label', 'Search by voice');
+      self._syncTypewriterVisibility();
     });
 
     recognition.addEventListener('error', function (e) {
@@ -688,6 +845,7 @@
       self.voiceBtn.setAttribute('aria-label', 'Search by voice');
       console.error('Voice search error:', e.error);
       if (e.error === 'not-allowed') self.voiceBtn.hidden = true;
+      self._syncTypewriterVisibility();
     });
 
     this._on(this.voiceBtn, 'click', function () {
@@ -701,6 +859,7 @@
 
 
   HeaderSearch.prototype.destroy = function () {
+    if (this._typewriter) { this._typewriter.destroy(); this._typewriter = null; }
     if (this.controller) { this.controller.abort(); this.controller = null; }
     if (this._recognition) {
       try { this._recognition.abort(); } catch (_) {}
