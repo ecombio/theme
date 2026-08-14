@@ -1,6 +1,52 @@
 /* main-header.css
 
    Changelog:
+     2026-08-13 — ADDED: "Menu below header row" layout option
+                  (main-header--menu-below), paired with the new
+                  menu_position schema setting and the
+                  .main-header__menu-row markup in main-header.liquid.
+                  Desktop-only (gated to the same min-width: 64rem
+                  breakpoint as every other desktop-only feature in
+                  this file) — mobile/tablet always use the hamburger
+                  drawer regardless of this setting, so nothing new
+                  renders below that breakpoint.
+                    - .main-header__menu-row: hidden by default (base
+                      rule, mobile/tablet), shown as a full-width row
+                      under .main-header__bar only when both
+                      .main-header--menu-below is present AND the
+                      viewport is >=1024px. Background/border read the
+                      same --hdr-bg/--hdr-border custom properties as
+                      the rest of the header, so it automatically
+                      follows the transparent-over-hero override
+                      (scoped under #header-group-wrapper.is-transparent
+                      #main-header higher up in this file) with no
+                      extra rule needed.
+                    - The .menu-bar rendered inside .main-header__menu-row
+                      is NOT wrapped in .main-header__nav, so it does
+                      NOT match the `#main-header .main-header__nav
+                      .menu-bar { width:auto; margin:0!important; ... }`
+                      override further down — it instead falls through
+                      to the normal width-class centering rules
+                      (`#main-header.main-header--default-width
+                      .menu-bar { max-width: ...; margin-inline: auto
+                      !important; }` etc.), the same behavior
+                      .main-header__search-row-inner already gets.
+                      This is intentional: a below-header menu row
+                      should center/width-constrain like the search
+                      row, not shrink-to-fit like the inline nav does.
+                    - Logo-center + menu-below: main-header--logo-center's
+                      grid is `1fr auto 1fr` with 3 children (nav,
+                      logo, icons) assumed. With menu_position: below,
+                      .main-header__nav isn't rendered inside
+                      .main-header__inner at all (see
+                      main-header.liquid), so only 2 grid items exist
+                      and auto-placement would put the logo in column
+                      1 instead of the true center column. Added
+                      explicit grid-column overrides, scoped to the
+                      .main-header--logo-center.main-header--menu-below
+                      combination only, so logo-center by itself
+                      (nav still inline) is completely unaffected.
+
      2026-08-06 (i) — FIX: transparent-over-hero header was applying
                   at every viewport width, but it's a desktop-only
                   effect by design. Wrapped the three overrides added
@@ -569,6 +615,13 @@
 .main-header__search-row { border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
 .main-header__search-row-inner { max-width: 100%; margin: 0 auto; }
 
+/* ADDED — menu-below row. Hidden by default (mobile/tablet); this row
+   only exists in the DOM when menu_position is "below"
+   (main-header.liquid), and even then it's desktop-only in practice —
+   see the min-width: 64rem override further down. Mobile/tablet
+   always use the hamburger drawer regardless of this setting. */
+.main-header__menu-row { display: none; }
+
 #main-header.main-header--default-width .main-header__inner,
 #main-header.main-header--default-width .main-header__search-row-inner {
   max-width: var(--hdr-default-max-width);
@@ -968,7 +1021,15 @@
      brings this rule's specificity up to match (and, being later in
      the file, win the tie), so margin: 0 actually applies to the
      inline nav variant regardless of which section-width option is
-     active. */
+     active.
+
+     NOTE — this selector requires .main-header__nav as an ancestor,
+     so it does NOT match the .menu-bar rendered inside
+     .main-header__menu-row (menu-below layout, added 2026-08-13):
+     that menu-bar is deliberately left to inherit the normal
+     width-class centering rules above instead (same treatment as
+     .main-header__search-row-inner), rather than the inline nav's
+     shrink-to-fit/flush-left behavior. */
   #main-header .main-header__nav .menu-bar {
     width: auto;
     max-width: none !important;
@@ -1027,6 +1088,34 @@
        needed under grid — justify-self: end already pins this
        column's content to the row's end */
     margin-left: 0;
+  }
+
+  /* ADDED (2026-08-13) — "Menu below header row" layout
+     (menu_position: below in main-header.liquid's schema). Shows the
+     full-width .main-header__menu-row under .main-header__bar; the
+     inline .main-header__nav column isn't in the DOM at all in this
+     mode (see main-header.liquid), so nothing here needs to hide it. */
+  .main-header--menu-below .main-header__menu-row {
+    display: block;
+    width: 100%;
+    background: var(--hdr-bg);
+    border-top: 1px solid var(--hdr-border);
+  }
+
+  /* Logo-center + menu-below combo: .main-header--logo-center's grid
+     (1fr auto 1fr) assumes 3 children (nav, logo, icons) for
+     auto-placement to land the logo in the true center column. With
+     menu_position: below, .main-header__nav isn't rendered inside
+     .main-header__inner, so only 2 grid items exist and the logo
+     would auto-place into column 1 (left) instead. Explicit
+     grid-column keeps the logo centered and icons pinned right
+     even with the nav column empty. Scoped to this combination only
+     — logo-center by itself (nav still inline) is untouched. */
+  .main-header--logo-center.main-header--menu-below .main-header__logo {
+    grid-column: 2;
+  }
+  .main-header--logo-center.main-header--menu-below .main-header__icons {
+    grid-column: 3;
   }
 }
 
