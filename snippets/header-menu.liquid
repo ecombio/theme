@@ -1,24 +1,3 @@
-{%- comment -%}
-  snippets/header-menu.liquid
-  Self-contained: detects which block types are present, loads only the
-  CSS/JS those block types need, and renders both the desktop nav bar
-  and the mobile/tablet slide-in drawer (< 1024px) from the same block
-  loop, so they never drift out of sync with each other.
-
-  Usage:
-    {%- render 'header-menu', blocks: section.blocks -%}
-
-  Expects `blocks` to be the blocks array of whatever section is
-  rendering it (e.g. section.blocks from sections/main-header.liquid).
-  highlight.css is loaded unconditionally, same as it was inline —
-  it's the base styling for menu-bar items generally, not just
-  'highlight' blocks.
-
-  Mobile drawer reuses the .ecombio-mobile-nav / .ecombio-header__hamburger
-  CSS already shipped in main-header.css, and is opened/closed + accordion-
-  toggled by the IIFE at the bottom of main-header.js.
-{%- endcomment -%}
-
 {{ 'highlight.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -88,7 +67,6 @@
     <script src="{{ 'link-list.js' | asset_url }}" defer></script>
   {%- endif -%}
 
-  {%- comment -%} Mobile / tablet slide-in drawer (< 1024px). Reuses .ecombio-mobile-nav CSS. {%- endcomment -%}
   <div class="ecombio-mobile-nav" id="main-header-mobile-nav" aria-hidden="true">
     <div class="ecombio-mobile-nav__overlay" data-mobile-nav-close></div>
     <div class="ecombio-mobile-nav__panel" role="dialog" aria-modal="true" aria-label="Site navigation">
@@ -133,9 +111,21 @@
             endcase
           -%}
 
-          {%- if block.type == 'single-link' or block.type == 'highlight' -%}
+          {%- if block.type == 'single-link' -%}
             <li class="ecombio-mobile-nav__item" {{ block.shopify_attributes }}>
               <a class="ecombio-mobile-nav__link" href="{{ item_link }}">{{ item_label }}</a>
+            </li>
+
+          {%- elsif block.type == 'highlight' -%}
+            <li class="ecombio-mobile-nav__item ecombio-mobile-nav__item--highlight" {{ block.shopify_attributes }}>
+              <a class="ecombio-mobile-nav__link ecombio-mobile-nav__link--highlight" href="{{ item_link }}">
+                <span class="ecombio-mobile-nav__highlight-content">
+                  {{ item_label }}
+                  <svg class="star star-1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l2.6 7.9H22l-6.3 4.9 2.4 8-6.1-4.6L5.9 20.8l2.4-8L2 7.9h7.4z"/></svg>
+                  <svg class="star star-2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l2.6 7.9H22l-6.3 4.9 2.4 8-6.1-4.6L5.9 20.8l2.4-8L2 7.9h7.4z"/></svg>
+                  <svg class="star star-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l2.6 7.9H22l-6.3 4.9 2.4 8-6.1-4.6L5.9 20.8l2.4-8L2 7.9h7.4z"/></svg>
+                </span>
+              </a>
             </li>
 
           {%- elsif block.type == 'link-list' or block.type == 'mega-menu' -%}
