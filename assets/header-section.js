@@ -441,8 +441,12 @@
     if (!this.root.hasAttribute('data-typewriter-enabled')) return;
 
     var overlay = this.root.querySelector('[data-search-typewriter]');
+    // Only the term itself is typed/deleted — "Search for " is static
+    // markup (see header-section.liquid) so it never gets re-typed on
+    // every cycle.
+    var termEl  = this.root.querySelector('[data-search-typewriter-term]');
     var terms   = window.HS_TRENDING || [];
-    if (!overlay || !terms.length) return;
+    if (!overlay || !termEl || !terms.length) return;
 
     // The typewriter overlay is a visual substitute for the placeholder —
     // only one of the two should ever be rendered at a time, or they paint
@@ -452,7 +456,7 @@
     this._inputPlaceholder = this.input.getAttribute('placeholder');
     this.input.removeAttribute('placeholder');
 
-    this._typewriter = new HSTypewriter(overlay, terms);
+    this._typewriter = new HSTypewriter(termEl, terms);
 
     var self = this;
     this._on(this.input, 'input', function () { self._syncTypewriterVisibility(); });
