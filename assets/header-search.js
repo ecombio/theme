@@ -2,6 +2,14 @@
 
 (function () {
 
+  // FIX: idempotent load guard. main-header.liquid now hoists the <script
+  // src="header-search.js"> tag so it's only emitted once per page — but
+  // this makes a second, accidental inclusion (theme.liquid, an app block,
+  // a future edit) harmless instead of throwing on duplicate class
+  // declarations and registering a second set of global listeners.
+  if (window.__hsInitialized) return;
+  window.__hsInitialized = true;
+
   var MIN_QUERY_LENGTH = 2;
   var DEBOUNCE_MS      = 300;
   var CACHE_TTL_MS     = 60000;
@@ -195,7 +203,7 @@
   }
 
 
-  // FIX: constructor now accepts a stable `slotId` (e.g. 'desktop',
+  // FIX: constructor now accepts a stable `slotId` (e.g. 'desktop-bar',
   // 'mobile', 'overlay') and, if _twState has a saved snapshot for that
   // slot, resumes from it instead of always starting at
   // termIndex/charIndex 0. On every meaningful state change the instance
@@ -442,9 +450,16 @@
                         && !!this.predictiveUrl
                         && !!this.panel;
 
-    this.sfx = root.classList.contains('header-search--desktop') ? 'desktop'
-             : root.classList.contains('header-search--mobile')  ? 'mobile'
-             : 'search';
+    // FIX: previously guessed the variant by testing CSS classes
+    // ('header-search--desktop' / 'header-search--mobile'), neither of
+    // which matches the real variant strings this section ever renders
+    // (desktop-bar / mobile / overlay / drawer variants) — both of those
+    // checks failed and silently fell through to the 'search' fallback,
+    // so any two variants that both missed (e.g. overlay + a drawer
+    // instance mounted at the same time) collided on the same slot id.
+    // header-search.liquid now emits data-search-variant="{{ sfx }}" with
+    // the exact string Liquid already uses — read it directly instead.
+    this.sfx = root.dataset.searchVariant || 'search';
 
     this.activeIndex   = -1;
     this.controller    = null;
@@ -916,10 +931,10 @@
     var overlay = this.root.querySelector('[data-search-typewriter]');
     var opts    = window.HS_TYPEWRITER_OPTS || {};
 
-    // FIX: pass a stable slot id (desktop / mobile / search — from
-    // this.sfx) so AnimatedPlaceholder can look up and resume its saved
-    // state across a section reload instead of always restarting at
-    // term 1.
+    // Pass the stable slot id (now sourced from data-search-variant, see
+    // the FIX note on this.sfx above) so AnimatedPlaceholder can look up
+    // and resume its saved state across a section reload — and so two
+    // simultaneously-mounted instances never share a slot.
     this._typewriter = new AnimatedPlaceholder(this.input, terms, overlay, function (hasValue) {
       self.root.classList.toggle('header-search--has-value', hasValue);
     }, opts, this.sfx);
