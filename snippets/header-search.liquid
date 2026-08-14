@@ -19,6 +19,23 @@
   The block below is now wrapped in {% comment %}...{% endcomment %}
   rather than deleted, so it's a one-step re-enable: just remove the
   {% comment %} / {% endcomment %} wrapper around it to bring it back.
+
+  FIX — window.HS_TRENDING was only ever emitted inside the
+  {%- if show_typewriter -%} block, but it's not just typewriter
+  input: header-search.js's _showEmpty() also reads it (alongside
+  recent searches) to build the trending-pills panel shown when the
+  input is empty/focused. Since enable_typewriter defaults to false
+  in the section schema, most stores never emitted this script at
+  all — so window.HS_TRENDING stayed undefined, buildEmptyState()
+  returned '' for a visitor with no recent searches yet, and
+  _showEmpty() immediately closed the panel instead of opening it.
+  That reproduced on every variant (mobile/overlay/inline bar); it
+  was just most visible on the always-on-screen inline bar.
+  Fixed by always emitting window.HS_TRENDING once predictive search
+  is enabled, and gating only the typewriter-specific timing options
+  (window.HS_TYPEWRITER_OPTS) behind show_typewriter — the animation
+  settings are typewriter-only, but the term list itself is used
+  regardless of whether the animation is on.
 {%- endcomment -%}
 
 {%- liquid
@@ -37,26 +54,26 @@
 
 {%- if predictive -%}
   <script src="{{ 'header-search.js' | asset_url }}" defer="defer"></script>
-  {%- if show_typewriter -%}
-    <script>
-      window.HS_TRENDING = window.HS_TRENDING || [
-        {%- if trending_terms != blank -%}
-          {%- assign _terms = trending_terms | split: '||' -%}
-          {%- for t in _terms -%}
-            {{- t | json -}}{%- unless forloop.last -%},{%- endunless -%}
-          {%- endfor -%}
-        {%- else -%}
-          "electric scooters","electric bikes","electric skateboards","electric cargo bikes",
-          "electric city bikes","electric fat bikes","electric folding bikes","electric mountain bikes",
-          "commuter electric scooters","off-road electric scooters","performance electric scooters","youth electric scooters"
-        {%- endif -%}
-      ];
-      window.HS_TYPEWRITER_OPTS = window.HS_TYPEWRITER_OPTS || {
-        typeSpeed: {{ typewriter_type_speed | default: 70 }},
-        holdMs: {{ typewriter_hold_ms | default: 3200 }}
-      };
-    </script>
-  {%- endif -%}
+  <script>
+    window.HS_TRENDING = window.HS_TRENDING || [
+      {%- if trending_terms != blank -%}
+        {%- assign _terms = trending_terms | split: '||' -%}
+        {%- for t in _terms -%}
+          {{- t | json -}}{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      {%- else -%}
+        "electric scooters","electric bikes","electric skateboards","electric cargo bikes",
+        "electric city bikes","electric fat bikes","electric folding bikes","electric mountain bikes",
+        "commuter electric scooters","off-road electric scooters","performance electric scooters","youth electric scooters"
+      {%- endif -%}
+    ];
+    {%- if show_typewriter -%}
+    window.HS_TYPEWRITER_OPTS = window.HS_TYPEWRITER_OPTS || {
+      typeSpeed: {{ typewriter_type_speed | default: 70 }},
+      holdMs: {{ typewriter_hold_ms | default: 3200 }}
+    };
+    {%- endif -%}
+  </script>
 {%- endif -%}
 
 <div class="header-search header-search--{{ sfx }}{% unless predictive %} header-search--basic{% endunless %}"
