@@ -1,43 +1,3 @@
-{%- comment -%}
-  snippets/header-search.liquid
-
-  CHANGED — added a static "Ask AI" row, rendered only when
-  variant == 'overlay' (sfx == 'overlay' below), placed between the
-  search form and the results panel. This is the one reliable spot for
-  it: header-search.js only ever rewrites .header-search__panel's
-  innerHTML (trending pills / recent searches / live results), so
-  putting Ask AI as a sibling here means it's never at the mercy of
-  that re-render and always sits in the same place relative to the
-  input, regardless of what's currently showing below it.
-
-  Points to routes.search_url by default since there's no assistant
-  endpoint wired up yet — replace the href with a real one, or delete
-  the whole {%- if sfx == 'overlay' -%} block below if you don't want
-  this feature at all.
-
-  DISABLED (this pass) — Ask AI is turned off until further notice.
-  The block below is now wrapped in {% comment %}...{% endcomment %}
-  rather than deleted, so it's a one-step re-enable: just remove the
-  {% comment %} / {% endcomment %} wrapper around it to bring it back.
-
-  FIX — window.HS_TRENDING was only ever emitted inside the
-  {%- if show_typewriter -%} block, but it's not just typewriter
-  input: header-search.js's _showEmpty() also reads it (alongside
-  recent searches) to build the trending-pills panel shown when the
-  input is empty/focused. Since enable_typewriter defaults to false
-  in the section schema, most stores never emitted this script at
-  all — so window.HS_TRENDING stayed undefined, buildEmptyState()
-  returned '' for a visitor with no recent searches yet, and
-  _showEmpty() immediately closed the panel instead of opening it.
-  That reproduced on every variant (mobile/overlay/inline bar); it
-  was just most visible on the always-on-screen inline bar.
-  Fixed by always emitting window.HS_TRENDING once predictive search
-  is enabled, and gating only the typewriter-specific timing options
-  (window.HS_TYPEWRITER_OPTS) behind show_typewriter — the animation
-  settings are typewriter-only, but the term list itself is used
-  regardless of whether the animation is on.
-{%- endcomment -%}
-
 {%- liquid
   assign predictive = true
   if enable_predictive_search == false
@@ -132,28 +92,6 @@
     </button>
 
   </form>
-
-  {%- comment -%}
-    ASK AI — DISABLED until further notice. Wrapped rather than
-    deleted so it can be turned back on later by removing this
-    {% comment %}/{% endcomment %} wrapper (and the matching one
-    just below, right before {%- endif -%}). Do not delete the
-    block itself unless you're sure you won't want it back.
-
-  {%- if sfx == 'overlay' -%}
-    <div class="main-header__search-overlay-ask-wrap">
-      <a href="{{ routes.search_url }}" class="main-header__search-overlay-ask">
-        <span class="main-header__search-overlay-ask-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/>
-            <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z"/>
-          </svg>
-        </span>
-        <span class="main-header__search-overlay-ask-label">Ask AI</span>
-      </a>
-    </div>
-  {%- endif -%}
-  {%- endcomment -%}
 
   {%- if predictive -%}
     <div class="header-search__panel"
