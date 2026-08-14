@@ -23,30 +23,12 @@
       assign width_class = 'main-header--default-width'
   endcase
 
-  comment
-    ADDED — menu position (inline vs below). Desktop-only distinction
-    (see main-header.css @media min-width: 64rem); mobile/tablet keep
-    the hamburger drawer regardless of this setting, since the drawer
-    is rendered from `blocks` separately via header-menu-mobile
-    markup elsewhere, not from header_nav_markup below.
-  endcomment
   assign menu_position = section.settings.menu_position | default: 'inline'
   assign menu_below = false
   if menu_position == 'below'
     assign menu_below = true
   endif
 
-  comment
-    ADDED — search style (icon+overlay vs always-visible bar).
-    Desktop-only distinction (see main-header.css @media min-width:
-    64rem) — mobile/tablet are unaffected either way, since they
-    always use the dedicated .main-header__search-row bar (rendered
-    further down) regardless of this setting; that row was never the
-    icon/overlay pattern to begin with. When search_bar is true, the
-    desktop search-trigger icon and its full overlay markup are
-    omitted entirely (see further down) rather than just hidden with
-    CSS, since a bar makes them fully redundant.
-  endcomment
   assign search_style = section.settings.search_style | default: 'icon'
   assign search_bar = false
   if search_style == 'bar'
@@ -62,40 +44,6 @@
     endif
   endfor
 
-  comment
-    ADDED — transparent-over-hero header (see main-header.css /
-    header-group.css / header-group.js for the rest of the
-    implementation). Enabled on the homepage always, plus any Page
-    resource whose handle is listed in the "Additional pages" setting
-    below (for landing pages built with the same slideshow hero as
-    the homepage). Computed entirely server-side — from
-    request.page_type / page.handle rather than any client-side URL
-    check — so it can never be spoofed or drift out of sync, and it
-    degrades safely to "false" (today's normal solid header) on every
-    other page even if the JS fails to load.
-
-    Kept handle-based rather than checking page.template_suffix, so
-    this works no matter which template file each landing page
-    happens to use — it only cares about the page's URL handle, which
-    is what was actually given for this feature. handleize is applied
-    to both sides of the comparison: page.handle is already lowercase
-    /hyphenated (Shopify generates it that way), and running the
-    merchant-entered list through the same filter means stray spaces,
-    capitalization, or double-spaces typed into the setting (e.g.
-    "Electric  Bikes") still resolve to the correct "electric-bikes"
-    instead of silently failing to match.
-
-    ADDED (master toggle) — everything above was previously always-on
-    for the homepage with no way to turn it off short of editing this
-    file. enable_transparent_header (default: true, so existing
-    stores keep today's behavior with zero config change) now gates
-    the entire block: when the merchant unchecks it in the theme
-    editor, transparent_header_enabled is forced false regardless of
-    page type or the "Additional pages" list, and the header renders
-    solid everywhere, every time — same as if the feature didn't
-    exist. Checked first, before request.page_type, so nothing below
-    even needs to run once it's off.
-  endcomment
   assign transparent_header_enabled = false
   if section.settings.enable_transparent_header != false
     if request.page_type == 'index'
@@ -117,31 +65,6 @@
 -%}
 
 {%- if transparent_header_enabled -%}
-  {%- comment -%}
-    ADDED — pairs with data-transparent-header below. Emitted as an
-    inline server-rendered style rather than a class on <body> (which
-    we don't control from this file, and header-group.css's earlier
-    guess at that class — .template-index — didn't match this theme).
-    This is computed from the same transparent_header_enabled check
-    above, so it's guaranteed correct with zero dependency on
-    theme.liquid or JS timing: overrides header-group.css's
-    `main[role="main"] { padding-top: var(--header-group-height...) }`
-    so the hero/slideshow section starts at the very top of the page
-    instead of leaving a gap the height of the header above it.
-    !important since header-group.css's rule loads from a separate
-    stylesheet and doesn't use one itself. Applies equally to the
-    homepage and any landing page listed in "Additional pages" below,
-    since both share this same variable.
-
-    FIX (desktop-only transparency) — wrapped in the same
-    min-width: 64rem breakpoint used everywhere else the transparent
-    header is scoped (main-header.css, header-group.css,
-    header-group.js). Transparency is a desktop-only effect; on
-    mobile/tablet the header stays solid (see the other three files),
-    so the padding this rule removes must stay reserved on those
-    breakpoints too — otherwise page content would render underneath
-    the solid fixed header instead of below it.
-  {%- endcomment -%}
   <style>
     @media (min-width: 64rem) {
       main[role="main"] { padding-top: 0 !important; }
@@ -149,13 +72,6 @@
   </style>
 {%- endif -%}
 
-{%- comment -%}
-  ADDED — the nav is captured once here rather than rendered inline
-  where it's used, so the exact same markup can be placed either
-  inside .main-header__inner (menu_position: inline) or in its own
-  full-width row below .main-header__bar (menu_position: below)
-  without rendering header-menu twice or duplicating its render call.
-{%- endcomment -%}
 {%- capture header_nav_markup -%}
   {%- render 'header-menu', blocks: section.blocks -%}
 {%- endcapture -%}
@@ -215,27 +131,6 @@
         {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
       </div>
 
-      {%- comment -%}
-        ADDED — .main-header__nav-group wraps the nav AND (when
-        search_style is "bar") the inline search bar, and is always
-        rendered — even when both are empty (menu_position: below
-        with search_style: icon) — so it always occupies the same
-        DOM/grid slot. This matters specifically for
-        main-header--logo-center's 3-column grid (nav | logo | icons)
-        further down in main-header.css: with a stable 3-item
-        structure at all times, the grid's normal auto-placement
-        always lands logo in the middle column and icons on the
-        right, with no per-combination grid-column overrides needed
-        — previously, omitting the nav entirely (menu-below +
-        logo-center) required a special-cased override; that's no
-        longer necessary now that this wrapper is never omitted.
-
-        Inside the wrapper: the nav itself is still omitted when
-        menu_below is true (rendered in .main-header__menu-row
-        instead, further down), and the inline search bar is only
-        rendered when search_bar is true — each independently, so
-        this wrapper can hold nav only, bar only, both, or neither.
-      {%- endcomment -%}
       <div class="main-header__nav-group">
         {%- unless menu_below -%}
           <div class="main-header__nav">
@@ -257,17 +152,6 @@
       </div>
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
-        {%- comment -%}
-          ADDED — the search-trigger icon is only rendered when
-          search_style is "icon" (the default / previous behavior).
-          When search_style is "bar", the inline bar above already
-          covers this, and the icon + its overlay (further down) are
-          omitted entirely rather than just hidden with CSS, since
-          they'd be fully redundant. main-header.js's overlay IIFE
-          already no-ops safely when the trigger/overlay elements
-          aren't present (`if (!trigger || !overlay) return;`), so
-          nothing else needs to change there.
-        {%- endcomment -%}
         {%- unless search_bar -%}
           <li>
             <button type="button"
@@ -302,16 +186,6 @@
     </div>
   </div>
 
-  {%- comment -%}
-    ADDED — menu-below row. Only rendered when menu_position is
-    "below". Sits as its own full-width row directly under
-    .main-header__bar (before .main-header__search-row), sharing the
-    exact same header_nav_markup captured above. Desktop-only in
-    practice — see the display:none base rule + min-width: 64rem
-    override in main-header.css — mobile/tablet keep the hamburger
-    drawer regardless of this setting, so nothing renders here below
-    that breakpoint.
-  {%- endcomment -%}
   {%- if menu_below -%}
     <div class="main-header__menu-row">
       {{ header_nav_markup }}
@@ -331,13 +205,6 @@
     </div>
   </div>
 
-  {%- comment -%}
-    ADDED — only rendered when search_style is "icon" (the default).
-    When search_style is "bar", the inline bar in .main-header__nav-group
-    covers search directly with no trigger/overlay needed, so this
-    entire block — including header-search's 'overlay' variant render
-    — is skipped rather than left in the DOM hidden.
-  {%- endcomment -%}
   {%- unless search_bar -%}
     <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
       <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>

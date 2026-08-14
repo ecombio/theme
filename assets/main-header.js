@@ -1,45 +1,3 @@
-/*
- * ------------------------------------------------------------
- * main-header.js
- *
- * The sticky-positioning/spacer-sync IIFE and the scroll-driven
- * autohide IIFE live in assets/header-group.js (loaded centrally in
- * theme.liquid, before this file). Nothing here duplicates that.
- *
- * This file owns two things specific to main-header.liquid:
- *   1. The menu-bar horizontal-scroll edge-fade.
- *   2. The desktop search-icon overlay: open/close, focus management,
- *      Escape + backdrop dismissal.
- *
- * FIX (this pass):
- *   - #header-group-wrapper has `will-change: transform` set
- *     permanently (header-group.css), so it *always* acts as a
- *     containing block for any `position: fixed` descendant — the
- *     same effect a real `transform` has. .main-header__search-overlay
- *     is `position: fixed` and lives inside #header-group-wrapper, so
- *     instead of covering the viewport it was being boxed into the
- *     header's own ~56–68px height, producing the tiny scrollable
- *     strip instead of a full-screen takeover.
- *   - Fix: move the overlay to be a direct child of <body> on init,
- *     so it's no longer a descendant of #header-group-wrapper and is
- *     free to size against the real viewport. See relocateOverlay()
- *     below. Re-run on 'shopify:section:load' too, since a section
- *     reload re-renders main-header.liquid's markup back inside the
- *     header wrapper.
- *
- * CHANGED (previous pass, unrelated to the fix above):
- *   - Opening the overlay now also hides #header-group-wrapper
- *     entirely (adds 'is-search-active' to it — see main-header.css),
- *     instead of leaving it visible/dimmed behind a transparent or
- *     semi-transparent backdrop. The overlay carries its own compact
- *     logo + search + Cancel row (see main-header.liquid), so nothing
- *     essential is lost by hiding the real header underneath.
- *   - The trigger button now acts as a toggle: clicking it again while
- *     the overlay is already open closes it, instead of re-running
- *     open() and just re-focusing the input.
- * ------------------------------------------------------------
- */
-
 (function () {
   'use strict';
 
@@ -80,12 +38,6 @@
   }
 })();
 
-/*
- * Desktop search icon -> full-screen overlay takeover.
- * #main-header-search-trigger is only visible >=1024px (main-header.css),
- * so this can never be opened on mobile/tablet — no breakpoint check
- * needed here.
- */
 (function () {
   'use strict';
 
@@ -99,14 +51,8 @@
   var closeEls = overlay.querySelectorAll('[data-search-overlay-close]');
   var lastFocused = null;
   var isOpen = false;
-  var CLOSE_TRANSITION_MS = 200; // matches .main-header__search-overlay-panel transition duration
+  var CLOSE_TRANSITION_MS = 200;
 
-  // ADDED — see file header comment. #header-group-wrapper carries a
-  // permanent `will-change: transform`, which makes it a containing
-  // block for any `position: fixed` descendant. Moving the overlay to
-  // be a direct child of <body> takes it out from under that
-  // containing block entirely, so `position: fixed; inset: 0;` sizes
-  // against the real viewport again.
   function relocateOverlay() {
     if (overlay.parentElement !== document.body) {
       document.body.appendChild(overlay);
@@ -120,32 +66,19 @@
     isOpen = true;
     lastFocused = document.activeElement;
 
-    // Section reloads (theme editor, shopify:section:load) re-render
-    // main-header.liquid's markup back inside the header wrapper, so
-    // re-check placement every time the overlay opens, not just once
-    // at parse time.
     relocateOverlay();
 
     overlay.hidden = false;
-    // wait a frame so the hidden -> visible change and the opacity/transform
-    // transition don't collapse into a single instant jump
     requestAnimationFrame(function () {
       overlay.classList.add('is-open');
     });
 
-    // ADDED — hide the real header entirely while search is active,
-    // rather than leaving it visible (dimmed or otherwise) behind the
-    // overlay. The overlay's own top row (logo + input + Cancel)
-    // stands in for it.
     if (headerGroup) headerGroup.classList.add('is-search-active');
 
     trigger.setAttribute('aria-expanded', 'true');
     document.body.style.overflow = 'hidden';
 
     if (input) {
-      // header-search.js already shows the trending/recent-searches panel
-      // on the input's focus event, so focusing it here is all that's
-      // needed to populate the overlay — no extra wiring required.
       setTimeout(function () { input.focus(); }, 50);
     }
 
@@ -209,8 +142,5 @@
     el.addEventListener('click', close);
   });
 
-  // Section re-render (theme editor) drops fresh markup for the
-  // overlay back inside #header-group-wrapper — re-run relocation so
-  // it doesn't silently regress next time it's opened.
   document.addEventListener('shopify:section:load', relocateOverlay);
 })();

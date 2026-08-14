@@ -1,302 +1,3 @@
-/* main-header.css
-
-   Changelog:
-     2026-08-13 (3) — FIX: predictive-search dropdown (.header-search__panel)
-                  was being invisibly clipped to zero height whenever
-                  search_style was "bar". Root cause: .main-header__nav-group
-                  (added in pass (2) below) carried `overflow: hidden`,
-                  inherited from the old .main-header__nav shrink-safety
-                  fix (2026-08-06e) — but nav-group is now the shared
-                  flex container for BOTH .main-header__nav and, in bar
-                  mode, .main-header__search-bar-inline. The dropdown
-                  panel (position: absolute; top: calc(100% + 6px), see
-                  header-search.css) is a descendant of nav-group, so
-                  nav-group's overflow: hidden clipped it before it
-                  could ever become visible below the input — it was
-                  rendering correctly, just invisible.
-                  .main-header__nav already carries its own independent
-                  `overflow: hidden` (still present, unchanged, further
-                  down in this same @media block) which continues to
-                  clip the horizontally-scrolling nav exactly as before
-                  — nav-group duplicating that same overflow rule was
-                  never actually needed for the nav's own behavior, and
-                  duplicating it is what broke the search bar sibling.
-                  Removed `overflow: hidden` from `.main-header__nav-group`
-                  only; `min-width: 0` and `flex-shrink: 1` are unchanged
-                  and still do the actual shrink work for both children.
-
-     2026-08-13 (2) — ADDED: "Always-visible bar" search style
-                  (search_style: bar in main-header.liquid's schema),
-                  alongside the existing icon+overlay pattern
-                  (search_style: icon, default/unchanged). Paired
-                  with the new .main-header__search-bar-inline markup
-                  and the .main-header__nav-group wrapper introduced
-                  in this same pass:
-                    - .main-header__nav-group now wraps the inline
-                      nav (main-header.liquid still omits it when
-                      menu_position is "below") and, when
-                      search_style is "bar", the inline search bar
-                      next to it. This wrapper is ALWAYS rendered —
-                      even fully empty — specifically so
-                      main-header--logo-center's 3-column grid
-                      (nav | logo | icons) always sees exactly 3
-                      items and never needs per-combination
-                      grid-column overrides; the previous
-                      .main-header--logo-center.main-header--menu-below
-                      override from pass (1) below is removed as a
-                      result, since it's no longer needed.
-                    - .main-header__search-bar-inline: hidden by
-                      default (mobile/tablet always keep the separate
-                      .main-header__search-row bar, unaffected by this
-                      setting) and shown only at desktop
-                      (min-width: 64rem) when main-header--search-bar
-                      is present. When active, the desktop
-                      search-trigger icon and its entire overlay
-                      markup (including its own header-search render)
-                      are omitted server-side rather than hidden with
-                      CSS, since they're fully redundant once the bar
-                      is visible — see main-header.liquid.
-                  No changes to header-group.css, header-group.js,
-                  main-header.js, or header-search.liquid were
-                  needed: main-header.js's overlay IIFE already
-                  no-ops safely when the trigger/overlay aren't
-                  present, and header-search.liquid is reused as-is
-                  with a new variant name ('desktop-bar') purely to
-                  keep its internal element IDs unique from the
-                  always-present 'mobile' variant and the
-                  now-conditional 'overlay' variant.
-
-     2026-08-13 (1) — ADDED: "Menu below header row" layout option
-                  (main-header--menu-below), paired with the new
-                  menu_position schema setting and the
-                  .main-header__menu-row markup in main-header.liquid.
-                  Desktop-only (gated to the same min-width: 64rem
-                  breakpoint as every other desktop-only feature in
-                  this file) — mobile/tablet always use the hamburger
-                  drawer regardless of this setting, so nothing new
-                  renders below that breakpoint.
-                    - .main-header__menu-row: hidden by default (base
-                      rule, mobile/tablet), shown as a full-width row
-                      under .main-header__bar only when both
-                      .main-header--menu-below is present AND the
-                      viewport is >=1024px. Background/border read the
-                      same --hdr-bg/--hdr-border custom properties as
-                      the rest of the header, so it automatically
-                      follows the transparent-over-hero override
-                      (scoped under #header-group-wrapper.is-transparent
-                      #main-header higher up in this file) with no
-                      extra rule needed.
-                    - The .menu-bar rendered inside .main-header__menu-row
-                      is NOT wrapped in .main-header__nav, so it does
-                      NOT match the `#main-header .main-header__nav
-                      .menu-bar { width:auto; margin:0!important; ... }`
-                      override further down — it instead falls through
-                      to the normal width-class centering rules
-                      (`#main-header.main-header--default-width
-                      .menu-bar { max-width: ...; margin-inline: auto
-                      !important; }` etc.), the same behavior
-                      .main-header__search-row-inner already gets.
-                      This is intentional: a below-header menu row
-                      should center/width-constrain like the search
-                      row, not shrink-to-fit like the inline nav does.
-                    - Logo-center + menu-below: main-header--logo-center's
-                      grid is `1fr auto 1fr` with 3 children (nav,
-                      logo, icons) assumed. With menu_position: below,
-                      .main-header__nav isn't rendered inside
-                      .main-header__inner at all (see
-                      main-header.liquid), so only 2 grid items exist
-                      and auto-placement would put the logo in column
-                      1 instead of the true center column. Added
-                      explicit grid-column overrides, scoped to the
-                      .main-header--logo-center.main-header--menu-below
-                      combination only, so logo-center by itself
-                      (nav still inline) is completely unaffected.
-
-     2026-08-06 (i) — FIX: transparent-over-hero header was applying
-                  at every viewport width, but it's a desktop-only
-                  effect by design. Wrapped the three overrides added
-                  in pass (h) below — the --hdr-* var overrides, the
-                  .menu-bar background override, and the logo filter
-                  — in the same @media (min-width: 64rem) breakpoint
-                  this file already uses for its own desktop division
-                  (see the lg: 1024px block further down). Below
-                  1024px these selectors simply won't match, so the
-                  header stays visually solid the way it always has,
-                  regardless of whether header-group.js adds
-                  .is-transparent to the wrapper (that's also gated to
-                  desktop now — see header-group.js — but keeping the
-                  CSS gated too means mobile/tablet render correctly
-                  even if JS state and viewport width ever briefly
-                  disagree, e.g. mid-resize). header-group.css's own
-                  .is-transparent rule and main-header.liquid's inline
-                  padding-removal <style> received matching fixes so
-                  all three pieces of this feature agree on the same
-                  breakpoint.
-
-     2026-08-06 (h) — ADDED: transparent-over-hero header state
-                  (homepage only). Paired with header-group.js, which
-                  toggles .is-transparent on #header-group-wrapper,
-                  and header-group.css, which drops that wrapper's
-                  own background/shadow. This file handles everything
-                  belonging to main-header.liquid's own markup:
-                    - .main-header__bar and .main-header__nav .menu-bar
-                      both paint their own opaque white background
-                      independently of the wrapper (var(--hdr-bg) and
-                      a hardcoded #ffffff respectively) — dropping the
-                      wrapper's background alone wasn't enough, these
-                      two would still paint solid white on top of it.
-                    - --hdr-text / --hdr-muted / --hdr-accent /
-                      --hdr-border are overridden to white/transparent
-                      variants scoped under .is-transparent #main-header,
-                      so nav links, icons, and the hamburger — every-
-                      thing that already consumes these vars — flips
-                      to white automatically with no per-element rule
-                      needed.
-                    - .menu-bar__link previously hardcoded color:
-                      #1a1a1a instead of consuming var(--hdr-text) like
-                      every other text element in this file. Changed
-                      it to var(--hdr-text) (visually ~identical to
-                      the old #1a1a1a against --hdr-text's #111111
-                      default) specifically so it responds to the
-                      override above instead of needing a duplicate
-                      transparent-mode rule.
-                    - Logo: no dedicated light-logo asset/setting was
-                      available, so a CSS filter (brightness(0)
-                      invert(1)) forces any dark logo image/SVG to
-                      white while transparent. This is a blunt
-                      instrument — it'll distort a multi-color or
-                      already-light logo. If settings.logo has a
-                      dedicated light/reversed variant, swap this for
-                      that instead.
-                  Added `transition: color 0.2s ease` to the elements
-                  that change color (nav links, icons, hamburger bars)
-                  so the white<->dark swap crossfades instead of
-                  snapping, matching the background transition already
-                  added in header-group.css.
-
-     2026-08-06 (g) — FIX: header nav/icons rendered in a visibly
-                  different font than the utility bar / rest of the
-                  theme on non-Apple platforms (Windows, Android).
-                  Root cause: this file defined its own standalone
-                  --hdr-font stack instead of using the theme's real
-                  font variable (--font-primary--family / --font-body,
-                  set in theme.css and, for merchant-editable font
-                  settings, css-variables.liquid). The two stacks look
-                  identical on Mac/iOS because both start with
-                  -apple-system/BlinkMacSystemFont, but diverge after
-                  that: this file fell back to 'Helvetica Neue', Arial
-                  while the theme-wide stack falls back to "Segoe UI",
-                  Roboto, Helvetica, Arial — so on any OS where the
-                  first two entries aren't available, the header and
-                  the utility bar rendered in genuinely different
-                  fonts. Fixed by pointing --hdr-font at
-                  var(--font-primary--family, ...), keeping the old
-                  local stack only as the var()'s fallback in case
-                  theme.css/css-variables.liquid isn't loaded for some
-                  reason. No other rule in this file changed — every
-                  selector below already consumed font-family via
-                  var(--hdr-font), so this single definition change
-                  fixes the whole section.
-
-     2026-08-06 (f) — FIX: icon group (search/wishlist/account/cart)
-                  was not reliably anchored to the far right of the
-                  header on desktop. .main-header__inner is a flex row
-                  with no justify-content set, so with no item
-                  configured to absorb leftover space, extra room
-                  simply appeared *after* the last flex item (the
-                  icons) instead of pushing the icons to the row's
-                  end — most noticeable once labels were hidden and
-                  the icons group got narrower. Added
-                  margin-left: auto to .main-header__icons: an auto
-                  margin on a flex item consumes all remaining free
-                  space on that side, which pins the icons to the far
-                  right regardless of how much width the logo/nav take
-                  up, at every breakpoint (mobile/tablet/desktop all
-                  share this same flex row).
-
-     2026-08-06 (e) — FIX: search pill overlapping the last nav item at
-                  desktop widths. Root cause was a broken flex-shrink
-                  chain: .main-header__nav had min-width:0 + flex-shrink:1
-                  so it *should* shrink to make room for the fixed-width
-                  220px search pill, but its child .menu-bar never got
-                  min-width:0 — so .menu-bar's automatic minimum fell
-                  back to its content's natural (min-content) size and
-                  blocked the shrink before it ever reached the actual
-                  scrollable .menu-bar__container. Added min-width:0 to
-                  .menu-bar and overflow:hidden to .main-header__nav as
-                  a safety net. Also restored .main-header__nav .menu-bar
-                  to position:relative (was position:static) so
-                  .menu-bar__edge-fade anchors to .menu-bar again instead
-                  of escaping up to .main-header__bar.
-
-     2026-07-30 (d) — FIX: restored the dark + blurred backdrop behind
-                  the search overlay. The previous pass (c, below) had
-                  removed it entirely (transparent, no blur, no fade),
-                  which no longer matched the intended design (dimmed,
-                  blurred page behind the search panel). Reverted
-                  .main-header__search-overlay-backdrop back to a
-                  dark scrim with backdrop-filter: blur, with an
-                  opacity fade tied to .main-header__search-overlay.is-open,
-                  the same pattern already used for the mega-menu's
-                  .showcase-backdrop (see showcase.css) for consistency.
-
-     2026-07-30 (c) — Overlay is no longer a full-screen dark takeover.
-                  Matches the real Nike overlay: the panel sits at the
-                  top of the viewport, sized to its own content (search
-                  bar + suggestions + product row), and the rest of the
-                  page stays fully visible/interactive underneath —
-                  no dimmed backdrop, no thick frame border. Clicking
-                  outside the panel (or Cancel/Escape) still closes it,
-                  via the same full-viewport backdrop element, just
-                  made invisible instead of dark.
-                  Summary of what changed vs the previous pass:
-                    - .main-header__search-overlay-backdrop: background
-                      is now transparent instead of a dark scrim, and
-                      it no longer fades in/out (nothing to fade).
-                    - .main-header__search-overlay-panel: no longer
-                      stretches to bottom: 10px / inset frame; now
-                      top: 0, sized to content with a max-height +
-                      scroll fallback, flat corners, and a soft drop
-                      shadow along its bottom edge instead of a full
-                      dark backdrop to separate it from the page.
-                    - Removed the .main-header__search-overlay::after
-                      inset box-shadow "frame" — Nike's real overlay
-                      doesn't have one.
-                  #header-group-wrapper is still hidden (opacity: 0)
-                  while the overlay is open — unchanged from before.
-
-     2026-07-30 (b) — NIKE-STYLE REDESIGN. Visual language only; none
-                  of the structural/positioning fixes from the previous
-                  pass (stacking context, section-width variables, menu
-                  bar edge-fade, sticky/spacer sync) were touched.
-                  Summary of what changed:
-                    - Header is shorter, quieter: no drop shadow at
-                      rest, hairline border only, more side padding.
-                    - Nav links: no dropdown chevrons at top level
-                      (Nike's own header has none), tighter letter
-                      spacing, larger gap between items.
-                    - Search trigger is now a full pill sitting inline
-                      in the header (icon + "Search" text, ~220px wide,
-                      light grey fill) instead of a small icon-only
-                      button — see .main-header__search-pill-wrap /
-                      .main-header__search-trigger below.
-                    - Icons row: just heart + bag, no background
-                      circles/pills, no labels, generous spacing.
-                    - Overlay panel gained the Ask AI row.
-
-     2026-07-30 (a) — Desktop (>=1024px) header restructure: nav now
-                  renders inline next to the logo (wrapped in
-                  .main-header__nav, see main-header.liquid) instead of
-                  as its own full-width row, and the always-on search
-                  bar was replaced with the overlay-triggering pattern.
-                  Mobile/tablet (<1024px) rules are untouched.
-
-     2026-07-26 — Converted every breakpoint in this file from
-                  desktop-first (max-width) to mobile-first (min-width),
-                  fixing a real bug where mobile sizing flipped at two
-                  disagreeing cutoffs (599px vs 639px). No visual values
-                  changed by that pass — only where the line falls. */
-
 :root {
   --hdr-height-desktop : 72px;
   --hdr-height-tablet  : 64px;
@@ -327,18 +28,6 @@
   z-index: var(--hdr-z);
 }
 
-/* ADDED — transparent-over-hero color overrides. Scoped under the
-   class header-group.js adds to the wrapper, so these can never take
-   effect on a non-homepage page. Redefining the vars here (rather
-   than writing white directly into each selector) means every
-   existing rule in this file that already consumes --hdr-text /
-   --hdr-muted / --hdr-accent / --hdr-border / --hdr-bg just inherits
-   the new values for free.
-
-   FIX 2026-08-06i — desktop-only. Wrapped in the same min-width:
-   64rem breakpoint used for this file's own desktop division further
-   down, so none of these overrides can apply on mobile/tablet even
-   if .is-transparent is present on the wrapper. */
 @media (min-width: 64rem) {
   #header-group-wrapper.is-transparent #main-header {
     --hdr-bg: transparent;
@@ -348,33 +37,15 @@
     --hdr-border: transparent;
   }
 
-  /* .main-header__bar's background/border already read var(--hdr-bg)/
-     var(--hdr-border), so those go transparent automatically via the
-     override above. .main-header__nav .menu-bar is the one place that
-     paints its own opaque white independently (hardcoded, not a var —
-     see the base .menu-bar rule further down) and needs its own line
-     here to actually go transparent. */
   #header-group-wrapper.is-transparent .menu-bar {
     background: transparent;
   }
 
   #header-group-wrapper.is-transparent .main-header__logo img,
   #header-group-wrapper.is-transparent .main-header__logo svg {
-    /* drop-shadow added alongside the existing invert so the white
-       logo stays legible against bright/light patches of hero art,
-       not just dark ones */
     filter: brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
   }
 
-  /* ADDED — text/icon shadow for legibility over variable-brightness
-     hero art. White nav text and icons can wash out against bright
-     or busy sections of a hero image; a soft dark shadow keeps them
-     readable regardless of what's behind them, without depending on
-     the header's own background (unlike the edge-fade approach,
-     which required precise state-syncing and still glitched — see
-     the note on .menu-bar__edge-fade below). text-shadow covers the
-     nav links; SVG icons need the filter equivalent (drop-shadow)
-     since text-shadow doesn't apply to SVG shapes. */
   #header-group-wrapper.is-transparent .menu-bar__link {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 1px rgba(0, 0, 0, 0.3);
   }
@@ -384,24 +55,6 @@
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
   }
 
-  /* FIX (2026-08-06l) — the previous pass (k, below) disabled the
-     edge-fade for the entire homepage via the static
-     [data-transparent-header="true"] attribute, which also killed it
-     once the header settles into its solid/sticky scrolled state —
-     that's wrong, the edge-fade is legitimate, useful functionality
-     there (it hints the nav is horizontally scrollable) and was only
-     ever a problem while genuinely transparent over the hero.
-     Reverted to scoping under #header-group-wrapper.is-transparent
-     (which is absent once the header goes solid, so the edge-fade
-     returns normally on scroll/sticky), but switched from
-     `display: none` to `opacity: 0`: .menu-bar__edge-fade already
-     carries `transition: opacity 0.2s ease` (see its base rule
-     further down), so this now fades in/out smoothly along with the
-     rest of the transparent<->solid swap instead of popping visible/
-     invisible instantly — which should also head off the earlier
-     flicker (see pass k's writeup) more gracefully than the hard
-     display toggle did. pointer-events: none kept as a no-cost safety
-     net since the element has no click handlers of its own anyway. */
   #header-group-wrapper.is-transparent .menu-bar__edge-fade {
     opacity: 0 !important;
     pointer-events: none;
@@ -453,10 +106,6 @@
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .ecombio-header__hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* Search trigger lives inside .main-header__icons, matching the
-   wishlist/cart icons in size, color, and hover behavior. Hidden
-   until desktop (>=1024px) — see the @media (min-width: 64rem) block
-   below — since mobile/tablet use the search-drawer icon instead. */
 .main-header__icons .main-header__search-trigger {
   display: none;
   align-items: center;
@@ -472,19 +121,6 @@
 .main-header__search-trigger svg { width: 21px; height: 21px; flex-shrink: 0; }
 .main-header__search-trigger:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-/* FIX — opacity on #header-group-wrapper itself was wrong: the
-   overlay markup (.main-header__search-overlay) is a DESCENDANT of
-   this same wrapper (nested inside #main-header), so hiding the
-   wrapper via opacity would hide the overlay along with it — opacity
-   cascades to children with no way for a child to opt back in.
-   Instead, target only the actually-visible bars: the announcement +
-   utility bar section wrappers (the group's first children — main-header
-   is always last, per header-group.json's "order" array, so
-   :not(:last-child) reliably catches just those two regardless of
-   which one is enabled) and .main-header__bar / .main-header__search-row
-   specifically within main-header itself. .main-header__search-overlay
-   is a sibling of those, inside #main-header, and is never touched by
-   either rule below — it stays fully visible and interactive. */
 #header-group-wrapper.is-search-active > *:not(:last-child) {
   opacity: 0;
   pointer-events: none;
@@ -498,11 +134,6 @@
   transition: opacity 0.15s ease;
 }
 
-/* The overlay element itself still spans the full viewport (fixed,
-   inset: 0) so its backdrop can catch outside clicks to close, and so
-   the dark/blurred scrim (below) covers the whole page behind the
-   panel. The visible panel inside it (.main-header__search-overlay-panel,
-   below) is sized to its own content and pinned to the top. */
 .main-header__search-overlay {
   position: fixed;
   inset: 0;
@@ -512,12 +143,6 @@
 .main-header__search-overlay[hidden] { display: none; }
 .main-header__search-overlay.is-open { pointer-events: auto; }
 
-/* RESTORED (2026-07-30d) — dark, blurred scrim behind the search
-   panel, matching the mega-menu's .showcase-backdrop (showcase.css)
-   for a consistent look across both overlay types. Covers the full
-   viewport (same as .main-header__search-overlay) so clicking
-   anywhere outside the panel still closes it. Fades in/out with the
-   overlay's open state. */
 .main-header__search-overlay-backdrop {
   position: absolute;
   inset: 0;
@@ -551,14 +176,6 @@
   transform: translateY(0);
 }
 
-/* FIX — was align-items: center. The inner flex item now wraps the
-   FULL search component (input + Ask AI row + trending panel — tall,
-   stacked content), not just a single-line input like before. Centering
-   against that whole height is what pulled the logo and Cancel button
-   down to roughly the middle of the block instead of staying pinned
-   next to the input. flex-start aligns all three items to the top of
-   the row regardless of how tall the content below the input grows —
-   logo and Cancel now track the input's position specifically. */
 .main-header__search-overlay-top {
   display: flex;
   align-items: flex-start;
@@ -566,9 +183,6 @@
   margin: 0 auto;
 }
 
-/* Both given the same height as the search input (52px, set below)
-   and centered within that band, so they align vertically with the
-   input itself rather than sitting flush at y:0. */
 .main-header__search-overlay-logo {
   flex-shrink: 0;
   display: flex;
@@ -609,11 +223,6 @@
 .main-header__search-overlay-cancel:hover { text-decoration: underline; }
 .main-header__search-overlay-cancel:focus-visible { outline: 2px solid var(--hdr-accent); outline-offset: 2px; }
 
-/* Ask AI renders inside header-search.liquid itself (between the form
-   and the results panel), so this only needs its own top spacing —
-   it's a normal-flow sibling now, not a trailing block bolted on
-   after everything else. Delete the block in header-search.liquid
-   (search for "Ask AI") if you don't want this feature. */
 .main-header__search-overlay-ask-wrap {
   max-width: 900px;
   margin: 18px auto 0;
@@ -679,11 +288,6 @@
 .main-header__search-row { border-top: 1px solid var(--hdr-border); background: var(--hdr-bg); }
 .main-header__search-row-inner { max-width: 100%; margin: 0 auto; }
 
-/* ADDED — menu-below row. Hidden by default (mobile/tablet); this row
-   only exists in the DOM when menu_position is "below"
-   (main-header.liquid), and even then it's desktop-only in practice —
-   see the min-width: 64rem override further down. Mobile/tablet
-   always use the hamburger drawer regardless of this setting. */
 .main-header__menu-row { display: none; }
 
 #main-header.main-header--default-width .main-header__inner,
@@ -719,20 +323,6 @@
   margin-inline: auto !important;
 }
 
-/* Heart + bag only, no background pills, no labels, more breathing
-   room between them.
-   FIX 2026-08-06f — margin-left: auto added so this group always
-   pins to the far right edge of .main-header__inner, regardless of
-   how wide the logo/nav content is. Without this, .main-header__inner
-   (a flex row with no justify-content set) simply packs every item
-   to the start and leaves any leftover space after the LAST item —
-   so the icons sat right after the nav links instead of at the row's
-   end. An auto margin on a flex item absorbs all free space on that
-   side, which is the standard way to push a single item to the end
-   of a flex row without touching justify-content on the parent
-   (which would also affect the logo/hamburger/search-drawer items
-   sharing this same row). Applies at every breakpoint since
-   .main-header__inner is display:flex from mobile up. */
 .main-header__icons {
   display: flex;
   align-items: center;
@@ -755,11 +345,6 @@
 .main-header__icons a:hover,
 .main-header__icons button:hover { opacity: 0.6; }
 
-/* ADDED — wishlist icon restricted to desktop. Hidden by default
-   (mobile/tablet) and restored at the same 64rem breakpoint this
-   file already uses for its own desktop division, so it lines up
-   with the other desktop-only header elements (search trigger,
-   inline nav, etc). */
 .main-header__icons-item--wishlist {
   display: none;
 }
@@ -893,14 +478,6 @@
 
 .main-header__nav { display: none; }
 
-/* ADDED (2026-08-13) — inline search bar (search_style: bar), hidden
-   by default. Mobile/tablet always use the dedicated
-   .main-header__search-row bar instead (rendered further down,
-   unaffected by this setting), so this only ever becomes visible at
-   desktop — see the min-width: 64rem override in the desktop
-   division below. Rendered in the DOM at all breakpoints when
-   search_bar is true (main-header.liquid), so this base rule is what
-   keeps it out of the mobile/tablet layout. */
 .main-header__search-bar-inline { display: none; }
 
 .menu-bar__container { position: relative; }
@@ -916,8 +493,6 @@
 
 .menu-bar__item { position: relative; }
 
-/* Plain text, no chevrons at top level, tighter tracking, bit more
-   horizontal room per item. */
 .menu-bar__link {
   display: inline-flex;
   align-items: center;
@@ -926,7 +501,7 @@
   font-weight: 500;
   font-size: 14px;
   letter-spacing: -0.005em;
-  color: var(--hdr-text); /* was hardcoded #1a1a1a — switched to the shared var (2026-08-06h) so it responds to the transparent-header override above; visually ~identical against the default #111111 */
+  color: var(--hdr-text);
   text-decoration: none;
   white-space: nowrap;
   transition: opacity 0.15s ease, color 0.2s ease, text-shadow 0.2s ease;
@@ -937,14 +512,8 @@
 .menu-bar__icon { display: inline-flex; align-items: center; margin-right: 6px; flex-shrink: 0; }
 .menu-bar__icon svg { width: 16px; height: 16px; }
 
-/* Chevrons hidden at top-level nav to match Nike's plain text links;
-   still present in the DOM in case you rely on it for mega-menu
-   affordance elsewhere, just visually removed here. */
 .icon-caret-down { display: none; }
 
-/* ============================================
-   Base (xs/sm) — mobile styles, unqualified.
-   ============================================ */
 .main-header__inner {
   height: var(--hdr-height-mobile);
   padding: 0 16px;
@@ -980,9 +549,6 @@
 }
 .main-header--menu-bar-mobile-visible .menu-bar__list { flex-wrap: nowrap; width: max-content; }
 
-/* ============================================
-   md: 640px (40rem) — tablet division
-   ============================================ */
 @media (min-width: 40rem) {
   .main-header__inner {
     height: var(--hdr-height-tablet);
@@ -999,9 +565,6 @@
   }
 }
 
-/* ============================================
-   lg: 1024px (64rem) — desktop division
-   ============================================ */
 @media (min-width: 64rem) {
   .main-header__inner {
     height: var(--hdr-height-desktop);
@@ -1013,50 +576,12 @@
 
   .main-header__icons .main-header__search-trigger { display: flex; }
 
-  /* ADDED (2026-08-13) — .main-header__nav-group wraps the nav and,
-     when search_style is "bar", the inline search bar next to it.
-     This is now the actual flex/grid item that used to be
-     .main-header__nav directly — see main-header.liquid for why the
-     wrapper is always rendered, even empty.
-
-     FIX (2026-08-13 pass 3) — this used to also carry
-     `overflow: hidden`, copied over from .main-header__nav's own
-     shrink-safety fix (2026-08-06e) on the assumption nav-group
-     needed the same treatment now that IT is the item shrinking
-     against .main-header__inner's available width. That was wrong:
-     .main-header__nav still carries its own independent
-     `overflow: hidden` below, which is what actually clips the
-     horizontally-scrolling nav — nav-group doesn't need to repeat
-     it. Worse, because nav-group is now also the container for
-     .main-header__search-bar-inline in bar mode, that duplicated
-     overflow: hidden was clipping the search bar's predictive
-     dropdown panel (position: absolute, extends below the input —
-     see header-search.css) to invisible/zero height. Removed here;
-     min-width: 0 + flex-shrink: 1 alone are enough for this wrapper
-     to still shrink correctly, same as before. */
   .main-header__nav-group {
     display: flex;
     align-items: center;
     gap: 20px;
     min-width: 0;
     flex-shrink: 1;
-    /* ADDED — without a flex-grow, .main-header__inner's leftover
-       row space (after logo + nav-group + icons all size to their
-       own content) gets entirely swallowed by .main-header__icons'
-       margin-left: auto (FIX 2026-08-06f) instead of ever reaching
-       nav-group. That's invisible when nav-group holds the
-       full-width menu-bar (it already stretches to fill nav-group
-       via width: 100%), but very visible when nav-group holds only
-       the inline search bar (search_style: bar + menu_position:
-       below) — the bar sat at its fixed 320px basis with a dead gap
-       between it and the icons. flex-grow: 1 lets nav-group claim
-       that leftover space itself; see the matching flex-grow on
-       .main-header__search-bar-inline below, which is what actually
-       stretches into the room this creates. Harmless when nav-group
-       holds the nav instead: nav itself still isn't given flex-grow
-       (kept shrink-only, unchanged), so its own width/scroll
-       behavior is untouched — only the invisible surrounding box
-       grows, with no visual difference. */
     flex-grow: 1;
   }
 
@@ -1065,35 +590,16 @@
     align-items: center;
     min-width: 0;
     flex-shrink: 1;
-    overflow: hidden; /* FIX 2026-08-06e — safety net so this item can always shrink to 0 instead of overflowing into the search pill */
+    overflow: hidden;
   }
 
-  /* ADDED (2026-08-13) — inline search bar (search_style: bar).
-     Hidden by default (base rule further up, mobile/tablet — those
-     always use the dedicated .main-header__search-row bar instead)
-     and shown here only when main-header--search-bar is present.
-     flex: 0 1 320px gives it a comfortable default width that can
-     still shrink alongside the nav if the viewport is tight; the
-     header-search partial's own internal markup (form/input/panel)
-     is otherwise untouched — see header-search.liquid — so it needs
-     to be told to actually fill this wrapper. */
   .main-header--search-bar .main-header__search-bar-inline {
     display: flex;
     align-items: center;
-    /* CHANGED — was flex: 0 1 320px (no grow), which held the bar at
-       a fixed 320px regardless of how much room nav-group had to
-       give it — most visible with menu_position: below, where
-       nav-group holds nothing else and all that leftover space just
-       sat empty between the bar and the icons. flex-grow: 1 (paired
-       with nav-group's own flex-grow above) lets the bar actually
-       expand to fill whatever space nav-group has; 320px is now only
-       the starting basis before it grows, not a ceiling. If you want
-       the bar capped instead of running edge-to-edge on very wide
-       screens, add e.g. max-width: 640px here. */
     flex: 1 1 320px;
     min-width: 160px;
-    position: relative; /* anchors the predictive-results panel (position: absolute in header-search.css) directly under the bar rather than under some other ancestor */
-    z-index: 300; /* above the menu-bar (z-index: 100, below) so the dropdown results panel isn't clipped/overlapped by nav content; below the search overlay (var(--hdr-overlay-z), 500) and cart drawer, which don't apply here anyway since the overlay markup isn't even rendered in bar mode */
+    position: relative;
+    z-index: 300;
   }
   .main-header__search-bar-inline .header-search { width: 100%; }
 
@@ -1109,7 +615,7 @@
     background: #ffffff;
     position: relative;
     z-index: 100;
-    min-width: 0; /* FIX 2026-08-06e — without this, .menu-bar's automatic minimum falls back to its content's min-content size, which blocks .main-header__nav's shrink from ever reaching .menu-bar__container and causes the search pill to overlap the last nav item */
+    min-width: 0;
   }
 
   .menu-bar::before {
@@ -1158,86 +664,20 @@
   .menu-bar.has-scroll-left .menu-bar__edge-fade--left,
   .menu-bar.has-scroll-right .menu-bar__edge-fade--right { opacity: 1; }
 
-  /* FIX — this selector previously had no ID component, so it lost
-     to the width-class rules above (#main-header.main-header--*
-     .menu-bar { margin-inline: auto !important; ... }), which DO
-     carry an ID. Equal !important + higher specificity (ID beats
-     plain classes) meant those rules won regardless of source
-     order, so the inline nav's menu-bar kept auto-centering itself
-     inside its own column instead of respecting margin: 0 here —
-     invisible before the grid/logo-center layout (the nav had no
-     independent column to visibly center within), but very visible
-     once flush-left placement started to matter. Adding #main-header
-     brings this rule's specificity up to match (and, being later in
-     the file, win the tie), so margin: 0 actually applies to the
-     inline nav variant regardless of which section-width option is
-     active.
-
-     NOTE — this selector requires .main-header__nav as an ancestor,
-     so it does NOT match the .menu-bar rendered inside
-     .main-header__menu-row (menu-below layout, added 2026-08-13):
-     that menu-bar is deliberately left to inherit the normal
-     width-class centering rules above instead (same treatment as
-     .main-header__search-row-inner), rather than the inline nav's
-     shrink-to-fit/flush-left behavior. */
   #main-header .main-header__nav .menu-bar {
     width: auto;
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    position: relative; /* FIX 2026-08-06e — was: static. Keeping this positioned means .menu-bar__edge-fade (position:absolute) anchors to .menu-bar itself again, instead of escaping up to .main-header__bar (the next positioned ancestor) and covering the whole header row */
+    position: relative;
     z-index: auto;
   }
   #main-header .main-header__nav .menu-bar::before { content: none; }
 
-  /* ADDED — Logo position: center. Only meaningful at desktop widths,
-     since .main-header__nav is only ever rendered inline (rather
-     than in the mobile drawer) at this breakpoint — see the base
-     `.main-header__nav { display: none }` rule above and the
-     `display: flex` override earlier in this same @media block.
-
-     Switches .main-header__inner from a plain flex row to a
-     3-column grid (nav | logo | icons). Grid is used instead of
-     flex `order` + margin tricks because a flex-centered logo is
-     only ever centered *within the leftover space* after the
-     nav/icons — if the nav is wider than the icons (or vice versa)
-     the logo visibly drifts off true-center. A `1fr auto 1fr` grid
-     keeps the two outer columns equal width no matter what's in
-     them, so the middle (logo) column is always dead-center in the
-     header regardless of how long the menu or how many icons are
-     shown.
-
-     .main-header__nav is deliberately left to the grid's default
-     stretch behavior (no justify-self) so it still fills its full
-     column width — that's what its existing overflow:hidden +
-     horizontal-scroll + edge-fade behavior (above) depends on.
-
-     UPDATED (2026-08-13) — order now goes on .main-header__nav-group
-     (was .main-header__nav directly) since that wrapper is the
-     actual grid item now. This is also what makes menu_position:
-     below and search_style: bar both work correctly with a centered
-     logo with no per-combination overrides: nav-group is ALWAYS
-     rendered in main-header.liquid — even completely empty, when
-     menu is below AND search style is icon — so this grid always
-     sees exactly 3 items (nav-group, logo, icons) and normal
-     auto-placement always lands logo in the middle column and icons
-     on the right, regardless of what nav-group does or doesn't
-     contain. (Previously, omitting the nav entirely for
-     menu_position: below required a dedicated
-     .main-header--logo-center.main-header--menu-below override to
-     force the logo/icons back into their columns — no longer needed
-     now that the wrapper's presence is unconditional.) */
   .main-header--logo-center .main-header__inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    /* ADDED — zero out the left half of the container's own side
-       padding (var(--section-padding), shared with the logo/icons
-       in the default layout) so the nav's first link sits flush
-       against the true left edge of the header instead of being
-       inset by that padding. Right side keeps its padding as-is, so
-       the icons group still has the same breathing room from the
-       edge it always had. */
     padding-left: 0;
   }
   .main-header--logo-center .main-header__nav-group {
@@ -1250,17 +690,9 @@
   .main-header--logo-center .main-header__icons {
     order: 3;
     justify-self: end;
-    /* the flex-only push-right hack from FIX 2026-08-06f isn't
-       needed under grid — justify-self: end already pins this
-       column's content to the row's end */
     margin-left: 0;
   }
 
-  /* ADDED (2026-08-13) — "Menu below header row" layout
-     (menu_position: below in main-header.liquid's schema). Shows the
-     full-width .main-header__menu-row under .main-header__bar; the
-     inline .main-header__nav column isn't in the DOM at all in this
-     mode (see main-header.liquid), so nothing here needs to hide it. */
   .main-header--menu-below .main-header__menu-row {
     display: block;
     width: 100%;
