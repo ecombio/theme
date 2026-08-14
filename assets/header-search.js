@@ -808,11 +808,19 @@
 
 
   HeaderSearch.prototype._initTypewriter = function () {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!this.root.hasAttribute('data-typewriter-enabled')) return;
 
     var terms = window.HS_TRENDING;
     if (!terms || !terms.length) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Respect reduced-motion: no character-by-character animation,
+      // but still surface a helpful static hint instead of doing
+      // nothing. This is a one-time text swap, not motion, so it
+      // doesn't conflict with the preference itself.
+      this.input.placeholder = 'Search for ' + terms[0];
+      return;
+    }
 
     var self    = this;
     var overlay = this.root.querySelector('[data-search-typewriter]');
