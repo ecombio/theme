@@ -1008,38 +1008,6 @@
     height: var(--hdr-height-desktop);
   }
 
-  /* ADDED — anchors where the search bar / inline nav starts,
-     independent of the logo's own rendered size. Without this,
-     .main-header__logo is a plain flex item that sizes to its
-     actual content width, so .main-header__nav-group (the next flex
-     item — search bar and/or nav) starts wherever the logo image
-     happens to end. Resizing the logo (Theme settings → Logo width,
-     or the "Logo slot width" setting below) would then shift the
-     search bar's start position along with it.
-     flex: 0 0 var(--hdr-logo-slot-width, 160px) reserves a FIXED
-     box for the logo (no grow, no shrink) — nav-group always starts
-     right after this fixed box + the row's gap, regardless of how
-     wide or narrow the actual logo image renders inside it.
-     --hdr-logo-slot-width is set inline per-section in
-     main-header.liquid from the new "Logo slot width" setting, with
-     160px as the fallback if that var is ever missing.
-     Trade-off: if the logo is later sized larger than this slot,
-     overflow: visible lets it spill outward rather than get clipped
-     — intentional so a big logo doesn't get cropped — but a logo
-     sized well past the slot width can visually overlap the search
-     bar/nav that starts right after it. Bump "Logo slot width" to
-     match if you size the logo up.
-     Has no effect when Logo position is "Center": that layout
-     switches .main-header__inner to CSS Grid further down, and
-     flex-basis is inert on grid items, so this rule is simply
-     ignored there — no extra scoping needed. */
-  .main-header__logo {
-    flex: 0 0 var(--hdr-logo-slot-width, 160px);
-    display: flex;
-    align-items: center;
-    overflow: visible;
-  }
-
   .ecombio-header__hamburger { display: none; }
   .main-header__search-row { display: none; }
   .main-header__search-drawer-tablet-only { display: none; }
