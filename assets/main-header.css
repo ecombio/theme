@@ -964,6 +964,48 @@
     z-index: auto;
   }
   .main-header__nav .menu-bar::before { content: none; }
+
+  /* ADDED — Logo position: center. Only meaningful at desktop widths,
+     since .main-header__nav is only ever rendered inline (rather
+     than in the mobile drawer) at this breakpoint — see the base
+     `.main-header__nav { display: none }` rule above and the
+     `display: flex` override earlier in this same @media block.
+
+     Switches .main-header__inner from a plain flex row to a
+     3-column grid (nav | logo | icons). Grid is used instead of
+     flex `order` + margin tricks because a flex-centered logo is
+     only ever centered *within the leftover space* after the
+     nav/icons — if the nav is wider than the icons (or vice versa)
+     the logo visibly drifts off true-center. A `1fr auto 1fr` grid
+     keeps the two outer columns equal width no matter what's in
+     them, so the middle (logo) column is always dead-center in the
+     header regardless of how long the menu or how many icons are
+     shown.
+
+     .main-header__nav is deliberately left to the grid's default
+     stretch behavior (no justify-self) so it still fills its full
+     column width — that's what its existing overflow:hidden +
+     horizontal-scroll + edge-fade behavior (above) depends on. */
+  .main-header--logo-center .main-header__inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+  .main-header--logo-center .main-header__nav {
+    order: 1;
+  }
+  .main-header--logo-center .main-header__logo {
+    order: 2;
+    justify-self: center;
+  }
+  .main-header--logo-center .main-header__icons {
+    order: 3;
+    justify-self: end;
+    /* the flex-only push-right hack from FIX 2026-08-06f isn't
+       needed under grid — justify-self: end already pins this
+       column's content to the row's end */
+    margin-left: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
