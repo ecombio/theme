@@ -15,6 +15,19 @@
 
   var STORAGE_KEY = 'HS_RECENT_' + window.location.hostname;
 
+  // FIX (root cause of "stuck on Trending term 1"): every settings-panel
+  // change in the theme editor fires `shopify:section:load`, which used to
+  // destroy the running AnimatedPlaceholder and build a brand new one from
+  // termIndex 0 every single time. If you're actively editing the panel
+  // faster than one full type+hold+delete cycle (~5-8s), it can never
+  // advance past the first term. This map persists {termIndex, charIndex,
+  // deleting, pauseUntil-offset} per typewriter "slot" (desktop / mobile /
+  // overlay / drawer) across reloads, keyed off a stable slot id rather than
+  // the DOM node (which gets replaced on every reload), so a freshly created
+  // instance can resume from where the last one left off instead of
+  // restarting.
+  var _twState = new Map();
+
 
   function debounce(fn, wait) {
     var t;
@@ -182,23 +195,43 @@
   }
 
 
-  function AnimatedPlaceholder(input, terms, overlay, onVisibilityChange, opts) {
+  // FIX: constructor now accepts a stable `slotId` (e.g. 'desktop',
+  // 'mobile', 'overlay') and, if _twState has a saved snapshot for that
+  // slot, resumes from it instead of always starting at
+  // termIndex/charIndex 0. On every meaningful state change the instance
+  // writes its snapshot back to _twState so the NEXT reload (which will
+  // destroy this instance) can pick up where this one left off.
+  function AnimatedPlaceholder(input, terms, overlay, onVisibilityChange, opts, slotId) {
     if (!terms || !terms.length) return;
 
     this.input       = input;
     this.overlay     = overlay || null;
     this.onVisChange = typeof onVisibilityChange === 'function' ? onVisibilityChange : null;
     this.terms        = terms;
-    this.termIndex    = 0;
-    this.charIndex    = 0;
-    this.deleting     = false;
-    this.paused       = false;
-    this.destroyed    = false; // FIX: new flag, checked first thing in _tick()
+    this.slotId        = slotId || null;
+    this.destroyed    = false;
     this.rafId        = null;
-    this.lastTick     = 0;
-    this.pauseUntil   = 0;
     this.staticText   = input.placeholder || 'What are you looking for?';
     this.opts         = opts || {};
+
+    var saved = this.slotId ? _twState.get(this.slotId) : null;
+    if (saved && saved.terms === terms.join('||')) {
+      // Resume mid-cycle. Re-base pauseUntil relative to "now" using the
+      // remaining time that had been left, so a mid-hold or mid-gap pause
+      // doesn't just vanish or double up.
+      var now0 = performance.now();
+      this.termIndex  = saved.termIndex % terms.length;
+      this.charIndex  = saved.charIndex;
+      this.deleting   = saved.deleting;
+      this.lastTick   = now0;
+      this.pauseUntil = saved.remainingPause > 0 ? now0 + saved.remainingPause : 0;
+    } else {
+      this.termIndex    = 0;
+      this.charIndex    = 0;
+      this.deleting     = false;
+      this.lastTick     = 0;
+      this.pauseUntil   = 0;
+    }
 
     var self = this;
 
@@ -208,9 +241,23 @@
         + '<span class="hs-tw-chars"></span>';
       this.charsEl = this.overlay.querySelector('.hs-tw-chars');
       input.placeholder = '';
+
+      // Repaint whatever partial word we resumed into, since charsEl
+      // starts empty regardless of a resumed charIndex.
+      if (this.charIndex > 0) {
+        var term = this.terms[this.termIndex] || '';
+        for (var i = 0; i < this.charIndex && i < term.length; i++) {
+          var span = document.createElement('span');
+          span.className = 'hs-tw-char';
+          span.textContent = term[i];
+          this.charsEl.appendChild(span);
+        }
+      }
+    } else if (this.charIndex > 0) {
+      var resumedTerm = this.terms[this.termIndex] || '';
+      this.input.placeholder = 'Search for ' + resumedTerm.slice(0, this.charIndex);
     }
 
-    // FIX: keep references to these handlers so destroy() can remove them.
     this._onInput = function () {
       if (input.value) {
         if (!self.paused) self._pause();
@@ -240,6 +287,7 @@
     this.paused = true;
     this._syncOverlayVisibility();
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+    this._saveState();
   };
 
   AnimatedPlaceholder.prototype._appendChar = function (ch) {
@@ -261,6 +309,25 @@
     }
   };
 
+  // FIX: persist a resumable snapshot every tick that changes state, so
+  // a section reload arriving mid-cycle doesn't lose progress. Cheap
+  // (a small object write to a Map) and only happens on state changes,
+  // not every animation frame.
+  AnimatedPlaceholder.prototype._saveState = function (now) {
+    if (!this.slotId) return;
+    var remainingPause = 0;
+    if (this.pauseUntil && typeof now === 'number') {
+      remainingPause = Math.max(0, this.pauseUntil - now);
+    }
+    _twState.set(this.slotId, {
+      terms: this.terms.join('||'),
+      termIndex: this.termIndex,
+      charIndex: this.charIndex,
+      deleting: this.deleting,
+      remainingPause: remainingPause,
+    });
+  };
+
   AnimatedPlaceholder.prototype._tick = function (now) {
     var self     = this;
     var TYPING   = this.opts.typeSpeed || 70;
@@ -268,8 +335,6 @@
     var HOLD     = this.opts.holdMs || 3200;
     var GAP      = 400;
 
-    // FIX: hard stop once destroyed, and self-heal if the node was
-    // detached before destroy() got a chance to run.
     if (this.destroyed) return;
     if (!this.input.isConnected) { this._pause(); return; }
 
@@ -299,6 +364,7 @@
         this.deleting   = true;
         this.pauseUntil = now + HOLD;
       }
+      this._saveState(now);
     } else {
       if (now - this.lastTick < DELETING) {
         this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
@@ -318,6 +384,7 @@
         this.termIndex  = (this.termIndex + 1) % this.terms.length;
         this.pauseUntil = now + GAP;
       }
+      this._saveState(now);
     }
 
     this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
@@ -332,7 +399,7 @@
   };
 
   AnimatedPlaceholder.prototype.resume = function () {
-    if (this.destroyed) return; // FIX
+    if (this.destroyed) return;
     if (this.input.value) return;
     this.paused    = false;
     this.charIndex = 0;
@@ -347,10 +414,11 @@
     this._tick(performance.now());
   };
 
-  // FIX: destroy() now actually cancels the loop AND removes the
-  // input/blur listeners it created above. Previously this existed but
-  // was dead code — nothing called it.
   AnimatedPlaceholder.prototype.destroy = function () {
+    // FIX: save final state before tearing down so the *next* instance
+    // for this slot (created right after by the section-reload handler)
+    // can resume instead of restarting at term 1 / char 0.
+    this._saveState(performance.now());
     this.destroyed = true;
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     if (this._onInput) this.input.removeEventListener('input', this._onInput);
@@ -382,10 +450,8 @@
     this.controller    = null;
     this._typewriter   = null;
     this._emptyVisible = false;
-    this._recognition  = null; // FIX: tracked so destroy() can abort it
+    this._recognition  = null;
 
-    // FIX: every listener this instance registers gets pushed here so
-    // destroy() can remove all of them in one pass.
     this._listeners = [];
 
     if (!this.input) return;
@@ -405,7 +471,6 @@
     this._bindVoice();
   }
 
-  // FIX: small helper — wraps addEventListener and records what was bound.
   HeaderSearch.prototype._on = function (target, type, handler, opts) {
     target.addEventListener(type, handler, opts);
     this._listeners.push([target, type, handler, opts]);
@@ -690,15 +755,11 @@
       track.scrollBy({ left: amount, behavior: 'smooth' });
     }
 
-    // Note: this carousel's own DOM/listeners are recreated with the
-    // panel on every search, so those die naturally. Only the window
-    // resize listener outlives a single search, so it's the only one
-    // that needs to go through self._on().
     if (prevBtn) prevBtn.addEventListener('click', function () { scrollByPage(-1); });
     if (nextBtn) nextBtn.addEventListener('click', function () { scrollByPage(1); });
 
     track.addEventListener('scroll', updateEdges, { passive: true });
-    this._on(window, 'resize', updateEdges); // FIX: was untracked window listener
+    this._on(window, 'resize', updateEdges);
 
     updateEdges();
   };
@@ -727,7 +788,7 @@
 
   HeaderSearch.prototype._bindDismiss = function () {
     var self = this;
-    this._on(document, 'click', function (e) { // FIX: was untracked document listener
+    this._on(document, 'click', function (e) {
       if (!self.root.contains(e.target)) self.close();
     });
   };
@@ -794,7 +855,7 @@
     this.voiceBtn.hidden = false;
 
     var recognition             = new SR();
-    this._recognition           = recognition; // FIX: tracked for destroy()
+    this._recognition           = recognition;
     recognition.lang            = document.documentElement.lang || 'en-US';
     recognition.interimResults  = false;
     recognition.maxAlternatives = 1;
@@ -855,12 +916,15 @@
     var overlay = this.root.querySelector('[data-search-typewriter]');
     var opts    = window.HS_TYPEWRITER_OPTS || {};
 
+    // FIX: pass a stable slot id (desktop / mobile / search — from
+    // this.sfx) so AnimatedPlaceholder can look up and resume its saved
+    // state across a section reload instead of always restarting at
+    // term 1.
     this._typewriter = new AnimatedPlaceholder(this.input, terms, overlay, function (hasValue) {
       self.root.classList.toggle('header-search--has-value', hasValue);
-    }, opts);
+    }, opts, this.sfx);
   };
 
-  // FIX: this is new. Unwinds everything HeaderSearch created.
   HeaderSearch.prototype.destroy = function () {
     if (this._typewriter) { this._typewriter.destroy(); this._typewriter = null; }
     if (this.controller) { this.controller.abort(); this.controller = null; }
@@ -891,8 +955,6 @@
 
   document.addEventListener('shopify:section:load', function () {
     document.querySelectorAll('[data-search-root]').forEach(function (el) {
-      // FIX: actually tear down the old instance before dropping the
-      // reference — this is the fix for the leaked rAF loops.
       if (el._hsInstance) el._hsInstance.destroy();
       el._hsInstance = null;
     });
