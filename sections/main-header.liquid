@@ -43,6 +43,16 @@
       assign trending_terms = trending_terms | append: term | append: '||'
     endif
   endfor
+  # FIX: the loop above always appends '||' after the last term too,
+  # leaving a trailing delimiter. header-search.js later does
+  # trending_terms | split: '||', so that trailing '||' produced one
+  # extra empty string at the end of window.HS_TRENDING. When the
+  # typewriter cycled to that empty entry, term[0] was undefined and
+  # it briefly typed the literal word "undefined". Stripping the
+  # trailing delimiter here removes that empty array entry entirely.
+  if trending_terms != blank
+    assign trending_terms = trending_terms | split: '||' | join: '||'
+  endif
 
   assign transparent_header_enabled = false
   if section.settings.enable_transparent_header != false
