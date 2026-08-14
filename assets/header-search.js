@@ -372,6 +372,7 @@
     this._syncHasValue();
 
     this._bindClear();
+    this._initTypewriter();
 
     if (!this.isPredictive) return;
 
@@ -380,7 +381,6 @@
     this._bindKeyboard();
     this._bindDismiss();
     this._bindVoice();
-    this._initTypewriter();
   }
 
 
