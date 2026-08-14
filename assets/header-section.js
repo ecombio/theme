@@ -68,14 +68,6 @@
 
   var STORAGE_KEY = 'HS_RECENT_' + window.location.hostname;
 
-  // Persists {termIndex, charIndex, deleting, remaining pause} per
-  // typewriter "slot" (desktop-bar / mobile / any drawer variants) across
-  // theme-editor section reloads, keyed off a stable slot id (the
-  // data-search-variant value) rather than the DOM node, which gets
-  // replaced on every reload — so a freshly created instance resumes from
-  // where the last one left off instead of restarting at term 1 / char 0.
-  var _twState = new Map();
-
 
   function debounce(fn, wait) {
     var t;
@@ -243,234 +235,6 @@
   }
 
 
-  // Constructor accepts a stable `slotId` (e.g. 'desktop-bar', 'mobile') and,
-  // if _twState has a saved snapshot for that slot, resumes from it instead
-  // of always starting at termIndex/charIndex 0.
-  function AnimatedPlaceholder(input, terms, overlay, onVisibilityChange, opts, slotId) {
-    if (!terms || !terms.length) return;
-
-    this.input       = input;
-    this.overlay     = overlay || null;
-    this.onVisChange = typeof onVisibilityChange === 'function' ? onVisibilityChange : null;
-    this.terms        = terms;
-    this.slotId        = slotId || null;
-    this.destroyed    = false;
-    this.rafId        = null;
-    this.staticText   = input.placeholder || 'What are you looking for?';
-    this.opts         = opts || {};
-
-    var saved = this.slotId ? _twState.get(this.slotId) : null;
-    if (saved && saved.terms === terms.join('||')) {
-      // Resume mid-cycle. Re-base pauseUntil relative to "now" using the
-      // remaining time that had been left, so a mid-hold or mid-gap pause
-      // doesn't just vanish or double up.
-      var now0 = performance.now();
-      this.termIndex  = saved.termIndex % terms.length;
-      this.charIndex  = saved.charIndex;
-      this.deleting   = saved.deleting;
-      this.lastTick   = now0;
-      this.pauseUntil = saved.remainingPause > 0 ? now0 + saved.remainingPause : 0;
-    } else {
-      this.termIndex    = 0;
-      this.charIndex    = 0;
-      this.deleting     = false;
-      this.lastTick     = 0;
-      this.pauseUntil   = 0;
-    }
-
-    var self = this;
-
-    if (this.overlay) {
-      this.overlay.innerHTML =
-        '<span class="hs-tw-prefix">Search for </span>'
-        + '<span class="hs-tw-chars"></span>';
-      this.charsEl = this.overlay.querySelector('.hs-tw-chars');
-      input.placeholder = '';
-
-      // Repaint whatever partial word we resumed into, since charsEl
-      // starts empty regardless of a resumed charIndex.
-      if (this.charIndex > 0) {
-        var term = this.terms[this.termIndex] || '';
-        for (var i = 0; i < this.charIndex && i < term.length; i++) {
-          var span = document.createElement('span');
-          span.className = 'hs-tw-char';
-          span.textContent = term[i];
-          this.charsEl.appendChild(span);
-        }
-      }
-    } else if (this.charIndex > 0) {
-      var resumedTerm = this.terms[this.termIndex] || '';
-      this.input.placeholder = 'Search for ' + resumedTerm.slice(0, this.charIndex);
-    }
-
-    this._onInput = function () {
-      if (input.value) {
-        if (!self.paused) self._pause();
-      } else {
-        if (self.paused) self.resume();
-      }
-    };
-
-    this._onBlur = function () {
-      if (!input.value && self.paused) self.resume();
-    };
-
-    input.addEventListener('input', this._onInput);
-    input.addEventListener('blur', this._onBlur);
-
-    this._syncOverlayVisibility();
-    this._tick(performance.now());
-  }
-
-  AnimatedPlaceholder.prototype._syncOverlayVisibility = function () {
-    var hasValue = !!this.input.value;
-    if (this.overlay) this.overlay.style.display = hasValue ? 'none' : '';
-    if (this.onVisChange) this.onVisChange(hasValue);
-  };
-
-  AnimatedPlaceholder.prototype._pause = function () {
-    this.paused = true;
-    this._syncOverlayVisibility();
-    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
-    this._saveState();
-  };
-
-  AnimatedPlaceholder.prototype._appendChar = function (ch) {
-    if (!this.charsEl) return;
-    var span = document.createElement('span');
-    span.className = 'hs-tw-char hs-tw-char--fresh';
-    span.textContent = ch;
-    this.charsEl.appendChild(span);
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        span.classList.remove('hs-tw-char--fresh');
-      });
-    });
-  };
-
-  AnimatedPlaceholder.prototype._removeChar = function () {
-    if (this.charsEl && this.charsEl.lastElementChild) {
-      this.charsEl.removeChild(this.charsEl.lastElementChild);
-    }
-  };
-
-  // Persist a resumable snapshot every tick that changes state, so a
-  // section reload arriving mid-cycle doesn't lose progress. Cheap (a small
-  // object write to a Map) and only happens on state changes, not every
-  // animation frame.
-  AnimatedPlaceholder.prototype._saveState = function (now) {
-    if (!this.slotId) return;
-    var remainingPause = 0;
-    if (this.pauseUntil && typeof now === 'number') {
-      remainingPause = Math.max(0, this.pauseUntil - now);
-    }
-    _twState.set(this.slotId, {
-      terms: this.terms.join('||'),
-      termIndex: this.termIndex,
-      charIndex: this.charIndex,
-      deleting: this.deleting,
-      remainingPause: remainingPause,
-    });
-  };
-
-  AnimatedPlaceholder.prototype._tick = function (now) {
-    var self     = this;
-    var TYPING   = this.opts.typeSpeed || 70;
-    var DELETING = Math.round(TYPING * 0.53);
-    var HOLD     = this.opts.holdMs || 3200;
-    var GAP      = 400;
-
-    if (this.destroyed) return;
-    if (!this.input.isConnected) { this._pause(); return; }
-
-    if (this.paused || this.input.value) return;
-
-    if (now < this.pauseUntil) {
-      this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
-      return;
-    }
-
-    var term = this.terms[this.termIndex];
-
-    if (!this.deleting) {
-      if (now - this.lastTick < TYPING) {
-        this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
-        return;
-      }
-      var nextChar = term[this.charIndex];
-      this.charIndex++;
-      if (this.overlay) {
-        this._appendChar(nextChar);
-      } else {
-        this.input.placeholder = 'Search for ' + term.slice(0, this.charIndex);
-      }
-      this.lastTick = now;
-      if (this.charIndex >= term.length) {
-        this.deleting   = true;
-        this.pauseUntil = now + HOLD;
-      }
-      this._saveState(now);
-    } else {
-      if (now - this.lastTick < DELETING) {
-        this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
-        return;
-      }
-      this.charIndex--;
-      if (this.overlay) {
-        this._removeChar();
-      } else {
-        this.input.placeholder = this.charIndex > 0
-          ? 'Search for ' + term.slice(0, this.charIndex)
-          : this.staticText;
-      }
-      this.lastTick = now;
-      if (this.charIndex <= 0) {
-        this.deleting   = false;
-        this.termIndex  = (this.termIndex + 1) % this.terms.length;
-        this.pauseUntil = now + GAP;
-      }
-      this._saveState(now);
-    }
-
-    this.rafId = requestAnimationFrame(function (t) { self._tick(t); });
-  };
-
-  AnimatedPlaceholder.prototype.pause = function (overridePlaceholder) {
-    this._pause();
-    if (overridePlaceholder) {
-      if (this.overlay) this.overlay.style.display = 'none';
-      this.input.placeholder = overridePlaceholder;
-    }
-  };
-
-  AnimatedPlaceholder.prototype.resume = function () {
-    if (this.destroyed) return;
-    if (this.input.value) return;
-    this.paused    = false;
-    this.charIndex = 0;
-    this.deleting  = false;
-    if (this.overlay) {
-      this.input.placeholder = '';
-      if (this.charsEl) this.charsEl.innerHTML = '';
-      this._syncOverlayVisibility();
-    } else {
-      this.input.placeholder = this.staticText;
-    }
-    this._tick(performance.now());
-  };
-
-  AnimatedPlaceholder.prototype.destroy = function () {
-    // Save final state before tearing down so the NEXT instance for this
-    // slot (created right after by the section-reload handler) can resume
-    // instead of restarting at term 1 / char 0.
-    this._saveState(performance.now());
-    this.destroyed = true;
-    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
-    if (this._onInput) this.input.removeEventListener('input', this._onInput);
-    if (this._onBlur) this.input.removeEventListener('blur', this._onBlur);
-  };
-
-
   function HeaderSearch(root) {
     this.root    = root;
     this.input   = root.querySelector('[data-search-input]');
@@ -495,7 +259,6 @@
 
     this.activeIndex   = -1;
     this.controller    = null;
-    this._typewriter   = null;
     this._emptyVisible = false;
     this._recognition  = null;
 
@@ -504,10 +267,8 @@
     if (!this.input) return;
 
     this._syncClear();
-    this._syncHasValue();
 
     this._bindClear();
-    this._initTypewriter();
 
     if (!this.isPredictive) return;
 
@@ -529,21 +290,16 @@
     this.clearBtn.hidden = this.input.value.length === 0;
   };
 
-  HeaderSearch.prototype._syncHasValue = function () {
-    this.root.classList.toggle('header-search--has-value', this.input.value.length > 0);
-  };
-
   HeaderSearch.prototype._bindClear = function () {
     var self = this;
 
-    this._on(this.input, 'input',  function () { self._syncClear(); self._syncHasValue(); });
-    this._on(this.input, 'change', function () { self._syncClear(); self._syncHasValue(); });
+    this._on(this.input, 'input',  function () { self._syncClear(); });
+    this._on(this.input, 'change', function () { self._syncClear(); });
 
     if (this.clearBtn) {
       this._on(this.clearBtn, 'click', function () {
         self.input.value = '';
         self._syncClear();
-        self._syncHasValue();
         self.input.focus();
         if (self.isPredictive) {
           self._showEmpty();
@@ -911,7 +667,6 @@
       var transcript = (e.results[0][0].transcript || '').trim();
       self.input.value = transcript;
       self._syncClear();
-      self._syncHasValue();
       if (transcript) self._fetch(transcript);
     });
 
@@ -919,14 +674,12 @@
       self.voiceBtn.classList.add('header-search__voice--listening');
       self.root.classList.add('header-search--listening');
       self.voiceBtn.setAttribute('aria-label', 'Listening\u2026 tap to stop');
-      if (self._typewriter) self._typewriter.pause('Listening\u2026');
     });
 
     recognition.addEventListener('end', function () {
       self.voiceBtn.classList.remove('header-search__voice--listening');
       self.root.classList.remove('header-search--listening');
       self.voiceBtn.setAttribute('aria-label', 'Search by voice');
-      if (self._typewriter && !self.input.value) self._typewriter.resume();
     });
 
     recognition.addEventListener('error', function (e) {
@@ -935,7 +688,6 @@
       self.voiceBtn.setAttribute('aria-label', 'Search by voice');
       console.error('Voice search error:', e.error);
       if (e.error === 'not-allowed') self.voiceBtn.hidden = true;
-      if (self._typewriter && !self.input.value) self._typewriter.resume();
     });
 
     this._on(this.voiceBtn, 'click', function () {
@@ -948,32 +700,7 @@
   };
 
 
-  HeaderSearch.prototype._initTypewriter = function () {
-    if (!this.root.hasAttribute('data-typewriter-enabled')) return;
-
-    var terms = window.HS_TRENDING;
-    if (!terms || !terms.length) return;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.input.placeholder = 'Search for ' + terms[0];
-      return;
-    }
-
-    var self    = this;
-    var overlay = this.root.querySelector('[data-search-typewriter]');
-    var opts    = window.HS_TYPEWRITER_OPTS || {};
-
-    // Pass the stable slot id (sourced from data-search-variant, see the
-    // note on this.sfx above) so AnimatedPlaceholder can look up and
-    // resume its saved state across a section reload — and so two
-    // simultaneously-mounted instances never share a slot.
-    this._typewriter = new AnimatedPlaceholder(this.input, terms, overlay, function (hasValue) {
-      self.root.classList.toggle('header-search--has-value', hasValue);
-    }, opts, this.sfx);
-  };
-
   HeaderSearch.prototype.destroy = function () {
-    if (this._typewriter) { this._typewriter.destroy(); this._typewriter = null; }
     if (this.controller) { this.controller.abort(); this.controller = null; }
     if (this._recognition) {
       try { this._recognition.abort(); } catch (_) {}
