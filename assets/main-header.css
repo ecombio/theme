@@ -1041,6 +1041,24 @@
     gap: 20px;
     min-width: 0;
     flex-shrink: 1;
+    /* ADDED — without a flex-grow, .main-header__inner's leftover
+       row space (after logo + nav-group + icons all size to their
+       own content) gets entirely swallowed by .main-header__icons'
+       margin-left: auto (FIX 2026-08-06f) instead of ever reaching
+       nav-group. That's invisible when nav-group holds the
+       full-width menu-bar (it already stretches to fill nav-group
+       via width: 100%), but very visible when nav-group holds only
+       the inline search bar (search_style: bar + menu_position:
+       below) — the bar sat at its fixed 320px basis with a dead gap
+       between it and the icons. flex-grow: 1 lets nav-group claim
+       that leftover space itself; see the matching flex-grow on
+       .main-header__search-bar-inline below, which is what actually
+       stretches into the room this creates. Harmless when nav-group
+       holds the nav instead: nav itself still isn't given flex-grow
+       (kept shrink-only, unchanged), so its own width/scroll
+       behavior is untouched — only the invisible surrounding box
+       grows, with no visual difference. */
+    flex-grow: 1;
   }
 
   .main-header__nav {
@@ -1063,7 +1081,17 @@
   .main-header--search-bar .main-header__search-bar-inline {
     display: flex;
     align-items: center;
-    flex: 0 1 320px;
+    /* CHANGED — was flex: 0 1 320px (no grow), which held the bar at
+       a fixed 320px regardless of how much room nav-group had to
+       give it — most visible with menu_position: below, where
+       nav-group holds nothing else and all that leftover space just
+       sat empty between the bar and the icons. flex-grow: 1 (paired
+       with nav-group's own flex-grow above) lets the bar actually
+       expand to fill whatever space nav-group has; 320px is now only
+       the starting basis before it grows, not a ceiling. If you want
+       the bar capped instead of running edge-to-edge on very wide
+       screens, add e.g. max-width: 640px here. */
+    flex: 1 1 320px;
     min-width: 160px;
     position: relative; /* anchors the predictive-results panel (position: absolute in header-search.css) directly under the bar rather than under some other ancestor */
     z-index: 300; /* above the menu-bar (z-index: 100, below) so the dropdown results panel isn't clipped/overlapped by nav content; below the search overlay (var(--hdr-overlay-z), 500) and cart drawer, which don't apply here anyway since the overlay markup isn't even rendered in bar mode */
