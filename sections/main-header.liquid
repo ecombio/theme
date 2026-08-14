@@ -23,6 +23,19 @@
       assign width_class = 'main-header--default-width'
   endcase
 
+  comment
+    ADDED — menu position (inline vs below). Desktop-only distinction
+    (see main-header.css @media min-width: 64rem); mobile/tablet keep
+    the hamburger drawer regardless of this setting, since the drawer
+    is rendered from `blocks` separately via header-menu-mobile
+    markup elsewhere, not from header_nav_markup below.
+  endcomment
+  assign menu_position = section.settings.menu_position | default: 'inline'
+  assign menu_below = false
+  if menu_position == 'below'
+    assign menu_below = true
+  endif
+
   assign trending_terms = ''
   for i in (1..12)
     assign key = 'trending_' | append: i
@@ -36,9 +49,9 @@
     ADDED — transparent-over-hero header (see main-header.css /
     header-group.css / header-group.js for the rest of the
     implementation). Enabled on the homepage always, plus any Page
-    resource whose handle is listed in the "Additional pages"
-    setting below (for landing pages built with the same slideshow
-    hero as the homepage). Computed entirely server-side — from
+    resource whose handle is listed in the "Additional pages" setting
+    below (for landing pages built with the same slideshow hero as
+    the homepage). Computed entirely server-side — from
     request.page_type / page.handle rather than any client-side URL
     check — so it can never be spoofed or drift out of sync, and it
     degrades safely to "false" (today's normal solid header) on every
@@ -106,8 +119,19 @@
   </style>
 {%- endif -%}
 
+{%- comment -%}
+  ADDED — the nav is captured once here rather than rendered inline
+  where it's used, so the exact same markup can be placed either
+  inside .main-header__inner (menu_position: inline) or in its own
+  full-width row below .main-header__bar (menu_position: below)
+  without rendering header-menu twice or duplicating its render call.
+{%- endcomment -%}
+{%- capture header_nav_markup -%}
+  {%- render 'header-menu', blocks: section.blocks -%}
+{%- endcapture -%}
+
 <header
-  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if section.settings.logo_position == 'center' %} main-header--logo-center{% endif %}"
+  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if section.settings.logo_position == 'center' %} main-header--logo-center{% endif %}{% if menu_below %} main-header--menu-below{% endif %}"
   id="main-header"
   role="banner"
   data-transparent-header="{{ transparent_header_enabled }}"
@@ -161,9 +185,18 @@
         {%- render 'header-logo', logo: logo, logo_width: logo_width -%}
       </div>
 
-      <div class="main-header__nav">
-        {%- render 'header-menu', blocks: section.blocks -%}
-      </div>
+      {%- comment -%}
+        ADDED — only rendered inline here when menu_position is
+        "inline" (the default / previous behavior). When
+        menu_position is "below", this div is omitted entirely and
+        header_nav_markup is placed in .main-header__menu-row instead
+        (below .main-header__bar) — see that block further down.
+      {%- endcomment -%}
+      {%- unless menu_below -%}
+        <div class="main-header__nav">
+          {{ header_nav_markup }}
+        </div>
+      {%- endunless -%}
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
         <li>
@@ -197,6 +230,22 @@
 
     </div>
   </div>
+
+  {%- comment -%}
+    ADDED — menu-below row. Only rendered when menu_position is
+    "below". Sits as its own full-width row directly under
+    .main-header__bar (before .main-header__search-row), sharing the
+    exact same header_nav_markup captured above. Desktop-only in
+    practice — see the display:none base rule + min-width: 64rem
+    override in main-header.css — mobile/tablet keep the hamburger
+    drawer regardless of this setting, so nothing renders here below
+    that breakpoint.
+  {%- endcomment -%}
+  {%- if menu_below -%}
+    <div class="main-header__menu-row">
+      {{ header_nav_markup }}
+    </div>
+  {%- endif -%}
 
   <div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
     <div class="main-header__search-row-inner">
@@ -274,12 +323,25 @@
       "type": "select",
       "id": "logo_position",
       "label": "Logo position",
-      "info": "Center moves the menu to the left (where the logo currently sits) and places the logo in the middle. Desktop only (1024px+) — mobile and tablet are unaffected.",
+      "info": "Center moves the menu to the left (where the logo currently sits) and places the logo in the middle. Desktop only (1024px+) — mobile and tablet are unaffected. Not compatible with \"Below header row\" menu position — if both are set, the logo falls back to centering between the empty nav column and the icons.",
       "options": [
         { "value": "left", "label": "Left (menu next to logo)" },
         { "value": "center", "label": "Center (menu on the left)" }
       ],
       "default": "left"
+    },
+
+    { "type": "header", "content": "Menu position" },
+    {
+      "type": "select",
+      "id": "menu_position",
+      "label": "Menu position",
+      "info": "Desktop only (1024px+) — mobile/tablet keep the hamburger menu either way.",
+      "options": [
+        { "value": "inline", "label": "Inline with logo (default)" },
+        { "value": "below", "label": "Below header row" }
+      ],
+      "default": "inline"
     },
 
     { "type": "header", "content": "Transparent header" },
