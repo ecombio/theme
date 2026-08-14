@@ -384,6 +384,10 @@
     this._emptyVisible = false;
     this._recognition  = null;
     this._typewriter   = null;
+    // Original placeholder text, stashed while the typewriter overlay is
+    // active so it can be restored if the overlay never starts or the
+    // instance is destroyed (see _initTypewriter / destroy below).
+    this._inputPlaceholder = null;
 
     this._listeners = [];
 
@@ -439,6 +443,14 @@
     var overlay = this.root.querySelector('[data-search-typewriter]');
     var terms   = window.HS_TRENDING || [];
     if (!overlay || !terms.length) return;
+
+    // The typewriter overlay is a visual substitute for the placeholder —
+    // only one of the two should ever be rendered at a time, or they paint
+    // on top of each other (garbled overlapping text). Strip the static
+    // placeholder now that the overlay is taking over, and stash it so it
+    // can be put back on destroy() (e.g. theme-editor section reloads).
+    this._inputPlaceholder = this.input.getAttribute('placeholder');
+    this.input.removeAttribute('placeholder');
 
     this._typewriter = new HSTypewriter(overlay, terms);
 
@@ -860,6 +872,13 @@
 
   HeaderSearch.prototype.destroy = function () {
     if (this._typewriter) { this._typewriter.destroy(); this._typewriter = null; }
+    // Restore the original placeholder if the typewriter had stripped it,
+    // so a fresh instance (e.g. after shopify:section:load) doesn't start
+    // from a half-initialized state with no placeholder and no overlay.
+    if (this._inputPlaceholder != null) {
+      this.input.setAttribute('placeholder', this._inputPlaceholder);
+      this._inputPlaceholder = null;
+    }
     if (this.controller) { this.controller.abort(); this.controller = null; }
     if (this._recognition) {
       try { this._recognition.abort(); } catch (_) {}
