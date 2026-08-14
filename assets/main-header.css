@@ -1,7 +1,72 @@
 /* main-header.css
 
    Changelog:
-     2026-08-13 — ADDED: "Menu below header row" layout option
+     2026-08-13 (3) — FIX: predictive-search dropdown (.header-search__panel)
+                  was being invisibly clipped to zero height whenever
+                  search_style was "bar". Root cause: .main-header__nav-group
+                  (added in pass (2) below) carried `overflow: hidden`,
+                  inherited from the old .main-header__nav shrink-safety
+                  fix (2026-08-06e) — but nav-group is now the shared
+                  flex container for BOTH .main-header__nav and, in bar
+                  mode, .main-header__search-bar-inline. The dropdown
+                  panel (position: absolute; top: calc(100% + 6px), see
+                  header-search.css) is a descendant of nav-group, so
+                  nav-group's overflow: hidden clipped it before it
+                  could ever become visible below the input — it was
+                  rendering correctly, just invisible.
+                  .main-header__nav already carries its own independent
+                  `overflow: hidden` (still present, unchanged, further
+                  down in this same @media block) which continues to
+                  clip the horizontally-scrolling nav exactly as before
+                  — nav-group duplicating that same overflow rule was
+                  never actually needed for the nav's own behavior, and
+                  duplicating it is what broke the search bar sibling.
+                  Removed `overflow: hidden` from `.main-header__nav-group`
+                  only; `min-width: 0` and `flex-shrink: 1` are unchanged
+                  and still do the actual shrink work for both children.
+
+     2026-08-13 (2) — ADDED: "Always-visible bar" search style
+                  (search_style: bar in main-header.liquid's schema),
+                  alongside the existing icon+overlay pattern
+                  (search_style: icon, default/unchanged). Paired
+                  with the new .main-header__search-bar-inline markup
+                  and the .main-header__nav-group wrapper introduced
+                  in this same pass:
+                    - .main-header__nav-group now wraps the inline
+                      nav (main-header.liquid still omits it when
+                      menu_position is "below") and, when
+                      search_style is "bar", the inline search bar
+                      next to it. This wrapper is ALWAYS rendered —
+                      even fully empty — specifically so
+                      main-header--logo-center's 3-column grid
+                      (nav | logo | icons) always sees exactly 3
+                      items and never needs per-combination
+                      grid-column overrides; the previous
+                      .main-header--logo-center.main-header--menu-below
+                      override from pass (1) below is removed as a
+                      result, since it's no longer needed.
+                    - .main-header__search-bar-inline: hidden by
+                      default (mobile/tablet always keep the separate
+                      .main-header__search-row bar, unaffected by this
+                      setting) and shown only at desktop
+                      (min-width: 64rem) when main-header--search-bar
+                      is present. When active, the desktop
+                      search-trigger icon and its entire overlay
+                      markup (including its own header-search render)
+                      are omitted server-side rather than hidden with
+                      CSS, since they're fully redundant once the bar
+                      is visible — see main-header.liquid.
+                  No changes to header-group.css, header-group.js,
+                  main-header.js, or header-search.liquid were
+                  needed: main-header.js's overlay IIFE already
+                  no-ops safely when the trigger/overlay aren't
+                  present, and header-search.liquid is reused as-is
+                  with a new variant name ('desktop-bar') purely to
+                  keep its internal element IDs unique from the
+                  always-present 'mobile' variant and the
+                  now-conditional 'overlay' variant.
+
+     2026-08-13 (1) — ADDED: "Menu below header row" layout option
                   (main-header--menu-below), paired with the new
                   menu_position schema setting and the
                   .main-header__menu-row markup in main-header.liquid.
@@ -829,6 +894,16 @@
 
 .main-header__nav { display: none; }
 
+/* ADDED (2026-08-13) — inline search bar (search_style: bar), hidden
+   by default. Mobile/tablet always use the dedicated
+   .main-header__search-row bar instead (rendered further down,
+   unaffected by this setting), so this only ever becomes visible at
+   desktop — see the min-width: 64rem override in the desktop
+   division below. Rendered in the DOM at all breakpoints when
+   search_bar is true (main-header.liquid), so this base rule is what
+   keeps it out of the mobile/tablet layout. */
+.main-header__search-bar-inline { display: none; }
+
 .menu-bar__container { position: relative; }
 
 .menu-bar__list {
@@ -939,6 +1014,35 @@
 
   .main-header__icons .main-header__search-trigger { display: flex; }
 
+  /* ADDED (2026-08-13) — .main-header__nav-group wraps the nav and,
+     when search_style is "bar", the inline search bar next to it.
+     This is now the actual flex/grid item that used to be
+     .main-header__nav directly — see main-header.liquid for why the
+     wrapper is always rendered, even empty.
+
+     FIX (2026-08-13 pass 3) — this used to also carry
+     `overflow: hidden`, copied over from .main-header__nav's own
+     shrink-safety fix (2026-08-06e) on the assumption nav-group
+     needed the same treatment now that IT is the item shrinking
+     against .main-header__inner's available width. That was wrong:
+     .main-header__nav still carries its own independent
+     `overflow: hidden` below, which is what actually clips the
+     horizontally-scrolling nav — nav-group doesn't need to repeat
+     it. Worse, because nav-group is now also the container for
+     .main-header__search-bar-inline in bar mode, that duplicated
+     overflow: hidden was clipping the search bar's predictive
+     dropdown panel (position: absolute, extends below the input —
+     see header-search.css) to invisible/zero height. Removed here;
+     min-width: 0 + flex-shrink: 1 alone are enough for this wrapper
+     to still shrink correctly, same as before. */
+  .main-header__nav-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
   .main-header__nav {
     display: flex;
     align-items: center;
@@ -946,6 +1050,25 @@
     flex-shrink: 1;
     overflow: hidden; /* FIX 2026-08-06e — safety net so this item can always shrink to 0 instead of overflowing into the search pill */
   }
+
+  /* ADDED (2026-08-13) — inline search bar (search_style: bar).
+     Hidden by default (base rule further up, mobile/tablet — those
+     always use the dedicated .main-header__search-row bar instead)
+     and shown here only when main-header--search-bar is present.
+     flex: 0 1 320px gives it a comfortable default width that can
+     still shrink alongside the nav if the viewport is tight; the
+     header-search partial's own internal markup (form/input/panel)
+     is otherwise untouched — see header-search.liquid — so it needs
+     to be told to actually fill this wrapper. */
+  .main-header--search-bar .main-header__search-bar-inline {
+    display: flex;
+    align-items: center;
+    flex: 0 1 320px;
+    min-width: 160px;
+    position: relative; /* anchors the predictive-results panel (position: absolute in header-search.css) directly under the bar rather than under some other ancestor */
+    z-index: 300; /* above the menu-bar (z-index: 100, below) so the dropdown results panel isn't clipped/overlapped by nav content; below the search overlay (var(--hdr-overlay-z), 500) and cart drawer, which don't apply here anyway since the overlay markup isn't even rendered in bar mode */
+  }
+  .main-header__search-bar-inline .header-search { width: 100%; }
 
   .menu-bar {
     display: flex;
@@ -1060,7 +1183,23 @@
      .main-header__nav is deliberately left to the grid's default
      stretch behavior (no justify-self) so it still fills its full
      column width — that's what its existing overflow:hidden +
-     horizontal-scroll + edge-fade behavior (above) depends on. */
+     horizontal-scroll + edge-fade behavior (above) depends on.
+
+     UPDATED (2026-08-13) — order now goes on .main-header__nav-group
+     (was .main-header__nav directly) since that wrapper is the
+     actual grid item now. This is also what makes menu_position:
+     below and search_style: bar both work correctly with a centered
+     logo with no per-combination overrides: nav-group is ALWAYS
+     rendered in main-header.liquid — even completely empty, when
+     menu is below AND search style is icon — so this grid always
+     sees exactly 3 items (nav-group, logo, icons) and normal
+     auto-placement always lands logo in the middle column and icons
+     on the right, regardless of what nav-group does or doesn't
+     contain. (Previously, omitting the nav entirely for
+     menu_position: below required a dedicated
+     .main-header--logo-center.main-header--menu-below override to
+     force the logo/icons back into their columns — no longer needed
+     now that the wrapper's presence is unconditional.) */
   .main-header--logo-center .main-header__inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -1074,7 +1213,7 @@
        edge it always had. */
     padding-left: 0;
   }
-  .main-header--logo-center .main-header__nav {
+  .main-header--logo-center .main-header__nav-group {
     order: 1;
   }
   .main-header--logo-center .main-header__logo {
@@ -1100,22 +1239,6 @@
     width: 100%;
     background: var(--hdr-bg);
     border-top: 1px solid var(--hdr-border);
-  }
-
-  /* Logo-center + menu-below combo: .main-header--logo-center's grid
-     (1fr auto 1fr) assumes 3 children (nav, logo, icons) for
-     auto-placement to land the logo in the true center column. With
-     menu_position: below, .main-header__nav isn't rendered inside
-     .main-header__inner, so only 2 grid items exist and the logo
-     would auto-place into column 1 (left) instead. Explicit
-     grid-column keeps the logo centered and icons pinned right
-     even with the nav column empty. Scoped to this combination only
-     — logo-center by itself (nav still inline) is untouched. */
-  .main-header--logo-center.main-header--menu-below .main-header__logo {
-    grid-column: 2;
-  }
-  .main-header--logo-center.main-header--menu-below .main-header__icons {
-    grid-column: 3;
   }
 }
 
