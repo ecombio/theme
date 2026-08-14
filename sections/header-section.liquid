@@ -23,18 +23,6 @@
       assign width_class = 'main-header--default-width'
   endcase
 
-  assign menu_position = section.settings.menu_position | default: 'inline'
-  assign menu_below = false
-  if menu_position == 'below'
-    assign menu_below = true
-  endif
-
-  assign search_style = section.settings.search_style | default: 'icon'
-  assign search_bar = false
-  if search_style == 'bar'
-    assign search_bar = true
-  endif
-
   assign trending_terms = ''
   for i in (1..12)
     assign key = 'trending_' | append: i
@@ -59,25 +47,6 @@
     assign hs_predictive = true
   endif
   assign hs_typewriter = section.settings.enable_typewriter
-
-  assign transparent_header_enabled = false
-  if section.settings.enable_transparent_header != false
-    if request.page_type == 'index'
-      assign transparent_header_enabled = true
-    elsif request.page_type == 'page' and page.handle != blank
-      assign extra_pages_raw = section.settings.transparent_header_page_handles
-      if extra_pages_raw != blank
-        assign extra_pages = extra_pages_raw | split: ','
-        for raw_handle in extra_pages
-          assign candidate_handle = raw_handle | handleize
-          if candidate_handle == page.handle
-            assign transparent_header_enabled = true
-            break
-          endif
-        endfor
-      endif
-    endif
-  endif
 -%}
 
 {%- comment -%}
@@ -118,23 +87,10 @@
   </script>
 {%- endif -%}
 
-{%- if transparent_header_enabled -%}
-  <style>
-    @media (min-width: 64rem) {
-      main[role="main"] { padding-top: 0 !important; }
-    }
-  </style>
-{%- endif -%}
-
-{%- capture header_nav_markup -%}
-  {%- render 'header-menu', blocks: section.blocks -%}
-{%- endcapture -%}
-
 <header
-  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}{% if section.settings.logo_position == 'center' %} main-header--logo-center{% endif %}{% if menu_below %} main-header--menu-below{% endif %}{% if search_bar %} main-header--search-bar{% endif %}"
+  class="main-header {{ width_class }}{% if section.settings.enable_search_drawer %} main-header--search-drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header--search-drawer-tablet{% endif %}"
   id="main-header"
   role="banner"
-  data-transparent-header="{{ transparent_header_enabled }}"
   style="
     --section-padding: {{ section.settings.section_padding }}px;
     {%- if section_width == 'custom-width' %}
@@ -186,43 +142,19 @@
       </div>
 
       <div class="main-header__nav-group">
-        {%- unless menu_below -%}
-          <div class="main-header__nav">
-            {{ header_nav_markup }}
-          </div>
-        {%- endunless -%}
-        {%- if search_bar -%}
-          <div class="main-header__search-bar-inline">
-            {%- render 'header-search',
-              enable_predictive_search: section.settings.enable_predictive_search,
-              variant: 'desktop-bar',
-              trending_terms: trending_terms,
-              enable_typewriter: section.settings.enable_typewriter,
-              typewriter_type_speed: section.settings.typewriter_type_speed,
-              typewriter_hold_ms: section.settings.typewriter_hold_ms
-            -%}
-          </div>
-        {%- endif -%}
+        <div class="main-header__search-bar-inline">
+          {%- render 'header-search',
+            enable_predictive_search: section.settings.enable_predictive_search,
+            variant: 'desktop-bar',
+            trending_terms: trending_terms,
+            enable_typewriter: section.settings.enable_typewriter,
+            typewriter_type_speed: section.settings.typewriter_type_speed,
+            typewriter_hold_ms: section.settings.typewriter_hold_ms
+          -%}
+        </div>
       </div>
 
       <ul class="main-header__icons" role="list" aria-label="Header actions">
-        {%- unless search_bar -%}
-          <li>
-            <button type="button"
-                    class="main-header__search-trigger"
-                    id="main-header-search-trigger"
-                    aria-haspopup="dialog"
-                    aria-expanded="false"
-                    aria-controls="main-header-search-overlay"
-                    aria-label="Search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <span class="visually-hidden">Search</span>
-            </button>
-          </li>
-        {%- endunless -%}
         {%- if show_wish != false -%}
           <li class="main-header__icons-item--wishlist">{%- render 'header-wishlist', show_label: label_wish -%}</li>
         {%- endif -%}
@@ -240,11 +172,9 @@
     </div>
   </div>
 
-  {%- if menu_below -%}
-    <div class="main-header__menu-row">
-      {{ header_nav_markup }}
-    </div>
-  {%- endif -%}
+  <div class="main-header__menu-row">
+    {%- render 'header-menu', blocks: section.blocks -%}
+  </div>
 
   <div class="main-header__search-row{% if section.settings.enable_search_drawer %} main-header__search-row--drawer-mobile{% endif %}{% if enable_search_drawer_tablet %} main-header__search-row--drawer-tablet{% endif %}">
     <div class="main-header__search-row-inner">
@@ -258,32 +188,6 @@
       -%}
     </div>
   </div>
-
-  {%- unless search_bar -%}
-    <div class="main-header__search-overlay" id="main-header-search-overlay" data-search-overlay hidden>
-      <div class="main-header__search-overlay-backdrop" data-search-overlay-close></div>
-      <div class="main-header__search-overlay-panel" role="dialog" aria-modal="true" aria-label="Search">
-        <div class="main-header__search-overlay-top">
-          <a href="{{ routes.root_url }}" class="main-header__search-overlay-logo" aria-label="{{ shop.name }} home">
-            {%- render 'header-logo', logo: logo, logo_width: 84 -%}
-          </a>
-          <div class="main-header__search-overlay-inner">
-            {%- render 'header-search',
-              enable_predictive_search: section.settings.enable_predictive_search,
-              variant: 'overlay',
-              trending_terms: trending_terms,
-              enable_typewriter: section.settings.enable_typewriter,
-              typewriter_type_speed: section.settings.typewriter_type_speed,
-              typewriter_hold_ms: section.settings.typewriter_hold_ms
-            -%}
-          </div>
-          <button type="button" class="main-header__search-overlay-cancel" data-search-overlay-close>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  {%- endunless -%}
 
 </header>
 
@@ -319,60 +223,6 @@
       "id": "section_padding",
       "label": "Side padding",
       "min": 0, "max": 80, "step": 4, "unit": "px", "default": 32
-    },
-    {
-      "type": "select",
-      "id": "logo_position",
-      "label": "Logo position",
-      "info": "Center moves the menu to the left (where the logo currently sits) and places the logo in the middle. Desktop only (1024px+) — mobile and tablet are unaffected. Works with any Menu position or Search style combination.",
-      "options": [
-        { "value": "left", "label": "Left (menu next to logo)" },
-        { "value": "center", "label": "Center (menu on the left)" }
-      ],
-      "default": "left"
-    },
-
-    { "type": "header", "content": "Menu position" },
-    {
-      "type": "select",
-      "id": "menu_position",
-      "label": "Menu position",
-      "info": "Desktop only (1024px+) — mobile/tablet keep the hamburger menu either way.",
-      "options": [
-        { "value": "inline", "label": "Inline with logo (default)" },
-        { "value": "below", "label": "Below header row" }
-      ],
-      "default": "inline"
-    },
-
-    { "type": "header", "content": "Search style" },
-    {
-      "type": "select",
-      "id": "search_style",
-      "label": "Search style",
-      "info": "Desktop only (1024px+) — mobile/tablet always use the search bar shown below the header, and the \"search drawer\" toggles under Mobile/Tablet Division below control that separately. \"Icon\" opens a full-screen search overlay when clicked. \"Bar\" shows an always-visible search input inline in the header, next to the menu.",
-      "options": [
-        { "value": "icon", "label": "Icon (opens overlay)" },
-        { "value": "bar", "label": "Always-visible bar" }
-      ],
-      "default": "icon"
-    },
-
-    { "type": "header", "content": "Transparent header" },
-    {
-      "type": "checkbox",
-      "id": "enable_transparent_header",
-      "label": "Enable transparent header effect",
-      "info": "Turns the whole effect on or off. When unchecked, the header is always solid — everywhere, regardless of the settings below — the exact same as if this feature didn't exist. When checked, the homepage always gets the transparent-over-hero header, plus any pages listed below.",
-      "default": true
-    },
-    {
-      "type": "textarea",
-      "id": "transparent_header_page_handles",
-      "label": "Additional pages (comma-separated)",
-      "info": "The homepage always gets the transparent-over-hero header (when the toggle above is on). To use it on a landing page (Page template) too, enter its handle here — the part of its URL after /pages/. Separate multiple handles with commas, e.g. electric-scooters, electric-skateboards, electric-bikes, accessories. Only works on pages that have a full-width hero/slideshow at the top, same as the homepage.",
-      "default": "electric-scooters, electric-skateboards, electric-bikes, accessories",
-      "visible_if": "{{ section.settings.enable_transparent_header }}"
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
