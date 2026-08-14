@@ -8,6 +8,20 @@
   now hoisted to the parent section (main-header.liquid) so it happens exactly
   once regardless of how many header-search instances exist on the page.
   This snippet is markup-only from here down.
+
+  FIX: added data-search-variant="{{ sfx }}" on the root element. This is the
+  exact same "sfx" string Liquid already uses to build unique DOM ids
+  (id="HeaderSearchForm-{{ sfx }}", id="HeaderSearchResults-{{ sfx }}"), now
+  also exposed to JS. header-search.js previously guessed the variant by
+  testing for CSS classes like "header-search--desktop" / "header-search--mobile",
+  which never matched the real variant strings this section actually passes
+  (desktop-bar / mobile / overlay / drawer variants) and silently fell through
+  to a shared "search" fallback for more than one of them. Two simultaneously-
+  mounted instances (e.g. overlay + mobile row, or either drawer variant)
+  could end up sharing that fallback, producing duplicate DOM ids
+  (id="HsOption-search-0") and colliding typewriter resume state (both
+  instances writing to the same _twState slot). Reading data-search-variant
+  directly guarantees every instance gets its own distinct, stable slot id.
 {%- endcomment -%}
 
 {%- liquid
@@ -24,6 +38,7 @@
 
 <div class="header-search header-search--{{ sfx }}{% unless predictive %} header-search--basic{% endunless %}"
      data-search-root
+     data-search-variant="{{ sfx }}"
      {%- if predictive %}
      data-predictive
      data-predictive-search-url="{{ routes.predictive_search_url }}"
