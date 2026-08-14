@@ -84,21 +84,34 @@
     capitalization, or double-spaces typed into the setting (e.g.
     "Electric  Bikes") still resolve to the correct "electric-bikes"
     instead of silently failing to match.
+
+    ADDED (master toggle) — everything above was previously always-on
+    for the homepage with no way to turn it off short of editing this
+    file. enable_transparent_header (default: true, so existing
+    stores keep today's behavior with zero config change) now gates
+    the entire block: when the merchant unchecks it in the theme
+    editor, transparent_header_enabled is forced false regardless of
+    page type or the "Additional pages" list, and the header renders
+    solid everywhere, every time — same as if the feature didn't
+    exist. Checked first, before request.page_type, so nothing below
+    even needs to run once it's off.
   endcomment
   assign transparent_header_enabled = false
-  if request.page_type == 'index'
-    assign transparent_header_enabled = true
-  elsif request.page_type == 'page' and page.handle != blank
-    assign extra_pages_raw = section.settings.transparent_header_page_handles
-    if extra_pages_raw != blank
-      assign extra_pages = extra_pages_raw | split: ','
-      for raw_handle in extra_pages
-        assign candidate_handle = raw_handle | handleize
-        if candidate_handle == page.handle
-          assign transparent_header_enabled = true
-          break
-        endif
-      endfor
+  if section.settings.enable_transparent_header != false
+    if request.page_type == 'index'
+      assign transparent_header_enabled = true
+    elsif request.page_type == 'page' and page.handle != blank
+      assign extra_pages_raw = section.settings.transparent_header_page_handles
+      if extra_pages_raw != blank
+        assign extra_pages = extra_pages_raw | split: ','
+        for raw_handle in extra_pages
+          assign candidate_handle = raw_handle | handleize
+          if candidate_handle == page.handle
+            assign transparent_header_enabled = true
+            break
+          endif
+        endfor
+      endif
     endif
   endif
 -%}
@@ -426,11 +439,19 @@
 
     { "type": "header", "content": "Transparent header" },
     {
+      "type": "checkbox",
+      "id": "enable_transparent_header",
+      "label": "Enable transparent header effect",
+      "info": "Turns the whole effect on or off. When unchecked, the header is always solid — everywhere, regardless of the settings below — the exact same as if this feature didn't exist. When checked, the homepage always gets the transparent-over-hero header, plus any pages listed below.",
+      "default": true
+    },
+    {
       "type": "textarea",
       "id": "transparent_header_page_handles",
       "label": "Additional pages (comma-separated)",
-      "info": "The homepage always gets the transparent-over-hero header. To use it on a landing page (Page template) too, enter its handle here — the part of its URL after /pages/. Separate multiple handles with commas, e.g. electric-scooters, electric-skateboards, electric-bikes, accessories. Only works on pages that have a full-width hero/slideshow at the top, same as the homepage.",
-      "default": "electric-scooters, electric-skateboards, electric-bikes, accessories"
+      "info": "The homepage always gets the transparent-over-hero header (when the toggle above is on). To use it on a landing page (Page template) too, enter its handle here — the part of its URL after /pages/. Separate multiple handles with commas, e.g. electric-scooters, electric-skateboards, electric-bikes, accessories. Only works on pages that have a full-width hero/slideshow at the top, same as the homepage.",
+      "default": "electric-scooters, electric-skateboards, electric-bikes, accessories",
+      "visible_if": "{{ section.settings.enable_transparent_header }}"
     },
 
     { "type": "header", "content": "Mobile Division (< 640px)" },
