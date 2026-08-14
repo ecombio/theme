@@ -193,6 +193,7 @@
     this.charIndex    = 0;
     this.deleting     = false;
     this.paused       = false;
+    this.destroyed    = false; // FIX: new flag, checked first thing in _tick()
     this.rafId        = null;
     this.lastTick     = 0;
     this.pauseUntil   = 0;
@@ -209,17 +210,21 @@
       input.placeholder = '';
     }
 
-    input.addEventListener('input', function () {
+    // FIX: keep references to these handlers so destroy() can remove them.
+    this._onInput = function () {
       if (input.value) {
         if (!self.paused) self._pause();
       } else {
         if (self.paused) self.resume();
       }
-    });
+    };
 
-    input.addEventListener('blur', function () {
+    this._onBlur = function () {
       if (!input.value && self.paused) self.resume();
-    });
+    };
+
+    input.addEventListener('input', this._onInput);
+    input.addEventListener('blur', this._onBlur);
 
     this._syncOverlayVisibility();
     this._tick(performance.now());
@@ -262,6 +267,11 @@
     var DELETING = Math.round(TYPING * 0.53);
     var HOLD     = this.opts.holdMs || 3200;
     var GAP      = 400;
+
+    // FIX: hard stop once destroyed, and self-heal if the node was
+    // detached before destroy() got a chance to run.
+    if (this.destroyed) return;
+    if (!this.input.isConnected) { this._pause(); return; }
 
     if (this.paused || this.input.value) return;
 
@@ -322,6 +332,7 @@
   };
 
   AnimatedPlaceholder.prototype.resume = function () {
+    if (this.destroyed) return; // FIX
     if (this.input.value) return;
     this.paused    = false;
     this.charIndex = 0;
@@ -336,8 +347,14 @@
     this._tick(performance.now());
   };
 
+  // FIX: destroy() now actually cancels the loop AND removes the
+  // input/blur listeners it created above. Previously this existed but
+  // was dead code — nothing called it.
   AnimatedPlaceholder.prototype.destroy = function () {
-    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.destroyed = true;
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+    if (this._onInput) this.input.removeEventListener('input', this._onInput);
+    if (this._onBlur) this.input.removeEventListener('blur', this._onBlur);
   };
 
 
@@ -365,6 +382,11 @@
     this.controller    = null;
     this._typewriter   = null;
     this._emptyVisible = false;
+    this._recognition  = null; // FIX: tracked so destroy() can abort it
+
+    // FIX: every listener this instance registers gets pushed here so
+    // destroy() can remove all of them in one pass.
+    this._listeners = [];
 
     if (!this.input) return;
 
@@ -383,6 +405,12 @@
     this._bindVoice();
   }
 
+  // FIX: small helper — wraps addEventListener and records what was bound.
+  HeaderSearch.prototype._on = function (target, type, handler, opts) {
+    target.addEventListener(type, handler, opts);
+    this._listeners.push([target, type, handler, opts]);
+  };
+
 
   HeaderSearch.prototype._syncClear = function () {
     if (!this.clearBtn) return;
@@ -396,11 +424,11 @@
   HeaderSearch.prototype._bindClear = function () {
     var self = this;
 
-    this.input.addEventListener('input',  function () { self._syncClear(); self._syncHasValue(); });
-    this.input.addEventListener('change', function () { self._syncClear(); self._syncHasValue(); });
+    this._on(this.input, 'input',  function () { self._syncClear(); self._syncHasValue(); });
+    this._on(this.input, 'change', function () { self._syncClear(); self._syncHasValue(); });
 
     if (this.clearBtn) {
-      this.clearBtn.addEventListener('click', function () {
+      this._on(this.clearBtn, 'click', function () {
         self.input.value = '';
         self._syncClear();
         self._syncHasValue();
@@ -417,7 +445,7 @@
     var self = this;
     var debouncedFetch = debounce(function (q) { self._fetch(q); }, DEBOUNCE_MS);
 
-    this.input.addEventListener('input', function () {
+    this._on(this.input, 'input', function () {
       var q = self.input.value.trim();
 
       if (q.length >= MIN_QUERY_LENGTH) {
@@ -430,7 +458,7 @@
       }
     });
 
-    this.input.addEventListener('focus', function () {
+    this._on(this.input, 'focus', function () {
       var q = self.input.value.trim();
       if (q.length >= MIN_QUERY_LENGTH) {
         self._fetch(q);
@@ -440,7 +468,7 @@
     });
 
     if (this.form) {
-      this.form.addEventListener('submit', function () {
+      this._on(this.form, 'submit', function () {
         var q = self.input.value.trim();
         if (q) RecentSearches.add(q);
         self.close();
@@ -452,7 +480,7 @@
   HeaderSearch.prototype._bindEmptyStateDelegation = function () {
     var self = this;
 
-    this.panel.addEventListener('click', function (e) {
+    this._on(this.panel, 'click', function (e) {
       var removeBtn = e.target.closest('[data-hs-remove-recent]');
       if (removeBtn) {
         e.preventDefault();
@@ -662,11 +690,15 @@
       track.scrollBy({ left: amount, behavior: 'smooth' });
     }
 
+    // Note: this carousel's own DOM/listeners are recreated with the
+    // panel on every search, so those die naturally. Only the window
+    // resize listener outlives a single search, so it's the only one
+    // that needs to go through self._on().
     if (prevBtn) prevBtn.addEventListener('click', function () { scrollByPage(-1); });
     if (nextBtn) nextBtn.addEventListener('click', function () { scrollByPage(1); });
 
     track.addEventListener('scroll', updateEdges, { passive: true });
-    window.addEventListener('resize', updateEdges);
+    this._on(window, 'resize', updateEdges); // FIX: was untracked window listener
 
     updateEdges();
   };
@@ -695,7 +727,7 @@
 
   HeaderSearch.prototype._bindDismiss = function () {
     var self = this;
-    document.addEventListener('click', function (e) {
+    this._on(document, 'click', function (e) { // FIX: was untracked document listener
       if (!self.root.contains(e.target)) self.close();
     });
   };
@@ -704,7 +736,7 @@
   HeaderSearch.prototype._bindKeyboard = function () {
     var self = this;
 
-    this.input.addEventListener('keydown', function (e) {
+    this._on(this.input, 'keydown', function (e) {
       if (self.panel.hidden) return;
 
       var items = Array.prototype.slice.call(
@@ -762,6 +794,7 @@
     this.voiceBtn.hidden = false;
 
     var recognition             = new SR();
+    this._recognition           = recognition; // FIX: tracked for destroy()
     recognition.lang            = document.documentElement.lang || 'en-US';
     recognition.interimResults  = false;
     recognition.maxAlternatives = 1;
@@ -797,7 +830,7 @@
       if (self._typewriter && !self.input.value) self._typewriter.resume();
     });
 
-    this.voiceBtn.addEventListener('click', function () {
+    this._on(this.voiceBtn, 'click', function () {
       try {
         recognition.start();
       } catch (err) {
@@ -814,10 +847,6 @@
     if (!terms || !terms.length) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // Respect reduced-motion: no character-by-character animation,
-      // but still surface a helpful static hint instead of doing
-      // nothing. This is a one-time text swap, not motion, so it
-      // doesn't conflict with the preference itself.
       this.input.placeholder = 'Search for ' + terms[0];
       return;
     }
@@ -829,6 +858,20 @@
     this._typewriter = new AnimatedPlaceholder(this.input, terms, overlay, function (hasValue) {
       self.root.classList.toggle('header-search--has-value', hasValue);
     }, opts);
+  };
+
+  // FIX: this is new. Unwinds everything HeaderSearch created.
+  HeaderSearch.prototype.destroy = function () {
+    if (this._typewriter) { this._typewriter.destroy(); this._typewriter = null; }
+    if (this.controller) { this.controller.abort(); this.controller = null; }
+    if (this._recognition) {
+      try { this._recognition.abort(); } catch (_) {}
+      this._recognition = null;
+    }
+    this._listeners.forEach(function (l) {
+      l[0].removeEventListener(l[1], l[2], l[3]);
+    });
+    this._listeners.length = 0;
   };
 
 
@@ -848,6 +891,9 @@
 
   document.addEventListener('shopify:section:load', function () {
     document.querySelectorAll('[data-search-root]').forEach(function (el) {
+      // FIX: actually tear down the old instance before dropping the
+      // reference — this is the fix for the leaked rAF loops.
+      if (el._hsInstance) el._hsInstance.destroy();
       el._hsInstance = null;
     });
     init();
