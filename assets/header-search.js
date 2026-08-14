@@ -6,15 +6,8 @@
   var DEBOUNCE_MS      = 300;
   var CACHE_TTL_MS     = 60000;
   var MAX_RECENT       = 5;
-  var MAX_RECENT_IN_RAIL = 3; // ADDED — cap for recent items injected into the active-search rail
+  var MAX_RECENT_IN_RAIL = 3;
 
-  // ADDED — with resources[limit_scope]='each' (see _fetch), queries
-  // and collections now each independently get up to 8 results from
-  // the API too, not just products. Left uncapped, the rail can balloon
-  // to 8 query suggestions + 8 collection suggestions. These trim the
-  // rendered rail back down to a sane, fixed count client-side —
-  // independent of the product carousel, which still gets its full
-  // pool. Tune these two numbers to taste.
   var MAX_SUGGESTED_QUERIES      = 3;
   var MAX_SUGGESTED_COLLECTIONS  = 2;
 
@@ -163,11 +156,6 @@
     return html;
   }
 
-  // ADDED — small "Recent" group appended into the suggestions rail
-  // once live results are showing, so recent searches aren't lost
-  // once you've typed something (predictive-search.liquid only
-  // renders the query/collection suggestions itself, since recent
-  // searches are session-storage/client-side only).
   function buildRailRecentGroup(recent, searchUrl) {
     if (!recent.length) return '';
 
@@ -538,16 +526,6 @@
 
     this._showLoading();
 
-    // FIX — 'resources[limit_scope]' was missing, so Shopify's
-    // predictive search API defaulted to sharing a single combined
-    // budget of 8 results across ALL requested resource types
-    // (product + collection + query) rather than giving each type
-    // its own limit of 8. In practice that meant query/collection
-    // suggestions were consistently eating ~5 of the 8 slots, so the
-    // product carousel only ever had ~3 left — regardless of how
-    // many actual product matches existed in the catalog. Setting
-    // this to 'each' gives products (and collections, and queries)
-    // their own independent pool of up to 8 results.
     var params = new URLSearchParams({
       q: query,
       section_id: 'predictive-search',
@@ -597,9 +575,6 @@
     this._emptyVisible = false;
     this.panel.innerHTML = html;
 
-    // ADDED — trim the suggestion rail down to a fixed count before
-    // anything else measures/announces the result set. See the
-    // MAX_SUGGESTED_* constants above for why this exists.
     this._trimSuggestions();
 
     var optionCount = this.panel.querySelectorAll('[role="option"]').length;
@@ -608,9 +583,6 @@
       this.panel.innerHTML =
         '<p class="header-search__state">No results found.</p>';
     } else {
-      // ADDED — fold recent searches into the suggestions rail now
-      // that it's rendered, and wire up the product carousel's
-      // scroll arrows.
       this._injectRecentIntoRail();
       this._initCarousel();
     }
@@ -624,14 +596,6 @@
     );
   };
 
-  // ADDED — removes excess query/collection suggestion rows beyond
-  // the MAX_SUGGESTED_* caps. Shopify's predictive-search.liquid
-  // section renders <li role="option"> items tagged
-  // .predictive-search__item--query / --collection inside the rail
-  // (data-predictive-rail); this walks each list and drops anything
-  // past the cap. If a group ends up fully empty, its whole
-  // .predictive-search__group wrapper (label + list) is removed too,
-  // so no dangling "Top Suggestions" heading with nothing under it.
   HeaderSearch.prototype._trimSuggestions = function () {
     var rail = this.panel.querySelector('[data-predictive-rail]');
     if (!rail) return;
@@ -647,9 +611,6 @@
       if (li && li.parentElement) li.parentElement.removeChild(li);
     }
 
-    // Clean up a group left with no <li> children at all (label with
-    // nothing under it) — walks up from whatever's left of this
-    // selector's list, or does nothing if items still remain.
     var remaining = rail.querySelectorAll(selector);
     if (remaining.length) return;
 
@@ -662,7 +623,6 @@
     });
   };
 
-  // ADDED
   HeaderSearch.prototype._injectRecentIntoRail = function () {
     var rail = this.panel.querySelector('[data-predictive-rail]');
     if (!rail) return;
@@ -674,9 +634,6 @@
     rail.insertAdjacentHTML('beforeend', html);
   };
 
-  // ADDED — mirrors the has-scroll-left/right edge-fade pattern
-  // already used for the desktop nav menu bar (see main-header.js),
-  // applied here to the product results carousel.
   HeaderSearch.prototype._initCarousel = function () {
     var carousel = this.panel.querySelector('[data-predictive-carousel]');
     if (!carousel) return;
