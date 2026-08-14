@@ -955,7 +955,21 @@
   .menu-bar.has-scroll-left .menu-bar__edge-fade--left,
   .menu-bar.has-scroll-right .menu-bar__edge-fade--right { opacity: 1; }
 
-  .main-header__nav .menu-bar {
+  /* FIX — this selector previously had no ID component, so it lost
+     to the width-class rules above (#main-header.main-header--*
+     .menu-bar { margin-inline: auto !important; ... }), which DO
+     carry an ID. Equal !important + higher specificity (ID beats
+     plain classes) meant those rules won regardless of source
+     order, so the inline nav's menu-bar kept auto-centering itself
+     inside its own column instead of respecting margin: 0 here —
+     invisible before the grid/logo-center layout (the nav had no
+     independent column to visibly center within), but very visible
+     once flush-left placement started to matter. Adding #main-header
+     brings this rule's specificity up to match (and, being later in
+     the file, win the tie), so margin: 0 actually applies to the
+     inline nav variant regardless of which section-width option is
+     active. */
+  #main-header .main-header__nav .menu-bar {
     width: auto;
     max-width: none !important;
     margin: 0 !important;
@@ -963,7 +977,7 @@
     position: relative; /* FIX 2026-08-06e — was: static. Keeping this positioned means .menu-bar__edge-fade (position:absolute) anchors to .menu-bar itself again, instead of escaping up to .main-header__bar (the next positioned ancestor) and covering the whole header row */
     z-index: auto;
   }
-  .main-header__nav .menu-bar::before { content: none; }
+  #main-header .main-header__nav .menu-bar::before { content: none; }
 
   /* ADDED — Logo position: center. Only meaningful at desktop widths,
      since .main-header__nav is only ever rendered inline (rather
@@ -990,6 +1004,14 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    /* ADDED — zero out the left half of the container's own side
+       padding (var(--section-padding), shared with the logo/icons
+       in the default layout) so the nav's first link sits flush
+       against the true left edge of the header instead of being
+       inset by that padding. Right side keeps its padding as-is, so
+       the icons group still has the same breathing room from the
+       edge it always had. */
+    padding-left: 0;
   }
   .main-header--logo-center .main-header__nav {
     order: 1;
