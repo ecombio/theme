@@ -533,9 +533,33 @@
   color: var(--hs-text-muted);
 }
 
+/* Each character types in wrapped in a soft white glow (a "shade"
+   trailing the cursor) that blooms in and quickly dissipates via
+   hs-tw-glow-in. Deletion still uses the separate blue -> purple ->
+   red vanish animation below. */
 .hs-tw-char {
   display: inline-block;
   color: var(--hs-text-muted);
+  animation: hs-tw-glow-in 380ms ease-out;
+}
+
+@keyframes hs-tw-glow-in {
+  0% {
+    opacity: 0.35;
+    text-shadow:
+      0 0 6px  rgba(255, 255, 255, 0.95),
+      0 0 14px rgba(255, 255, 255, 0.75),
+      0 0 24px rgba(255, 255, 255, 0.45);
+  }
+  60% {
+    text-shadow:
+      0 0 4px rgba(255, 255, 255, 0.5),
+      0 0 10px rgba(255, 255, 255, 0.25);
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
 }
 
 /* Vanish animation for characters being deleted: blue -> purple ->
@@ -553,6 +577,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hs-tw-char--vanish { animation: none; opacity: 0; }
+  .hs-tw-char { animation: none; text-shadow: none; }
 }
 
 .header-search__clear,
