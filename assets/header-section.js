@@ -38,20 +38,13 @@
   }
 })();
 
-/* ============================================================
-   Merged from assets/header-search.js — that file has been
-   removed; header-search markup now renders inline inside
-   sections/header-section.liquid, and this single script (loaded
-   once by header-section.liquid) drives every instance on the page.
-   ============================================================ */
-
 (function () {
   'use strict';
 
-  // Idempotent load guard, kept as defensive belt-and-suspenders in case
-  // this file ever ends up included twice (e.g. by an app block) — with
-  // everything now living in one file there's no longer a structural way
-  // for it to double-load, but the guard is harmless to keep.
+  
+  
+  
+  
   if (window.__hsInitialized) return;
   window.__hsInitialized = true;
 
@@ -67,7 +60,6 @@
   var _cache = new Map();
 
   var STORAGE_KEY = 'HS_RECENT_' + window.location.hostname;
-
 
   function debounce(fn, wait) {
     var t;
@@ -86,7 +78,6 @@
       .replace(/"/g,  '&quot;')
       .replace(/'/g,  '&#x27;');
   }
-
 
   var RecentSearches = {
     load: function () {
@@ -122,7 +113,6 @@
 
     clear: function () { this._save([]); },
   };
-
 
   function buildFeaturedProductsGroup(products) {
     if (!products || !products.length) return '';
@@ -191,7 +181,6 @@
 
     return html;
   }
-
 
   function buildEmptyState(trending, recent, featured, searchUrl) {
     var html = '';
@@ -280,22 +269,22 @@
     return html;
   }
 
-  // Typewriter effect for the search overlay. Built as an ES class +
-  // async/await loop rather than the old prototype + manual rAF-tick
-  // + resumable-state-map pattern: each term is typed and deleted a
-  // character at a time; deleting adds .hs-tw-char--vanish (the
-  // blue -> purple -> red fade lives entirely in CSS) and waits for
-  // `animationend` before removing the span. pause()/resume() stop
-  // and restart the cycle cleanly rather than trying to preserve
-  // mid-word state across a pause.
+  
+  
+  
+  
+  
+  
+  
+  
   function HSTypewriter(el, terms, opts) {
     opts = opts || {};
     this.el = el;
     this.terms = terms;
-    // typeMs/deleteMs control the per-character interval; the entrance
-    // animation itself (~520ms, see hs-tw-glow-in in header-section.css)
-    // overlaps across several characters by design — that overlap is what
-    // makes the cascade read as fluid rather than sluggish.
+    
+    
+    
+    
     this.typeMs = opts.typeMs || 22;
     this.deleteMs = opts.deleteMs || 12;
     this.holdMs = opts.holdMs || 1400;
@@ -329,10 +318,10 @@
 
       var term = this.terms[i % this.terms.length];
 
-      // Always type/delete letter-by-letter — this decorative effect
-      // is intentionally not gated behind prefers-reduced-motion, so it
-      // behaves the same regardless of OS motion settings or
-      // battery-saver modes that can flip that preference on.
+      
+      
+      
+      
       await this.typeTerm(term);
       if (this.destroyed) return;
       await this.waitWhilePaused();
@@ -359,19 +348,19 @@
   };
 
   HSTypewriter.prototype.deleteTerm = async function () {
-    // Mirrors typeTerm's pattern: mark each letter for removal on a
-    // fixed interval (deleteMs) rather than blocking on each one's
-    // fade-out animation finishing first. That old animationend-wait
-    // made contraction structurally slower than typing regardless of
-    // the ms values — now deletion speed is driven purely by deleteMs,
-    // guaranteed at least as fast as typing (deleteMs <= typeMs), with
-    // the fade still playing visually as each letter goes.
-    //
-    // Snapshotting the children up front (rather than repeatedly
-    // reading el.lastElementChild) matters here: since actual DOM
-    // removal is deferred to a timeout, lastElementChild would keep
-    // pointing at the same not-yet-removed character on every
-    // iteration instead of advancing letter by letter.
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     var chars = Array.prototype.slice.call(this.el.children);
 
     for (var idx = chars.length - 1; idx >= 0; idx--) {
@@ -386,9 +375,9 @@
       await this.sleep(this.deleteMs);
     }
 
-    // Safety net: force-clear anything still mid-fade so a stray
-    // character can't bleed into the next typed term if this instance
-    // gets paused/resumed right as deletion finishes.
+    
+    
+    
     this.el.textContent = '';
   };
 
@@ -410,7 +399,6 @@
     this.destroyed = true;
     clearTimeout(this._timeoutId);
   };
-
 
   function buildRailRecentGroup(recent, searchUrl) {
     if (!recent.length) return '';
@@ -437,7 +425,6 @@
     return html;
   }
 
-
   function HeaderSearch(root) {
     this.root    = root;
     this.input   = root.querySelector('[data-search-input]');
@@ -454,10 +441,10 @@
                         && !!this.predictiveUrl
                         && !!this.panel;
 
-    // Each header-search instance's stable slot id comes straight from
-    // data-search-variant (set in header-section.liquid to 'desktop-bar' /
-    // 'mobile' / whatever a given instance's variant is), so two
-    // simultaneously-mounted instances never collide on the same slot.
+    
+    
+    
+    
     this.sfx = root.dataset.searchVariant || 'search';
 
     this.activeIndex   = -1;
@@ -465,9 +452,9 @@
     this._emptyVisible = false;
     this._recognition  = null;
     this._typewriter   = null;
-    // Original placeholder text, stashed while the typewriter overlay is
-    // active so it can be restored if the overlay never starts or the
-    // instance is destroyed (see _initTypewriter / destroy below).
+    
+    
+    
     this._inputPlaceholder = null;
 
     this._listeners = [];
@@ -493,7 +480,6 @@
     this._listeners.push([target, type, handler, opts]);
   };
 
-
   HeaderSearch.prototype._syncClear = function () {
     if (!this.clearBtn) return;
     this.clearBtn.hidden = this.input.value.length === 0;
@@ -517,23 +503,22 @@
     }
   };
 
-
   HeaderSearch.prototype._initTypewriter = function () {
     if (!this.root.hasAttribute('data-typewriter-enabled')) return;
 
     var overlay = this.root.querySelector('[data-search-typewriter]');
-    // Only the term itself is typed/deleted — "Search for " is static
-    // markup (see header-section.liquid) so it never gets re-typed on
-    // every cycle.
+    
+    
+    
     var termEl  = this.root.querySelector('[data-search-typewriter-term]');
     var terms   = window.HS_TRENDING || [];
     if (!overlay || !termEl || !terms.length) return;
 
-    // The typewriter overlay is a visual substitute for the placeholder —
-    // only one of the two should ever be rendered at a time, or they paint
-    // on top of each other (garbled overlapping text). Strip the static
-    // placeholder now that the overlay is taking over, and stash it so it
-    // can be put back on destroy() (e.g. theme-editor section reloads).
+    
+    
+    
+    
+    
     this._inputPlaceholder = this.input.getAttribute('placeholder');
     this.input.removeAttribute('placeholder');
 
@@ -555,7 +540,6 @@
       this._typewriter.resume();
     }
   };
-
 
   HeaderSearch.prototype._bindInput = function () {
     var self = this;
@@ -591,7 +575,6 @@
       });
     }
   };
-
 
   HeaderSearch.prototype._bindEmptyStateDelegation = function () {
     var self = this;
@@ -656,7 +639,6 @@
     if (trending.length) parts.push(trending.length + ' trending search' + (trending.length > 1 ? 'es' : ''));
     return parts.length ? parts.join(', ') + ' available' : '';
   };
-
 
   HeaderSearch.prototype._fetch = function (query) {
     var self     = this;
@@ -822,7 +804,6 @@
     if (this.statusEl) this.statusEl.textContent = text;
   };
 
-
   HeaderSearch.prototype._open = function () {
     this.panel.hidden = false;
     this.input.setAttribute('aria-expanded', 'true');
@@ -846,7 +827,6 @@
       if (!self.root.contains(e.target)) self.close();
     });
   };
-
 
   HeaderSearch.prototype._bindKeyboard = function () {
     var self = this;
@@ -899,7 +879,6 @@
     el.focus({ preventScroll: true });
     el.scrollIntoView({ block: 'nearest' });
   };
-
 
   HeaderSearch.prototype._bindVoice = function () {
     var self = this;
@@ -957,12 +936,11 @@
     });
   };
 
-
   HeaderSearch.prototype.destroy = function () {
     if (this._typewriter) { this._typewriter.destroy(); this._typewriter = null; }
-    // Restore the original placeholder if the typewriter had stripped it,
-    // so a fresh instance (e.g. after shopify:section:load) doesn't start
-    // from a half-initialized state with no placeholder and no overlay.
+    
+    
+    
     if (this._inputPlaceholder != null) {
       this.input.setAttribute('placeholder', this._inputPlaceholder);
       this._inputPlaceholder = null;
@@ -977,7 +955,6 @@
     });
     this._listeners.length = 0;
   };
-
 
   function init() {
     document.querySelectorAll('[data-search-root]').forEach(function (el) {
