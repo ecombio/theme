@@ -22,28 +22,12 @@
       assign width_class = 'main-header--default-width'
   endcase
 
-  # Search behavior shared by every inline search instance on this page
-  # (the two header-search markup blocks below). Computed once here
-  # instead of per-instance.
   assign hs_predictive = section.settings.enable_predictive_search
   if hs_predictive == blank
     assign hs_predictive = true
   endif
 -%}
 
-{%- comment -%}
-  header-search.css / header-search.js and snippets/header-search.liquid
-  have been merged directly into this section (header-section.css /
-  header-section.js, and the markup below) so there is exactly one
-  stylesheet and one script for the whole header, loaded exactly once
-  regardless of how many search instances render on the page. The
-  window.HS_TRENDING global that used to be conditionally emitted only
-  when predictive search was on now emitted unconditionally: it powers
-  the trending-searches pills shown in the empty search state, which is
-  a separate feature from predictive fetching, and header-section.js is
-  loaded on every page regardless of this setting (it also runs the
-  menu-bar scroll-fade logic).
-{%- endcomment -%}
 <script>
   window.HS_TRENDING = window.HS_TRENDING || [
     "electric scooters","electric bikes","electric skateboards","electric cargo bikes",
@@ -80,7 +64,6 @@
       {%- endif -%}
 
       <div class="main-header__logo">
-        {%- comment -%} Inlined from snippets/header-logo.liquid {%- endcomment -%}
         <a href="{{ routes.root_url }}"
            class="main-header__logo-link"
            style="--logo-width: {{ logo_width }}px"
@@ -104,7 +87,6 @@
 
       <div class="main-header__nav-group">
         <div class="main-header__search-bar-inline">
-          {%- comment -%} Inlined from snippets/header-search.liquid, variant: desktop-bar {%- endcomment -%}
           {%- liquid
             assign hs_sfx = 'desktop-bar'
           -%}
@@ -205,7 +187,6 @@
 
   <div class="main-header__search-row">
     <div class="main-header__search-row-inner">
-      {%- comment -%} Inlined from snippets/header-search.liquid, variant: mobile {%- endcomment -%}
       {%- liquid
         assign hs_sfx = 'mobile'
       -%}
