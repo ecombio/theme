@@ -221,18 +221,16 @@
     opts = opts || {};
     this.el = el;
     this.terms = terms;
-    // typeMs is intentionally a bit slower than a "fast" typewriter
-    // (was 70ms) so each letter's fade/rise/blur-in animation (~520ms,
-    // see hs-tw-glow-in in header-section.css) has room to actually be
-    // seen landing before the next letter starts — a visible
-    // letter-by-letter cascade rather than a rapid, snappy fill-in.
-    this.typeMs = opts.typeMs || 90;
-    this.deleteMs = opts.deleteMs || 45;
-    this.holdMs = opts.holdMs || 3200;
-    this.gapMs = opts.gapMs || 400;
+    // typeMs/deleteMs control the per-character interval; the entrance
+    // animation itself (~520ms, see hs-tw-glow-in in header-section.css)
+    // overlaps across several characters by design — that overlap is what
+    // makes the cascade read as fluid rather than sluggish.
+    this.typeMs = opts.typeMs || 22;
+    this.deleteMs = opts.deleteMs || 12;
+    this.holdMs = opts.holdMs || 1400;
+    this.gapMs = opts.gapMs || 200;
     this.destroyed = false;
     this.paused = false;
-    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.run();
   }
 
@@ -260,20 +258,19 @@
 
       var term = this.terms[i % this.terms.length];
 
-      if (this.reduced) {
-        this.el.textContent = term;
-        await this.sleep(this.holdMs);
-      } else {
-        await this.typeTerm(term);
-        if (this.destroyed) return;
-        await this.waitWhilePaused();
-        if (this.destroyed) return;
-        await this.sleep(this.holdMs);
-        if (this.destroyed) return;
-        await this.deleteTerm();
-        if (this.destroyed) return;
-        await this.sleep(this.gapMs);
-      }
+      // Always type/delete letter-by-letter — this decorative effect
+      // is intentionally not gated behind prefers-reduced-motion, so it
+      // behaves the same regardless of OS motion settings or
+      // battery-saver modes that can flip that preference on.
+      await this.typeTerm(term);
+      if (this.destroyed) return;
+      await this.waitWhilePaused();
+      if (this.destroyed) return;
+      await this.sleep(this.holdMs);
+      if (this.destroyed) return;
+      await this.deleteTerm();
+      if (this.destroyed) return;
+      await this.sleep(this.gapMs);
 
       i++;
     }
