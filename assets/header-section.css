@@ -667,6 +667,13 @@
 
   /* Panel layout: side padding, driven by the "Panel layout" schema setting */
   padding-inline: var(--search-panel-padding, 16px);
+
+  /* Belt-and-suspenders: the panel itself must never be wider than the
+     viewport, regardless of what the inner .predictive-search__layout
+     or width-variant classes below ask for. box-sizing ensures the
+     padding-inline above is included in that 100vw, not added on top. */
+  box-sizing: border-box;
+  max-width: 100vw;
 }
 
 .header-search__panel.is-open {
@@ -706,8 +713,8 @@
 
 .header-search__panel--custom-width {
   width: 100%;
-  /* max-width: min(var(--search-panel-custom-width, 80rem), 100%); */
-  /* margin-inline: auto; */
+  max-width: min(var(--search-panel-custom-width, 80rem), 100%);
+  margin-inline: auto;
 }
 
 .header-search__backdrop {
@@ -743,15 +750,20 @@
 .header-search__state--error { color: #b04040; }
 
 /* Inner content layout. Width is controlled entirely by the panel
-   (.header-search__panel--*-width above) — this just fills it. */
+   (.header-search__panel--*-width above) — this just fills it.
+   NOTE: this box must never set its own min-width/max-width in
+   rem — that's what previously forced a fixed ~1600px floor and
+   pushed the whole panel (and the "Products" grid inside it) off
+   the left edge of narrow viewports. It should always be exactly
+   as wide as its parent panel allows, at every breakpoint. */
 .predictive-search__layout {
   display: flex;
   align-items: flex-start;
   gap: 32px;
   padding: 32px;
-  max-width: 100rem;
-  min-width: 100rem;
-  justify-self: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-inline: 0;
 }
 
@@ -831,6 +843,7 @@
 
 .predictive-search__carousel {
   position: relative;
+  min-width: 0;
 }
 
 .predictive-search__carousel-track {
@@ -1024,8 +1037,7 @@
 
 .hs-empty__group {
   padding: 6px 0;
-  max-width: 100rem;
-  justify-self: center;
+  width: 100%;
 }
 .hs-empty__group:last-child { border-bottom: none; }
 
