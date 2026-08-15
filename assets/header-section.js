@@ -472,6 +472,7 @@
     this._bindEmptyStateDelegation();
     this._bindKeyboard();
     this._bindDismiss();
+    this._bindReposition();
     this._bindVoice();
   }
 
@@ -804,7 +805,14 @@
     if (this.statusEl) this.statusEl.textContent = text;
   };
 
+  HeaderSearch.prototype._positionPanel = function () {
+    var header = this.root.closest('#main-header') || document.getElementById('main-header');
+    var bottom = header ? header.getBoundingClientRect().bottom : 0;
+    this.panel.style.top = Math.max(bottom, 0) + 'px';
+  };
+
   HeaderSearch.prototype._open = function () {
+    this._positionPanel();
     this.panel.hidden = false;
     this.input.setAttribute('aria-expanded', 'true');
     this.root.classList.add('header-search--open');
@@ -826,6 +834,21 @@
     this._on(document, 'click', function (e) {
       if (!self.root.contains(e.target)) self.close();
     });
+  };
+
+  HeaderSearch.prototype._bindReposition = function () {
+    var self = this;
+    // The panel is fixed and full-viewport-width now, so it no longer
+    // tracks the header via normal document flow: keep its top edge in
+    // sync with the header on resize, and just dismiss it on scroll
+    // (the header itself isn't sticky, so a scrolled-away header would
+    // otherwise leave the panel floating disconnected from it).
+    this._on(window, 'resize', function () {
+      if (!self.panel.hidden) self._positionPanel();
+    });
+    this._on(window, 'scroll', function () {
+      if (!self.panel.hidden) self.close();
+    }, { passive: true });
   };
 
   HeaderSearch.prototype._bindKeyboard = function () {
