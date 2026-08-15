@@ -806,8 +806,15 @@
   };
 
   HeaderSearch.prototype._positionPanel = function () {
-    var header = this.root.closest('#main-header') || document.getElementById('main-header');
-    var bottom = header ? header.getBoundingClientRect().bottom : 0;
+    // Anchor to the row this instance's search bar actually lives in
+    // (the top bar for the desktop-bar variant, the mobile search row
+    // for the mobile variant) rather than the bottom of the whole
+    // header — so the panel drops right from the search field itself
+    // and sits on top of the nav-links row underneath it, instead of
+    // appearing below that row.
+    var row = this.root.closest('.main-header__bar, .main-header__search-row')
+              || document.getElementById('main-header');
+    var bottom = row ? row.getBoundingClientRect().bottom : 0;
     this.panel.style.top = Math.max(bottom, 0) + 'px';
   };
 
