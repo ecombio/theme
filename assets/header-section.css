@@ -533,31 +533,41 @@
   color: var(--hs-text-muted);
 }
 
-/* Each character types in wrapped in a soft white glow (a "shade"
-   trailing the cursor) that blooms in and quickly dissipates via
-   hs-tw-glow-in. Deletion still uses the separate blue -> purple ->
-   red vanish animation below. */
+/* Each character eases in individually — fading up from a soft blur
+   with a trailing white glow (a "shade" following the cursor) that
+   dissolves as the letter settles. The cubic-bezier gives it a gentle
+   decelerating rise rather than an instant pop, so typing reads as a
+   letter-by-letter cascade instead of a snap. Deletion still uses the
+   separate blue -> purple -> red vanish animation below. */
 .hs-tw-char {
   display: inline-block;
   color: var(--hs-text-muted);
-  animation: hs-tw-glow-in 380ms ease-out;
+  opacity: 0;
+  animation: hs-tw-glow-in 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes hs-tw-glow-in {
   0% {
-    opacity: 0.35;
+    opacity: 0;
+    transform: translateY(5px);
+    filter: blur(3px);
     text-shadow:
-      0 0 6px  rgba(255, 255, 255, 0.95),
-      0 0 14px rgba(255, 255, 255, 0.75),
-      0 0 24px rgba(255, 255, 255, 0.45);
+      0 0 8px  rgba(255, 255, 255, 1),
+      0 0 18px rgba(255, 255, 255, 0.8),
+      0 0 30px rgba(255, 255, 255, 0.5);
   }
-  60% {
+  45% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
     text-shadow:
-      0 0 4px rgba(255, 255, 255, 0.5),
-      0 0 10px rgba(255, 255, 255, 0.25);
+      0 0 6px rgba(255, 255, 255, 0.6),
+      0 0 14px rgba(255, 255, 255, 0.35);
   }
   100% {
     opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
     text-shadow: 0 0 0 rgba(255, 255, 255, 0);
   }
 }
@@ -577,7 +587,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hs-tw-char--vanish { animation: none; opacity: 0; }
-  .hs-tw-char { animation: none; text-shadow: none; }
+  .hs-tw-char { animation: none; opacity: 1; transform: none; filter: none; text-shadow: none; }
 }
 
 .header-search__clear,
