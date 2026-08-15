@@ -439,6 +439,11 @@
   }
 }
 
+.main-header--menu-panel-open {
+  position: relative;
+  z-index: calc(var(--hdr-overlay-z) + 100);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ecombio-mobile-nav__overlay,
   .ecombio-mobile-nav__panel,
@@ -458,7 +463,7 @@
   --hs-accent-soft:  #f0ede8;
   --hs-radius:       10px;
   --hs-radius-lg:    14px;
-  --hs-shadow:       0 4px 24px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+  --hs-shadow:       0 16px 32px rgba(0, 0, 0, 0.10);
   --hs-z:            9000;
   --hs-mic-active:   #d94040;
 
@@ -652,18 +657,47 @@
   border-radius: 0;
   box-shadow: var(--hs-shadow);
   z-index: var(--hs-z);
-  animation: hs-panel-in 120ms ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-16px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
 }
-.header-search__panel[hidden] { display: none; }
+
+.header-search__panel.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.header-search__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(20, 20, 20, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: var(--hdr-overlay-z);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+}
+
+.header-search__backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.18s ease;
+}
 
 .predictive-search__layout {
   max-width: var(--hdr-default-max-width);
   margin-inline: auto;
-}
-
-@keyframes hs-panel-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .header-search__state {
@@ -1079,7 +1113,8 @@
   .hs-empty__clear-all,
   .hs-empty__remove,
   .hs-empty__pill,
-  .header-search__panel { transition: none; animation: none; }
+  .header-search__panel,
+  .header-search__backdrop { transition: none; animation: none; }
 
   .header-search__voice--listening::before,
   .header-search__voice--listening::after { animation: none; opacity: 0; }
