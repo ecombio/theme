@@ -221,8 +221,13 @@
     opts = opts || {};
     this.el = el;
     this.terms = terms;
-    this.typeMs = opts.typeMs || 70;
-    this.deleteMs = opts.deleteMs || 40;
+    // typeMs is intentionally a bit slower than a "fast" typewriter
+    // (was 70ms) so each letter's fade/rise/blur-in animation (~520ms,
+    // see hs-tw-glow-in in header-section.css) has room to actually be
+    // seen landing before the next letter starts — a visible
+    // letter-by-letter cascade rather than a rapid, snappy fill-in.
+    this.typeMs = opts.typeMs || 90;
+    this.deleteMs = opts.deleteMs || 45;
     this.holdMs = opts.holdMs || 3200;
     this.gapMs = opts.gapMs || 400;
     this.destroyed = false;
