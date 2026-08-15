@@ -1,4 +1,4 @@
-/* sections/header-section.liquid */
+{# sections/header-section.liquid #}
 
 {{ 'header-section.css' | asset_url | stylesheet_tag }}
 
@@ -28,6 +28,16 @@
   if hs_predictive == blank
     assign hs_predictive = true
   endif
+
+  assign search_panel_width = section.settings.search_panel_width
+  case search_panel_width
+    when 'full-width'
+      assign search_panel_width_class = 'header-search__panel--full-width'
+    when 'custom-width'
+      assign search_panel_width_class = 'header-search__panel--custom-width'
+    else
+      assign search_panel_width_class = 'header-search__panel--default-width'
+  endcase
 -%}
 
 <script>
@@ -47,6 +57,8 @@
     {%- if section_width == 'custom-width' %}
       --custom-width: {{ section.settings.custom_width }}rem;
     {%- endif %}
+    --search-panel-custom-width: {{ section.settings.search_panel_custom_width }}rem;
+    --search-panel-padding: {{ section.settings.search_panel_padding }}px;
   "
 >
   <div class="main-header__bar">
@@ -151,7 +163,7 @@
             </form>
 
             {%- if hs_predictive -%}
-              <div class="header-search__panel"
+              <div class="header-search__panel {{ search_panel_width_class }}"
                    id="HeaderSearchResults-{{ hs_sfx }}"
                    data-search-results
                    role="listbox"
@@ -250,7 +262,7 @@
         </form>
 
         {%- if hs_predictive -%}
-          <div class="header-search__panel"
+          <div class="header-search__panel {{ search_panel_width_class }}"
                id="HeaderSearchResults-{{ hs_sfx }}"
                data-search-results
                role="listbox"
@@ -301,6 +313,32 @@
 
     { "type": "header", "content": "Search (all breakpoints)" },
     { "type": "checkbox", "id": "enable_predictive_search", "label": "Enable predictive search", "default": true },
+
+    { "type": "header", "content": "Panel layout" },
+    {
+      "type": "select",
+      "id": "search_panel_width",
+      "label": "Panel width",
+      "options": [
+        { "value": "", "label": "Default (aligns with header)" },
+        { "value": "full-width", "label": "Full width" },
+        { "value": "custom-width", "label": "Custom width" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "range",
+      "id": "search_panel_custom_width",
+      "label": "Custom width",
+      "min": 40, "max": 120, "step": 5, "unit": "rem", "default": 80,
+      "visible_if": "{{ section.settings.search_panel_width == 'custom-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "search_panel_padding",
+      "label": "Side padding",
+      "min": 0, "max": 80, "step": 4, "unit": "px", "default": 16
+    },
 
     { "type": "header", "content": "Icons (all breakpoints)" },
     { "type": "checkbox", "id": "show_icon_account", "label": "Show account icon", "default": false },
