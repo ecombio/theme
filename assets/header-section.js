@@ -288,29 +288,37 @@
   };
 
   HSTypewriter.prototype.deleteTerm = async function () {
-    while (this.el.lastElementChild) {
+    // Mirrors typeTerm's pattern: mark each letter for removal on a
+    // fixed interval (deleteMs) rather than blocking on each one's
+    // fade-out animation finishing first. That old animationend-wait
+    // made contraction structurally slower than typing regardless of
+    // the ms values — now deletion speed is driven purely by deleteMs,
+    // guaranteed at least as fast as typing (deleteMs <= typeMs), with
+    // the fade still playing visually as each letter goes.
+    //
+    // Snapshotting the children up front (rather than repeatedly
+    // reading el.lastElementChild) matters here: since actual DOM
+    // removal is deferred to a timeout, lastElementChild would keep
+    // pointing at the same not-yet-removed character on every
+    // iteration instead of advancing letter by letter.
+    var chars = Array.prototype.slice.call(this.el.children);
+
+    for (var idx = chars.length - 1; idx >= 0; idx--) {
       if (this.destroyed) return;
-      var last = this.el.lastElementChild;
-      last.classList.add('hs-tw-char--vanish');
-      await this.waitForVanish(last);
-      if (last.parentNode) last.remove();
+      var charEl = chars[idx];
+      charEl.classList.add('hs-tw-char--vanish');
+      (function (el) {
+        setTimeout(function () {
+          if (el.parentNode) el.remove();
+        }, 260);
+      })(charEl);
       await this.sleep(this.deleteMs);
     }
-  };
 
-  HSTypewriter.prototype.waitForVanish = function (el) {
-    return new Promise(function (resolve) {
-      var done = false;
-      var finish = function () {
-        if (done) return;
-        done = true;
-        resolve();
-      };
-      el.addEventListener('animationend', finish, { once: true });
-      // Fallback in case the animation never fires (display:none
-      // ancestor, etc) so deletion can't stall indefinitely.
-      setTimeout(finish, 320);
-    });
+    // Safety net: force-clear anything still mid-fade so a stray
+    // character can't bleed into the next typed term if this instance
+    // gets paused/resumed right as deletion finishes.
+    this.el.textContent = '';
   };
 
   HSTypewriter.prototype.clearChars = function () {
