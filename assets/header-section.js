@@ -124,7 +124,76 @@
   };
 
 
-  function buildEmptyState(trending, recent, searchUrl) {
+  function buildFeaturedProductsGroup(products) {
+    if (!products || !products.length) return '';
+
+    var html = '<div class="predictive-search__group predictive-search__group--carousel">'
+              + '<p class="predictive-search__group-label" id="HsFeaturedLabel">Popular products</p>'
+              + '<div class="predictive-search__carousel" data-predictive-carousel>'
+
+              + '<button type="button" '
+              +         'class="predictive-search__carousel-btn predictive-search__carousel-btn--prev" '
+              +         'data-predictive-carousel-prev '
+              +         'aria-label="Scroll to previous products" '
+              +         'tabindex="-1">'
+              +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+              +        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+              +     '<path d="M15 18l-6-6 6-6"/>'
+              +   '</svg>'
+              + '</button>'
+
+              + '<ul class="predictive-search__carousel-track" '
+              +     'data-predictive-carousel-track '
+              +     'role="group" '
+              +     'aria-labelledby="HsFeaturedLabel">';
+
+    products.forEach(function (p) {
+      var title = esc(p.title || '');
+      var url   = esc(p.url || '#');
+
+      var priceHtml = p.price_varies
+        ? 'From ' + esc(p.price_min || '')
+        : esc(p.price || '');
+
+      var mediaHtml = p.image
+        ? '<img src="' + esc(p.image) + '" alt="' + title + '" loading="lazy" width="200" height="200">'
+        : '<span class="predictive-search__card-media--placeholder" aria-hidden="true"></span>';
+
+      html += '<li role="option" class="predictive-search__carousel-item">'
+            +   '<a href="' + url + '" class="predictive-search__card" tabindex="-1">'
+            +     '<span class="predictive-search__card-media">' + mediaHtml + '</span>'
+            +     '<span class="predictive-search__card-info">'
+            +       '<span class="predictive-search__card-title">' + title + '</span>'
+            +       '<span class="predictive-search__card-price">'
+            +          priceHtml
+            +          (p.available === false ? '<span class="predictive-search__card-badge">Sold out</span>' : '')
+            +       '</span>'
+            +     '</span>'
+            +   '</a>'
+            + '</li>';
+    });
+
+    html += '</ul>'
+
+          + '<button type="button" '
+          +         'class="predictive-search__carousel-btn predictive-search__carousel-btn--next" '
+          +         'data-predictive-carousel-next '
+          +         'aria-label="Scroll to more products" '
+          +         'tabindex="-1">'
+          +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+          +        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+          +     '<path d="M9 18l6-6-6-6"/>'
+          +   '</svg>'
+          + '</button>'
+
+          + '</div>'
+          + '</div>';
+
+    return html;
+  }
+
+
+  function buildEmptyState(trending, recent, featured, searchUrl) {
     var html = '';
 
     if (recent.length) {
@@ -182,6 +251,8 @@
 
       html += '</ul></div>';
     }
+
+    html += buildFeaturedProductsGroup(featured);
 
     if (trending && trending.length) {
       html += '<div class="hs-empty__group">'
@@ -562,7 +633,8 @@
   HeaderSearch.prototype._showEmpty = function () {
     var trending = window.HS_TRENDING || [];
     var recent   = RecentSearches.load();
-    var html     = buildEmptyState(trending, recent, this.searchUrl);
+    var featured = window.HS_FEATURED_PRODUCTS || [];
+    var html     = buildEmptyState(trending, recent, featured, this.searchUrl);
 
     if (!html) {
       this.close();
@@ -572,15 +644,17 @@
     this._emptyVisible = true;
     this.panel.innerHTML = html;
     this._open();
+    this._initCarousel();
     this.activeIndex = -1;
-    this._announce(this._buildEmptyAnnouncement(recent, trending));
+    this._announce(this._buildEmptyAnnouncement(recent, trending, featured));
   };
 
-  HeaderSearch.prototype._buildEmptyAnnouncement = function (recent, trending) {
+  HeaderSearch.prototype._buildEmptyAnnouncement = function (recent, trending, featured) {
     var parts = [];
     if (recent.length)   parts.push(recent.length   + ' recent search'   + (recent.length   > 1 ? 'es' : ''));
+    if (featured.length) parts.push(featured.length + ' suggested product' + (featured.length > 1 ? 's' : ''));
     if (trending.length) parts.push(trending.length + ' trending search' + (trending.length > 1 ? 'es' : ''));
-    return parts.length ? parts.join(' and ') + ' available' : '';
+    return parts.length ? parts.join(', ') + ' available' : '';
   };
 
 
