@@ -1,9 +1,3 @@
-/* Styles for sections/featured-images.liquid — a FIXED grid, deliberately
-   with no overflow-x, no scroll-snap, and no track/arrows/dots. Columns
-   are a straight CSS grid sized by the "Columns" settings, so with e.g.
-   4 columns + 4 cards every card gets an equal 1fr share of the row and
-   there is nothing to scroll or cut off. */
-
 .featured-images-section {
   --fi-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -49,9 +43,6 @@
   }
 }
 
-/* Section width control — same local-variable pattern as
-   banner-carousel.css, kept independent so this section can't be
-   knocked out of alignment by unrelated global theme changes. */
 .featured-images-section__default-width {
   max-width: 1184px;
   margin-inline: auto;
@@ -69,12 +60,6 @@
   padding-inline: var(--section-padding, 24px);
 }
 
-/* The grid itself — no overflow-x, no scroll-snap. Columns are driven
-   directly by the per-breakpoint --columns-* variables, so "4 columns +
-   4 cards" always divides the row evenly with zero leftover overflow.
-   This is the DEFAULT layout. When the "Enable carousel" section
-   setting is on, .featured-images-carousel--enabled below overrides
-   .featured-images-grid to a horizontally-scrolling track instead. */
 .featured-images-grid {
   display: grid;
   grid-template-columns: repeat(var(--columns-mobile, 1), 1fr);
@@ -93,14 +78,6 @@
   }
 }
 
-/* ---------------------------------------------------------------
-   Carousel mode (opt-in via section.settings.enable_carousel).
-   Same pattern as banner-carousel.css: the wrapper holds position
-   for the arrows/dots, the grid becomes a flex scroll track, and
-   each card is sized so exactly --columns-* of them fit per view —
-   any extra cards (e.g. a 5th card with 4 columns set) scroll into
-   view instead of wrapping to a second row.
-   --------------------------------------------------------------- */
 .featured-images-carousel {
   position: relative;
 }
@@ -117,9 +94,6 @@
   scroll-snap-type: x proximity;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  /* Clearance for the card's hover lift (translateY), same reasoning
-     as banner-carousel.css's track padding — overflow-x: auto would
-     otherwise clip the top of a lifted card flush at the scroll edge. */
   padding: 14px 4px 10px;
   scroll-padding-inline: 4px;
   cursor: grab;
@@ -128,11 +102,6 @@
   user-select: none;
 }
 
-/* Applied by JS for the duration of an active pointer drag. Native
-   scroll-snap and scroll-behavior are switched off so nothing fights
-   the direct scrollLeft assignment happening every pointermove —
-   featured-images.js's snapToNearest() re-aligns manually once the
-   momentum animation settles. */
 .featured-images-carousel--enabled .featured-images-grid.is-dragging {
   scroll-snap-type: none;
   scroll-behavior: auto;
@@ -412,8 +381,6 @@
   font-weight: 600;
 }
 
-/* Animation toggle — cancels lift/zoom when
-   section.settings.enable_animations is off. */
 .featured-images-section[data-animations="off"] .featured-images-card__link,
 .featured-images-section[data-animations="off"] .featured-images-card__link .featured-images-card__image {
   transition: none;
@@ -429,10 +396,6 @@
   transform: scale(var(--fi-img-scale, 1));
 }
 
-/* Optional scroll-reveal (only active when featured-images.js is loaded,
-   which only happens if "Fade cards in on scroll" is enabled). Cards
-   start hidden only once JS has confirmed it's running, so users with
-   JS disabled always see the cards — see the .no-js guard below. */
 [data-featured-images-reveal] .featured-images-card {
   opacity: 0;
   transform: translateY(16px);
@@ -444,21 +407,18 @@
   transform: none;
 }
 
-/* Tablet */
 @media screen and (min-width: 750px) {
   .featured-images-card__image-wrap {
     height: var(--card-height-desktop, 500px);
   }
 }
 
-/* Desktop */
 @media screen and (min-width: 990px) {
   .featured-images-card__content {
     padding: 28px;
   }
 }
 
-/* Mobile-specific image swap */
 @media screen and (max-width: 749px) {
   .featured-images-card__image--desktop {
     display: none;

@@ -1,8 +1,3 @@
-/* Optional scroll-reveal for sections/featured-images.liquid.
-   This file is only requested when "Fade cards in on scroll" is enabled
-   in the section settings — the grid itself has no other JS dependency
-   (no arrows, dots, autoplay, or drag/scroll logic to manage). */
-
 (() => {
   const REVEAL_SELECTOR = '[data-featured-images-reveal]';
   const CAROUSEL_SELECTOR = '[data-featured-images-carousel]';
@@ -13,14 +8,10 @@
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reducedMotion) {
-      // CSS already forces full opacity/no-transform under this query,
-      // so just skip the observer entirely rather than fighting it.
       return;
     }
 
     if (!('IntersectionObserver' in window)) {
-      // No observer support — reveal everything immediately instead of
-      // leaving cards permanently at opacity: 0.
       cards.forEach((card) => card.classList.add('is-visible'));
       return;
     }
@@ -38,18 +29,11 @@
     );
 
     cards.forEach((card, i) => {
-      // Small stagger so a multi-card row doesn't pop in as one flat block.
       card.style.transitionDelay = `${i * 60}ms`;
       observer.observe(card);
     });
   }
 
-  /* ---------------------------------------------------------------
-     Carousel controller — only attaches to sections where
-     "Enable carousel" is on. Handles prev/next, dot pagination,
-     overflow fade-mask classes, and optional autoplay. Mirrors
-     assets/banner-carousel.js's approach, scoped to this grid.
-     --------------------------------------------------------------- */
   class FeaturedImagesCarousel {
     constructor(root) {
       this.root = root;
@@ -66,14 +50,13 @@
       this.autoplayTimer = null;
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // Drag/momentum state
       this.isDragging = false;
       this.dragMoved = false;
       this.startX = 0;
       this.startScrollLeft = 0;
       this.lastX = 0;
       this.lastTs = 0;
-      this.velocity = 0; // px per ms
+      this.velocity = 0;
       this.momentumRaf = null;
 
       this.onPrevClick = this.onPrevClick.bind(this);
@@ -160,8 +143,6 @@
       return card.getBoundingClientRect().width + gap;
     }
 
-    /* ---------- Free drag + momentum ---------- */
-
     onPointerDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
 
@@ -179,7 +160,6 @@
         try {
           this.track.setPointerCapture(e.pointerId);
         } catch (err) {
-          /* ignore — capture is a nicety, not required */
         }
       }
     }
@@ -190,17 +170,12 @@
       const dx = e.clientX - this.startX;
       if (Math.abs(dx) > 3) this.dragMoved = true;
 
-      // Direct scrollLeft assignment is instant regardless of the
-      // track's CSS scroll-behavior, so this tracks the pointer 1:1
-      // with no lag from the "smooth" behavior used for arrows/dots.
       this.track.scrollLeft = this.startScrollLeft - dx;
 
       const now = performance.now();
       const dt = now - this.lastTs;
       if (dt > 0) {
-        const instVelocity = (e.clientX - this.lastX) / dt; // px/ms
-        // Light smoothing so one noisy sample right before release
-        // doesn't dictate the whole fling.
+        const instVelocity = (e.clientX - this.lastX) / dt;
         this.velocity = this.velocity * 0.7 + instVelocity * 0.3;
       }
       this.lastX = e.clientX;
@@ -217,13 +192,10 @@
         try {
           this.track.releasePointerCapture(e.pointerId);
         } catch (err) {
-          /* ignore */
         }
       }
 
       if (this.dragMoved) {
-        // A drag that moved the track shouldn't also fire a click on
-        // the card underneath the pointer — swallow the next click.
         const suppressClick = (evt) => {
           evt.preventDefault();
           evt.stopPropagation();
@@ -246,9 +218,9 @@
     }
 
     startMomentum(initialVelocity) {
-      let velocity = initialVelocity; // px/ms, decays over time
+      let velocity = initialVelocity;
       let lastTs = null;
-      const decayPerMs = 0.003; // higher = friction kicks in faster
+      const decayPerMs = 0.003;
       const minSpeed = 0.02;
       const maxScroll = this.track.scrollWidth - this.track.clientWidth;
 
@@ -257,8 +229,6 @@
         const dt = ts - lastTs;
         lastTs = ts;
 
-        // Frame-rate-independent exponential decay, so the coast
-        // feels the same on a 60Hz and a 120Hz display.
         velocity *= Math.exp(-decayPerMs * dt);
 
         let next = this.track.scrollLeft - velocity * dt;
@@ -407,7 +377,6 @@
     init();
   }
 
-  // Re-init when Shopify theme editor injects/re-renders a section.
   document.addEventListener('shopify:section:load', (event) => {
     const reveal = event.target.querySelector(REVEAL_SELECTOR);
     if (reveal) {
