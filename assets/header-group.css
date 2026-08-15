@@ -1,97 +1,4 @@
-/* header-group.css
-   Sticky/hide-on-scroll header wrapper + supporting layout fixes.
-   Paired with header-group.js (scroll/hover/focus behavior).
-
-   Changelog:
-     2026-08-06 (j) — FIX: transparent-over-hero header was applying
-                  at every viewport width. It's a desktop-only effect
-                  by design, so #header-group-wrapper.is-transparent
-                  below is now wrapped in the same min-width: 64rem
-                  breakpoint main-header.css already uses for its own
-                  desktop division (nav layout, search overlay
-                  trigger, etc). Below 1024px this rule simply won't
-                  match, so the wrapper keeps its normal solid
-                  background/shadow from the base rule above,
-                  regardless of what header-group.js does with the
-                  .is-transparent class (also gated to desktop now —
-                  see header-group.js). The color/logo overrides in
-                  main-header.css and the padding-removal override in
-                  main-header.liquid received matching fixes so all
-                  three pieces of this feature agree on the same
-                  breakpoint.
-
-     2026-08-06 (i) — REMOVED the .template-index main[role="main"]
-                  override added in the previous pass. It guessed
-                  Shopify's common `template-{{ template.name }}` body
-                  class convention to zero out the reserved header
-                  padding on the homepage, but that class doesn't
-                  match this theme's actual body markup, so the rule
-                  never matched — the hero rendered with a
-                  header-height gap above it instead of sitting behind
-                  the transparent header. Replaced with a
-                  server-rendered inline <style> emitted directly from
-                  main-header.liquid (guarded by the same
-                  request.page_type check that drives
-                  data-transparent-header), which has zero dependency
-                  on any class this file can't see. See
-                  main-header.liquid for the actual override.
-
-     2026-08-06 — ADDED: transparent-over-hero header state
-                  (.is-transparent), toggled by header-group.js only
-                  when #main-header carries
-                  data-transparent-header="true" (homepage only —
-                  see main-header.liquid). Two pieces:
-                    1. #header-group-wrapper.is-transparent below,
-                       which drops the wrapper's background/shadow.
-                       The actual text/icon/logo color flip and the
-                       inner .main-header__bar / .menu-bar background
-                       overrides live in main-header.css, scoped under
-                       the same class, since those elements belong to
-                       main-header.liquid, not this file.
-                    2. .template-index main[role="main"] below, which
-                       removes the reserved header-height padding on
-                       the homepage specifically, so the hero can sit
-                       directly behind the transparent header instead
-                       of being pushed down below it. ASSUMPTION: your
-                       theme adds a `template-index` class to <body>
-                       on the homepage (the common Shopify/Dawn
-                       convention, `template-{{ template.name }}`).
-                       This is set in layout/theme.liquid, which
-                       wasn't shared — if the body class differs,
-                       swap the selector below to match, otherwise
-                       this rule simply won't match and the hero will
-                       still render below the header instead of behind
-                       it (everything else in this feature will still
-                       work, just without the overlap).
-                  Also widened the base wrapper's `transition` to
-                  include background-color/box-shadow (previously only
-                  `transform`) so the transparent <-> solid swap
-                  crossfades instead of snapping.
-     2026-07-26 — Converted --header-group-height from desktop-first
-                  max-width queries (1023px / 599px) to the theme's
-                  mobile-first breakpoint system (see the token table
-                  in base.css). Base value is now the smallest/mobile
-                  size, with min-width queries layering up at md
-                  (640px) and lg (1024px). Values themselves are
-                  unchanged (56 / 64 / 68px) — only the query
-                  direction and cutoffs moved, from 599px to 640px
-                  and from 1023px to 1024px, to match the rest of the
-                  theme and main-header.liquid's own schema labels.
-     2026-07-25 — Lowered #header-group-wrapper's z-index from
-                  2147483647 (the maximum possible value) to 500.
-                  That max value guaranteed the header would always
-                  render above everything else on the page, including
-                  the cart drawer (assets/cart-drawer.css, z-index
-                  9999 via --ecd-z) — no z-index set on the drawer
-                  could ever outrank it. 500 keeps the header above
-                  ordinary page content (menu-bar and its dropdowns
-                  sit at 100 / var(--hdr-z)+10, well below this) while
-                  letting the cart drawer render on top when open.
-                  If anything else in the theme relied on the header
-                  being unconditionally above absolutely everything
-                  (a third-party widget, chat bubble, cookie banner),
-                  double-check it after this change — it may now
-                  render above the header where it previously couldn't. */
+/* assets/header-group.css */
 
 #header-group-wrapper {
   position: fixed !important;
@@ -109,19 +16,6 @@
   transform: translateY(-100%) !important;
 }
 
-/* ADDED — transparent-over-hero state. Only ever toggled on by
-   header-group.js when data-transparent-header="true" is present
-   (homepage only), so this can't fire on any other page regardless
-   of scroll position or specificity. Higher specificity than the
-   base rule above (ID + class beats ID alone) so it wins even though
-   both use !important.
-
-   FIX 2026-08-06j — desktop-only. Wrapped in the same min-width:
-   64rem breakpoint main-header.css uses for its own desktop
-   division, so the wrapper never goes transparent below 1024px even
-   if .is-transparent somehow ends up on the element (it shouldn't —
-   header-group.js is also gated now — but keeping the CSS gated too
-   means mobile/tablet stay correct regardless of JS state). */
 @media (min-width: 64rem) {
   #header-group-wrapper.is-transparent {
     background: transparent !important;
@@ -129,55 +23,26 @@
   }
 }
 
-/* Single source of truth for the header's height. header-group.js
-   measures the real, rendered header (announcement bar + utility bar
-   + main header + nav, whatever combination is actually present) and
-   keeps this updated on load/resize/content-change via ResizeObserver.
-   The value here is a static fallback only, for first paint before JS
-   runs and for no-JS — set it close to the real height at each tier
-   to minimize layout shift once JS takes over. Any other stylesheet
-   in the theme that needs the header's height (anchor-link scroll
-   offsets, a sticky sidebar's top offset, etc.) should read
-   var(--header-group-height) rather than hardcoding a number.
-
-   Mobile-first: base value is xs/sm (mobile). Each tier up overrides
-   with its own value as the viewport grows — see the breakpoint
-   token table in base.css. */
 :root {
-  --header-group-height: 56px; /* xs/sm base */
+  --header-group-height: 56px;
 }
 
-@media (min-width: 40rem) { /* md: 640px */
+@media (min-width: 40rem) {
   :root {
     --header-group-height: 64px;
   }
 }
 
-@media (min-width: 64rem) { /* lg: 1024px */
+@media (min-width: 64rem) {
   :root {
     --header-group-height: 68px;
   }
 }
 
-/* Invisible pushback: reserves layout space equal to the header's
-   height so page content doesn't render underneath the fixed header.
-   Applied as padding on <main> itself (not a sibling spacer div) so
-   every section gets it automatically without per-section markup,
-   and so it can't be defeated by a child section's negative top
-   margin — padding on the parent establishes a real boundary that a
-   descendant's margin can't collapse through, whereas an empty
-   sibling div only occupies its own space and doesn't stop that. */
 main[role="main"] {
   padding-top: var(--header-group-height, 68px);
 }
 
-/* Stacking-context reset.
-   Carried over as-is from theme.liquid — still theme-wide and still
-   overrides overflow/transform/filter/contain on any section-like
-   element site-wide, which can affect image crops, carousels, and
-   perf-isolated sections that rely on those properties elsewhere.
-   TODO: narrow this to the specific ancestor(s) that were actually
-   trapping the header in a stacking context, once identified. */
 main,
 .shopify-section,
 section,

@@ -1,3 +1,5 @@
+/* assets/header-group.js */
+
 (function () {
   const header = document.getElementById('header-group-wrapper');
   if (!header) return;
