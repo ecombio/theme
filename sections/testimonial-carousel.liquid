@@ -1,0 +1,503 @@
+{{ 'testimonial-carousel.css' | asset_url | stylesheet_tag }}
+
+{%- style -%}
+  #shopify-section-{{ section.id }} {
+    --tc-bg: {{ section.settings.background_color }};
+    --tc-text: {{ section.settings.text_color }};
+    --tc-muted: {{ section.settings.text_color | color_mix: section.settings.background_color, 55 }};
+    --tc-accent: {{ section.settings.accent_color }};
+    --tc-accent-soft: {{ section.settings.accent_color | color_mix: section.settings.background_color, 82 }};
+    --tc-card: {{ section.settings.card_background }};
+    --tc-card-border: {{ section.settings.accent_color | color_mix: section.settings.card_background, 88 }};
+    --tc-shadow: {{ section.settings.text_color | color_mix: section.settings.background_color, 90 }};
+    --tc-pad-top: {{ section.settings.padding_top }}px;
+    --tc-pad-bottom: {{ section.settings.padding_bottom }}px;
+    --tc-cards-desktop: {{ section.settings.cards_per_row }};
+  }
+{%- endstyle -%}
+
+<section
+  class="tc-section"
+  id="shopify-section-{{ section.id }}"
+  data-tc-section
+  data-autoplay="{{ section.settings.autoplay_muted }}"
+>
+  <div class="tc-container">
+
+    {%- if section.settings.eyebrow != blank or section.settings.heading != blank or section.settings.subheading != blank -%}
+      <header class="tc-header">
+        {%- if section.settings.eyebrow != blank -%}
+          <p class="tc-eyebrow">{{ section.settings.eyebrow | escape }}</p>
+        {%- endif -%}
+        {%- if section.settings.heading != blank -%}
+          <h2 class="tc-heading{% if section.settings.serif_heading %} tc-heading--serif{% endif %}">
+            {{ section.settings.heading | escape }}
+          </h2>
+        {%- endif -%}
+        {%- if section.settings.subheading != blank -%}
+          <div class="tc-subheading">{{ section.settings.subheading }}</div>
+        {%- endif -%}
+      </header>
+    {%- endif -%}
+
+    {%- if section.blocks.size > 0 -%}
+      <div class="tc-carousel-wrap">
+
+        {%- if section.settings.show_arrows -%}
+          <button type="button" class="tc-arrow tc-arrow--prev" data-tc-prev aria-label="Previous testimonials">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M11 3.5 5.5 9l5.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        {%- endif -%}
+
+        <ul class="tc-track" data-tc-track role="list" tabindex="0" aria-label="Customer video testimonials">
+          {%- for block in section.blocks -%}
+            {%- liquid
+              assign rating = block.settings.rating | plus: 0
+              assign has_video = false
+              if block.settings.video != blank
+                assign has_video = true
+              endif
+            -%}
+            <li class="tc-card" {{ block.shopify_attributes }} data-tc-card>
+              <div class="tc-media">
+                {%- if has_video -%}
+                  {{ block.settings.video | video_tag:
+                      id: block.id,
+                      class: 'tc-video',
+                      image_size: '900x',
+                      loop: true,
+                      muted: true,
+                      autoplay: false,
+                      controls: false,
+                      preload: 'metadata'
+                  }}
+                {%- elsif block.settings.poster_image != blank -%}
+                  <img
+                    class="tc-poster"
+                    src="{{ block.settings.poster_image | image_url: width: 900 }}"
+                    loading="lazy"
+                    alt="{{ block.settings.product_name | default: block.settings.reviewer_name | escape }}"
+                    width="900"
+                    height="{{ 900 | divided_by: block.settings.poster_image.aspect_ratio | default: 1125 }}"
+                  >
+                {%- else -%}
+                  <div class="tc-poster tc-poster--placeholder">{{ 'image' | placeholder_svg_tag: 'tc-placeholder-svg' }}</div>
+                {%- endif -%}
+
+                {%- if has_video -%}
+                  <button type="button" class="tc-mute" data-tc-mute aria-label="Unmute video" aria-pressed="true">
+                    <svg class="tc-icon-muted" width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path d="M11.5 4 6.8 7.6H3.6a.6.6 0 0 0-.6.6v3.6c0 .33.27.6.6.6h3.2L11.5 16V4Z" fill="currentColor"/>
+                      <path d="M14.8 7.2 18 10.4M18 7.2l-3.2 3.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    <svg class="tc-icon-unmuted" width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path d="M11.5 4 6.8 7.6H3.6a.6.6 0 0 0-.6.6v3.6c0 .33.27.6.6.6h3.2L11.5 16V4Z" fill="currentColor"/>
+                      <path d="M13.6 7.4a4 4 0 0 1 0 5.2M15.6 5.6a7 7 0 0 1 0 8.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+
+                  <button type="button" class="tc-play" data-tc-play aria-label="Play video">
+                    <svg width="15" height="17" viewBox="0 0 15 17" fill="none" aria-hidden="true">
+                      <path d="M14 7.27a1.5 1.5 0 0 1 0 2.6L2.75 16.4A1.5 1.5 0 0 1 .5 15.1V1.9A1.5 1.5 0 0 1 2.75.6L14 7.27Z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                {%- endif -%}
+              </div>
+
+              <div class="tc-body">
+                {%- if rating > 0 -%}
+                  <div class="tc-stars" role="img" aria-label="Rated {{ rating }} out of 5 stars">
+                    {%- for i in (1..5) -%}
+                      <svg class="tc-star{% if i > rating %} tc-star--empty{% endif %}" width="13" height="13" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M10 1.2 12.5 7l6.3.5-4.8 4.1 1.5 6.2L10 14.6 4.5 17.8 6 11.6 1.2 7.5 7.5 7 10 1.2Z" fill="currentColor"/>
+                      </svg>
+                    {%- endfor -%}
+                  </div>
+                {%- endif -%}
+
+                {%- if block.settings.product_name != blank -%}
+                  <p class="tc-product">
+                    {%- if block.settings.product_url != blank -%}
+                      <a href="{{ block.settings.product_url }}">{{ block.settings.product_name | escape }}</a>
+                    {%- else -%}
+                      {{ block.settings.product_name | escape }}
+                    {%- endif -%}
+                  </p>
+                {%- endif -%}
+
+                {%- if block.settings.review_text != blank -%}
+                  <p class="tc-quote">{{ block.settings.review_text | escape }}</p>
+                {%- endif -%}
+
+                {%- if block.settings.reviewer_name != blank or block.settings.show_verified_badge -%}
+                  <div class="tc-reviewer">
+                    {%- if block.settings.reviewer_name != blank -%}
+                      <span class="tc-reviewer-name">{{ block.settings.reviewer_name | escape }}</span>
+                    {%- endif -%}
+                    {%- if block.settings.show_verified_badge -%}
+                      <span class="tc-verified">
+                        <svg width="11" height="11" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.1"/>
+                          <path d="M6 10.3 8.6 13 14 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        {{ block.settings.verified_label | default: 'Verified purchaser' | escape }}
+                      </span>
+                    {%- endif -%}
+                  </div>
+                {%- endif -%}
+              </div>
+            </li>
+          {%- endfor -%}
+        </ul>
+
+        {%- if section.settings.show_arrows -%}
+          <button type="button" class="tc-arrow tc-arrow--next" data-tc-next aria-label="Next testimonials">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M7 3.5 12.5 9 7 14.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        {%- endif -%}
+      </div>
+
+      {%- if section.settings.show_dots -%}
+        <div class="tc-dots" data-tc-dots role="tablist" aria-label="Testimonial slides"></div>
+      {%- endif -%}
+    {%- else -%}
+      <div class="tc-empty">
+        {{ 'image' | placeholder_svg_tag: 'tc-placeholder-svg' }}
+        <p>Add testimonial blocks in the section settings to showcase customer videos here.</p>
+      </div>
+    {%- endif -%}
+
+  </div>
+</section>
+
+<script>
+  (function () {
+    var section = document.getElementById('shopify-section-{{ section.id }}');
+    if (!section) return;
+
+    var track = section.querySelector('[data-tc-track]');
+    if (!track) return;
+
+    var cards = Array.prototype.slice.call(section.querySelectorAll('[data-tc-card]'));
+    var prevBtn = section.querySelector('[data-tc-prev]');
+    var nextBtn = section.querySelector('[data-tc-next]');
+    var dotsWrap = section.querySelector('[data-tc-dots]');
+    var autoplay = section.getAttribute('data-autoplay') === 'true';
+    var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function cardStep() {
+      if (!cards.length) return 0;
+      var card = cards[0];
+      var style = window.getComputedStyle(track);
+      var gap = parseFloat(style.columnGap || style.gap || 0) || 0;
+      return card.getBoundingClientRect().width + gap;
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        track.scrollBy({ left: -cardStep(), behavior: 'smooth' });
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        track.scrollBy({ left: cardStep(), behavior: 'smooth' });
+      });
+    }
+
+    // Dots
+    if (dotsWrap && cards.length) {
+      cards.forEach(function (card, i) {
+        var dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'tc-dot';
+        dot.setAttribute('role', 'tab');
+        dot.setAttribute('aria-label', 'Go to testimonial ' + (i + 1));
+        dot.addEventListener('click', function () {
+          track.scrollTo({ left: card.offsetLeft - track.offsetLeft, behavior: 'smooth' });
+        });
+        dotsWrap.appendChild(dot);
+      });
+
+      var dots = Array.prototype.slice.call(dotsWrap.querySelectorAll('.tc-dot'));
+      var syncDots = function () {
+        var scrollLeft = track.scrollLeft;
+        var closest = 0;
+        var closestDist = Infinity;
+        cards.forEach(function (card, i) {
+          var dist = Math.abs(card.offsetLeft - track.offsetLeft - scrollLeft);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = i;
+          }
+        });
+        dots.forEach(function (d, i) {
+          d.classList.toggle('is-active', i === closest);
+        });
+      };
+      syncDots();
+      var scrollTimer;
+      track.addEventListener('scroll', function () {
+        window.clearTimeout(scrollTimer);
+        scrollTimer = window.setTimeout(syncDots, 80);
+      });
+    }
+
+    // Per-card video controls
+    cards.forEach(function (card) {
+      var video = card.querySelector('.tc-video');
+      var playBtn = card.querySelector('[data-tc-play]');
+      var muteBtn = card.querySelector('[data-tc-mute]');
+
+      if (!video) return;
+
+      var setPlayingState = function (playing) {
+        card.classList.toggle('is-playing', playing);
+      };
+
+      if (playBtn) {
+        playBtn.addEventListener('click', function () {
+          if (video.paused) {
+            video.play();
+            setPlayingState(true);
+          } else {
+            video.pause();
+            setPlayingState(false);
+          }
+        });
+      }
+
+      if (muteBtn) {
+        muteBtn.addEventListener('click', function () {
+          video.muted = !video.muted;
+          muteBtn.setAttribute('aria-pressed', String(video.muted));
+          muteBtn.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video');
+          card.classList.toggle('is-unmuted', !video.muted);
+        });
+      }
+
+      video.addEventListener('play', function () { setPlayingState(true); });
+      video.addEventListener('pause', function () { setPlayingState(false); });
+      video.addEventListener('ended', function () { setPlayingState(false); });
+    });
+
+    // Autoplay muted videos when in view, pause when out of view
+    if (autoplay && !prefersReducedMotion && 'IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            var video = entry.target.querySelector('.tc-video');
+            if (!video) return;
+            if (entry.isIntersecting) {
+              video.muted = true;
+              var playAttempt = video.play();
+              if (playAttempt && playAttempt.catch) playAttempt.catch(function () {});
+            } else {
+              video.pause();
+            }
+          });
+        },
+        { root: null, threshold: 0.6 }
+      );
+      cards.forEach(function (card) { observer.observe(card); });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Testimonial carousel",
+  "class": "tc-shopify-section",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "In their words"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Loved by our customers"
+    },
+    {
+      "type": "richtext",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "<p>Real stories from real customers, straight from their phones to yours.</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "serif_heading",
+      "label": "Use serif heading style",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "cards_per_row",
+      "label": "Cards per row (desktop)",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Show navigation arrows",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dots",
+      "label": "Show dot indicators",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay_muted",
+      "label": "Autoplay videos (muted) when in view",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#FBF8F3"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#2A2521"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent (stars, badge, mute icon)",
+      "default": "#B4884A"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Card background",
+      "default": "#FFFFFF"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "testimonial",
+      "name": "Testimonial",
+      "settings": [
+        {
+          "type": "video",
+          "id": "video",
+          "label": "Video"
+        },
+        {
+          "type": "image_picker",
+          "id": "poster_image",
+          "label": "Poster image",
+          "info": "Shown if no video is uploaded, or as a fallback thumbnail."
+        },
+        {
+          "type": "header",
+          "content": "Product"
+        },
+        {
+          "type": "text",
+          "id": "product_name",
+          "label": "Product name",
+          "default": "Product name"
+        },
+        {
+          "type": "url",
+          "id": "product_url",
+          "label": "Product link"
+        },
+        {
+          "type": "range",
+          "id": "rating",
+          "label": "Star rating",
+          "min": 0,
+          "max": 5,
+          "step": 1,
+          "default": 5
+        },
+        {
+          "type": "header",
+          "content": "Review"
+        },
+        {
+          "type": "textarea",
+          "id": "review_text",
+          "label": "Review text",
+          "default": "I adore shopping here! Their customer service is so friendly and helpful, and the selection is breathtaking."
+        },
+        {
+          "type": "text",
+          "id": "reviewer_name",
+          "label": "Reviewer name",
+          "default": "Jane D."
+        },
+        {
+          "type": "checkbox",
+          "id": "show_verified_badge",
+          "label": "Show verified badge",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "verified_label",
+          "label": "Verified badge label",
+          "default": "Verified purchaser"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Testimonial carousel",
+      "blocks": [
+        { "type": "testimonial" },
+        { "type": "testimonial" },
+        { "type": "testimonial" },
+        { "type": "testimonial" }
+      ]
+    }
+  ]
+}
+{% endschema %}
