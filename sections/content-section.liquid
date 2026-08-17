@@ -22,16 +22,22 @@
   }
 {%- endstyle -%}
 
+{%- liquid
+  assign content_inner_class = 'content-section__inner content-section__inner--align-' | append: section.settings.vertical_alignment
+  assign content_section_class = 'content-section section-' | append: section.id | append: ' color-' | append: section.settings.color_scheme
+  if section.settings.reverse_layout
+    assign content_section_class = content_section_class | append: ' content-section--reverse'
+  endif
+  unless section.settings.mobile_media_first
+    assign content_section_class = content_section_class | append: ' content-section--mobile-content-first'
+  endunless
+-%}
 <div
-  class="content-section section-{{ section.id }} color-{{ section.settings.color_scheme }}{% if section.settings.reverse_layout %} content-section--reverse{% endif %}{% unless section.settings.mobile_media_first %} content-section--mobile-content-first{% endunless %}"
+  {% render 'section-width', section: section, extra_class: content_section_class %}
   data-section-id="{{ section.id }}"
   data-section-type="content"
 >
-  {%- liquid
-    assign content_inner_class = 'content-section__inner content-section__inner--align-' | append: section.settings.vertical_alignment
-  -%}
-  <div {% render 'section-width', section: section, extra_class: content_inner_class %}>
-
+  <div class="{{ content_inner_class }}">
     <div class="content-section__media">
       {%- liquid
         assign v = section.settings.video
@@ -305,7 +311,7 @@
     },
     {
       "type": "header",
-      "content": "Section styling"
+      "content": "Colors"
     },
     {
       "type": "color",
