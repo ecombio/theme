@@ -1,9 +1,32 @@
 <link rel="stylesheet" href="{{ 'content-section.css' | asset_url }}" media="print" onload="this.media='all'">
 <noscript>{{ 'content-section.css' | asset_url | stylesheet_tag }}</noscript>
 
+{%- liquid
+  assign v = section.settings.video
+  assign has_video = false
+  if section.settings.media_type == 'video' and v != blank
+    assign has_video = true
+  endif
+
+  # Reserve real space for the media column up front (via CSS aspect-ratio)
+  # instead of letting it collapse to zero height until the image/video
+  # loads. Prevents layout shift, and — for video facades specifically —
+  # prevents the embed from collapsing to 0px after the facade button
+  # (which used to be the only element carrying an aspect-ratio) is
+  # replaced by the iframe on click.
+  if has_video
+    assign media_ratio = v.aspect_ratio | default: 1.78
+  elsif section.settings.image
+    assign media_ratio = section.settings.image.aspect_ratio | default: 1.33
+  else
+    assign media_ratio = 1.33
+  endif
+-%}
+
 {%- style -%}
   .section-{{ section.id }} {
     --content-media-width: {{ section.settings.media_width }}%;
+    --content-media-ratio: {{ media_ratio }};
     --content-gap: {{ section.settings.column_gap }}px;
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
@@ -39,21 +62,38 @@
 >
   <div class="{{ content_inner_class }}">
     <div class="content-section__media">
-      {%- liquid
-        assign v = section.settings.video
-        assign has_video = false
-        if section.settings.media_type == 'video' and v != blank
-          assign has_video = true
-        endif
-      -%}
-
       {%- if has_video -%}
         <div class="content-section__media-wrap content-section__media-wrap--video" data-video-wrap>
           {%- if v.host == 'shopify' -%}
-            {%- assign video_source = v.sources | where: 'format', 'mp4' | sort: 'width' | last -%}
+            {%- liquid
+              assign mp4_sources = v.sources | where: 'format', 'mp4' | sort: 'width'
+
+              # Default to the largest available source (always valid,
+              # matches previous behavior) then try to find a source
+              # that's "big enough" for each breakpoint instead of
+              # always shipping the largest file regardless of how
+              # small the media column actually renders.
+              assign desktop_source = mp4_sources | last
+              assign mobile_source = mp4_sources | last
+
+              for source in mp4_sources
+                if source.width >= 1280
+                  assign desktop_source = source
+                  break
+                endif
+              endfor
+
+              for source in mp4_sources
+                if source.width >= 640
+                  assign mobile_source = source
+                  break
+                endif
+              endfor
+            -%}
             <video
               class="content-section__video"
-              data-video-src="{{ video_source.url }}"
+              data-video-mobile-src="{{ mobile_source.url }}"
+              data-video-desktop-src="{{ desktop_source.url }}"
               {%- if v.preview_image %} poster="{{ v.preview_image | image_url: width: 1100 }}"{% endif %}
               playsinline
               {% if section.settings.loop %}loop{% endif %}
@@ -109,8 +149,6 @@
 
     <div class="content-section__content">
       <div class="content-section__content-inner">
-        <span class="content-section__eyebrow" aria-hidden="true"></span>
-
         {%- if section.settings.subheading != blank -%}
           <p class="content-section__subheading">{{ section.settings.subheading | escape }}</p>
         {%- endif -%}
