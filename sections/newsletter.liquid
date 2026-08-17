@@ -1,37 +1,3 @@
-{%- comment -%}
-  sections/newsletter.liquid
-
-  Customer newsletter signup section. Composition is intentionally
-  just two stacked, centered blocks: [text] then [signup form] — no
-  image/media, no side-by-side variant.
-
-  - Adopts the independent "Section layout" pattern from
-    sections/example-width-section.liquid (section_width / custom_width /
-    section_padding), scoped to this section's own newsletter__* BEM
-    namespace since the theme has no shared global width utilities.
-  - Uses {% form 'customer' %}. Submission is a normal (non-AJAX) POST;
-    Shopify redirects back with form.posted_successfully? / form.errors
-    set, which drives the message region below. The form id is built
-    via `capture` first (never pipe a filter straight into a `form`
-    tag keyword argument — its attribute parser can't handle it and
-    will misparse the form type itself).
-  - Honeypot field: Shopify's customer form has no built-in spam
-    filtering, so a decoy field is included and checked client-side in
-    assets/section-newsletter.js. It's visually hidden via off-screen
-    positioning (not display:none) so naive bots that check computed
-    visibility still find and fill it.
-  - assets/section-newsletter.js only handles client-side UX (honeypot
-    check, loading state, inline aria-invalid validation) — it never
-    intercepts or fetches the form.
-  - Background: either/or, driven by `background_type` (color/image).
-    "Color" keeps the existing color-scheme-driven background exactly
-    as before. "Image" swaps in a cover-sized background image plus a
-    dark overlay (opacity configurable) and forces light text, since
-    an arbitrary photo can't be guaranteed to contrast with whatever
-    color-scheme text color was chosen. See section-newsletter.css
-    note 6.
-{%- endcomment -%}
-
 {%- liquid
   assign width_type = section.settings.section_width
   if width_type == blank
@@ -49,7 +15,7 @@
   endif
 -%}
 
-{{ 'section-newsletter.css' | asset_url | stylesheet_tag }}
+{{ 'newsletter.css' | asset_url | stylesheet_tag }}
 
 <div
   class="newsletter color-{{ section.settings.color_scheme }} {{ width_class }}{% if has_image %} newsletter--has-image{% endif %}"
@@ -69,7 +35,6 @@
 >
   <div class="section newsletter__inner" style="padding-block: var(--section-spacing);">
 
-    {%- comment -%} [text] {%- endcomment -%}
     <div class="newsletter__text">
       {%- if section.settings.heading != blank -%}
         <h2 class="newsletter__heading">{{ section.settings.heading }}</h2>
@@ -80,7 +45,6 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%} [newsletter signup] {%- endcomment -%}
     <div class="newsletter__form-wrap">
       {%- capture newsletter_form_id -%}NewsletterForm-{{ section.id }}{%- endcapture -%}
       {%- form 'customer', id: newsletter_form_id, class: 'newsletter-form' -%}
@@ -99,12 +63,6 @@
 
         <input type="hidden" name="contact[tags]" value="newsletter">
 
-        {%- comment -%}
-          Honeypot decoy field. Real customers never see or fill this
-          (visually hidden, tabindex="-1", autocomplete="off"); if it
-          has a value on submit, assets/section-newsletter.js drops
-          the submission silently instead of posting it.
-        {%- endcomment -%}
         <div class="newsletter__honeypot" aria-hidden="true">
           <label for="NewsletterCompany-{{ section.id }}">Company</label>
           <input
@@ -151,7 +109,7 @@
   </div>
 </div>
 
-{{ 'section-newsletter.js' | asset_url | script_tag }}
+{{ 'newsletter.js' | asset_url | script_tag }}
 
 {% schema %}
 {
