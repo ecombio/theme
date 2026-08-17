@@ -123,22 +123,24 @@
           <div class="content-section__text rte">{{ section.settings.text }}</div>
         {%- endif -%}
 
-        {%- if section.blocks.size > 0 -%}
+        {%- if section.settings.button_1_label != blank or section.settings.button_2_label != blank -%}
           <div class="content-section__buttons">
-            {%- for block in section.blocks -%}
-              {%- case block.type -%}
-                {%- when 'button' -%}
-                  {%- if block.settings.button_label != blank -%}
-                    <a
-                      {% if block.settings.button_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ block.settings.button_link }}"{% endif %}
-                      class="button button--{{ block.settings.button_style }}"
-                      {{ block.shopify_attributes }}
-                    >
-                      {{ block.settings.button_label | escape }}
-                    </a>
-                  {%- endif -%}
-              {%- endcase -%}
-            {%- endfor -%}
+            {%- if section.settings.button_1_label != blank -%}
+              <a
+                {% if section.settings.button_1_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ section.settings.button_1_link }}"{% endif %}
+                class="button button--{{ section.settings.button_1_style }}"
+              >
+                {{ section.settings.button_1_label | escape }}
+              </a>
+            {%- endif -%}
+            {%- if section.settings.button_2_label != blank -%}
+              <a
+                {% if section.settings.button_2_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ section.settings.button_2_link }}"{% endif %}
+                class="button button--{{ section.settings.button_2_style }}"
+              >
+                {{ section.settings.button_2_label | escape }}
+              </a>
+            {%- endif -%}
           </div>
         {%- endif -%}
       </div>
@@ -311,6 +313,53 @@
     },
     {
       "type": "header",
+      "content": "Buttons"
+    },
+    {
+      "type": "text",
+      "id": "button_1_label",
+      "label": "First button label",
+      "default": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "button_1_link",
+      "label": "First button link"
+    },
+    {
+      "type": "select",
+      "id": "button_1_style",
+      "label": "First button style",
+      "options": [
+        { "value": "primary", "label": "Primary" },
+        { "value": "secondary", "label": "Secondary" },
+        { "value": "outline", "label": "Outline" }
+      ],
+      "default": "primary"
+    },
+    {
+      "type": "text",
+      "id": "button_2_label",
+      "label": "Second button label"
+    },
+    {
+      "type": "url",
+      "id": "button_2_link",
+      "label": "Second button link"
+    },
+    {
+      "type": "select",
+      "id": "button_2_style",
+      "label": "Second button style",
+      "options": [
+        { "value": "primary", "label": "Primary" },
+        { "value": "secondary", "label": "Secondary" },
+        { "value": "outline", "label": "Outline" }
+      ],
+      "default": "secondary"
+    },
+    {
+      "type": "header",
       "content": "Colors"
     },
     {
@@ -370,43 +419,9 @@
       "default": 48
     }
   ],
-  "blocks": [
-    {
-      "type": "button",
-      "name": "Button",
-      "limit": 2,
-      "settings": [
-        {
-          "type": "text",
-          "id": "button_label",
-          "label": "Label",
-          "default": "Shop now"
-        },
-        {
-          "type": "url",
-          "id": "button_link",
-          "label": "Link"
-        },
-        {
-          "type": "select",
-          "id": "button_style",
-          "label": "Style",
-          "options": [
-            { "value": "primary", "label": "Primary" },
-            { "value": "secondary", "label": "Secondary" },
-            { "value": "outline", "label": "Outline" }
-          ],
-          "default": "primary"
-        }
-      ]
-    }
-  ],
   "presets": [
     {
-      "name": "Content",
-      "blocks": [
-        { "type": "button" }
-      ]
+      "name": "Content"
     }
   ]
 }
