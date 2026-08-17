@@ -15,6 +15,15 @@
  * the same visual system. Kept scoped to .content-section
  * (not :root) so it can't leak into or collide with the
  * header's own token names.
+ *
+ * --content-media-ratio is set per-instance by the liquid file
+ * from the image's/video's real aspect ratio (falls back to a
+ * sane default otherwise) and drives .content-section__media-wrap.
+ * This reserves real height for the media column up front, which
+ * both prevents layout shift while media loads AND keeps a video
+ * embed from collapsing to 0px height once the click-to-play
+ * facade button is swapped out for an iframe (the facade used to
+ * be the only element carrying its own aspect-ratio).
  * ---------------------------------------------------------
  */
 
@@ -35,7 +44,11 @@
 .content-section__inner {
   display: flex;
   flex-direction: column;
-  gap: var(--content-gap, 64px);
+  /* Column gap is merchant-tunable for the desktop side-by-side
+     layout (up to 120px) but reused as the mobile stacked gap too.
+     Cap it on mobile so a large desktop gap doesn't blow out the
+     vertical spacing between stacked media/content blocks. */
+  gap: min(var(--content-gap, 64px), 32px);
 }
 
 .content-section__inner--align-start {
@@ -74,6 +87,7 @@
   overflow: hidden;
   width: 100%;
   border-radius: var(--content-radius);
+  aspect-ratio: var(--content-media-ratio, 4 / 3);
 }
 
 .content-section__media-wrap--placeholder {
@@ -95,14 +109,12 @@
   position: relative;
   display: block;
   width: 100%;
+  height: 100%;
   padding: 0;
   margin: 0;
   border: 0;
   background-color: #000;
   cursor: pointer;
-  aspect-ratio: 16 / 9;
-  border-radius: var(--content-radius);
-  overflow: hidden;
 }
 
 .content-section__video-facade:focus-visible {
@@ -143,10 +155,6 @@
 /* Content column */
 .content-section__content-inner {
   max-width: 42rem;
-}
-
-.content-section__eyebrow:empty {
-  display: none;
 }
 
 .content-section__subheading {
@@ -246,6 +254,7 @@
 @media screen and (min-width: 750px) {
   .content-section__inner {
     flex-direction: row;
+    gap: var(--content-gap, 64px);
   }
 
   .content-section--reverse .content-section__inner {
