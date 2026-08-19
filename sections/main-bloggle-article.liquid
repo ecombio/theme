@@ -362,24 +362,18 @@
   <div id="bloggle_article" >
       <div id="article" class="flex-column-reverse">
       {% if article.image %}
-      <img class="bloggle--blog-item-img lazybloggle" data-src="{{ article.image | img_url:'1200x' }}" alt="{{ article.image.alt }}">
+      <img class="bloggle--blog-item-img" src="{{ article.image | img_url:'1200x' }}" alt="{{ article.image.alt }}">
       {% endif %}
     <div id="article-header" class="text__center">
       
        
       <h1 id="bloggle--article-title" class="">{{article.title }}</h1>
       <div class="info_header">
-        <p id="bloggle--blog-item-author" >{{author}}<span id="author"> {{ article.author }}</span></p>
-        <p id="separator">|</p>
-         <p id="bloggle--blog-item-author" >{{datePublished}} <span>{{ article.published_at | time_tag: format: 'date'}}</span></p>
-          
-           
-        <p id="separator">|</p>
-        {% assign wordCount = article.content | strip_html | split: ' ' | size %}
-               {% if wordCount %}
-                 {% assign timeToReadMin = wordCount | divided_by: 225 %}
-                 <p id="bloggle--blog-item-ttread" >{{ timeToRead }} <span id='time'>{{ timeToReadMin }}</span> min</p>
-               {% endif %}
+        <p id="bloggle--blog-item-author" >{{author}}<span id="author"> {{ article.author }}</span></p><p class="separator">|</p><p id="bloggle--blog-item-author" >{{datePublished}} <span>{{ article.published_at | time_tag: format: 'date'}}</span></p><p class="separator">|</p>{% assign wordCount = article.content | strip_html | split: ' ' | size %}
+       {% if wordCount %}
+         {% assign timeToReadMin = wordCount | divided_by: 225 %}
+         <p id="bloggle--blog-item-ttread" >{{ timeToRead }} <span id='time'>{{ timeToReadMin }}</span> min</p>
+       {% endif %}
       </div>
     </div>
   </div>
@@ -406,7 +400,65 @@
       </div>
   </div>
 
-  
+  <div id="bloggle_sideBar" class="bggle-sideBar--blocks bloggle_sideBar-V2" >
+    {% assign product = all_products[article.metafields.bloggle.sideproduct] %}
+      {% if product.title != blank or article.tags contains "bloggle-preview" %}
+        <div id="initial-product" class="bggle--sideBar-block--product bggle--sideBar-block bggle--sideBar-text bggle_text padding_vertical--small product--ver m--auto" section-id="initial-product" style="">
+          <div id="bggle--product-related" class="bggle_product--container one-product">
+            <div class="text__center" bggle-product-id="{{ product.id }}" bggle-product-handle="{{ product.handle }}" >
+    <a class="bggle_button-link" href="{{ product.url }}" bggle-product-title="{{ product.title }}" bggle-product-handle="{{ product.handle }}">
+      {% assign productImage = product.featured_image %}
+      <img class="bloggle_product--img bggle--product-item-img lazybloggle"  data-src="{{ productImage | img_url: '420x420' }}" alt="{{ productImage.alt }}">
+      <div class="fd--column">
+        <div class="bloggle_product--infos text__center">
+          
+          <p id="bggle--product-title" class="bloggle_product--title bggle--product-title ">{{ product.title }}</p>
+          <div><div class="fd--row jc--center">
+    {% assign price = product.selected_or_first_available_variant.price %}
+    {% assign compareAtPrice = blank %}
+    {% if product.selected_or_first_available_variant.compare_at_price > product.selected_or_first_available_variant.price %}
+      {% assign compareAtPrice = product.selected_or_first_available_variant.compare_at_price %}
+    {% endif %}
+    {% if compareAtPrice != blank %}
+      <div class="fd--row bggle--compare">
+        <span class="bloggle_product--price-currency ">{{ cart.currency.symbol }}</span>
+        <span class="bloggle_product--compare-at-price  ">{{ compareAtPrice | money_without_currency }}</span>
+      </div>
+    {% endif %}
+    <div class="fd--row bggle--price bggle--product-price ">
+      {% unless article.tags contains "bloggle-preview" %}
+        <span class="bloggle_product--price-currency ">{{ cart.currency.symbol }}</span>
+      {% endunless %}
+      <span id="bggle--price" class="bloggle_product--price  ">{{ price | money_without_currency }}</span>
+    </div>
+  </div></div>
+        </div>
+        <button style="margin-top: auto;" class="button button--primary m--auto"></button>
+      </div>
+    </a>
+  </div>
+          </div>
+        </div>
+      {% endif %}<div id="initial-rec-articles" class="bggle--sideBar-block bggle--sideBar-text bggle_text padding_vertical--small bggle_reco_blog_posts"  section-id="initial-rec-articles">
+    <div class="bggle_reco_blog_posts-list" section-id="initial-rec-articles" style="display: flex; flex-direction: column; gap: 20px;">
+      {% assign count = 0 %}
+  {% for recoArticle in blog.articles limit: 4 %}
+    {% unless recoArticle.title == article.title or count >= 3 %}
+      {% assign count = count | plus: 1 %}
+      <div class="bggle_blog-post-container" style="width: 100%;">
+        <a class="bggle_blog-post-url" href="{{ recoArticle.url }}" >
+          {% if recoArticle.image %}
+            <img class="bggle_blog-post-image lazybloggle"  src="{{ recoArticle.image | img_url: '600x600' }}" alt="{{ recoArticle.image.alt }}">
+          {% endif %}
+          <p class="bggle_blog-post-title ">{{ recoArticle.title }}</p>
+          
+        </a>
+      </div>
+    {% endunless %}
+  {% endfor %}
+    </div>
+  </div>
+  </div>
   </div>
 
 
@@ -441,8 +493,7 @@
       .bggle-latest-article{
         margin-bottom:20px
         }
-      #bloggle_article-layout #bloggle_article {
-        width: 100%;}
+      
   
       #bloggle_article-layout {
         width: 1100px !important;
@@ -479,6 +530,53 @@
         height: 120px;
         transform: translateY(120px);
         transition: all 0.3s ease;
+        background: #ffffff;
+      }
+      #bloggle_sideBar.bggle-sideBar--blocks .bggle_button-link {
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      #bloggle_sideBar.bggle-sideBar--blocks .bggle--compare {
+        display: none;
+      }
+
+      .bloggle_sideBar-V2 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      .bloggle_sideBar-V2 .bggle--sideBar-block {
+        display: none;
+        padding: 0 !important;
+      }
+      .bloggle_sideBar-V2 .bggle--sideBar-block--product {
+        display: block !important;
+      }
+      .bloggle_sideBar-V2 .bggle_button-link > div {
+        flex-direction: row !important;
+        align-items: center;
+      }
+      .bloggle_sideBar-V2 .bggle_button-link > div > button.button {
+        margin-top: 0px !important;
+      }
+      .bloggle_sideBar-V2 .bloggle_product--infos {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left !important;
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 0 !important;
+      }
+      .bloggle_sideBar-V2 .bloggle_product--img, .bloggle_sideBar-V2 .bggle--product-item-img {
+        margin-bottom: 0 !important;
+      }
+      .bloggle_sideBar-V2 .bggle--product-price {
+        color: #646464;
+        font-size: 0.8em;
+        margin: 0px !important;
       }
       }
        
